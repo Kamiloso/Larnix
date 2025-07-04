@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 using Larnix.Socket;
+using UnityEditor;
+using Larnix.Socket.Commands;
 
 namespace Larnix.Server
 {
@@ -29,13 +31,23 @@ namespace Larnix.Server
             Queue<PacketAndOwner> messages = LarnixServer.ServerTickAndReceive(Time.deltaTime);
             foreach (PacketAndOwner message in messages)
             {
-                UnityEngine.Debug.Log("Server received [" + message.Nickname + "] >> " + message.Packet.ID);
-            }
+                string owner = message.Nickname;
+                Packet packet = message.Packet;
+                
+                if((Name)packet.ID == Name.AllowConnection)
+                {
+                    AllowConnection msg = new AllowConnection(packet);
+                    if (msg.HasProblems) continue;
 
-            if(Input.GetKeyDown(KeyCode.S))
-            {
-                Packet packet = new Packet(102, 0, null);
-                LarnixServer.Broadcast(packet, true);
+                    UnityEngine.Debug.Log("Player [" + owner + "] joined.");
+                }
+                if((Name)packet.ID == Name.Stop)
+                {
+                    Stop msg = new Stop(packet);
+                    if(msg.HasProblems) continue;
+
+                    UnityEngine.Debug.Log("Player [" + owner + "] disconnected.");
+                }
             }
         }
 
@@ -50,6 +62,12 @@ namespace Larnix.Server
         // Server destruction
         private void OnDestroy()
         {
+            if (LarnixServer != null)
+            {
+                LarnixServer.KillAllConnections();
+                LarnixServer.DisposeUdp();
+            }
+
             UnityEngine.Debug.Log("Server close");
         }
     }

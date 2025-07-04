@@ -14,24 +14,31 @@ namespace Larnix.Socket
         private UdpClient udpClient = null;
         private Connection connection = null;
 
-        public Client(IPEndPoint endPoint, string nickname)
+        public Client(IPEndPoint endPoint, string nickname, string password)
         {
             Nickname = nickname;
 
-            udpClient = new UdpClient(AddressFamily.InterNetworkV6);
-            udpClient.Client.SetSocketOption(
-                SocketOptionLevel.IPv6,
-                SocketOptionName.IPv6Only,
-                false
-            );
-            udpClient.Client.Bind(new IPEndPoint(IPAddress.IPv6Any, 0));
+            AddressFamily af = endPoint.AddressFamily;
+            udpClient = new UdpClient(af);
+
+            if(af == AddressFamily.InterNetworkV6)
+            {
+                udpClient.Client.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, false);
+                udpClient.Client.Bind(new IPEndPoint(IPAddress.IPv6Any, 0));
+            }
+            else
+            {
+                udpClient.Client.Bind(new IPEndPoint(IPAddress.Any, 0));
+            }
             udpClient.Client.Blocking = false;
 
             Commands.AllowConnection allowConnection = new Commands.AllowConnection(
                 Nickname,
-                new byte[16],
+                password,
                 new byte[16]
                 );
+            if (allowConnection.HasProblems)
+                throw new System.Exception("Couldn't construct AllowConnection command.");
 
             connection = new Connection(udpClient, endPoint, allowConnection.GetPacket());
         }
@@ -76,6 +83,11 @@ namespace Larnix.Socket
         public bool IsDead()
         {
             return connection.IsDead;
+        }
+
+        public void DisposeUdp()
+        {
+            udpClient.Dispose();
         }
     }
 }

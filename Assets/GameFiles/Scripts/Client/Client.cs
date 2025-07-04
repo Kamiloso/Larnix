@@ -5,12 +5,14 @@ using UnityEngine.SceneManagement;
 using System.Net;
 using Larnix.Socket;
 using UnityEditor.VersionControl;
+using Larnix.Socket.Commands;
 
 namespace Larnix.Client
 {
     public class Client : MonoBehaviour
     {
         public const string Nickname = "PlayerTester";
+        public const string Password = "Haslo123";
 
         Socket.Client LarnixClient = null;
         IPEndPoint EndPoint = null;
@@ -52,7 +54,7 @@ namespace Larnix.Client
         private void CreateClient()
         {
             EndPoint = Socket.DnsResolver.ResolveString(WorldLoad.ServerAddress);
-            LarnixClient = new Socket.Client(EndPoint, Nickname);
+            LarnixClient = new Socket.Client(EndPoint, Nickname, Password);
         }
 
         private void Send(Packet packet, bool safemode = true)
@@ -73,27 +75,14 @@ namespace Larnix.Client
                     LarnixClient.Send(pack.Packet, pack.Nickname == "SAFE");
                 }
 
-                Queue<Packet> messages = LarnixClient.ClientTickAndReceive(Time.deltaTime);
-                foreach (Packet message in messages)
+                Queue<Packet> packets = LarnixClient.ClientTickAndReceive(Time.deltaTime);
+                foreach (Packet packet in packets)
                 {
-                    UnityEngine.Debug.Log("Client received: " + message.ID);
+                    //
                 }
 
-                if(LarnixClient.IsDead())
-                {
+                if (LarnixClient.IsDead())
                     BackToMenu();
-                }
-
-                if (Input.GetKeyDown(KeyCode.A))
-                {
-                    Packet packet = new Packet(101, 0, null);
-                    Send(packet, true);
-                }
-
-                if(Input.GetKeyDown(KeyCode.Q))
-                {
-                    LarnixClient.KillConnection();
-                }
             }
 
             if(Input.GetKeyDown(KeyCode.Escape))
@@ -104,12 +93,15 @@ namespace Larnix.Client
 
         public void BackToMenu()
         {
-            SceneManager.LoadScene("Menu");
-            if(LarnixClient != null)
-            {
+            if (LarnixClient != null)
                 LarnixClient.KillConnection();
-                LarnixClient = null;
-            }
+
+            SceneManager.LoadScene("Menu");
+        }
+        private void OnDestroy()
+        {
+            if (LarnixClient != null)
+                LarnixClient.DisposeUdp();
         }
     }
 }

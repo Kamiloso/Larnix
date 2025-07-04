@@ -64,8 +64,7 @@ namespace Larnix.Socket
                     if (safePacket.SeqNum == GetNum + 1)
                     {
                         foundNextPacket = true;
-                        if (safePacket.Payload != null)
-                            downloadablePackets.Enqueue(safePacket.Payload);
+                        ReadyPacketTryEnqueue(safePacket);
                         break;
                     }
                 }
@@ -164,8 +163,7 @@ namespace Larnix.Socket
             }
             else // fast mode
             {
-                if (safePacket.Payload != null)
-                    downloadablePackets.Enqueue(safePacket.Payload);
+                ReadyPacketTryEnqueue(safePacket);
             }
 
             // best received acknowledgement get
@@ -197,19 +195,33 @@ namespace Larnix.Socket
         }
         private void SendSafePacket(SafePacket safePacket)
         {
-            UnityEngine.Debug.Log("Send [S" + SeqNum + ", A" + AckNum + ", G" + GetNum + "] " + (safePacket.Payload != null ? safePacket.Payload.ID : "NULL"));
-
             Transmit(safePacket);
             sendingPackets.Add(safePacket);
         }
 
         private void Transmit(SafePacket safePacket)
         {
-            if (!safePacket.HasFlag(SafePacket.PacketFlag.FAS))
-                UnityEngine.Debug.Log("Transmit Seq" + safePacket.SeqNum);
-
             byte[] payload = safePacket.Serialize();
             Udp.Send(payload, payload.Length, EndPoint);
+        }
+
+        private void ReadyPacketTryEnqueue(SafePacket safePacket)
+        {
+            // No payload, no problem
+            if (safePacket.Payload == null)
+                return;
+
+            // AllowConnection packets only with SYN flag allowed
+            if (safePacket.Payload.ID == (byte)Commands.Name.AllowConnection &&
+                !safePacket.HasFlag(SafePacket.PacketFlag.SYN))
+                return;
+
+            // Stop packets generate on server side, they cannot be sent through network
+            if (safePacket.Payload.ID == (byte)Commands.Name.Stop)
+                return;
+
+            // Enqueue if everything ok
+            downloadablePackets.Enqueue(safePacket.Payload);
         }
     }
 }

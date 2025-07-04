@@ -4,6 +4,8 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Net;
 using UnityEngine;
+using Larnix.Socket.Commands;
+using Unity.VisualScripting;
 
 namespace Larnix.Socket
 {
@@ -88,15 +90,11 @@ namespace Larnix.Socket
                         if (synPacket.ID != (byte)Commands.Name.AllowConnection)
                             continue;
 
-                        Commands.AllowConnection allowConnection = null;
-                        try {
-                            allowConnection = new Commands.AllowConnection(synPacket.Bytes);
-                        }
-                        catch (System.Exception) {
+                        Commands.AllowConnection allowConnection = new Commands.AllowConnection(synPacket);
+                        if (allowConnection.HasProblems)
                             continue;
-                        }
 
-                        string nickname = allowConnection.nickname;
+                        string nickname = allowConnection.Nickname;
                         // ...
                         // ...
                         // Here you can add nickname validation and AES initialization
@@ -154,7 +152,8 @@ namespace Larnix.Socket
                 if (conn != null && conn.IsDead)
                 {
                     // add finishing message
-                    Packet packet = new Packet((byte)Commands.Name.Stop, 0, null);
+                    Commands.Stop cmdStop = new Commands.Stop(0);
+                    Packet packet = cmdStop.GetPacket();
                     packetList.Enqueue(new PacketAndOwner(nicknames[i], packet));
 
                     // reset player slots
@@ -200,6 +199,20 @@ namespace Larnix.Socket
                     break;
                 }
             }
+        }
+
+        public void KillAllConnections()
+        {
+            foreach(Connection connection in connections)
+            {
+                if (connection != null)
+                    connection.KillConnection();
+            }
+        }
+        
+        public void DisposeUdp()
+        {
+            udpClient.Dispose();
         }
 
         private static void Shuffle(int[] array)

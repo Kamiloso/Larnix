@@ -1,0 +1,44 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using UnityEngine;
+
+namespace Larnix
+{
+    public static class Common
+    {
+        public static bool IsGoodNickname(string nickname) =>
+            !nickname.Contains('\0') &&
+            nickname.Length is >= 3 and <= 16 &&
+            nickname.All(c => char.IsLetterOrDigit(c) || c == '-' || c == '_');
+
+        public static bool IsGoodPassword(string password) =>
+            !password.Contains('\0') &&
+            password.Length is >= 3 and <= 32;
+
+        public static byte[] StringToFixedBinary(string str, int stringSize)
+        {
+            int bytesSize = sizeof(char) * stringSize;
+            byte[] bytes = Encoding.Unicode.GetBytes(str);
+
+            if (bytes.Length > bytesSize)
+                return bytes[0..bytesSize];
+            else
+                return bytes.Concat(new byte[bytesSize - bytes.Length]).ToArray();
+        }
+
+        public static string FixedBinaryToString(byte[] bytes)
+        {
+            if (bytes == null || bytes.Length == 0)
+                return string.Empty;
+
+            if (bytes.Length % 2 != 0)
+                throw new ArgumentException("Invalid byte array length for UTF-16 string.");
+
+            return Encoding.Unicode.GetString(bytes).TrimEnd('\0');
+        }
+    }
+}
