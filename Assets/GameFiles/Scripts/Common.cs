@@ -19,6 +19,10 @@ namespace Larnix
             !password.Contains('\0') &&
             password.Length is >= 3 and <= 32;
 
+        public static bool IsGoodMessage(string message) =>
+            !message.Contains('\0') &&
+            message.Length <= 256;
+
         public static byte[] StringToFixedBinary(string str, int stringSize)
         {
             int bytesSize = sizeof(char) * stringSize;

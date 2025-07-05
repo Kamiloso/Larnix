@@ -650,7 +650,7 @@ MonoBehaviour:
       - m_Target: {fileID: 930898675}
         m_TargetAssemblyTypeName: Larnix.Menu.Menu, Assembly-CSharp
         m_MethodName: StartSingleplayer
-        m_Mode: 5
+        m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine

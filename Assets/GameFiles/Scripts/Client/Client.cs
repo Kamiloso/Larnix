@@ -4,14 +4,13 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Net;
 using Larnix.Socket;
-using UnityEditor.VersionControl;
 using Larnix.Socket.Commands;
 
 namespace Larnix.Client
 {
     public class Client : MonoBehaviour
     {
-        public const string Nickname = "PlayerTester";
+        public const string Nickname = "Kamiloso";
         public const string Password = "Haslo123";
 
         Socket.Client LarnixClient = null;
@@ -30,7 +29,7 @@ namespace Larnix.Client
             else if (load_type == WorldLoad.LoadTypes.Remote)
             {
                 CreateClient();
-                UnityEngine.Debug.Log("Remote world [???] on address " + EndPoint.ToString());
+                UnityEngine.Debug.Log("Remote world on address " + EndPoint.ToString());
             }
             else
             {
@@ -48,13 +47,13 @@ namespace Larnix.Client
 
             WorldLoad.GenerateLocalAddress();
             CreateClient();
-            UnityEngine.Debug.Log("Local world [" + WorldLoad.WorldDirectory + "] on address " + EndPoint.ToString());
+            UnityEngine.Debug.Log("Local world on address " + EndPoint.ToString());
         }
 
         private void CreateClient()
         {
             EndPoint = Socket.DnsResolver.ResolveString(WorldLoad.ServerAddress);
-            LarnixClient = new Socket.Client(EndPoint, Nickname, Password);
+            LarnixClient = new Socket.Client(EndPoint, Nickname, Password, null);
         }
 
         private void Send(Packet packet, bool safemode = true)
@@ -85,6 +84,16 @@ namespace Larnix.Client
                     BackToMenu();
             }
 
+            if(Input.GetKeyDown(KeyCode.Z))
+            {
+                DebugMessage debugMessage = new DebugMessage("Wiadomoœæ testowa :)");
+                if (!debugMessage.HasProblems)
+                {
+                    UnityEngine.Debug.Log("SENDING " + debugMessage.Data);
+                    Send(debugMessage.GetPacket());
+                }
+            }
+
             if(Input.GetKeyDown(KeyCode.Escape))
             {
                 BackToMenu();
@@ -101,7 +110,7 @@ namespace Larnix.Client
         private void OnDestroy()
         {
             if (LarnixClient != null)
-                LarnixClient.DisposeUdp();
+                LarnixClient.Dispose();
         }
     }
 }

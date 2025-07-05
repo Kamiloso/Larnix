@@ -11,6 +11,7 @@ namespace Larnix.Socket.Commands
         None,
         AllowConnection,
         Stop,
+        DebugMessage,
     }
 
     public abstract class BaseCommand

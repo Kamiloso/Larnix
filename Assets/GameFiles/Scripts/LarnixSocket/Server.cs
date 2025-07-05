@@ -6,6 +6,7 @@ using System.Net;
 using UnityEngine;
 using Larnix.Socket.Commands;
 using Unity.VisualScripting;
+using System.Security.Cryptography;
 
 namespace Larnix.Socket
 {
@@ -13,12 +14,17 @@ namespace Larnix.Socket
     {
         public ushort Port { get; private set; }
         public int MaxClients { get; private set; }
+        private RSA KeyRSA = null;
 
         private UdpClient udpClient = null;
         private string[] nicknames = null;
         private Connection[] connections = null;
 
-        public Server(ushort port = 0, int max_clients = 12)
+        private const float RSA_RESET_TIME = 1f; // seconds
+        private float timeToResetRsa = RSA_RESET_TIME;
+        private Dictionary<IPAddress, uint> recentRsaCount = new Dictionary<IPAddress, uint>();
+
+        public Server(ushort port, int max_clients, RSA keyRSA)
         {
             udpClient = new UdpClient(AddressFamily.InterNetworkV6);
             udpClient.Client.SetSocketOption(
@@ -34,6 +40,7 @@ namespace Larnix.Socket
 
             nicknames = new string[max_clients];
             connections = new Connection[max_clients];
+            KeyRSA = keyRSA;
         }
 
         public Queue<PacketAndOwner> ServerTickAndReceive(float deltaTime)
@@ -50,7 +57,7 @@ namespace Larnix.Socket
                 }
                 catch (SocketException ex)
                 {
-                    if (ex.SocketErrorCode == SocketError.WouldBlock)
+                    if (ex.SocketErrorCode == SocketError.WouldBlock || ex.SocketErrorCode == SocketError.ConnectionReset)
                         break;
                     else
                         throw;
@@ -59,62 +66,96 @@ namespace Larnix.Socket
                 SafePacket header = new SafePacket();
                 if (header.TryDeserialize(bytes, true))
                 {
-                    if (header.HasFlag(SafePacket.PacketFlag.SYN)) // start connection
+                    if(header.HasFlag(SafePacket.PacketFlag.RSA)) // encrypted with RSA
                     {
-                        bool foundSessionConflict = false;
-                        int foundFreeSpace = -1;
-                        for (int i = 0; i < MaxClients; i++)
+                        IPAddress ip = remoteEP.Address;
+                        uint rsaCount = recentRsaCount.ContainsKey(ip) ? recentRsaCount[ip] : 0;
+
+                        // This operation is expensive, so there are some limits for clients.
+                        if (rsaCount < 3)
                         {
-                            Connection conn = connections[i];
+                            recentRsaCount[ip] = ++rsaCount;
 
-                            if (conn != null && conn.EndPoint.Equals(remoteEP))
-                            {
-                                foundSessionConflict = true;
-                                break;
-                            }
-
-                            if (conn == null && foundFreeSpace == -1)
-                                foundFreeSpace = i;
+                            // Deserialize with decryption and serialize without encryption
+                            SafePacket middlePacket = new SafePacket();
+                            middlePacket.Encrypt = new Encryption.Settings(Encryption.Settings.Type.RSA, KeyRSA);
+                            if (!middlePacket.TryDeserialize(bytes))
+                                continue;
+                            middlePacket.Encrypt = null;
+                            bytes = middlePacket.Serialize();
                         }
-                        if (foundSessionConflict || foundFreeSpace == -1)
-                            continue;
+                        else continue;
+                    }
 
-                        SafePacket safeSynPacket = new SafePacket();
-                        if (!safeSynPacket.TryDeserialize(bytes))
-                            continue;
-
-                        Packet synPacket = safeSynPacket.Payload;
-                        if (synPacket == null)
-                            continue;
-
-                        if (synPacket.ID != (byte)Commands.Name.AllowConnection)
-                            continue;
-
-                        Commands.AllowConnection allowConnection = new Commands.AllowConnection(synPacket);
-                        if (allowConnection.HasProblems)
-                            continue;
-
-                        string nickname = allowConnection.Nickname;
-                        // ...
-                        // ...
-                        // Here you can add nickname validation and AES initialization
-                        // ...
-                        // ...
-
-                        Connection connection = new Connection(udpClient, remoteEP, null);
-                        connection.PushFromWeb(bytes);
-
-                        connections[foundFreeSpace] = connection;
-                        nicknames[foundFreeSpace] = nickname;
+                    if(header.HasFlag(SafePacket.PacketFlag.NCN)) // fast question, fast answer
+                    {
+                        
                     }
                     else
                     {
-                        foreach (Connection conn in connections)
+                        if (header.HasFlag(SafePacket.PacketFlag.SYN)) // start connection
                         {
-                            if (conn != null && conn.EndPoint.Equals(remoteEP))
+                            bool foundSessionConflict = false;
+                            int foundFreeSpace = -1;
+                            for (int i = 0; i < MaxClients; i++)
                             {
-                                conn.PushFromWeb(bytes);
-                                break;
+                                Connection conn = connections[i];
+
+                                if (conn != null && conn.EndPoint.Equals(remoteEP))
+                                {
+                                    foundSessionConflict = true;
+                                    break;
+                                }
+
+                                if (conn == null && foundFreeSpace == -1)
+                                    foundFreeSpace = i;
+                            }
+                            if (foundSessionConflict || foundFreeSpace == -1)
+                                continue;
+
+                            SafePacket safeSynPacket = new SafePacket();
+                            if (!safeSynPacket.TryDeserialize(bytes))
+                                continue;
+
+                            Packet synPacket = safeSynPacket.Payload;
+                            if (synPacket == null)
+                                continue;
+
+                            if (synPacket.ID != (byte)Commands.Name.AllowConnection)
+                                continue;
+
+                            Commands.AllowConnection allowConnection = new Commands.AllowConnection(synPacket);
+                            if (allowConnection.HasProblems)
+                                continue;
+
+                            string nickname = allowConnection.Nickname;
+                            string password = allowConnection.Password;
+                            byte[] keyAES = allowConnection.KeyAES;
+
+                            if (nicknames.Contains(nickname))
+                                continue;
+
+                            // ...
+                            // ...
+                            // Here you can add nickname validation and AES initialization
+                            // ...
+                            // ...
+
+                            Connection connection = new Connection(udpClient, remoteEP, keyAES);
+                            connection.PushFromWeb(bytes, true);
+
+                            connections[foundFreeSpace] = connection;
+                            nicknames[foundFreeSpace] = nickname;
+                        }
+                        else // receive connection packet
+                        {
+                            foreach (Connection conn in connections)
+                            {
+                                if (conn != null && conn.EndPoint.Equals(remoteEP))
+                                {
+                                    conn.PushFromWeb(bytes);
+                                    break;
+                                }
                             }
                         }
                     }
@@ -160,6 +201,14 @@ namespace Larnix.Socket
                     connections[i] = null;
                     nicknames[i] = null;
                 }
+            }
+
+            // Reset RSA counter
+            timeToResetRsa -= deltaTime;
+            while(timeToResetRsa < 0)
+            {
+                timeToResetRsa += RSA_RESET_TIME;
+                recentRsaCount.Clear();
             }
 
             // Return packets
@@ -210,7 +259,7 @@ namespace Larnix.Socket
             }
         }
         
-        public void DisposeUdp()
+        public void Dispose()
         {
             udpClient.Dispose();
         }

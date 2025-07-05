@@ -57,7 +57,8 @@ namespace Larnix.Socket.Commands
         {
             bool ok = (
                 Common.IsGoodNickname(Nickname) &&
-                Common.IsGoodPassword(Password)
+                Common.IsGoodPassword(Password) &&
+                KeyAES.Length == 16
                 );
             HasProblems = HasProblems || !ok;
         }

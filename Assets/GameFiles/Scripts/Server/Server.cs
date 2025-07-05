@@ -10,19 +10,20 @@ namespace Larnix.Server
 {
     public class Server : MonoBehaviour
     {
-        public ushort Port { get; private set; } = 27682;
-        public ushort MaxClients { get; private set; } = 12;
-
-        Socket.Server LarnixServer = null;
+        private Socket.Server LarnixServer = null;
+        public Config ServerConfig { get; private set; } = null;
+        public ushort RealPort { get; private set; } = 0;
 
         // Server initialization
         private void Awake()
         {
-            if (WorldLoad.LoadType == WorldLoad.LoadTypes.Local)
-                Port = 0;
-
-            LarnixServer = new Socket.Server(Port, MaxClients);
-            Port = LarnixServer.Port;
+            ServerConfig = new Config();
+            LarnixServer = new Socket.Server(
+                ServerConfig.Port,
+                ServerConfig.MaxPlayers,
+                ServerConfig.CompleteRSA
+            );
+            RealPort = LarnixServer.Port;
             UnityEngine.Debug.Log("Server started");
         }
 
@@ -41,6 +42,7 @@ namespace Larnix.Server
 
                     UnityEngine.Debug.Log("Player [" + owner + "] joined.");
                 }
+
                 if((Name)packet.ID == Name.Stop)
                 {
                     Stop msg = new Stop(packet);
@@ -48,24 +50,34 @@ namespace Larnix.Server
 
                     UnityEngine.Debug.Log("Player [" + owner + "] disconnected.");
                 }
+
+                if((Name)packet.ID == Name.DebugMessage)
+                {
+                    DebugMessage msg = new DebugMessage(packet);
+                    if (msg.HasProblems) continue;
+
+                    UnityEngine.Debug.Log("RECEIVED " + msg.Data);
+                }
             }
         }
 
-        public ushort GetRunningPort()
+        public void Send(string nickname, Packet packet)
         {
-            if (LarnixServer != null)
-                return Port;
-            else
-                throw new Exception("Trying to obtain port of inactive server.");
+            LarnixServer.Send(nickname, packet);
         }
-
-        // Server destruction
+        public void Broadcast(Packet packet)
+        {
+            LarnixServer.Broadcast(packet);
+        }
         private void OnDestroy()
         {
-            if (LarnixServer != null)
-            {
+            if (LarnixServer != null) {
                 LarnixServer.KillAllConnections();
-                LarnixServer.DisposeUdp();
+                LarnixServer.Dispose();
+            }
+
+            if (ServerConfig != null) {
+                ServerConfig.Dispose();
             }
 
             UnityEngine.Debug.Log("Server close");

@@ -15,15 +15,15 @@ namespace Larnix.Menu
                 Application.isBatchMode;
 
             if (isServerBuild)
-                StartServer(Path.Combine(".", "ServerWorld"));
+                StartServer();
             else
                 UnityEngine.Debug.Log("Menu loaded");
         }
 
         // Start client / start server locally
-        public void StartSingleplayer(string world_path)
+        public void StartSingleplayer()
         {
-            WorldLoad.StartLocal(world_path);
+            WorldLoad.StartLocal();
         }
 
         // Start client / connect to server with given IP
@@ -33,9 +33,9 @@ namespace Larnix.Menu
         }
 
         // Start server alone
-        public void StartServer(string world_path)
+        public void StartServer()
         {
-            WorldLoad.StartServer(world_path);
+            WorldLoad.StartServer();
         }
     }
 }

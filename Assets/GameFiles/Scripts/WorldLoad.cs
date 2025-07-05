@@ -1,5 +1,4 @@
 using UnityEditor;
-using UnityEditor.Experimental.GraphView;
 using UnityEngine.SceneManagement;
 using System;
 
@@ -16,13 +15,11 @@ namespace Larnix
         }
 
         public static LoadTypes LoadType { get; private set; } = LoadTypes.None;
-        public static string WorldDirectory { get; private set; } = string.Empty;
         public static string ServerAddress { get; private set; } = string.Empty;
 
-        public static void StartLocal(string world_directory)
+        public static void StartLocal()
         {
             LoadType = LoadTypes.Local;
-            WorldDirectory = world_directory;
             ServerAddress = "[::]:0"; // temporary empty address
 
             SceneManager.LoadScene("Client");
@@ -31,23 +28,24 @@ namespace Larnix
 
         public static void GenerateLocalAddress()
         {
-            Server.Server server = UnityEngine.Object.FindObjectsByType<Server.Server>(UnityEngine.FindObjectsSortMode.None)[0];
-            ServerAddress = "localhost:" + server.GetRunningPort();
+            Server.Server[] servers = UnityEngine.Object.FindObjectsByType<Server.Server>(UnityEngine.FindObjectsSortMode.None);
+            if (servers.Length > 0)
+                ServerAddress = "localhost:" + servers[0].RealPort;
+            else
+                throw new Exception("Couldn't find the local server!");
         }
 
         public static void StartRemote(string server_address)
         {
             LoadType = LoadTypes.Remote;
-            WorldDirectory = string.Empty;
             ServerAddress = server_address;
 
             SceneManager.LoadScene("Client");
         }
 
-        public static void StartServer(string world_directory)
+        public static void StartServer()
         {
             LoadType = LoadTypes.Server;
-            WorldDirectory = world_directory;
             ServerAddress = string.Empty;
 
             SceneManager.LoadScene("Server");

@@ -3,8 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Net;
 using System.Net.Sockets;
-using UnityEditor.Experimental.GraphView;
-using Unity.VisualScripting;
+using System.Security.Cryptography;
 
 namespace Larnix.Socket
 {
@@ -13,10 +12,12 @@ namespace Larnix.Socket
         public string Nickname { get; private set; } = "";
         private UdpClient udpClient = null;
         private Connection connection = null;
+        private IPEndPoint remoteEndPoint = null;
 
-        public Client(IPEndPoint endPoint, string nickname, string password)
+        public Client(IPEndPoint endPoint, string nickname, string password, RSA keyPublicRSA = null)
         {
             Nickname = nickname;
+            remoteEndPoint = endPoint;
 
             AddressFamily af = endPoint.AddressFamily;
             udpClient = new UdpClient(af);
@@ -32,15 +33,21 @@ namespace Larnix.Socket
             }
             udpClient.Client.Blocking = false;
 
+            byte[] keyAES = new byte[16];
+            using(var rng = RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(keyAES);
+            }
+
             Commands.AllowConnection allowConnection = new Commands.AllowConnection(
                 Nickname,
                 password,
-                new byte[16]
+                keyAES
                 );
             if (allowConnection.HasProblems)
                 throw new System.Exception("Couldn't construct AllowConnection command.");
 
-            connection = new Connection(udpClient, endPoint, allowConnection.GetPacket());
+            connection = new Connection(udpClient, endPoint, keyAES, allowConnection.GetPacket(), keyPublicRSA);
         }
 
         public Queue<Packet> ClientTickAndReceive(float deltaTime)
@@ -63,7 +70,8 @@ namespace Larnix.Socket
                         throw;
                 }
 
-                connection.PushFromWeb(bytes);
+                if(remoteEndPoint.Equals(remoteEP))
+                    connection.PushFromWeb(bytes);
             }
 
             connection.Tick(deltaTime);
@@ -85,7 +93,7 @@ namespace Larnix.Socket
             return connection.IsDead;
         }
 
-        public void DisposeUdp()
+        public void Dispose()
         {
             udpClient.Dispose();
         }
