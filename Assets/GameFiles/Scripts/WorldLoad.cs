@@ -1,6 +1,9 @@
 using UnityEditor;
 using UnityEngine.SceneManagement;
 using System;
+using System.Security.Cryptography;
+using System.IO;
+using UnityEngine;
 
 namespace Larnix
 {
@@ -15,24 +18,22 @@ namespace Larnix
         }
 
         public static LoadTypes LoadType { get; private set; } = LoadTypes.None;
-        public static string ServerAddress { get; private set; } = string.Empty;
+        public static string ServerAddress { get; set; } = string.Empty;
+        public static string WorldDirectory { get; set; } = string.Empty;
+        public static string WorldName { get; set; } = string.Empty;
 
-        public static void StartLocal()
+        // Set on client start and reset on client exit, WARNING: null -> no SYN encryption
+        public static byte[] RsaPublicKey { get; set; } = null;
+
+        public static void StartLocal(string worldName)
         {
             LoadType = LoadTypes.Local;
-            ServerAddress = "[::]:0"; // temporary empty address
+
+            WorldDirectory = Path.Combine(Application.persistentDataPath, "Saves", worldName);
+            WorldName = worldName;
 
             SceneManager.LoadScene("Client");
             // client will load server on awake
-        }
-
-        public static void GenerateLocalAddress()
-        {
-            Server.Server[] servers = UnityEngine.Object.FindObjectsByType<Server.Server>(UnityEngine.FindObjectsSortMode.None);
-            if (servers.Length > 0)
-                ServerAddress = "localhost:" + servers[0].RealPort;
-            else
-                throw new Exception("Couldn't find the local server!");
         }
 
         public static void StartRemote(string server_address)
@@ -43,12 +44,13 @@ namespace Larnix
             SceneManager.LoadScene("Client");
         }
 
+        // Executes directly from server scene
         public static void StartServer()
         {
             LoadType = LoadTypes.Server;
-            ServerAddress = string.Empty;
 
-            SceneManager.LoadScene("Server");
+            WorldDirectory = Path.Combine(".", "World");
+            WorldName = "Server";
         }
     }
 }

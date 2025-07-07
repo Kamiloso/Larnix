@@ -650,13 +650,13 @@ MonoBehaviour:
       - m_Target: {fileID: 930898675}
         m_TargetAssemblyTypeName: Larnix.Menu.Menu, Assembly-CSharp
         m_MethodName: StartSingleplayer
-        m_Mode: 1
+        m_Mode: 5
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 0
           m_FloatArgument: 0
-          m_StringArgument: ./TestWorld/
+          m_StringArgument: TestWorld
           m_BoolArgument: 0
         m_CallState: 2
 --- !u!114 &1440512385
@@ -923,7 +923,7 @@ MonoBehaviour:
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 0
           m_FloatArgument: 0
-          m_StringArgument: '[::1]:27682'
+          m_StringArgument: 192.168.0.206
           m_BoolArgument: 0
         m_CallState: 2
 --- !u!114 &1679221262

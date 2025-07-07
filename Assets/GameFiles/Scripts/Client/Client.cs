@@ -5,17 +5,19 @@ using UnityEngine.SceneManagement;
 using System.Net;
 using Larnix.Socket;
 using Larnix.Socket.Commands;
+using System.Security.Cryptography;
 
 namespace Larnix.Client
 {
     public class Client : MonoBehaviour
     {
-        public const string Nickname = "Kamiloso";
+        public /*const*/ string Nickname = "Player" + (new System.Random()).Next(0, 100);
         public const string Password = "Haslo123";
 
-        Socket.Client LarnixClient = null;
-        IPEndPoint EndPoint = null;
-        Queue<Socket.PacketAndOwner> delayedPackets = new Queue<Socket.PacketAndOwner>();
+        private Socket.Client LarnixClient = null;
+        private IPEndPoint EndPoint = null;
+        private Queue<Socket.PacketAndOwner> delayedPackets = new Queue<Socket.PacketAndOwner>();
+        private RSA MyRSA = null;
 
         // Client initialization
         void Awake()
@@ -45,15 +47,37 @@ namespace Larnix.Client
             while(!serverCreation.isDone)
                 yield return null;
 
-            WorldLoad.GenerateLocalAddress();
-            CreateClient();
-            UnityEngine.Debug.Log("Local world on address " + EndPoint.ToString());
+            // Here server is already created and WorldLoad.ServerAddress has been set
+
+            if(CreateClient())
+            {
+                UnityEngine.Debug.Log("Local world on address " + EndPoint.ToString());
+            }
         }
 
-        private void CreateClient()
+        private bool CreateClient()
         {
-            EndPoint = Socket.DnsResolver.ResolveString(WorldLoad.ServerAddress);
-            LarnixClient = new Socket.Client(EndPoint, Nickname, Password, null);
+            EndPoint = Socket.Resolver.ResolveString(WorldLoad.ServerAddress);
+            if(EndPoint == null)
+            {
+                BackToMenu();
+                return false;
+            }
+
+            if(WorldLoad.RsaPublicKey != null)
+            {
+                RSAParameters rsaParameters = new RSAParameters
+                {
+                    Modulus = WorldLoad.RsaPublicKey[0..256],
+                    Exponent = WorldLoad.RsaPublicKey[256..264],
+                };
+
+                MyRSA = RSA.Create();
+                MyRSA.ImportParameters(rsaParameters);
+            }
+
+            LarnixClient = new Socket.Client(EndPoint, Nickname, Password, MyRSA);
+            return true;
         }
 
         private void Send(Packet packet, bool safemode = true)
@@ -86,7 +110,7 @@ namespace Larnix.Client
 
             if(Input.GetKeyDown(KeyCode.Z))
             {
-                DebugMessage debugMessage = new DebugMessage("Wiadomoœæ testowa :)");
+                DebugMessage debugMessage = new DebugMessage("Test message :)");
                 if (!debugMessage.HasProblems)
                 {
                     UnityEngine.Debug.Log("SENDING " + debugMessage.Data);
@@ -111,6 +135,11 @@ namespace Larnix.Client
         {
             if (LarnixClient != null)
                 LarnixClient.Dispose();
+
+            if(MyRSA != null)
+                MyRSA.Dispose();
+
+            WorldLoad.RsaPublicKey = null;
         }
     }
 }

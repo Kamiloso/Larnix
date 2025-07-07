@@ -8,10 +8,19 @@ namespace Larnix.Socket.Commands
 {
     public enum Name : byte
     {
+        // Connection commands
         None,
         AllowConnection,
         Stop,
         DebugMessage,
+
+        // Prompts and answers
+        P_ServerInfo,
+        A_ServerInfo,
+        P_PasswordChange,
+        A_PasswordChange,
+
+        // Game commands
     }
 
     public abstract class BaseCommand

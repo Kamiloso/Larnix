@@ -7,6 +7,7 @@ using UnityEngine;
 using Larnix.Socket.Commands;
 using Unity.VisualScripting;
 using System.Security.Cryptography;
+using System;
 
 namespace Larnix.Socket
 {
@@ -16,7 +17,8 @@ namespace Larnix.Socket
         public int MaxClients { get; private set; }
         private RSA KeyRSA = null;
 
-        private UdpClient udpClient = null;
+        private UdpClient udpClientV4 = null;
+        private UdpClient udpClientV6 = null;
         private string[] nicknames = null;
         private Connection[] connections = null;
 
@@ -24,55 +26,159 @@ namespace Larnix.Socket
         private float timeToResetRsa = RSA_RESET_TIME;
         private Dictionary<IPAddress, uint> recentRsaCount = new Dictionary<IPAddress, uint>();
 
-        public Server(ushort port, int max_clients, RSA keyRSA)
-        {
-            udpClient = new UdpClient(AddressFamily.InterNetworkV6);
-            udpClient.Client.SetSocketOption(
-                SocketOptionLevel.IPv6,
-                SocketOptionName.IPv6Only,
-                false
-            );
-            udpClient.Client.Bind(new IPEndPoint(IPAddress.IPv6Any, port));
-            udpClient.Client.Blocking = false;
+        private const float NCN_RESET_TIME = 1f; // seconds
+        private float timeToResetNcn = NCN_RESET_TIME;
+        private Dictionary<IPAddress, uint> recentNcnCount = new Dictionary<IPAddress, uint>();
 
-            Port = (ushort)((IPEndPoint)udpClient.Client.LocalEndPoint).Port;
+        private readonly Func<Packet, Packet> GetNcnAnswer;
+
+        public Server(ushort port, int max_clients, RSA keyRSA, bool allowInternetTraffic, Func<Packet, Packet> getNcnAnswer)
+        {
+            if(port == 0)
+            {
+                if (!CreateDoubleSocket(0, allowInternetTraffic))
+                {
+                    ResetDoubleSocket();
+
+                    System.Random rand = new System.Random();
+                    int triesLeft = 8;
+
+                    while (true)
+                    {
+                        int try_port = rand.Next(49152, 65536);
+
+                        if (triesLeft-- == 0)
+                            throw new Exception("Couldn't create double socket on multiple random dynamic ports.");
+
+                        if (!CreateDoubleSocket((ushort)try_port, allowInternetTraffic))
+                        {
+                            ResetDoubleSocket();
+                        }
+                        else
+                        {
+                            UnityEngine.Debug.Log("Created double socket on random dynamic port.");
+                            break;
+                        }
+                    }
+                }
+                else UnityEngine.Debug.Log("Created double socket on system-given dynamic port.");
+            }
+            else
+            {
+                if (!CreateDoubleSocket(port, allowInternetTraffic))
+                {
+                    ResetDoubleSocket();
+                    throw new Exception("Couldn't create double socket on port " + port);
+                }
+                else UnityEngine.Debug.Log("Created double socket on set port.");
+            }
+
             MaxClients = max_clients;
 
             nicknames = new string[max_clients];
             connections = new Connection[max_clients];
             KeyRSA = keyRSA;
+
+            GetNcnAnswer = getNcnAnswer;
+        }
+
+        private bool CreateDoubleSocket(ushort port, bool allowInternetTraffic)
+        {
+            udpClientV4 = new UdpClient(AddressFamily.InterNetwork);
+            udpClientV6 = new UdpClient(AddressFamily.InterNetworkV6);
+
+            IPAddress linkV4 = allowInternetTraffic ? IPAddress.Any : IPAddress.Loopback;
+            IPAddress linkV6 = allowInternetTraffic ? IPAddress.IPv6Any : IPAddress.IPv6Loopback;
+
+            try
+            {
+                udpClientV4.Client.Bind(new IPEndPoint(linkV4, port));
+                port = (ushort)((IPEndPoint)udpClientV4.Client.LocalEndPoint).Port;
+                udpClientV6.Client.Bind(new IPEndPoint(linkV6, port));
+            }
+            catch
+            {
+                return false;
+            }
+#if WINDOWS
+            udpClientV4.Client.IOControl(
+                (IOControlCode)(-1744830452),  // SIO_UDP_CONNRESET
+                new byte[] { 0, 0, 0, 0 },     // false
+                null
+            );
+
+            udpClientV6.Client.IOControl(
+                (IOControlCode)(-1744830452),  // SIO_UDP_CONNRESET
+                new byte[] { 0, 0, 0, 0 },     // false
+                null
+            );
+#endif
+            udpClientV4.Client.Blocking = false;
+            udpClientV6.Client.Blocking = false;
+
+            Port = port;
+            return true;
+        }
+
+        private void ResetDoubleSocket()
+        {
+            if(udpClientV4 != null)
+                udpClientV4.Dispose();
+
+            if(udpClientV6 != null)
+                udpClientV6.Dispose();
+
+            udpClientV4 = null;
+            udpClientV6 = null;
+        }
+
+        private byte[] DoubleSocketReceive(ref IPEndPoint remoteEP)
+        {
+            if(udpClientV4.Available > 0)
+                return udpClientV4.Receive(ref remoteEP);
+
+            if(udpClientV6.Available > 0)
+                return udpClientV6.Receive(ref remoteEP);
+
+            return null;
         }
 
         public Queue<PacketAndOwner> ServerTickAndReceive(float deltaTime)
         {
             // Get and divide packets between clients
-            while (udpClient.Available > 0)
+            while (udpClientV4.Available > 0 || udpClientV6.Available > 0)
             {
                 IPEndPoint remoteEP = new IPEndPoint(IPAddress.Any, 0);
                 byte[] bytes = null;
 
                 try
                 {
-                    bytes = udpClient.Receive(ref remoteEP);
+                    bytes = DoubleSocketReceive(ref remoteEP);
                 }
                 catch (SocketException ex)
                 {
-                    if (ex.SocketErrorCode == SocketError.WouldBlock || ex.SocketErrorCode == SocketError.ConnectionReset)
-                        break;
+                    if (ex.SocketErrorCode == SocketError.WouldBlock)
+                        continue;
                     else
                         throw;
                 }
 
+                if (bytes == null)
+                    continue;
+
+                bool IsIPv4Client = (remoteEP.AddressFamily == AddressFamily.InterNetwork);
+
                 SafePacket header = new SafePacket();
                 if (header.TryDeserialize(bytes, true))
                 {
-                    if(header.HasFlag(SafePacket.PacketFlag.RSA)) // encrypted with RSA
-                    {
-                        IPAddress ip = remoteEP.Address;
-                        uint rsaCount = recentRsaCount.ContainsKey(ip) ? recentRsaCount[ip] : 0;
+                    IPAddress ip = remoteEP.Address;
+                    uint rsaCount = recentRsaCount.ContainsKey(ip) ? recentRsaCount[ip] : 0;
+                    uint ncnCount = recentNcnCount.ContainsKey(ip) ? recentNcnCount[ip] : 0;
 
+                    if (header.HasFlag(SafePacket.PacketFlag.RSA)) // encrypted with RSA
+                    {
                         // This operation is expensive, so there are some limits for clients.
-                        if (rsaCount < 3)
+                        if (rsaCount < 3 && KeyRSA != null)
                         {
                             recentRsaCount[ip] = ++rsaCount;
 
@@ -89,7 +195,34 @@ namespace Larnix.Socket
 
                     if(header.HasFlag(SafePacket.PacketFlag.NCN)) // fast question, fast answer
                     {
-                        
+                        // There are some limits for players to not flood the server
+                        if(ncnCount < 3)
+                        {
+                            recentNcnCount[ip] = ++ncnCount;
+
+                            // Check packet type and answer properly
+                            SafePacket ncnPacket = new SafePacket();
+                            if (!ncnPacket.TryDeserialize(bytes))
+                                continue;
+
+                            Packet answer = GetNcnAnswer(ncnPacket.Payload);
+                            if (answer == null)
+                                continue;
+
+                            SafePacket safeAnswer = new SafePacket(
+                                ncnPacket.SeqNum,
+                                0,
+                                (byte)SafePacket.PacketFlag.NCN,
+                                answer
+                                );
+
+                            byte[] sendBytes = safeAnswer.Serialize();
+
+                            if(IsIPv4Client)
+                                udpClientV4.SendAsync(sendBytes, sendBytes.Length, remoteEP);
+                            else
+                                udpClientV6.SendAsync(sendBytes, sendBytes.Length, remoteEP);
+                        }
                     }
                     else
                     {
@@ -141,7 +274,7 @@ namespace Larnix.Socket
                             // ...
                             // ...
 
-                            Connection connection = new Connection(udpClient, remoteEP, keyAES);
+                            Connection connection = new Connection(IsIPv4Client ? udpClientV4 : udpClientV6, remoteEP, keyAES);
                             connection.PushFromWeb(bytes, true);
 
                             connections[foundFreeSpace] = connection;
@@ -205,10 +338,18 @@ namespace Larnix.Socket
 
             // Reset RSA counter
             timeToResetRsa -= deltaTime;
-            while(timeToResetRsa < 0)
+            if(timeToResetRsa < 0)
             {
-                timeToResetRsa += RSA_RESET_TIME;
+                timeToResetRsa = RSA_RESET_TIME;
                 recentRsaCount.Clear();
+            }
+
+            // Reset NCN counter
+            timeToResetNcn -= deltaTime;
+            if (timeToResetNcn < 0)
+            {
+                timeToResetNcn = NCN_RESET_TIME;
+                recentNcnCount.Clear();
             }
 
             // Return packets
@@ -261,7 +402,7 @@ namespace Larnix.Socket
         
         public void Dispose()
         {
-            udpClient.Dispose();
+            ResetDoubleSocket();
         }
 
         private static void Shuffle(int[] array)

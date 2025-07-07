@@ -19,19 +19,7 @@ namespace Larnix.Socket
             Nickname = nickname;
             remoteEndPoint = endPoint;
 
-            AddressFamily af = endPoint.AddressFamily;
-            udpClient = new UdpClient(af);
-
-            if(af == AddressFamily.InterNetworkV6)
-            {
-                udpClient.Client.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, false);
-                udpClient.Client.Bind(new IPEndPoint(IPAddress.IPv6Any, 0));
-            }
-            else
-            {
-                udpClient.Client.Bind(new IPEndPoint(IPAddress.Any, 0));
-            }
-            udpClient.Client.Blocking = false;
+            udpClient = CreateConfiguredClientObject(endPoint);
 
             byte[] keyAES = new byte[16];
             using(var rng = RandomNumberGenerator.Create())
@@ -48,6 +36,24 @@ namespace Larnix.Socket
                 throw new System.Exception("Couldn't construct AllowConnection command.");
 
             connection = new Connection(udpClient, endPoint, keyAES, allowConnection.GetPacket(), keyPublicRSA);
+        }
+
+        public static UdpClient CreateConfiguredClientObject(EndPoint endPoint)
+        {
+            AddressFamily af = endPoint.AddressFamily;
+            UdpClient udpClient = new UdpClient(af);
+
+            if (af == AddressFamily.InterNetworkV6)
+            {
+                udpClient.Client.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, false);
+                udpClient.Client.Bind(new IPEndPoint(IPAddress.IPv6Any, 0));
+            }
+            else
+            {
+                udpClient.Client.Bind(new IPEndPoint(IPAddress.Any, 0));
+            }
+            udpClient.Client.Blocking = false;
+            return udpClient;
         }
 
         public Queue<Packet> ClientTickAndReceive(float deltaTime)
@@ -69,6 +75,9 @@ namespace Larnix.Socket
                     else
                         throw;
                 }
+
+                if (bytes == null)
+                    continue;
 
                 if(remoteEndPoint.Equals(remoteEP))
                     connection.PushFromWeb(bytes);
