@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using UnityEngine;
 
@@ -10,6 +11,9 @@ namespace Larnix
 {
     public static class Common
     {
+        public static string GAME_VERSION = "0.0.1";
+        public const uint GAME_VERSION_UINT = 1;
+
         public static bool IsGoodNickname(string nickname) =>
             !nickname.Contains('\0') &&
             nickname.Length is >= 3 and <= 16 &&

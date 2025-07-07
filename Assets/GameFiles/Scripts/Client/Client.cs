@@ -49,10 +49,8 @@ namespace Larnix.Client
 
             // Here server is already created and WorldLoad.ServerAddress has been set
 
-            if(CreateClient())
-            {
-                UnityEngine.Debug.Log("Local world on address " + EndPoint.ToString());
-            }
+            if (!CreateClient())
+                yield break;
         }
 
         private bool CreateClient()

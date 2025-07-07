@@ -1,10 +1,12 @@
+using Larnix.Socket.Data;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
-using System.Security.Cryptography;
 
 namespace Larnix.Server.Data
 {
+    [System.Serializable]
     public class Config
     {
         /*
@@ -13,31 +15,44 @@ namespace Larnix.Server.Data
         Remote server can store its values in JSON file and load them on start.
         */
 
-        public ushort MaxPlayers { get; private set; } = 10;
-        public ushort Port { get; private set; } = 27682;
-        public bool AllowRemoteClients { get; private set; } = true;
+        public ushort MaxPlayers = 10;
+        public ushort Port = 27682;
+        public bool AllowRemoteClients = true;
+        public string Motd = "Welcome to Larnix server!";
 
-        public RSA CompleteRSA { get; private set; } = null;
-
-        public Config()
+        public Config(bool local)
         {
-            if(WorldLoad.LoadType == WorldLoad.LoadTypes.Local)
+            if(local)
             {
                 MaxPlayers = 1;
                 Port = 0;
                 AllowRemoteClients = false;
             }
-            else if (WorldLoad.LoadType == WorldLoad.LoadTypes.Server)
-            {
-                CompleteRSA = new RSACryptoServiceProvider(2048);
-            }
-            else throw new System.Exception("Unknown server load type.");
         }
 
-        public void Dispose()
+        public static Config Obtain(bool defaultIsLocal)
         {
-            if(CompleteRSA != null)
-                CompleteRSA.Dispose();
+            string data = FileManager.Read(WorldLoad.WorldDirectory, "config.json");
+            
+            try
+            {
+                if (data != null)
+                    return JsonUtility.FromJson<Config>(data);
+            }
+            catch
+            {
+                UnityEngine.Debug.LogWarning("File " + Path.Combine(WorldLoad.WorldDirectory, "config.json") + " was broken! Generating new...");
+            }
+            
+            Config newConfig = new Config(defaultIsLocal);
+            Save(newConfig);
+            return newConfig;
+        }
+
+        public static void Save(Config config)
+        {
+            string data = JsonUtility.ToJson(config, true);
+            FileManager.Write(WorldLoad.WorldDirectory, "config.json", data);
         }
     }
 }

@@ -38,20 +38,29 @@ namespace Larnix.Socket
             connection = new Connection(udpClient, endPoint, keyAES, allowConnection.GetPacket(), keyPublicRSA);
         }
 
-        public static UdpClient CreateConfiguredClientObject(EndPoint endPoint)
+        public static UdpClient CreateConfiguredClientObject(IPEndPoint endPoint)
         {
+            IPAddress ad = endPoint.Address;
             AddressFamily af = endPoint.AddressFamily;
+
             UdpClient udpClient = new UdpClient(af);
 
-            if (af == AddressFamily.InterNetworkV6)
+            if (af == AddressFamily.InterNetwork)
             {
-                udpClient.Client.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, false);
-                udpClient.Client.Bind(new IPEndPoint(IPAddress.IPv6Any, 0));
+                if (IPAddress.IsLoopback(ad))
+                    udpClient.Client.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                else
+                    udpClient.Client.Bind(new IPEndPoint(IPAddress.Any, 0));
             }
-            else
+            else if (af == AddressFamily.InterNetworkV6)
             {
-                udpClient.Client.Bind(new IPEndPoint(IPAddress.Any, 0));
+                if (IPAddress.IsLoopback(ad))
+                    udpClient.Client.Bind(new IPEndPoint(IPAddress.IPv6Loopback, 0));
+                else
+                    udpClient.Client.Bind(new IPEndPoint(IPAddress.IPv6Any, 0));
             }
+            else throw new System.NotSupportedException("Unknown address type.");
+
             udpClient.Client.Blocking = false;
             return udpClient;
         }

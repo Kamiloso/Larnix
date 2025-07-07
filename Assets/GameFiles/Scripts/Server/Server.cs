@@ -13,38 +13,48 @@ namespace Larnix.Server
 {
     public class Server : MonoBehaviour
     {
+        private const float DATA_SAVING_PERIOD = 15f; // seconds
+
         private Socket.Server LarnixServer = null;
-        public Config ServerConfig { get; private set; } = null;
+        private RSA CompleteRSA = null;
+
+        public bool IsLocal { get; private set; } = false;
+        public Config ServerConfig = null;
 
         // Server initialization
         private void Awake()
         {
             if(WorldLoad.LoadType == WorldLoad.LoadTypes.None)
                 WorldLoad.StartServer();
+            IsLocal = WorldLoad.LoadType == WorldLoad.LoadTypes.Local;
 
-            ServerConfig = new Config();
+            ServerConfig = Config.Obtain(IsLocal);
+            CompleteRSA = KeyObtainer.ObtainKeyRSA(IsLocal);
+
             LarnixServer = new Socket.Server(
                 ServerConfig.Port,
                 ServerConfig.MaxPlayers,
-                ServerConfig.CompleteRSA,
                 ServerConfig.AllowRemoteClients,
+                CompleteRSA,
                 AnswerToNcnPacket
             );
             WorldLoad.ServerAddress = "localhost:" + LarnixServer.Port;
 
-            if (WorldLoad.LoadType == WorldLoad.LoadTypes.Local)
-                WorldLoad.RsaPublicKey = KeyToPublicBytes(ServerConfig.CompleteRSA);
+            if (IsLocal)
+                WorldLoad.RsaPublicKey = KeyToPublicBytes(CompleteRSA);
         }
 
-        private void Start()
-        {
-            string address = WorldLoad.ServerAddress;
-            string[] array = address.Split(':');
-            UnityEngine.Debug.Log("Server started on port " + array[array.Length - 1]);
-        }
+        private bool updateStartDone = false;
+        private float saveCycleTimer = 0f;
 
         private void Update()
         {
+            if(!updateStartDone)
+            {
+                UnityEngine.Debug.Log("Done! Server started on port " + LarnixServer.Port);
+                updateStartDone = true;
+            }
+
             Queue<PacketAndOwner> messages = LarnixServer.ServerTickAndReceive(Time.deltaTime);
             foreach (PacketAndOwner message in messages)
             {
@@ -75,6 +85,13 @@ namespace Larnix.Server
                     UnityEngine.Debug.Log("DebugMessage [" + owner + "]: " + msg.Data);
                 }
             }
+
+            saveCycleTimer += Time.deltaTime;
+            if(saveCycleTimer > DATA_SAVING_PERIOD)
+            {
+                saveCycleTimer = 0;
+                SaveAllNow();
+            }
         }
 
         public void Send(string nickname, Packet packet)
@@ -98,17 +115,19 @@ namespace Larnix.Server
                     return null;
 
                 string checkNickname = prompt.Nickname;
-                byte[] publicKey = KeyToPublicBytes(ServerConfig.CompleteRSA);
+                byte[] publicKey = KeyToPublicBytes(CompleteRSA);
+
+                // Key is required for server info prompts, because remote clients can't send unencrypted SYNs
                 if (publicKey == null)
                     return null;
 
                 A_ServerInfo answer = new A_ServerInfo(
                     publicKey[0..256],
                     publicKey[256..264],
-                    "Test motd",
-                    999,
-                    ServerConfig.MaxPlayers,
-                    0,
+                    Common.IsGoodMessage(ServerConfig.Motd) ? ServerConfig.Motd : "Invalid motd format :(",
+                    LarnixServer.CountPlayers(),
+                    LarnixServer.MaxClients,
+                    Common.GAME_VERSION_UINT,
                     0
                     );
                 if (answer.HasProblems)
@@ -147,6 +166,11 @@ namespace Larnix.Server
             return modulus.Concat(exponent).ToArray();
         }
 
+        public void SaveAllNow()
+        {
+            Config.Save(ServerConfig);
+        }
+
         private void OnDestroy()
         {
             if (LarnixServer != null) {
@@ -154,10 +178,11 @@ namespace Larnix.Server
                 LarnixServer.Dispose();
             }
 
-            if (ServerConfig != null) {
-                ServerConfig.Dispose();
+            if (CompleteRSA != null) {
+                CompleteRSA.Dispose();
             }
 
+            SaveAllNow();
             UnityEngine.Debug.Log("Server close");
         }
     }

@@ -12,7 +12,7 @@ namespace Larnix.Socket
         // ==== DATA SEGMENT ====
 
         public const int HEADER_SIZE = 3 * sizeof(uint) + 1 * sizeof(byte) + 1 * sizeof(ushort);
-        public const uint VERSION = 0;
+        public const uint PROTOCOL_VERSION = 1;
         public Encryption.Settings Encrypt = null;
 
         public uint SeqNum { get; private set; } = 0;
@@ -47,7 +47,7 @@ namespace Larnix.Socket
             using (var ms = new MemoryStream())
             using (var writer = new BinaryWriter(ms))
             {
-                writer.Write(VERSION);
+                writer.Write(PROTOCOL_VERSION);
                 writer.Write(SeqNum);
                 writer.Write(AckNum);
                 writer.Write(Flags);
@@ -78,7 +78,7 @@ namespace Larnix.Socket
                     return false;
 
                 uint version = reader.ReadUInt32();
-                if (version != VERSION)
+                if (version != PROTOCOL_VERSION)
                     return false;
 
                 SeqNum = reader.ReadUInt32();

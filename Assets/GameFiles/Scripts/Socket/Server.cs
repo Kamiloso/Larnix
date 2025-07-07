@@ -14,7 +14,7 @@ namespace Larnix.Socket
     public class Server
     {
         public ushort Port { get; private set; }
-        public int MaxClients { get; private set; }
+        public ushort MaxClients { get; private set; }
         private RSA KeyRSA = null;
 
         private UdpClient udpClientV4 = null;
@@ -32,7 +32,7 @@ namespace Larnix.Socket
 
         private readonly Func<Packet, Packet> GetNcnAnswer;
 
-        public Server(ushort port, int max_clients, RSA keyRSA, bool allowInternetTraffic, Func<Packet, Packet> getNcnAnswer)
+        public Server(ushort port, ushort max_clients, bool allowInternetTraffic, RSA keyRSA, Func<Packet, Packet> getNcnAnswer)
         {
             if(port == 0)
             {
@@ -377,6 +377,8 @@ namespace Larnix.Socket
                     connection.Send(packet, safemode);
             }
         }
+
+        public ushort CountPlayers() => (ushort)nicknames.Count(n => n != null);
 
         public void KillConnection(string nickname)
         {
