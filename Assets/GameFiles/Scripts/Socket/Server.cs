@@ -11,7 +11,7 @@ using System;
 
 namespace Larnix.Socket
 {
-    public class Server
+    public class Server : IDisposable
     {
         public ushort Port { get; private set; }
         public ushort MaxClients { get; private set; }
@@ -30,11 +30,21 @@ namespace Larnix.Socket
         private float timeToResetNcn = NCN_RESET_TIME;
         private Dictionary<IPAddress, uint> recentNcnCount = new Dictionary<IPAddress, uint>();
 
+        private readonly Func<string, string, bool> TryLogin;
         private readonly Func<Packet, Packet> GetNcnAnswer;
 
-        public Server(ushort port, ushort max_clients, bool allowInternetTraffic, RSA keyRSA, Func<Packet, Packet> getNcnAnswer)
+        public Server(
+            ushort port,
+            ushort max_clients,
+            bool allowInternetTraffic,
+            RSA keyRSA,
+            Func<string, string, bool> tryLogin,
+            Func<Packet, Packet> getNcnAnswer)
         {
-            if(port == 0)
+            TryLogin = tryLogin;
+            GetNcnAnswer = getNcnAnswer;
+
+            if (port == 0)
             {
                 if (!CreateDoubleSocket(0, allowInternetTraffic))
                 {
@@ -78,8 +88,6 @@ namespace Larnix.Socket
             nicknames = new string[max_clients];
             connections = new Connection[max_clients];
             KeyRSA = keyRSA;
-
-            GetNcnAnswer = getNcnAnswer;
         }
 
         private bool CreateDoubleSocket(ushort port, bool allowInternetTraffic)
@@ -265,14 +273,8 @@ namespace Larnix.Socket
                             string password = allowConnection.Password;
                             byte[] keyAES = allowConnection.KeyAES;
 
-                            if (nicknames.Contains(nickname))
+                            if (nicknames.Contains(nickname) || !TryLogin(nickname, password))
                                 continue;
-
-                            // ...
-                            // ...
-                            // Here you can add nickname validation and AES initialization
-                            // ...
-                            // ...
 
                             Connection connection = new Connection(IsIPv4Client ? udpClientV4 : udpClientV6, remoteEP, keyAES);
                             connection.PushFromWeb(bytes, true);

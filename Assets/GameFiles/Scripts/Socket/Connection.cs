@@ -254,7 +254,7 @@ namespace Larnix.Socket
                 if (safePacket.HasFlag(SafePacket.PacketFlag.RSA))
                     UnityEngine.Debug.Log("Transmiting RSA-encrypted SYN.");
                 else if(IPAddress.IsLoopback(EndPoint.Address))
-                    UnityEngine.Debug.Log("Transmiting unencrypted SYN to localhost.");
+                    UnityEngine.Debug.LogWarning("Transmiting unencrypted SYN to localhost.");
                 else
                     UnityEngine.Debug.LogWarning("Transmiting unencrypted SYN!");
             }

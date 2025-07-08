@@ -30,9 +30,9 @@ namespace Larnix.Server.Data
             }
         }
 
-        public static Config Obtain(bool defaultIsLocal)
+        public static Config Obtain(string path, bool defaultIsLocal)
         {
-            string data = FileManager.Read(WorldLoad.WorldDirectory, "config.json");
+            string data = FileManager.Read(path, "config.json");
             
             try
             {
@@ -41,18 +41,18 @@ namespace Larnix.Server.Data
             }
             catch
             {
-                UnityEngine.Debug.LogWarning("File " + Path.Combine(WorldLoad.WorldDirectory, "config.json") + " was broken! Generating new...");
+                UnityEngine.Debug.LogWarning("File " + Path.Combine(path, "config.json") + " was broken! Generating new...");
             }
             
             Config newConfig = new Config(defaultIsLocal);
-            Save(newConfig);
+            Save(path, newConfig);
             return newConfig;
         }
 
-        public static void Save(Config config)
+        public static void Save(string path, Config config)
         {
             string data = JsonUtility.ToJson(config, true);
-            FileManager.Write(WorldLoad.WorldDirectory, "config.json", data);
+            FileManager.Write(path, "config.json", data);
         }
     }
 }

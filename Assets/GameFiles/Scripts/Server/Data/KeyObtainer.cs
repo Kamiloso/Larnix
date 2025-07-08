@@ -17,12 +17,12 @@ namespace Larnix.Server.Data
     {
         private const string filename = "rsa_keypair.pem";
 
-        public static RSA ObtainKeyRSA(bool onlyLoad)
+        public static RSA ObtainKeyRSA(string path, bool onlyLoad)
         {
             AsymmetricCipherKeyPair keyPair = null;
             string data = null;
 
-            data = FileManager.Read(WorldLoad.WorldDirectory, filename);
+            data = FileManager.Read(path, filename);
             if (data != null)
             {
                 keyPair = ParseRSA(data);
@@ -40,7 +40,7 @@ namespace Larnix.Server.Data
             keyPair = keyGen.GenerateKeyPair();
 
             data = ConvertKeyPairToPem(keyPair);
-            FileManager.Write(WorldLoad.WorldDirectory, filename, data);
+            FileManager.Write(path, filename, data);
             return BouncyToRSA(keyPair);
         }
 

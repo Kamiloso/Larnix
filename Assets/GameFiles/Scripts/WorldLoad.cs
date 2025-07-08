@@ -20,17 +20,23 @@ namespace Larnix
         public static LoadTypes LoadType { get; private set; } = LoadTypes.None;
         public static string ServerAddress { get; set; } = string.Empty;
         public static string WorldDirectory { get; set; } = string.Empty;
-        public static string WorldName { get; set; } = string.Empty;
 
         // Set on client start and reset on client exit, WARNING: null -> no SYN encryption
         public static byte[] RsaPublicKey { get; set; } = null;
+
+        // Client data
+        public static string Nickname { get; set; } = string.Empty;
+        public static string Password { get; set; } = string.Empty;
 
         public static void StartLocal(string worldName)
         {
             LoadType = LoadTypes.Local;
 
             WorldDirectory = Path.Combine(Application.persistentDataPath, "Saves", worldName);
-            WorldName = worldName;
+
+            // NEVER change Nickname / Password local settings (compatibility with older worlds)
+            Nickname = "Player";
+            Password = "SGP_PASSWORD";
 
             SceneManager.LoadScene("Client");
             // client will load server on awake
@@ -41,6 +47,9 @@ namespace Larnix
             LoadType = LoadTypes.Remote;
             ServerAddress = server_address;
 
+            Nickname = "Player" + (new System.Random()).Next(0,100);
+            Password = "TEMP_PASSWORD";
+
             SceneManager.LoadScene("Client");
         }
 
@@ -50,7 +59,6 @@ namespace Larnix
             LoadType = LoadTypes.Server;
 
             WorldDirectory = Path.Combine(".", "World");
-            WorldName = "Server";
         }
     }
 }

@@ -15,9 +15,12 @@ namespace Larnix.Server
     {
         private const float DATA_SAVING_PERIOD = 15f; // seconds
 
-        private Socket.Server LarnixServer = null;
+        private Locker locker = null;
+        private Database Database = null;
         private RSA CompleteRSA = null;
+        private Socket.Server LarnixServer = null;
 
+        public string WorldDir { get; private set; } = "";
         public bool IsLocal { get; private set; } = false;
         public Config ServerConfig = null;
 
@@ -26,20 +29,35 @@ namespace Larnix.Server
         {
             if(WorldLoad.LoadType == WorldLoad.LoadTypes.None)
                 WorldLoad.StartServer();
+            WorldDir = WorldLoad.WorldDirectory;
             IsLocal = WorldLoad.LoadType == WorldLoad.LoadTypes.Local;
 
-            ServerConfig = Config.Obtain(IsLocal);
-            CompleteRSA = KeyObtainer.ObtainKeyRSA(IsLocal);
+            // LOCKER --> 1
+            locker = Locker.TryLock(WorldLoad.WorldDirectory, "world_locker.lock");
+            if (locker == null)
+                throw new Exception("Trying to access world that is already open.");
 
+            // RSA --> 2
+            CompleteRSA = KeyObtainer.ObtainKeyRSA(WorldLoad.WorldDirectory, false);
+
+            // CONFIG --> 3
+            ServerConfig = Config.Obtain(WorldLoad.WorldDirectory, IsLocal);
+
+            // DATABASE --> 4
+            Database = new Database(WorldLoad.WorldDirectory, "database.sqlite");
+
+            // SERVER --> 5
             LarnixServer = new Socket.Server(
                 ServerConfig.Port,
                 ServerConfig.MaxPlayers,
                 ServerConfig.AllowRemoteClients,
                 CompleteRSA,
+                TryLogin,
                 AnswerToNcnPacket
             );
-            WorldLoad.ServerAddress = "localhost:" + LarnixServer.Port;
 
+            WorldLoad.ServerAddress = "localhost:" + LarnixServer.Port;
+            
             if (IsLocal)
                 WorldLoad.RsaPublicKey = KeyToPublicBytes(CompleteRSA);
         }
@@ -102,8 +120,12 @@ namespace Larnix.Server
         {
             LarnixServer.Broadcast(packet);
         }
+        public void Kick(string nickname)
+        {
+            LarnixServer.KillConnection(nickname);
+        }
 
-        public Packet AnswerToNcnPacket(Packet packet)
+        private Packet AnswerToNcnPacket(Packet packet)
         {
             if (packet == null)
                 return null;
@@ -128,7 +150,7 @@ namespace Larnix.Server
                     LarnixServer.CountPlayers(),
                     LarnixServer.MaxClients,
                     Common.GAME_VERSION_UINT,
-                    0
+                    (byte)(Database.HasUser(checkNickname) ? 1 : 0)
                     );
                 if (answer.HasProblems)
                     throw new Exception("Error making server info answer.");
@@ -143,6 +165,14 @@ namespace Larnix.Server
             }
 
             return null;
+        }
+
+        private bool TryLogin(string username, string password)
+        {
+            if (!IsLocal && username == "Player")
+                return false;
+
+            return Database.AllowUser(username, password);
         }
 
         private byte[] KeyToPublicBytes(RSA rsa)
@@ -168,21 +198,29 @@ namespace Larnix.Server
 
         public void SaveAllNow()
         {
-            Config.Save(ServerConfig);
+            Config.Save(WorldLoad.WorldDirectory, ServerConfig);
         }
 
         private void OnDestroy()
         {
-            if (LarnixServer != null) {
-                LarnixServer.KillAllConnections();
-                LarnixServer.Dispose();
-            }
-
-            if (CompleteRSA != null) {
-                CompleteRSA.Dispose();
-            }
-
             SaveAllNow();
+
+            // 5 --> SERVER
+            LarnixServer?.KillAllConnections();
+            LarnixServer?.Dispose();
+
+            // 4 ---> DATABASE
+            Database?.Dispose();
+
+            // 3 ---> CONFIG
+            // (non-disposable)
+
+            // 2 --> RSA
+            CompleteRSA?.Dispose();
+
+            // 1 --> LOCKER
+            locker?.Dispose();
+
             UnityEngine.Debug.Log("Server close");
         }
     }

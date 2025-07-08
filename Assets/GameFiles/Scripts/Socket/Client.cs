@@ -4,10 +4,11 @@ using UnityEngine;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
+using System;
 
 namespace Larnix.Socket
 {
-    public class Client
+    public class Client : IDisposable
     {
         public string Nickname { get; private set; } = "";
         private UdpClient udpClient = null;

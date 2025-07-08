@@ -11,9 +11,6 @@ namespace Larnix.Client
 {
     public class Client : MonoBehaviour
     {
-        public /*const*/ string Nickname = "Player" + (new System.Random()).Next(0, 100);
-        public const string Password = "Haslo123";
-
         private Socket.Client LarnixClient = null;
         private IPEndPoint EndPoint = null;
         private Queue<Socket.PacketAndOwner> delayedPackets = new Queue<Socket.PacketAndOwner>();
@@ -74,7 +71,7 @@ namespace Larnix.Client
                 MyRSA.ImportParameters(rsaParameters);
             }
 
-            LarnixClient = new Socket.Client(EndPoint, Nickname, Password, MyRSA);
+            LarnixClient = new Socket.Client(EndPoint, WorldLoad.Nickname, WorldLoad.Password, MyRSA);
             return true;
         }
 
