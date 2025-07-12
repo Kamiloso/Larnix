@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Security.Cryptography;
 using System.Text;
 using UnityEngine;
 
@@ -47,6 +48,13 @@ namespace Larnix
                 throw new ArgumentException("Invalid byte array length for UTF-16 string.");
 
             return Encoding.Unicode.GetString(bytes).TrimEnd('\0');
+        }
+
+        public static ulong GetRandomUID()
+        {
+            Span<byte> bytes = stackalloc byte[8];
+            RandomNumberGenerator.Fill(bytes);
+            return BitConverter.ToUInt64(bytes);
         }
     }
 }

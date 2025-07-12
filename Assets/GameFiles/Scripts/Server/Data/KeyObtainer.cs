@@ -7,9 +7,10 @@ using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Generators;
 using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Security;
-using Larnix.Socket.Data;
 using System;
 using Org.BouncyCastle.Crypto.Parameters;
+using Larnix.Files;
+using System.Text;
 
 namespace Larnix.Server.Data
 {
@@ -92,6 +93,35 @@ namespace Larnix.Server.Data
             var rsa = RSA.Create();
             rsa.ImportParameters(rsaParams);
             return rsa;
+        }
+
+        public static string ProduceAuthCodeRSA(byte[] key)
+        {
+            // Example AuthCode: XXXXX-XXXXX-XXXXX-XXXXX
+            const string Base32 = "0123456789ABCDEFGHJKLMNPQRTVWXYZ";
+            byte[] hash = null;
+
+            using (SHA256 sha256 = SHA256.Create())
+            {
+                hash = sha256.ComputeHash(key);
+            }
+
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < 4; i++)
+            {
+                if (i != 0)
+                    sb.Append('-');
+
+                for (int j = 0; j < 5; j++)
+                    sb.Append(Base32[hash[5 * i + j] % 32]);
+            }
+
+            return sb.ToString();
+        }
+
+        public static bool VerifyPublicKey(byte[] key, string authCodeRSA)
+        {
+            return ProduceAuthCodeRSA(key) == authCodeRSA;
         }
     }
 }

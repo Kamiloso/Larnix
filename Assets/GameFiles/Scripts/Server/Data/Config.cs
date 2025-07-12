@@ -1,8 +1,8 @@
-using Larnix.Socket.Data;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
+using Larnix.Files;
 
 namespace Larnix.Server.Data
 {
@@ -19,6 +19,8 @@ namespace Larnix.Server.Data
         public ushort Port = 27682;
         public bool AllowRemoteClients = true;
         public string Motd = "Welcome to Larnix server!";
+        public float DataSavingPeriod = 15.00f;
+        public float EntityBroadcastPeriod = 0.05f;
 
         public Config(bool local)
         {

@@ -81,7 +81,7 @@ namespace Larnix.Socket
                 catch (SocketException ex)
                 {
                     if (ex.SocketErrorCode == SocketError.WouldBlock || ex.SocketErrorCode == SocketError.ConnectionReset)
-                        break;
+                        continue;
                     else
                         throw;
                 }

@@ -20,7 +20,7 @@ namespace Larnix.Socket.Commands
         public ushort CurrentPlayers { get; private set; } // 2B
         public ushort MaxPlayers { get; private set; } // 2B
         public uint GameVersion { get; private set; } // 4B
-        public byte IsRegistered { get; private set; } // 1B
+        public byte PasswordIndex { get; private set; } // 1B
 
         public A_ServerInfo(
             byte[] publicKeyModulus,
@@ -29,7 +29,7 @@ namespace Larnix.Socket.Commands
             ushort currentPlayers,
             ushort maxPlayers,
             uint gameVersion,
-            byte isRegistered,
+            byte passwordIndex,
             byte code = 0
             )
             : base(Name.None, code)
@@ -40,7 +40,7 @@ namespace Larnix.Socket.Commands
             CurrentPlayers = currentPlayers;
             MaxPlayers = maxPlayers;
             GameVersion = gameVersion;
-            IsRegistered = isRegistered;
+            PasswordIndex = passwordIndex;
 
             DetectDataProblems();
         }
@@ -60,7 +60,7 @@ namespace Larnix.Socket.Commands
             CurrentPlayers = System.BitConverter.ToUInt16(bytes[776..778]);
             MaxPlayers = System.BitConverter.ToUInt16(bytes[778..780]);
             GameVersion = System.BitConverter.ToUInt32(bytes[780..784]);
-            IsRegistered = bytes[784];
+            PasswordIndex = bytes[784];
 
             DetectDataProblems();
         }
@@ -74,7 +74,7 @@ namespace Larnix.Socket.Commands
             byteList.Add(System.BitConverter.GetBytes(CurrentPlayers));
             byteList.Add(System.BitConverter.GetBytes(MaxPlayers));
             byteList.Add(System.BitConverter.GetBytes(GameVersion));
-            byteList.Add(new byte[]{ IsRegistered });
+            byteList.Add(new byte[]{ PasswordIndex });
 
             byte[] bytes = new byte[0];
             foreach (byte[] byts in byteList)
@@ -87,8 +87,7 @@ namespace Larnix.Socket.Commands
             bool ok = (
                 PublicKeyModulus.Length == 256 &&
                 PublicKeyExponent.Length == 8 &&
-                Common.IsGoodMessage(Motd) &&
-                (IsRegistered == 0 || IsRegistered == 1)
+                Common.IsGoodMessage(Motd)
                 );
             HasProblems = HasProblems || !ok;
         }

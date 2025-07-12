@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace Larnix.UI
+namespace Larnix.Resolution
 {
     public class AspectRatio : MonoBehaviour
     {

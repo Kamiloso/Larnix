@@ -30,6 +30,9 @@ namespace Larnix.Socket
         public const float ACK_CYCLE_TIME = 0.1f;
         private float currentAckCycleTime = 0.0f;
 
+        public const float SAFE_EMPTY_PACKET_CYCLE = 0.5f;
+        private float currentSafeCycleTime = 0.0f;
+
         private List<SafePacket> sendingPackets = new List<SafePacket>();
         private List<SafePacket> receivedPackets = new List<SafePacket>();
         private Queue<Packet> downloadablePackets = new Queue<Packet>();
@@ -88,16 +91,20 @@ namespace Larnix.Socket
                     if (safePacket.SeqNum == GetNum + 1)
                     {
                         foundNextPacket = true;
-                        if(ReadyPacketTryEnqueue(safePacket))
+                        try
                         {
-                            uint cseq = safePacket.Payload.ControlSequence;
-                            if (cseq != 0 && cseq != ++LastReceiveSequence) // order is wrong despite sequence control
+                            ReadyPacketTryEnqueue(safePacket, true);
+                        }
+                        catch(System.Exception e)
+                        {
+                            if (e.Message == "WRONG_PACKET_ORDER")
                             {
                                 IsDead = true;
                                 IsError = true;
-                                UnityEngine.Debug.LogWarning("Packet order is wrong! Connection.IsError flag has been set.");
+                                UnityEngine.Debug.Log("Wrong packet order detected!");
                                 return;
                             }
+                            else throw;
                         }
                         break;
                     }
@@ -147,6 +154,15 @@ namespace Larnix.Socket
                     ackSent = true;
                 }
                 currentAckCycleTime -= ACK_CYCLE_TIME;
+            }
+
+            // Safe empty packet send
+            currentSafeCycleTime += deltaTime;
+            if(currentSafeCycleTime > SAFE_EMPTY_PACKET_CYCLE)
+            {
+                // Send safe packets to ensure that the other side is constantly alive
+                Send(new Packet((byte)Commands.Name.None, 0, null), true);
+                currentSafeCycleTime = 0f;
             }
         }
 
@@ -207,7 +223,21 @@ namespace Larnix.Socket
             }
             else // fast mode
             {
-                ReadyPacketTryEnqueue(safePacket);
+                try
+                {
+                    ReadyPacketTryEnqueue(safePacket, false);
+                }
+                catch (System.Exception e)
+                {
+                    if (e.Message == "WRONG_PACKET_ORDER")
+                    {
+                        IsDead = true;
+                        IsError = true;
+                        UnityEngine.Debug.Log("Wrong packet order detected!");
+                        return;
+                    }
+                    else throw;
+                }
             }
 
             // best received acknowledgement get
@@ -263,7 +293,7 @@ namespace Larnix.Socket
             Udp.SendAsync(payload, payload.Length, EndPoint);
         }
 
-        private bool ReadyPacketTryEnqueue(SafePacket safePacket)
+        private bool ReadyPacketTryEnqueue(SafePacket safePacket, bool is_safe)
         {
             // No payload, no problem
             if (safePacket.Payload == null)
@@ -277,6 +307,10 @@ namespace Larnix.Socket
             // Stop packets generate on server side, they cannot be sent through network
             if (safePacket.Payload.ID == (byte)Commands.Name.Stop)
                 return false;
+
+            // Control order and throw exception if something wrong
+            if(safePacket.Payload.ControlSequence != 0 && (!is_safe || safePacket.Payload.ControlSequence != ++LastReceiveSequence))
+                throw new System.Exception("WRONG_PACKET_ORDER");
 
             // Enqueue if everything ok
             downloadablePackets.Enqueue(safePacket.Payload);

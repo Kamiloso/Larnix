@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
 
-namespace Larnix.Socket.Data
+namespace Larnix.Files
 {
     public static class FileManager
     {

@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Larnix.UI
+namespace Larnix.Resolution
 {
     public class ScreenModes : MonoBehaviour
     {

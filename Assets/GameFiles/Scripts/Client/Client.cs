@@ -16,24 +16,31 @@ namespace Larnix.Client
         private Queue<Socket.PacketAndOwner> delayedPackets = new Queue<Socket.PacketAndOwner>();
         private RSA MyRSA = null;
 
+        public bool IsMultiplayer { get; private set; }
+        public ulong MyUID { get; private set; }
+
         // Client initialization
         void Awake()
         {
-            var load_type = WorldLoad.LoadType;
-
-            if (load_type == WorldLoad.LoadTypes.Local)
+            if(WorldLoad.LoadType == WorldLoad.LoadTypes.None)
             {
-                StartCoroutine(CreateServer());
+                BackToMenu();
+                return;
             }
-            else if (load_type == WorldLoad.LoadTypes.Remote)
+
+            EarlyUpdateInjector.InjectEarlyUpdate(this.EarlyUpdate);
+
+            References.Client = this;
+            IsMultiplayer = WorldLoad.LoadType == WorldLoad.LoadTypes.Remote;
+
+            if (IsMultiplayer)
             {
                 CreateClient();
                 UnityEngine.Debug.Log("Remote world on address " + EndPoint.ToString());
             }
             else
             {
-                SceneManager.LoadScene("Menu");
-                return;
+                StartCoroutine(CreateServer());
             }
         }
 
@@ -75,7 +82,7 @@ namespace Larnix.Client
             return true;
         }
 
-        private void Send(Packet packet, bool safemode = true)
+        public void Send(Packet packet, bool safemode = true)
         {
             if (LarnixClient != null && delayedPackets.Count == 0)
                 LarnixClient.Send(packet, safemode);
@@ -83,7 +90,7 @@ namespace Larnix.Client
                 delayedPackets.Enqueue(new PacketAndOwner(safemode ? "SAFE" : "FAST", packet));
         }
 
-        private void Update()
+        private void EarlyUpdate() // Executes BEFORE default Update() time
         {
             if(LarnixClient != null)
             {
@@ -96,14 +103,29 @@ namespace Larnix.Client
                 Queue<Packet> packets = LarnixClient.ClientTickAndReceive(Time.deltaTime);
                 foreach (Packet packet in packets)
                 {
-                    //
+                    if((Name)packet.ID == Name.PlayerInitialize)
+                    {
+                        PlayerInitialize msg = new PlayerInitialize(packet);
+                        if (msg.HasProblems) continue;
+
+                        References.MainPlayer.LoadPlayerData(msg);
+                        MyUID = msg.MyUid;
+                    }
+
+                    if((Name)packet.ID == Name.EntityBroadcast)
+                    {
+                        EntityBroadcast msg = new EntityBroadcast(packet);
+                        if (msg.HasProblems) continue;
+
+                        References.EntityProjections.InterpretEntityBroadcast(msg);
+                    }
                 }
 
                 if (LarnixClient.IsDead())
                     BackToMenu();
             }
 
-            if(Input.GetKeyDown(KeyCode.Z))
+            /*if(Input.GetKeyDown(KeyCode.Z))
             {
                 DebugMessage debugMessage = new DebugMessage("Test message :)");
                 if (!debugMessage.HasProblems)
@@ -111,7 +133,7 @@ namespace Larnix.Client
                     UnityEngine.Debug.Log("SENDING " + debugMessage.Data);
                     Send(debugMessage.GetPacket());
                 }
-            }
+            }*/
 
             if(Input.GetKeyDown(KeyCode.Escape))
             {
@@ -126,15 +148,16 @@ namespace Larnix.Client
 
             SceneManager.LoadScene("Menu");
         }
+
         private void OnDestroy()
         {
-            if (LarnixClient != null)
-                LarnixClient.Dispose();
-
-            if(MyRSA != null)
-                MyRSA.Dispose();
+            LarnixClient?.Dispose();
+            MyRSA?.Dispose();
 
             WorldLoad.RsaPublicKey = null;
+            WorldLoad.ScreenLoad = IsMultiplayer ? "Multiplayer" : "Singleplayer";
+
+            EarlyUpdateInjector.ClearEarlyUpdate();
         }
     }
 }

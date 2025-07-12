@@ -16,14 +16,9 @@ namespace Larnix.Menu
     {
         public void Awake()
         {
-            bool isServerBuild =
-                SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null &&
-                Application.isBatchMode;
+            Application.runInBackground = true;
 
-            if (isServerBuild)
-                StartServer();
-            else
-                UnityEngine.Debug.Log("Menu loaded");
+            UnityEngine.Debug.Log("Menu loaded");
         }
 
         // Start client / start server locally
@@ -32,24 +27,10 @@ namespace Larnix.Menu
             WorldLoad.StartLocal(worldName);
         }
 
-        // Start client / connect to server with given IP
-        public void StartMultiplayer(string ip_address)
+        // Quit
+        public void Quit()
         {
-            A_ServerInfo answer = Resolver.downloadServerInfo(ip_address, "Player");
-            if (answer != null)
-            {
-                byte[] modulus = answer.PublicKeyModulus;
-                byte[] exponent = answer.PublicKeyExponent;
-
-                WorldLoad.RsaPublicKey = modulus.Concat(exponent).ToArray();
-                WorldLoad.StartRemote(ip_address);
-            }
-        }
-
-        // Start server alone
-        public void StartServer()
-        {
-            WorldLoad.StartServer();
+            Application.Quit();
         }
     }
 }

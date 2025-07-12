@@ -8,21 +8,28 @@ using Larnix.Socket.Commands;
 using Larnix.Server.Data;
 using System.Security.Cryptography;
 using System.Linq;
+using Larnix.Files;
+using Unity.VisualScripting;
 
 namespace Larnix.Server
 {
     public class Server : MonoBehaviour
     {
-        private const float DATA_SAVING_PERIOD = 15f; // seconds
-
         private Locker locker = null;
-        private Database Database = null;
         private RSA CompleteRSA = null;
         private Socket.Server LarnixServer = null;
 
         public string WorldDir { get; private set; } = "";
         public bool IsLocal { get; private set; } = false;
-        public Config ServerConfig = null;
+        public Config ServerConfig { get; private set; } = null;
+        public Database Database { get; private set; } = null;
+
+        private Dictionary<string, EntityController> PlayerControllers = new Dictionary<string, EntityController>();
+
+        private float saveCycleTimer = 0f;
+        private bool updateStartDone = false;
+        private float broadcastCycleTimer = 0f;
+        private uint entityBroadcastCounter = 0;
 
         // Server initialization
         private void Awake()
@@ -32,19 +39,22 @@ namespace Larnix.Server
             WorldDir = WorldLoad.WorldDirectory;
             IsLocal = WorldLoad.LoadType == WorldLoad.LoadTypes.Local;
 
+            EarlyUpdateInjector.InjectEarlyUpdate(this.EarlyUpdate);
+            References.Server = this;
+
             // LOCKER --> 1
-            locker = Locker.TryLock(WorldLoad.WorldDirectory, "world_locker.lock");
+            locker = Locker.TryLock(WorldDir, "world_locker.lock");
             if (locker == null)
                 throw new Exception("Trying to access world that is already open.");
 
             // RSA --> 2
-            CompleteRSA = KeyObtainer.ObtainKeyRSA(WorldLoad.WorldDirectory, false);
+            CompleteRSA = KeyObtainer.ObtainKeyRSA(WorldDir, false);
 
             // CONFIG --> 3
-            ServerConfig = Config.Obtain(WorldLoad.WorldDirectory, IsLocal);
+            ServerConfig = Config.Obtain(WorldDir, IsLocal);
 
             // DATABASE --> 4
-            Database = new Database(WorldLoad.WorldDirectory, "database.sqlite");
+            Database = new Database(WorldDir, "database.sqlite");
 
             // SERVER --> 5
             LarnixServer = new Socket.Server(
@@ -62,14 +72,13 @@ namespace Larnix.Server
                 WorldLoad.RsaPublicKey = KeyToPublicBytes(CompleteRSA);
         }
 
-        private bool updateStartDone = false;
-        private float saveCycleTimer = 0f;
-
-        private void Update()
+        private void EarlyUpdate() // Executes BEFORE default Update() time
         {
             if(!updateStartDone)
             {
                 UnityEngine.Debug.Log("Done! Server started on port " + LarnixServer.Port);
+                if (!IsLocal && CompleteRSA != null)
+                    UnityEngine.Debug.Log("AuthCodeRSA (copy to connect): " + KeyObtainer.ProduceAuthCodeRSA(KeyToPublicBytes(CompleteRSA)));
                 updateStartDone = true;
             }
 
@@ -84,6 +93,20 @@ namespace Larnix.Server
                     AllowConnection msg = new AllowConnection(packet);
                     if (msg.HasProblems) continue;
 
+                    // Initialize player controller
+                    PlayerControllers[owner] = EntityController.CreatePlayerController(owner);
+
+                    // Construct and send answer
+                    PlayerInitialize answer = new PlayerInitialize(
+                        PlayerControllers[owner].EntityData.Position,
+                        PlayerControllers[owner].uID
+                    );
+                    if(!answer.HasProblems)
+                    {
+                        Send(owner, answer.GetPacket());
+                    }
+
+                    // Info to console
                     UnityEngine.Debug.Log("Player [" + owner + "] joined.");
                 }
 
@@ -92,6 +115,11 @@ namespace Larnix.Server
                     Stop msg = new Stop(packet);
                     if(msg.HasProblems) continue;
 
+                    // Remove player controller
+                    PlayerControllers[owner].UnloadEntity();
+                    PlayerControllers.Remove(owner);
+
+                    // Info to console
                     UnityEngine.Debug.Log("Player [" + owner + "] disconnected.");
                 }
 
@@ -102,23 +130,46 @@ namespace Larnix.Server
 
                     UnityEngine.Debug.Log("DebugMessage [" + owner + "]: " + msg.Data);
                 }
+
+                if ((Name)packet.ID == Name.PlayerUpdate)
+                {
+                    PlayerUpdate msg = new PlayerUpdate(packet);
+                    if (msg.HasProblems) continue;
+
+                    // Load data to player controller
+                    EntityController playerController = PlayerControllers[owner];
+                    playerController.ActivateIfNotActive();
+                    playerController.EntityData = playerController.EntityData.ShallowCopy();
+                    playerController.EntityData.Position = msg.Position;
+                    playerController.EntityData.Rotation = msg.Rotation;
+                }
+            }
+        }
+
+        private void LateUpdate()
+        {
+            broadcastCycleTimer += Time.deltaTime;
+            if(broadcastCycleTimer > ServerConfig.EntityBroadcastPeriod)
+            {
+                broadcastCycleTimer %= ServerConfig.EntityBroadcastPeriod;
+                References.EntityDataManager.SendEntityBroadcast(++entityBroadcastCounter);
             }
 
             saveCycleTimer += Time.deltaTime;
-            if(saveCycleTimer > DATA_SAVING_PERIOD)
+            if (saveCycleTimer > ServerConfig.DataSavingPeriod)
             {
-                saveCycleTimer = 0;
+                saveCycleTimer %= ServerConfig.DataSavingPeriod;
                 SaveAllNow();
             }
         }
 
-        public void Send(string nickname, Packet packet)
+        public void Send(string nickname, Packet packet, bool safemode = true)
         {
-            LarnixServer.Send(nickname, packet);
+            LarnixServer.Send(nickname, packet, safemode);
         }
-        public void Broadcast(Packet packet)
+        public void Broadcast(Packet packet, bool safemode = true)
         {
-            LarnixServer.Broadcast(packet);
+            LarnixServer.Broadcast(packet, safemode);
         }
         public void Kick(string nickname)
         {
@@ -150,7 +201,7 @@ namespace Larnix.Server
                     LarnixServer.CountPlayers(),
                     LarnixServer.MaxClients,
                     Common.GAME_VERSION_UINT,
-                    (byte)(Database.HasUser(checkNickname) ? 1 : 0)
+                    Database.GetPasswordIndex(checkNickname)
                     );
                 if (answer.HasProblems)
                     throw new Exception("Error making server info answer.");
@@ -160,8 +211,21 @@ namespace Larnix.Server
 
             if ((Name)packet.ID == Name.P_PasswordChange)
             {
-                UnityEngine.Debug.LogWarning("Password system not implemented yet.");
-                return null;
+                P_PasswordChange prompt = new P_PasswordChange(packet);
+                if (prompt.HasProblems)
+                    return null;
+
+                string checkNickname = prompt.Nickname;
+                string oldPassword = prompt.OldPassword;
+                string newPassword = prompt.NewPassword;
+
+                A_PasswordChange answer = new A_PasswordChange(
+                    Database.ChangePassword(checkNickname, oldPassword, newPassword)
+                    );
+                if (answer.HasProblems)
+                    throw new Exception("Error making password change answer.");
+
+                return answer.GetPacket();
             }
 
             return null;
@@ -175,7 +239,7 @@ namespace Larnix.Server
             return Database.AllowUser(username, password);
         }
 
-        private byte[] KeyToPublicBytes(RSA rsa)
+        private static byte[] KeyToPublicBytes(RSA rsa)
         {
             if (rsa == null)
                 return null;
@@ -198,7 +262,19 @@ namespace Larnix.Server
 
         public void SaveAllNow()
         {
-            Config.Save(WorldLoad.WorldDirectory, ServerConfig);
+            Database.BeginTransaction();
+            try
+            {
+                References.EntityDataManager.FlushIntoDatabase();
+                Database.CommitTransaction();
+            }
+            catch
+            {
+                Database.RollbackTransaction();
+                throw;
+            }
+
+            Config.Save(WorldDir, ServerConfig);
         }
 
         private void OnDestroy()
@@ -220,6 +296,8 @@ namespace Larnix.Server
 
             // 1 --> LOCKER
             locker?.Dispose();
+
+            EarlyUpdateInjector.ClearEarlyUpdate();
 
             UnityEngine.Debug.Log("Server close");
         }

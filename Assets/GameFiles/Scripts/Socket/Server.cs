@@ -22,13 +22,9 @@ namespace Larnix.Socket
         private string[] nicknames = null;
         private Connection[] connections = null;
 
-        private const float RSA_RESET_TIME = 1f; // seconds
-        private float timeToResetRsa = RSA_RESET_TIME;
-        private Dictionary<IPAddress, uint> recentRsaCount = new Dictionary<IPAddress, uint>();
-
-        private const float NCN_RESET_TIME = 1f; // seconds
-        private float timeToResetNcn = NCN_RESET_TIME;
-        private Dictionary<IPAddress, uint> recentNcnCount = new Dictionary<IPAddress, uint>();
+        private const float CON_RESET_TIME = 1f; // seconds
+        private float timeToResetCon = CON_RESET_TIME;
+        private Dictionary<IPAddress, uint> recentConCount = new Dictionary<IPAddress, uint>();
 
         private readonly Func<string, string, bool> TryLogin;
         private readonly Func<Packet, Packet> GetNcnAnswer;
@@ -108,19 +104,7 @@ namespace Larnix.Socket
             {
                 return false;
             }
-#if WINDOWS
-            udpClientV4.Client.IOControl(
-                (IOControlCode)(-1744830452),  // SIO_UDP_CONNRESET
-                new byte[] { 0, 0, 0, 0 },     // false
-                null
-            );
 
-            udpClientV6.Client.IOControl(
-                (IOControlCode)(-1744830452),  // SIO_UDP_CONNRESET
-                new byte[] { 0, 0, 0, 0 },     // false
-                null
-            );
-#endif
             udpClientV4.Client.Blocking = false;
             udpClientV6.Client.Blocking = false;
 
@@ -165,7 +149,7 @@ namespace Larnix.Socket
                 }
                 catch (SocketException ex)
                 {
-                    if (ex.SocketErrorCode == SocketError.WouldBlock)
+                    if (ex.SocketErrorCode == SocketError.WouldBlock || ex.SocketErrorCode == SocketError.ConnectionReset)
                         continue;
                     else
                         throw;
@@ -180,16 +164,23 @@ namespace Larnix.Socket
                 if (header.TryDeserialize(bytes, true))
                 {
                     IPAddress ip = remoteEP.Address;
-                    uint rsaCount = recentRsaCount.ContainsKey(ip) ? recentRsaCount[ip] : 0;
-                    uint ncnCount = recentNcnCount.ContainsKey(ip) ? recentNcnCount[ip] : 0;
+                    uint conCount = recentConCount.ContainsKey(ip) ? recentConCount[ip] : 0;
+
+                    // Limit packets with specific flags
+                    if (header.HasFlag(SafePacket.PacketFlag.SYN) ||
+                        header.HasFlag(SafePacket.PacketFlag.RSA) ||
+                        header.HasFlag(SafePacket.PacketFlag.NCN))
+                    {
+                        if (conCount < 3)
+                            recentConCount[ip] = ++conCount;
+                        else
+                            continue;
+                    }
 
                     if (header.HasFlag(SafePacket.PacketFlag.RSA)) // encrypted with RSA
                     {
-                        // This operation is expensive, so there are some limits for clients.
-                        if (rsaCount < 3 && KeyRSA != null)
+                        if (KeyRSA != null)
                         {
-                            recentRsaCount[ip] = ++rsaCount;
-
                             // Deserialize with decryption and serialize without encryption
                             SafePacket middlePacket = new SafePacket();
                             middlePacket.Encrypt = new Encryption.Settings(Encryption.Settings.Type.RSA, KeyRSA);
@@ -203,34 +194,28 @@ namespace Larnix.Socket
 
                     if(header.HasFlag(SafePacket.PacketFlag.NCN)) // fast question, fast answer
                     {
-                        // There are some limits for players to not flood the server
-                        if(ncnCount < 3)
-                        {
-                            recentNcnCount[ip] = ++ncnCount;
+                        // Check packet type and answer properly
+                        SafePacket ncnPacket = new SafePacket();
+                        if (!ncnPacket.TryDeserialize(bytes))
+                            continue;
 
-                            // Check packet type and answer properly
-                            SafePacket ncnPacket = new SafePacket();
-                            if (!ncnPacket.TryDeserialize(bytes))
-                                continue;
+                        Packet answer = GetNcnAnswer(ncnPacket.Payload);
+                        if (answer == null)
+                            continue;
 
-                            Packet answer = GetNcnAnswer(ncnPacket.Payload);
-                            if (answer == null)
-                                continue;
+                        SafePacket safeAnswer = new SafePacket(
+                            ncnPacket.SeqNum,
+                            0,
+                            (byte)SafePacket.PacketFlag.NCN,
+                            answer
+                            );
 
-                            SafePacket safeAnswer = new SafePacket(
-                                ncnPacket.SeqNum,
-                                0,
-                                (byte)SafePacket.PacketFlag.NCN,
-                                answer
-                                );
+                        byte[] sendBytes = safeAnswer.Serialize();
 
-                            byte[] sendBytes = safeAnswer.Serialize();
-
-                            if(IsIPv4Client)
-                                udpClientV4.SendAsync(sendBytes, sendBytes.Length, remoteEP);
-                            else
-                                udpClientV6.SendAsync(sendBytes, sendBytes.Length, remoteEP);
-                        }
+                        if (IsIPv4Client)
+                            udpClientV4.SendAsync(sendBytes, sendBytes.Length, remoteEP);
+                        else
+                            udpClientV6.SendAsync(sendBytes, sendBytes.Length, remoteEP);
                     }
                     else
                     {
@@ -339,19 +324,11 @@ namespace Larnix.Socket
             }
 
             // Reset RSA counter
-            timeToResetRsa -= deltaTime;
-            if(timeToResetRsa < 0)
+            timeToResetCon -= deltaTime;
+            if(timeToResetCon < 0)
             {
-                timeToResetRsa = RSA_RESET_TIME;
-                recentRsaCount.Clear();
-            }
-
-            // Reset NCN counter
-            timeToResetNcn -= deltaTime;
-            if (timeToResetNcn < 0)
-            {
-                timeToResetNcn = NCN_RESET_TIME;
-                recentNcnCount.Clear();
+                timeToResetCon = CON_RESET_TIME;
+                recentConCount.Clear();
             }
 
             // Return packets

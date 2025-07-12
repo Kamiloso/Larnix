@@ -1,0 +1,6 @@
+{
+    "MaxPlayers": 10,
+    "Port": 27682,
+    "AllowRemoteClients": true,
+    "Motd": "Welcome to Larnix server!"
+}

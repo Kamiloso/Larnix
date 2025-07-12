@@ -21,6 +21,9 @@ namespace Larnix.Socket.Commands
         A_PasswordChange,
 
         // Game commands
+        PlayerInitialize,
+        PlayerUpdate,
+        EntityBroadcast,
     }
 
     public abstract class BaseCommand
