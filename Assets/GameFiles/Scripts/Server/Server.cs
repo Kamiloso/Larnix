@@ -24,8 +24,6 @@ namespace Larnix.Server
         public Config ServerConfig { get; private set; } = null;
         public Database Database { get; private set; } = null;
 
-        private Dictionary<string, EntityController> PlayerControllers = new Dictionary<string, EntityController>();
-
         private float saveCycleTimer = 0f;
         private bool updateStartDone = false;
         private float broadcastCycleTimer = 0f;
@@ -82,6 +80,8 @@ namespace Larnix.Server
                 updateStartDone = true;
             }
 
+            References.EntityManager.FromEarlyUpdate();
+
             Queue<PacketAndOwner> messages = LarnixServer.ServerTickAndReceive(Time.deltaTime);
             foreach (PacketAndOwner message in messages)
             {
@@ -94,12 +94,13 @@ namespace Larnix.Server
                     if (msg.HasProblems) continue;
 
                     // Initialize player controller
-                    PlayerControllers[owner] = EntityController.CreatePlayerController(owner);
+                    References.EntityManager.CreatePlayerController(owner);
 
                     // Construct and send answer
+                    EntityController playerController = References.EntityManager.GetPlayerController(owner);
                     PlayerInitialize answer = new PlayerInitialize(
-                        PlayerControllers[owner].EntityData.Position,
-                        PlayerControllers[owner].uID
+                        playerController.EntityData.Position,
+                        playerController.uID
                     );
                     if(!answer.HasProblems)
                     {
@@ -116,8 +117,8 @@ namespace Larnix.Server
                     if(msg.HasProblems) continue;
 
                     // Remove player controller
-                    PlayerControllers[owner].UnloadEntity();
-                    PlayerControllers.Remove(owner);
+                    if (References.EntityManager.GetPlayerController(owner) != null)
+                        References.EntityManager.UnloadPlayerController(owner);
 
                     // Info to console
                     UnityEngine.Debug.Log("Player [" + owner + "] disconnected.");
@@ -137,11 +138,15 @@ namespace Larnix.Server
                     if (msg.HasProblems) continue;
 
                     // Load data to player controller
-                    EntityController playerController = PlayerControllers[owner];
-                    playerController.ActivateIfNotActive();
-                    playerController.EntityData = playerController.EntityData.ShallowCopy();
-                    playerController.EntityData.Position = msg.Position;
-                    playerController.EntityData.Rotation = msg.Rotation;
+                    EntityController playerController = References.EntityManager.GetPlayerController(owner);
+                    if (playerController != null)
+                    {
+                        playerController.ActivateIfNotActive();
+                        Entities.EntityData entityData = playerController.EntityData.ShallowCopy();
+                        entityData.Position = msg.Position;
+                        entityData.Rotation = msg.Rotation;
+                        playerController.UpdateEntityData(entityData);
+                    }
                 }
             }
         }

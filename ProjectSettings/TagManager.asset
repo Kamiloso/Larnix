@@ -38,14 +38,14 @@ TagManager:
   - 
   - 
   m_SortingLayers:
-  - name: Default
-    uniqueID: 0
-    locked: 0
   - name: Background
     uniqueID: 1123703933
     locked: 0
   - name: BackBlocks
     uniqueID: 3909468747
+    locked: 0
+  - name: Default
+    uniqueID: 0
     locked: 0
   - name: Effects
     uniqueID: 2192046129
@@ -56,9 +56,12 @@ TagManager:
   - name: Players
     uniqueID: 608161255
     locked: 0
+  - name: MainPlayer
+    uniqueID: 3230305099
+    locked: 0
   - name: FrontBlocks
     uniqueID: 4132993079
     locked: 0
-  - name: OverEverything
+  - name: OnTop
     uniqueID: 712124137
     locked: 0

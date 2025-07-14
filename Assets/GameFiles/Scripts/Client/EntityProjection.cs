@@ -8,6 +8,7 @@ namespace Larnix.Client
     public class EntityProjection : MonoBehaviour
     {
         [SerializeField] Transform Head;
+        [SerializeField] Transform NameField;
 
         public string NBT { get; private set; } = null;
 

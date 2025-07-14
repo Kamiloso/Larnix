@@ -11,8 +11,8 @@ namespace Larnix.Server.Data
     {
         /*
         Default remote server values are default class parameters.
-        Local server values are constructed by modifying default values with a special method.
-        Remote server can store its values in JSON file and load them on start.
+        Local server values are constructed by modifying default values in constructor.
+        Server (local / remote) can store its values into JSON file and load them on start.
         */
 
         public ushort MaxPlayers = 10;

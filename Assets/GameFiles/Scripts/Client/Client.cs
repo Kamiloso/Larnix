@@ -6,6 +6,7 @@ using System.Net;
 using Larnix.Socket;
 using Larnix.Socket.Commands;
 using System.Security.Cryptography;
+using Larnix.Entities;
 
 namespace Larnix.Client
 {
@@ -143,14 +144,12 @@ namespace Larnix.Client
 
         public void BackToMenu()
         {
-            if (LarnixClient != null)
-                LarnixClient.KillConnection();
-
             SceneManager.LoadScene("Menu");
         }
 
         private void OnDestroy()
         {
+            LarnixClient?.KillConnection();
             LarnixClient?.Dispose();
             MyRSA?.Dispose();
 

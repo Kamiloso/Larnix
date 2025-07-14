@@ -19,7 +19,9 @@ namespace Larnix.Client
 
         public void InterpretEntityBroadcast(EntityBroadcast msg)
         {
-            if (msg.PacketIndex < LastKnown) return;
+            if (References.Client.MyUID == 0) return; // drop, too early to display
+
+            if (msg.PacketIndex <= LastKnown) return; // drop, older data
             LastKnown = msg.PacketIndex;
 
             Dictionary<ulong, EntityData> dict = msg.EntityTransforms;
@@ -28,7 +30,7 @@ namespace Larnix.Client
                 dict.Remove(References.Client.MyUID);
 
             // Remove unloaded projections
-            foreach(var key in Projections.Keys.ToList())
+            foreach (var key in Projections.Keys.ToList())
             {
                 if(!dict.ContainsKey(key))
                 {
@@ -46,25 +48,17 @@ namespace Larnix.Client
                 }
                 else // create new projection
                 {
-                    Projections.Add(kvp.Key, CreateProjection(kvp.Value));
+                    Projections.Add(kvp.Key, CreateProjection(kvp.Key, kvp.Value));
                 }
             }
         }
 
-        [SerializeField] GameObject PlayerPrefab;
-        [SerializeField] GameObject UnknownPrefab;
-
-        private EntityProjection CreateProjection(EntityData entityData)
+        private EntityProjection CreateProjection(ulong uid, EntityData entityData)
         {
-            GameObject prefab = null;
-
-            switch(entityData.ID)
-            {
-                case EntityData.EntityID.Player: prefab = PlayerPrefab; break;
-                default: prefab = UnknownPrefab; break;
-            }
-
-            EntityProjection projection = Instantiate(prefab).GetComponent<EntityProjection>();
+            GameObject gobj = EntityPrefabs.CreateObject(entityData.ID, "Client");
+            gobj.transform.SetParent(transform, false);
+            gobj.transform.name = entityData.ID.ToString() + " [" + uid + "]";
+            EntityProjection projection = gobj.GetComponent<EntityProjection>();
             projection.UpdateTransform(entityData);
             return projection;
         }

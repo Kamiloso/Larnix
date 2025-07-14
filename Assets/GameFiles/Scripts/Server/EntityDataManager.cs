@@ -14,7 +14,7 @@ namespace Larnix.Server
         private readonly Dictionary<ulong, EntityData> EntityData = new Dictionary<ulong, EntityData>();
 
         private readonly Dictionary<ulong, EntityData> UnloadedEntityData = new Dictionary<ulong, EntityData>();
-        private readonly Dictionary<ulong, EntityData> RemovedEntityData = new Dictionary<ulong, EntityData>();
+        private readonly Dictionary<ulong, EntityData> DeletedEntityData = new Dictionary<ulong, EntityData>();
 
         private void Awake()
         {
@@ -23,7 +23,7 @@ namespace Larnix.Server
 
         public EntityData TryFindEntityData(ulong uid)
         {
-            if (RemovedEntityData.ContainsKey(uid))
+            if (DeletedEntityData.ContainsKey(uid))
                 return null;
 
             if (UnloadedEntityData.ContainsKey(uid))
@@ -40,6 +40,9 @@ namespace Larnix.Server
             if (UnloadedEntityData.ContainsKey(uid))
                 UnloadedEntityData.Remove(uid);
 
+            if (DeletedEntityData.ContainsKey(uid))
+                DeletedEntityData.Remove(uid);
+
             EntityData[uid] = entityData;
         }
 
@@ -52,19 +55,19 @@ namespace Larnix.Server
             }
         }
 
-        public void RemoveEntityData(ulong uid)
+        public void DeleteEntityData(ulong uid)
         {
             if (EntityData.ContainsKey(uid))
             {
-                RemovedEntityData.Add(uid, EntityData[uid]);
+                DeletedEntityData.Add(uid, EntityData[uid]);
                 EntityData.Remove(uid);
             }
         }
 
         public void FlushIntoDatabase()
         {
-            References.Server.Database.DeleteEntities(GetKeyList(RemovedEntityData));
-            RemovedEntityData.Clear();
+            References.Server.Database.DeleteEntities(GetKeyList(DeletedEntityData));
+            DeletedEntityData.Clear();
 
             References.Server.Database.FlushEntities(MergeDictionaries(EntityData, UnloadedEntityData));
             UnloadedEntityData.Clear();

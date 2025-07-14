@@ -8,5 +8,6 @@ namespace Larnix.Server
     {
         public static Server Server;
         public static EntityDataManager EntityDataManager;
+        public static EntityManager EntityManager;
     }
 }

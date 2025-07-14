@@ -40,10 +40,9 @@ namespace Larnix
 
         private static void UniversalExceptionHandle(string log)
         {
-            FileManager.DontSave = true;
 #if !UNITY_EDITOR
         SaveCrashLog(log);
-        Application.Quit();
+        System.Diagnostics.Process.GetCurrentProcess().Kill(); // brutal kill
 #endif
         }
 

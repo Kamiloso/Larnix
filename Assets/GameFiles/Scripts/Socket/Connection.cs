@@ -72,7 +72,7 @@ namespace Larnix.Socket
 
         public void Tick(float deltaTime)
         {
-            if (IsError) return;
+            if (IsDead || IsError) return;
 
             // If too many received packets, kill session
             if (receivedPackets.Count > MAX_STAYING_PACKETS)
@@ -168,7 +168,7 @@ namespace Larnix.Socket
 
         public void Send(Packet packet, bool safemode = true)
         {
-            if (IsError) return;
+            if (IsDead || IsError) return;
 
             if (safemode)
             {
@@ -193,7 +193,7 @@ namespace Larnix.Socket
 
         public Queue<Packet> Receive()
         {
-            if (IsError) return new Queue<Packet>();
+            if (IsDead || IsError) return new Queue<Packet>();
 
             Queue<Packet> readyToRead = downloadablePackets;
             downloadablePackets = new Queue<Packet>();
@@ -202,7 +202,7 @@ namespace Larnix.Socket
 
         public void PushFromWeb(byte[] bytes, bool hasSYN = false)
         {
-            if (IsError) return;
+            if (IsDead || IsError) return;
 
             SafePacket safePacket = new SafePacket();
             if (!hasSYN)
@@ -251,7 +251,7 @@ namespace Larnix.Socket
 
         public void KillConnection()
         {
-            if(IsError) return;
+            if(IsDead || IsError) return;
 
             // Send 3 FIN flags (to ensure they arrive).
             // If they don't, protocol will automatically disconnect after a few seconds.

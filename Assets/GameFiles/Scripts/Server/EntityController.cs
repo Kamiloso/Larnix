@@ -13,10 +13,10 @@ namespace Larnix.Server
             ulong uid = (ulong)References.Server.Database.GetUserID(nickname);
             EntityData entityData = References.EntityDataManager.TryFindEntityData(uid);
 
-            GameObject gobj = new GameObject();
+            GameObject gobj = EntityPrefabs.CreateObject(entityData.ID, "Server");
             gobj.name = "Player (" + nickname + ") [" + uid + "]";
             gobj.transform.SetParent(References.EntityDataManager.transform, false);
-            EntityController controller = gobj.AddComponent<EntityController>();
+            EntityController controller = gobj.GetComponent<EntityController>();
 
             if (entityData == null)
                 entityData = new EntityData // Create new player
@@ -28,49 +28,55 @@ namespace Larnix.Server
             return controller;
         }
 
-        public static EntityController SummonEntity(EntityData entityData)
+        public static EntityController CreateNewEntityController(EntityData entityData)
         {
             ulong uid = Common.GetRandomUID(); // It is supposed to be unique
-            
-            GameObject gobj = new GameObject();
+            return CreateExistingEntityController(uid, entityData);
+        }
+
+        public static EntityController CreateExistingEntityController(ulong uid, EntityData entityData)
+        {
+            GameObject gobj = EntityPrefabs.CreateObject(entityData.ID, "Server");
             gobj.name = entityData.ID.ToString() + " [" + uid + "]";
             gobj.transform.SetParent(References.EntityDataManager.transform, false);
-            EntityController controller = gobj.AddComponent<EntityController>();
+            EntityController controller = gobj.GetComponent<EntityController>();
 
             controller.Initialize(uid, entityData);
             return controller;
         }
 
         public ulong uID { get; private set; }
-        public EntityData EntityData;
+        public EntityData EntityData { get; private set; }
 
         private void Initialize(ulong uid, EntityData entityData)
         {
             uID = uid;
-            EntityData = entityData;
+            UpdateEntityData(entityData);
             gameObject.SetActive(false);
         }
 
         public void ActivateIfNotActive()
         {
-            if(!gameObject.activeSelf)
+            if (!gameObject.activeSelf)
                 gameObject.SetActive(true);
         }
 
-        private void Update()
+        public void UpdateEntityData(EntityData entityData) // Also updates physical position!
         {
-            References.EntityDataManager.SetEntityData(uID, EntityData);
+            EntityData = entityData;
+            transform.position = entityData.Position;
+            References.EntityDataManager.SetEntityData(uID, entityData);
         }
 
-        public void UnloadEntity()
+        public void DeleteEntityInstant() // Execute only from after FixedUpdate
         {
-            References.EntityDataManager.UnloadEntityData(uID);
+            References.EntityDataManager.DeleteEntityData(uID);
             Destroy(gameObject);
         }
 
-        public void RemoveEntity()
+        public void UnloadEntityInstant() // Execute only from after FixedUpdate
         {
-            References.EntityDataManager.RemoveEntityData(uID);
+            References.EntityDataManager.UnloadEntityData(uID);
             Destroy(gameObject);
         }
     }

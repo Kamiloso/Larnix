@@ -7,8 +7,6 @@ namespace Larnix.Files
 {
     public static class FileManager
     {
-        public static volatile bool DontSave = false; // This flag can be set to true to prevent saving actions
-
         public static void EnsureDirectory(string path)
         {
             if (!Directory.Exists(path))
@@ -28,8 +26,6 @@ namespace Larnix.Files
 
         public static void Write(string path, string filename, string text)
         {
-            if (DontSave) return;
-
             EnsureDirectory(path);
             string file = Path.Combine(path, filename);
 
