@@ -15,12 +15,13 @@ namespace Larnix.Server.Data
         Server (local / remote) can store its values into JSON file and load them on start.
         */
 
+        public ushort ConfigVersion = 1;
         public ushort MaxPlayers = 10;
         public ushort Port = 27682;
         public bool AllowRemoteClients = true;
         public string Motd = "Welcome to Larnix server!";
         public float DataSavingPeriod = 15.00f;
-        public float EntityBroadcastPeriod = 0.05f;
+        public float EntityBroadcastPeriod = 0.04f;
 
         public Config(bool local)
         {
@@ -39,7 +40,11 @@ namespace Larnix.Server.Data
             try
             {
                 if (data != null)
-                    return JsonUtility.FromJson<Config>(data);
+                {
+                    Config readConfig = JsonUtility.FromJson<Config>(data);
+                    UpdateConfig(readConfig, defaultIsLocal);
+                    return readConfig;
+                }
             }
             catch
             {
@@ -55,6 +60,25 @@ namespace Larnix.Server.Data
         {
             string data = JsonUtility.ToJson(config, true);
             FileManager.Write(path, "config.json", data);
+        }
+
+        private static void UpdateConfig(Config oldConfig, bool defaultIsLocal)
+        {
+            Config defaultConfig = new Config(defaultIsLocal);
+            
+            if(oldConfig.ConfigVersion < 1)
+            {
+                oldConfig.DataSavingPeriod = defaultConfig.DataSavingPeriod;
+                oldConfig.EntityBroadcastPeriod = defaultConfig.EntityBroadcastPeriod;
+            }
+            // if(oldConfig.ConfigVersion < 2)
+            // {
+            //     UPDATE MORE VARIABLES
+            // }
+
+            // Add more if(s) when updating config.
+
+            oldConfig.ConfigVersion = defaultConfig.ConfigVersion;
         }
     }
 }

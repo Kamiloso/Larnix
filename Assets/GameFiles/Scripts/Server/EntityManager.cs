@@ -18,7 +18,15 @@ namespace Larnix.Server
 
         public void FromEarlyUpdate()
         {
-            
+            foreach(var controller in EntityControllers.Values)
+            {
+                if (controller.EntityData.ID != EntityData.EntityID.Player)
+                {
+                    EntityData newData = controller.EntityData.ShallowCopy();
+                    newData.Position += new Vector2(Mathf.Cos(Time.frameCount * 0.06f) * 0.03f, 0f);
+                    controller.UpdateEntityData(newData);
+                }
+            }
         }
 
         public void CreatePlayerController(string nickname)
@@ -47,6 +55,18 @@ namespace Larnix.Server
         {
             EntityController entityController = EntityController.CreateNewEntityController(entityData);
             EntityControllers.Add(entityController.uID, entityController);
+            entityController.ActivateIfNotActive();
+        }
+
+        public void LoadEntitiesByChunk(int[] chunkCoords)
+        {
+            Dictionary<ulong, EntityData> entities = References.EntityDataManager.GetUnloadedEntitiesByChunk(chunkCoords);
+            foreach (var vkp in entities)
+            {
+                EntityController entityController = EntityController.CreateExistingEntityController(vkp.Key, vkp.Value);
+                EntityControllers.Add(entityController.uID, entityController);
+                entityController.ActivateIfNotActive();
+            }
         }
 
         private void UnloadEntity(ulong uid)

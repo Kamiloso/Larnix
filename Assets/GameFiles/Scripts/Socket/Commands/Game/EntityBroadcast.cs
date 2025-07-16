@@ -12,16 +12,18 @@ namespace Larnix.Socket.Commands
     public class EntityBroadcast : BaseCommand
     {
         public override Name ID => Name.EntityBroadcast;
-        public const int BASE_SIZE = 1 * sizeof(uint);
+        public const int BASE_SIZE = 1 * sizeof(uint) + 1 * sizeof(double);
         public const int ENTRY_SIZE = 1 * sizeof(ulong) + 1 * sizeof(ushort) + 3 * sizeof(float);
 
-        public uint PacketIndex { get; private set; } // 4B
+        public uint PacketFixedIndex { get; private set; } // 4B
+        public double PacketUpdateTime { get; private set; } // 8B
         public Dictionary<ulong, EntityData> EntityTransforms { get; private set; } // ENTRIES * 22B
 
-        public EntityBroadcast(uint packetIndex, Dictionary<ulong, EntityData> entityTransforms, byte code = 0)
+        public EntityBroadcast(uint packetFixedIndex, double packetUpdateTime, Dictionary<ulong, EntityData> entityTransforms, byte code = 0)
             : base(Name.None, code)
         {
-            PacketIndex = packetIndex;
+            PacketFixedIndex = packetFixedIndex;
+            PacketUpdateTime = packetUpdateTime;
             EntityTransforms = entityTransforms;
 
             DetectDataProblems();
@@ -36,7 +38,8 @@ namespace Larnix.Socket.Commands
                 return;
             }
 
-            PacketIndex = BitConverter.ToUInt32(bytes, 0);
+            PacketFixedIndex = BitConverter.ToUInt32(bytes, 0);
+            PacketUpdateTime = BitConverter.ToDouble(bytes, 4);
             EntityTransforms = new Dictionary<ulong, EntityData>();
 
             int lngt = (bytes.Length - BASE_SIZE) / ENTRY_SIZE;
@@ -58,7 +61,8 @@ namespace Larnix.Socket.Commands
         {
             byte[] bytes = new byte[BASE_SIZE + EntityTransforms.Count * ENTRY_SIZE];
 
-            Buffer.BlockCopy(BitConverter.GetBytes(PacketIndex), 0, bytes, 0, 4);
+            Buffer.BlockCopy(BitConverter.GetBytes(PacketFixedIndex), 0, bytes, 0, 4);
+            Buffer.BlockCopy(BitConverter.GetBytes(PacketUpdateTime), 0, bytes, 4, 8);
 
             int i = 0;
             foreach(var kvp in EntityTransforms)
@@ -73,7 +77,7 @@ namespace Larnix.Socket.Commands
         protected override void DetectDataProblems()
         {
             bool ok = (
-                EntityTransforms.Count < 2048
+                EntityTransforms != null && EntityTransforms.Count < 2048
                 );
             HasProblems = HasProblems || !ok;
         }

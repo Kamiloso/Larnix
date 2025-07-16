@@ -13,16 +13,16 @@ namespace Larnix.Server
             ulong uid = (ulong)References.Server.Database.GetUserID(nickname);
             EntityData entityData = References.EntityDataManager.TryFindEntityData(uid);
 
-            GameObject gobj = EntityPrefabs.CreateObject(entityData.ID, "Server");
-            gobj.name = "Player (" + nickname + ") [" + uid + "]";
-            gobj.transform.SetParent(References.EntityDataManager.transform, false);
-            EntityController controller = gobj.GetComponent<EntityController>();
-
             if (entityData == null)
                 entityData = new EntityData // Create new player
                 {
                     ID = EntityData.EntityID.Player
                 };
+
+            GameObject gobj = EntityPrefabs.CreateObject(entityData.ID, "Server");
+            gobj.name = "Player (" + nickname + ") [" + uid + "]";
+            gobj.transform.SetParent(References.EntityDataManager.transform, false);
+            EntityController controller = gobj.GetComponent<EntityController>();
 
             controller.Initialize(uid, entityData);
             return controller;

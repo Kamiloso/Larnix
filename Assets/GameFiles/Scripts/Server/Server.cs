@@ -27,7 +27,6 @@ namespace Larnix.Server
         private float saveCycleTimer = 0f;
         private bool updateStartDone = false;
         private float broadcastCycleTimer = 0f;
-        private uint entityBroadcastCounter = 0;
 
         // Server initialization
         private void Awake()
@@ -109,6 +108,19 @@ namespace Larnix.Server
 
                     // Info to console
                     UnityEngine.Debug.Log("Player [" + owner + "] joined.");
+
+                    References.EntityManager.LoadEntitiesByChunk(new int[] { -1, -1 });
+                    References.EntityManager.LoadEntitiesByChunk(new int[] { -1, 0 });
+                    References.EntityManager.LoadEntitiesByChunk(new int[] { 0, -1 });
+                    References.EntityManager.LoadEntitiesByChunk(new int[] { 0, 0 });
+
+                    References.EntityManager.SummonEntity(new Entities.EntityData
+                    {
+                        ID = Entities.EntityData.EntityID.None,
+                        Position = new Vector2(0f, 0f),
+                        Rotation = 45f,
+                        NBT = "{}"
+                    });
                 }
 
                 if((Name)packet.ID == Name.Stop)
@@ -154,14 +166,14 @@ namespace Larnix.Server
         private void LateUpdate()
         {
             broadcastCycleTimer += Time.deltaTime;
-            if(broadcastCycleTimer > ServerConfig.EntityBroadcastPeriod)
+            if(ServerConfig.EntityBroadcastPeriod > 0f && broadcastCycleTimer > ServerConfig.EntityBroadcastPeriod)
             {
                 broadcastCycleTimer %= ServerConfig.EntityBroadcastPeriod;
-                References.EntityDataManager.SendEntityBroadcast(++entityBroadcastCounter);
+                References.EntityDataManager.SendEntityBroadcast(); // must be in LateUpdate()
             }
 
             saveCycleTimer += Time.deltaTime;
-            if (saveCycleTimer > ServerConfig.DataSavingPeriod)
+            if (ServerConfig.DataSavingPeriod > 0f && saveCycleTimer > ServerConfig.DataSavingPeriod)
             {
                 saveCycleTimer %= ServerConfig.DataSavingPeriod;
                 SaveAllNow();

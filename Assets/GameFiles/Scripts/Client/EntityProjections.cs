@@ -21,8 +21,8 @@ namespace Larnix.Client
         {
             if (References.Client.MyUID == 0) return; // drop, too early to display
 
-            if (msg.PacketIndex <= LastKnown) return; // drop, older data
-            LastKnown = msg.PacketIndex;
+            if ((int)(msg.PacketFixedIndex - LastKnown) <= 0) return; // drop, older data
+            LastKnown = msg.PacketFixedIndex;
 
             Dictionary<ulong, EntityData> dict = msg.EntityTransforms;
 
@@ -44,22 +44,22 @@ namespace Larnix.Client
             {
                 if(Projections.ContainsKey(kvp.Key)) // update transform
                 {
-                    Projections[kvp.Key].UpdateTransform(kvp.Value);
+                    Projections[kvp.Key].UpdateTransform(kvp.Value, msg.PacketUpdateTime);
                 }
                 else // create new projection
                 {
-                    Projections.Add(kvp.Key, CreateProjection(kvp.Key, kvp.Value));
+                    Projections.Add(kvp.Key, CreateProjection(kvp.Key, kvp.Value, msg.PacketUpdateTime));
                 }
             }
         }
 
-        private EntityProjection CreateProjection(ulong uid, EntityData entityData)
+        private EntityProjection CreateProjection(ulong uid, EntityData entityData, double time)
         {
             GameObject gobj = EntityPrefabs.CreateObject(entityData.ID, "Client");
             gobj.transform.SetParent(transform, false);
             gobj.transform.name = entityData.ID.ToString() + " [" + uid + "]";
             EntityProjection projection = gobj.GetComponent<EntityProjection>();
-            projection.UpdateTransform(entityData);
+            projection.UpdateTransform(entityData, time);
             return projection;
         }
     }

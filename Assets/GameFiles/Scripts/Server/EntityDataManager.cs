@@ -16,9 +16,18 @@ namespace Larnix.Server
         private readonly Dictionary<ulong, EntityData> UnloadedEntityData = new Dictionary<ulong, EntityData>();
         private readonly Dictionary<ulong, EntityData> DeletedEntityData = new Dictionary<ulong, EntityData>();
 
+        private uint LastFixedUpdateSend = 0;
+        private uint FixedUpdateCounter = 1;
+        private double SendingTime = 0.0;
+
         private void Awake()
         {
             References.EntityDataManager = this;
+        }
+
+        private void FixedUpdate()
+        {
+            FixedUpdateCounter++;
         }
 
         public EntityData TryFindEntityData(ulong uid)
@@ -33,6 +42,43 @@ namespace Larnix.Server
                 return EntityData[uid];
 
             return References.Server.Database.FindEntity(uid);
+        }
+
+        public Dictionary<ulong, EntityData> GetUnloadedEntitiesByChunk(int[] chunkCoords)
+        {
+            Dictionary<ulong, EntityData> entityList = References.Server.Database.GetEntitiesByChunk(chunkCoords);
+
+            foreach(var vkp in EntityData)
+            {
+                if(entityList.ContainsKey(vkp.Key)) // already loaded entity
+                    entityList.Remove(vkp.Key);
+            }
+
+            foreach (var vkp in DeletedEntityData)
+            {
+                if (entityList.ContainsKey(vkp.Key)) // entity already removed
+                    entityList.Remove(vkp.Key);
+            }
+
+            foreach (var vkp in UnloadedEntityData)
+            {
+                EntityData newData = vkp.Value;
+                int[] newChunkCoords = Common.CoordsToChunk(newData.Position);
+                bool in_the_chunk = (newChunkCoords[0] == chunkCoords[0] && newChunkCoords[1] == chunkCoords[1]);
+
+                if (entityList.ContainsKey(vkp.Key))
+                {
+                    if(!in_the_chunk)
+                        entityList.Remove(vkp.Key); // no longer in this chunk
+                }
+                else
+                {
+                    if(in_the_chunk)
+                        entityList.Add(vkp.Key, newData); // additional data found
+                }
+            }
+
+            return entityList;
         }
 
         public void SetEntityData(ulong uid, EntityData entityData)
@@ -73,10 +119,14 @@ namespace Larnix.Server
             UnloadedEntityData.Clear();
         }
 
-        public void SendEntityBroadcast(uint seq)
+        public void SendEntityBroadcast()
         {
+            if (LastFixedUpdateSend == FixedUpdateCounter)
+                return; // don't send the same thing with different TimeCounter
+
             EntityBroadcast entityBroadcast = new EntityBroadcast(
-                seq,
+                FixedUpdateCounter,
+                SendingTime,
                 EntityData
                 );
             if(!entityBroadcast.HasProblems) // Has problems if has over 2048 entities.
@@ -84,6 +134,9 @@ namespace Larnix.Server
                 Packet packet = entityBroadcast.GetPacket();
                 References.Server.Broadcast(packet, false); // unsafe mode (over raw UDP)
             }
+
+            LastFixedUpdateSend = FixedUpdateCounter;
+            SendingTime += References.Server.ServerConfig.EntityBroadcastPeriod;
         }
 
         private static Dictionary<ulong, EntityData> MergeDictionaries(

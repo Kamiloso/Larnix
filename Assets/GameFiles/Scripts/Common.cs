@@ -56,5 +56,14 @@ namespace Larnix
             RandomNumberGenerator.Fill(bytes);
             return BitConverter.ToUInt64(bytes);
         }
+
+        public static int[] CoordsToChunk(Vector2 position)
+        {
+            return new int[]
+            {
+                (int)System.Math.Floor(position.x / 16),
+                (int)System.Math.Floor(position.y / 16)
+            };
+        }
     }
 }

@@ -36,34 +36,28 @@ namespace Larnix.Server.Data
                     username TEXT NOT NULL UNIQUE,
                     password_hash TEXT NOT NULL,
                     password_index INTEGER NOT NULL DEFAULT 1
-                )";
-                cmd.ExecuteNonQuery();
-            }
+                );
 
-            using (var cmd = connection.CreateCommand())
-            {
-                // When entity is a player then [id = uid]
-                cmd.CommandText = @"
                 CREATE TABLE IF NOT EXISTS entities(
                     uid INTEGER PRIMARY KEY,
                     type INTEGER,
+                    chunk_x INTEGER,
+                    chunk_Y INTEGER,
                     pos_x REAL,
                     pos_y REAL,
                     rotation REAL,
                     nbt TEXT NOT NULL
-                )";
-                cmd.ExecuteNonQuery();
-            }
+                );
 
-            using (var cmd = connection.CreateCommand())
-            {
-                cmd.CommandText = @"
+                CREATE INDEX IF NOT EXISTS idx_chunk_entities
+                    ON entities(chunk_x, chunk_y);
+
                 CREATE TABLE IF NOT EXISTS chunks(
-                    x INTEGER,
-                    y INTEGER,
+                    chunk_x INTEGER,
+                    chunk_y INTEGER,
                     block_bytes BLOB,
-                    PRIMARY KEY(x, y)
-                )";
+                    PRIMARY KEY(chunk_x, chunk_y)
+                );";
                 cmd.ExecuteNonQuery();
             }
         }
@@ -223,17 +217,45 @@ namespace Larnix.Server.Data
             return null;
         }
 
+        public Dictionary<ulong, EntityData> GetEntitiesByChunk(int[] chunkCoords)
+        {
+            using (var cmd = connection.CreateCommand())
+            {
+                cmd.CommandText = "SELECT * FROM entities WHERE chunk_x = $chunk_x AND chunk_y = $chunk_y AND type <> " + (long)EntityData.EntityID.Player + ";";
+                cmd.Parameters.AddWithValue("$chunk_x", (long)chunkCoords[0]);
+                cmd.Parameters.AddWithValue("$chunk_y", (long)chunkCoords[1]);
+
+                using (var reader = cmd.ExecuteReader())
+                {
+                    Dictionary<ulong, EntityData> returns = new Dictionary<ulong, EntityData>();
+                    while (reader.Read())
+                    {
+                        returns.Add((ulong)(long)reader["uid"], new EntityData
+                        {
+                            ID = (EntityData.EntityID)(long)reader["type"],
+                            Position = new Vector2((float)(double)reader["pos_x"], (float)(double)reader["pos_y"]),
+                            Rotation = (float)(double)reader["rotation"],
+                            NBT = reader["nbt"] as string
+                        });
+                    }
+                    return returns;
+                }
+            }
+        }
+
         public void FlushEntities(Dictionary<ulong, EntityData> entities) // USE ONLY INSIDE TRANSACTION!
         {
             using (var cmd = connection.CreateCommand())
             {
                 cmd.CommandText = @"
                     INSERT OR REPLACE INTO entities
-                    (uid, type, pos_x, pos_y, rotation, nbt) VALUES
-                    ($uid, $type, $pos_x, $pos_y, $rotation, $nbt);";
+                    (uid, type, chunk_x, chunk_y, pos_x, pos_y, rotation, nbt) VALUES
+                    ($uid, $type, $chunk_x, $chunk_y, $pos_x, $pos_y, $rotation, $nbt);";
 
                 var paramUid = cmd.Parameters.Add("$uid", SqliteType.Integer);
                 var paramType = cmd.Parameters.Add("$type", SqliteType.Integer);
+                var paramChunkX = cmd.Parameters.Add("$chunk_x", SqliteType.Integer);
+                var paramChunkY = cmd.Parameters.Add("$chunk_y", SqliteType.Integer);
                 var paramPosX = cmd.Parameters.Add("$pos_x", SqliteType.Real);
                 var paramPosY = cmd.Parameters.Add("$pos_y", SqliteType.Real);
                 var paramRotation = cmd.Parameters.Add("$rotation", SqliteType.Real);
@@ -242,8 +264,12 @@ namespace Larnix.Server.Data
                 foreach (var vkp in entities)
                 {
                     EntityData entity = vkp.Value;
+                    int[] chunkCoords = Common.CoordsToChunk(entity.Position);
+
                     paramUid.Value = (long)vkp.Key;
                     paramType.Value = (long)entity.ID;
+                    paramChunkX.Value = (long)chunkCoords[0];
+                    paramChunkY.Value = (long)chunkCoords[1];
                     paramPosX.Value = entity.Position.x;
                     paramPosY.Value = entity.Position.y;
                     paramRotation.Value = entity.Rotation;
