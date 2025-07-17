@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Entities;
+using Larnix.Entities.Server;
 
 namespace Larnix.Server
 {
@@ -16,7 +17,7 @@ namespace Larnix.Server
             if (entityData == null)
                 entityData = new EntityData // Create new player
                 {
-                    ID = EntityData.EntityID.Player
+                    ID = EntityID.Player
                 };
 
             GameObject gobj = EntityPrefabs.CreateObject(entityData.ID, "Server");
@@ -78,6 +79,13 @@ namespace Larnix.Server
         {
             References.EntityDataManager.UnloadEntityData(uID);
             Destroy(gameObject);
+        }
+
+        public void FromFixedUpdate()
+        {
+            // Walking around
+            WalkingAround WalkingAround = GetComponent<WalkingAround>();
+            if (WalkingAround != null) WalkingAround.DoFixedUpdate();
         }
     }
 }

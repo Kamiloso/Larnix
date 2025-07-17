@@ -44,7 +44,7 @@ namespace Larnix.Server
             return References.Server.Database.FindEntity(uid);
         }
 
-        public Dictionary<ulong, EntityData> GetUnloadedEntitiesByChunk(int[] chunkCoords)
+        public Dictionary<ulong, EntityData> GetUnloadedEntitiesByChunk(Vector2Int chunkCoords)
         {
             Dictionary<ulong, EntityData> entityList = References.Server.Database.GetEntitiesByChunk(chunkCoords);
 
@@ -63,11 +63,14 @@ namespace Larnix.Server
             foreach (var vkp in UnloadedEntityData)
             {
                 EntityData newData = vkp.Value;
-                int[] newChunkCoords = Common.CoordsToChunk(newData.Position);
-                bool in_the_chunk = (newChunkCoords[0] == chunkCoords[0] && newChunkCoords[1] == chunkCoords[1]);
+                Vector2Int newChunkCoords = ChunkLoading.CoordsToChunk(newData.Position);
+                bool in_the_chunk = (newChunkCoords == chunkCoords);
 
                 if (entityList.ContainsKey(vkp.Key))
                 {
+                    if(in_the_chunk)
+                        entityList[vkp.Key] = newData; // update existing data
+
                     if(!in_the_chunk)
                         entityList.Remove(vkp.Key); // no longer in this chunk
                 }

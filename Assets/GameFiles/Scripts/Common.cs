@@ -6,6 +6,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Security.Cryptography;
 using System.Text;
+using Unity.Burst.Intrinsics;
 using UnityEngine;
 
 namespace Larnix
@@ -50,20 +51,26 @@ namespace Larnix
             return Encoding.Unicode.GetString(bytes).TrimEnd('\0');
         }
 
+        public static float GridDistance(Vector2 v1, Vector2 v2)
+        {
+            Vector2 diff = v1 - v2;
+            return Math.Abs(diff.x) + Math.Abs(diff.y);
+        }
+
+        public static float InSquareDistance(Vector2 v1, Vector2 v2)
+        {
+            Vector2 diff = v1 - v2;
+            float d_x = Math.Abs(diff.x);
+            float d_y = Math.Abs(diff.y);
+            if(d_x > d_y) return d_x;
+            else return d_y;
+        }
+
         public static ulong GetRandomUID()
         {
             Span<byte> bytes = stackalloc byte[8];
             RandomNumberGenerator.Fill(bytes);
             return BitConverter.ToUInt64(bytes);
-        }
-
-        public static int[] CoordsToChunk(Vector2 position)
-        {
-            return new int[]
-            {
-                (int)System.Math.Floor(position.x / 16),
-                (int)System.Math.Floor(position.y / 16)
-            };
         }
     }
 }

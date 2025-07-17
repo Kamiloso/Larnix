@@ -205,7 +205,7 @@ namespace Larnix.Server.Data
                     {
                         EntityData entityData = new EntityData
                         {
-                            ID = (EntityData.EntityID)(long)reader["type"],
+                            ID = (EntityID)(long)reader["type"],
                             Position = new Vector2((float)(double)reader["pos_x"], (float)(double)reader["pos_y"]),
                             Rotation = (float)(double)reader["rotation"],
                             NBT = reader["nbt"] as string
@@ -217,13 +217,13 @@ namespace Larnix.Server.Data
             return null;
         }
 
-        public Dictionary<ulong, EntityData> GetEntitiesByChunk(int[] chunkCoords)
+        public Dictionary<ulong, EntityData> GetEntitiesByChunk(Vector2Int chunkCoords)
         {
             using (var cmd = connection.CreateCommand())
             {
-                cmd.CommandText = "SELECT * FROM entities WHERE chunk_x = $chunk_x AND chunk_y = $chunk_y AND type <> " + (long)EntityData.EntityID.Player + ";";
-                cmd.Parameters.AddWithValue("$chunk_x", (long)chunkCoords[0]);
-                cmd.Parameters.AddWithValue("$chunk_y", (long)chunkCoords[1]);
+                cmd.CommandText = "SELECT * FROM entities WHERE chunk_x = $chunk_x AND chunk_y = $chunk_y AND type <> " + (long)EntityID.Player + ";";
+                cmd.Parameters.AddWithValue("$chunk_x", (long)chunkCoords.x);
+                cmd.Parameters.AddWithValue("$chunk_y", (long)chunkCoords.y);
 
                 using (var reader = cmd.ExecuteReader())
                 {
@@ -232,7 +232,7 @@ namespace Larnix.Server.Data
                     {
                         returns.Add((ulong)(long)reader["uid"], new EntityData
                         {
-                            ID = (EntityData.EntityID)(long)reader["type"],
+                            ID = (EntityID)(long)reader["type"],
                             Position = new Vector2((float)(double)reader["pos_x"], (float)(double)reader["pos_y"]),
                             Rotation = (float)(double)reader["rotation"],
                             NBT = reader["nbt"] as string
@@ -264,12 +264,12 @@ namespace Larnix.Server.Data
                 foreach (var vkp in entities)
                 {
                     EntityData entity = vkp.Value;
-                    int[] chunkCoords = Common.CoordsToChunk(entity.Position);
+                    Vector2Int chunkCoords = ChunkLoading.CoordsToChunk(entity.Position);
 
                     paramUid.Value = (long)vkp.Key;
                     paramType.Value = (long)entity.ID;
-                    paramChunkX.Value = (long)chunkCoords[0];
-                    paramChunkY.Value = (long)chunkCoords[1];
+                    paramChunkX.Value = (long)chunkCoords.x;
+                    paramChunkY.Value = (long)chunkCoords.y;
                     paramPosX.Value = entity.Position.x;
                     paramPosY.Value = entity.Position.y;
                     paramRotation.Value = entity.Rotation;

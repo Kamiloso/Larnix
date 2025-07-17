@@ -16,16 +16,40 @@ namespace Larnix.Server
             References.EntityManager = this;
         }
 
-        public void FromEarlyUpdate()
+        private void FixedUpdate()
         {
-            foreach(var controller in EntityControllers.Values)
+            // Execute entity behaviours
+
+            foreach (var controller in EntityControllers.Values)
+                controller.FromFixedUpdate();
+
+            // Kill entities when needed
+
+            foreach(ulong uid in EntityControllers.Keys.ToList())
             {
-                if (controller.EntityData.ID != EntityData.EntityID.Player)
+                if (EntityControllers[uid].EntityData.NBT == "something... idk")
+                    KillEntity(uid);
+            }
+        }
+
+        public void FromEarlyUpdate() // 2
+        {
+            // Unload entities
+
+            List<ulong> uidsToUnload = new List<ulong>();
+
+            foreach(var vkp in EntityControllers)
+            {
+                if(vkp.Value.EntityData.ID != EntityID.Player)
                 {
-                    EntityData newData = controller.EntityData.ShallowCopy();
-                    newData.Position += new Vector2(Mathf.Cos(Time.frameCount * 0.06f) * 0.03f, 0f);
-                    controller.UpdateEntityData(newData);
+                    if (!References.ChunkLoading.IsEntityInAliveZone(vkp.Value))
+                        uidsToUnload.Add(vkp.Key);
                 }
+            }
+
+            foreach(ulong uid in uidsToUnload)
+            {
+                UnloadEntity(uid);
             }
         }
 
@@ -51,6 +75,16 @@ namespace Larnix.Server
             playerController.UnloadEntityInstant();
         }
 
+        public List<EntityController> GetAllPlayerControllers()
+        {
+            return PlayerControllers.Values.ToList();
+        }
+
+        public List<EntityController> GetAllEntityControllers()
+        {
+            return EntityControllers.Values.ToList();
+        }
+
         public void SummonEntity(EntityData entityData)
         {
             EntityController entityController = EntityController.CreateNewEntityController(entityData);
@@ -58,7 +92,7 @@ namespace Larnix.Server
             entityController.ActivateIfNotActive();
         }
 
-        public void LoadEntitiesByChunk(int[] chunkCoords)
+        public void LoadEntitiesByChunk(Vector2Int chunkCoords)
         {
             Dictionary<ulong, EntityData> entities = References.EntityDataManager.GetUnloadedEntitiesByChunk(chunkCoords);
             foreach (var vkp in entities)
@@ -75,7 +109,7 @@ namespace Larnix.Server
                 throw new System.InvalidOperationException("Entity with ID " + uid + " is not loaded!");
 
             EntityController entityController = EntityControllers[uid];
-            if (entityController.EntityData.ID == EntityData.EntityID.Player)
+            if (entityController.EntityData.ID == EntityID.Player)
                 throw new System.InvalidOperationException("Cannot unload player this way!");
 
             EntityControllers[uid].UnloadEntityInstant();

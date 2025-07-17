@@ -6,14 +6,14 @@ namespace Larnix.Entities
 {
     public static class EntityPrefabs
     {
-        public static GameObject CreateObject(EntityData.EntityID entityID, string mode)
+        public static GameObject CreateObject(EntityID entityID, string mode)
         {
             if (mode != "Client" && mode != "Server")
                 throw new System.ArgumentException("Mode string can be only 'Client' or 'Server'.");
 
             GameObject found = Resources.Load<GameObject>("Prefabs/" + entityID.ToString());
             if (found == null)
-                return CreateObject(EntityData.EntityID.None, mode);
+                return CreateObject(EntityID.None, mode);
             
             foreach(Transform trn in found.transform)
             {
@@ -25,7 +25,7 @@ namespace Larnix.Entities
                 }
             }
 
-            return CreateObject(EntityData.EntityID.None, mode);
+            return CreateObject(EntityID.None, mode);
         }
     }
 }

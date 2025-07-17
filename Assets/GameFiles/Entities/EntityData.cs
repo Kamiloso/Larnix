@@ -44,11 +44,5 @@ namespace Larnix.Entities
             Rotation = BitConverter.ToSingle(bytes, 10);
             NBT = null;
         }
-
-        public enum EntityID : ushort
-        {
-            None,
-            Player,
-        }
     }
 }

@@ -79,7 +79,8 @@ namespace Larnix.Server
                 updateStartDone = true;
             }
 
-            References.EntityManager.FromEarlyUpdate();
+            References.ChunkLoading.FromEarlyUpdate(); // 1
+            References.EntityManager.FromEarlyUpdate(); // 2
 
             Queue<PacketAndOwner> messages = LarnixServer.ServerTickAndReceive(Time.deltaTime);
             foreach (PacketAndOwner message in messages)
@@ -109,16 +110,11 @@ namespace Larnix.Server
                     // Info to console
                     UnityEngine.Debug.Log("Player [" + owner + "] joined.");
 
-                    References.EntityManager.LoadEntitiesByChunk(new int[] { -1, -1 });
-                    References.EntityManager.LoadEntitiesByChunk(new int[] { -1, 0 });
-                    References.EntityManager.LoadEntitiesByChunk(new int[] { 0, -1 });
-                    References.EntityManager.LoadEntitiesByChunk(new int[] { 0, 0 });
-
                     References.EntityManager.SummonEntity(new Entities.EntityData
                     {
-                        ID = Entities.EntityData.EntityID.None,
-                        Position = new Vector2(0f, 0f),
-                        Rotation = 45f,
+                        ID = Entities.EntityID.Wildpig,
+                        Position = playerController.EntityData.Position,
+                        Rotation = 0f,
                         NBT = "{}"
                     });
                 }
@@ -136,13 +132,23 @@ namespace Larnix.Server
                     UnityEngine.Debug.Log("Player [" + owner + "] disconnected.");
                 }
 
-                if((Name)packet.ID == Name.DebugMessage)
+                /*if((Name)packet.ID == Name.DebugMessage)
                 {
                     DebugMessage msg = new DebugMessage(packet);
                     if (msg.HasProblems) continue;
 
+                    // Temporary wildpig spawn
+                    EntityController playerController = References.EntityManager.GetPlayerController(owner);
+                    References.EntityManager.SummonEntity(new Entities.EntityData
+                    {
+                        ID = Entities.EntityID.Wildpig,
+                        Position = playerController == null ? Vector2.zero : playerController.EntityData.Position,
+                        Rotation = 0f,
+                        NBT = "{}"
+                    });
+
                     UnityEngine.Debug.Log("DebugMessage [" + owner + "]: " + msg.Data);
-                }
+                }*/
 
                 if ((Name)packet.ID == Name.PlayerUpdate)
                 {

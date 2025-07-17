@@ -86,6 +86,8 @@ namespace Larnix.Client
         {
             // Camera update
             
+            Vector2 plr = EntityProjection.transform.position;
+            Camera.transform.position = new Vector3(plr.x, plr.y, Camera.transform.position.z);
             Camera.orthographicSize = CameraZoom;
         }
 
@@ -100,7 +102,7 @@ namespace Larnix.Client
         {
             EntityProjection.UpdateTransform(new EntityData
             {
-                ID = EntityData.EntityID.Player,
+                ID = EntityID.Player,
                 Position = transform.position,
                 Rotation = Rotation,
                 NBT = null
