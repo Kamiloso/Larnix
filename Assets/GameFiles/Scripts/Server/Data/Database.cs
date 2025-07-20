@@ -28,7 +28,7 @@ namespace Larnix.Server.Data
             connection = new SqliteConnection($"Data Source={Path.Combine(path, filename)};Pooling=False");
             connection.Open();
 
-            using (var cmd = connection.CreateCommand())
+            using (var cmd = CreateCommand())
             {
                 cmd.CommandText = @"
                 CREATE TABLE IF NOT EXISTS users(
@@ -62,9 +62,75 @@ namespace Larnix.Server.Data
             }
         }
 
-        public byte GetPasswordIndex(string username)
+        public bool UserExists(string username)
         {
-            using (var cmd = connection.CreateCommand())
+            return GetPasswordIndex(username) != 0;
+        }
+
+        public void AddUser(string username, string password_hash, byte password_index = 1)
+        {
+            using(var cmd = CreateCommand())
+            {
+                cmd.CommandText = @"
+                    INSERT INTO users
+                    (username, password_hash, password_index) VALUES
+                    ($username, $password_hash, $password_index);";
+                cmd.Parameters.AddWithValue("$username", username);
+                cmd.Parameters.AddWithValue("$password_hash", password_hash);
+                cmd.Parameters.AddWithValue("$password_index", password_index);
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        public void DeleteUser(string username)
+        {
+            using(var cmd = CreateCommand())
+            {
+                cmd.CommandText = "DELETE FROM users WHERE username = $username;";
+                cmd.Parameters.AddWithValue("$username", username);
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        public void ChangePassword(string username, string new_password_hash)
+        {
+            byte password_index = (byte)(GetPasswordIndex(username) + 1);
+            if (password_index == 0) password_index = 1;
+
+            using (var cmd = CreateCommand())
+            {
+                cmd.CommandText = @"
+                    UPDATE users
+                    SET password_hash = $new_password_hash,
+                        password_index = $new_password_index
+                    WHERE username = $username;";
+
+                cmd.Parameters.AddWithValue("$new_password_hash", new_password_hash);
+                cmd.Parameters.AddWithValue("$new_password_index", password_index);
+                cmd.Parameters.AddWithValue("$username", username);
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        public string GetPasswordHash(string username)
+        {
+            using (var cmd = CreateCommand())
+            {
+                cmd.CommandText = "SELECT password_hash FROM users WHERE username = $username;";
+                cmd.Parameters.AddWithValue("$username", username);
+
+                using (var reader = cmd.ExecuteReader())
+                {
+                    if (reader.Read())
+                        return (string)reader["password_hash"];
+                }
+            }
+            return null;
+        }
+
+        public byte GetPasswordIndex(string username) // 0 -> user doesn't exist
+        {
+            using (var cmd = CreateCommand())
             {
                 cmd.CommandText = "SELECT password_index FROM users WHERE username = $username;";
                 cmd.Parameters.AddWithValue("$username", username);
@@ -84,108 +150,16 @@ namespace Larnix.Server.Data
             return 0;
         }
 
-        public bool AllowUser(string username, string password, bool can_register = true)
-        {
-            string password_hash = null;
-
-            using (var cmd = connection.CreateCommand())
-            {
-                cmd.CommandText = "SELECT password_hash FROM users WHERE username = $username;";
-                cmd.Parameters.AddWithValue("$username", username);
-
-                using (var reader = cmd.ExecuteReader())
-                {
-                    if (reader.Read())
-                        password_hash = reader.GetString(0);
-                }
-            }
-
-            if (password_hash != null) // user found, check hash
-            {
-                return Hasher.VerifyPassword(password, password_hash);
-            }
-            else // user not found
-            {
-                if(!can_register)
-                    return false;
-
-                using (var cmd = connection.CreateCommand())
-                {
-                    cmd.CommandText = "INSERT INTO users (username, password_hash) VALUES ($username, $password_hash);";
-                    cmd.Parameters.AddWithValue("$username", username);
-                    cmd.Parameters.AddWithValue("$password_hash", Hasher.HashPassword(password));
-                    cmd.ExecuteNonQuery();
-                }
-                return true;
-            }
-        }
-
-        public A_PasswordChange.ResultType ChangePassword(string username, string oldPassword, string newPassword)
-        {
-            string password_hash = null;
-
-            using (var cmd = connection.CreateCommand())
-            {
-                cmd.CommandText = "SELECT password_hash FROM users WHERE username = $username;";
-                cmd.Parameters.AddWithValue("$username", username);
-
-                using (var reader = cmd.ExecuteReader())
-                {
-                    if (reader.Read())
-                        password_hash = reader.GetString(0);
-                }
-            }
-
-            if (password_hash == null)
-                return A_PasswordChange.ResultType.WrongUser;
-
-            if (!Hasher.VerifyPassword(oldPassword, password_hash))
-                return A_PasswordChange.ResultType.WrongPassword;
-
-            byte password_index = GetPasswordIndex(username);
-            password_index = (byte)(password_index != 255 ? password_index + 1 : 1);
-
-            using (var cmd = connection.CreateCommand())
-            {
-                cmd.CommandText = @"
-                    UPDATE users SET
-                    password_hash = $new_password_hash,
-                    password_index = $new_password_index
-                    WHERE username = $username;";
-                cmd.Parameters.AddWithValue("$username", username);
-                cmd.Parameters.AddWithValue("$new_password_hash", Hasher.HashPassword(newPassword));
-                cmd.Parameters.AddWithValue("$new_password_index", password_index);
-                cmd.ExecuteNonQuery();
-            }
-
-            return A_PasswordChange.ResultType.Success;
-        }
-
-        public bool DeleteUser(string username, string password)
-        {
-            if (!AllowUser(username, password, false))
-                return false;
-
-            using(var cmd = connection.CreateCommand())
-            {
-                cmd.CommandText = "DELETE FROM users WHERE username = $username;";
-                cmd.Parameters.AddWithValue("$username", username);
-                cmd.ExecuteNonQuery();
-            }
-
-            return true;
-        }
-
         public long GetUserID(string username)
         {
-            using(var cmd = connection.CreateCommand())
+            using (var cmd = CreateCommand())
             {
                 cmd.CommandText = "SELECT id FROM users WHERE username = $username;";
                 cmd.Parameters.AddWithValue("$username", username);
-                
-                using(var reader = cmd.ExecuteReader())
+
+                using (var reader = cmd.ExecuteReader())
                 {
-                    if(reader.Read())
+                    if (reader.Read())
                         return reader.GetInt64(0);
                 }
             }
@@ -194,7 +168,7 @@ namespace Larnix.Server.Data
 
         public EntityData FindEntity(ulong uid)
         {
-            using (var cmd = connection.CreateCommand())
+            using (var cmd = CreateCommand())
             {
                 cmd.CommandText = "SELECT * FROM entities WHERE uid = $uid;";
                 cmd.Parameters.AddWithValue("$uid", (long)uid);
@@ -219,7 +193,7 @@ namespace Larnix.Server.Data
 
         public Dictionary<ulong, EntityData> GetEntitiesByChunk(Vector2Int chunkCoords)
         {
-            using (var cmd = connection.CreateCommand())
+            using (var cmd = CreateCommand())
             {
                 cmd.CommandText = "SELECT * FROM entities WHERE chunk_x = $chunk_x AND chunk_y = $chunk_y AND type <> " + (long)EntityID.Player + ";";
                 cmd.Parameters.AddWithValue("$chunk_x", (long)chunkCoords.x);
@@ -243,9 +217,12 @@ namespace Larnix.Server.Data
             }
         }
 
-        public void FlushEntities(Dictionary<ulong, EntityData> entities) // USE ONLY INSIDE TRANSACTION!
+        public void FlushEntities(Dictionary<ulong, EntityData> entities)
         {
-            using (var cmd = connection.CreateCommand())
+            if (transaction == null)
+                throw new InvalidOperationException("Active transaction is needed for this method!");
+
+            using (var cmd = CreateCommand())
             {
                 cmd.CommandText = @"
                     INSERT OR REPLACE INTO entities
@@ -292,7 +269,7 @@ namespace Larnix.Server.Data
                 var batch = uids.GetRange(offset, Math.Min(batchSize, uids.Count - offset));
                 var parameterNames = new List<string>();
 
-                using (var cmd = connection.CreateCommand())
+                using (var cmd = CreateCommand())
                 {
                     for (int i = 0; i < batch.Count; i++)
                     {
@@ -313,11 +290,11 @@ namespace Larnix.Server.Data
 
         public void SetChunk(int x, int y, byte[] block_bytes)
         {
-            using (var cmd = connection.CreateCommand())
+            using (var cmd = CreateCommand())
             {
-                cmd.CommandText = "INSERT OR REPLACE INTO chunks (x, y, block_bytes) VALUES ($x, $y, $block_bytes);";
-                cmd.Parameters.AddWithValue("$x", x);
-                cmd.Parameters.AddWithValue("$y", y);
+                cmd.CommandText = "INSERT OR REPLACE INTO chunks (chunk_x, chunk_y, block_bytes) VALUES ($chunk_x, $chunk_y, $block_bytes);";
+                cmd.Parameters.AddWithValue("$chunk_x", x);
+                cmd.Parameters.AddWithValue("$chunk_y", y);
                 cmd.Parameters.AddWithValue("$block_bytes", block_bytes);
                 cmd.ExecuteNonQuery();
             }
@@ -325,7 +302,7 @@ namespace Larnix.Server.Data
 
         public byte[] GetChunk(int x, int y)
         {
-            using(var cmd = connection.CreateCommand())
+            using(var cmd = CreateCommand())
             {
                 cmd.CommandText = "SELECT block_bytes FROM chunks WHERE x = $x AND y = $y;";
                 cmd.Parameters.AddWithValue("$x", x);
@@ -338,6 +315,14 @@ namespace Larnix.Server.Data
                 }
             }
             return null;
+        }
+
+        private SqliteCommand CreateCommand()
+        {
+            var cmd = connection.CreateCommand();
+            if(transaction != null)
+                cmd.Transaction = transaction;
+            return cmd;
         }
 
         public void BeginTransaction()

@@ -5,6 +5,7 @@ using System.Net.Sockets;
 using System.Net;
 using UnityEngine;
 using System.Security.Cryptography;
+using System.Threading.Tasks;
 
 namespace Larnix.Socket
 {
@@ -23,7 +24,7 @@ namespace Larnix.Socket
         private uint LastReceiveSequence = 0; // control number to check packet order
 
         public const uint MAX_RETRANSMISSIONS = 5;
-        public const uint MAX_STAYING_PACKETS = 16384;
+        public const uint MAX_STAYING_PACKETS = 1024;
         public bool IsDead { get; private set; } = false;
         public bool IsError { get; private set; } = false; // blocks transmiting and receiving
 
@@ -36,6 +37,9 @@ namespace Larnix.Socket
         private List<SafePacket> sendingPackets = new List<SafePacket>();
         private List<SafePacket> receivedPackets = new List<SafePacket>();
         private Queue<Packet> downloadablePackets = new Queue<Packet>();
+
+        private readonly List<Task> pendingSendingTasks = new List<Task>();
+        private const int MAX_PENDING_SENDING = 64;
 
         public Connection(UdpClient udp, IPEndPoint endPoint, byte[] keyAES, Packet synPacket = null, RSA keyPublicRSA = null)
         {
@@ -73,13 +77,6 @@ namespace Larnix.Socket
         public void Tick(float deltaTime)
         {
             if (IsDead || IsError) return;
-
-            // If too many received packets, kill session
-            if (receivedPackets.Count > MAX_STAYING_PACKETS)
-            {
-                IsDead = true;
-                return;
-            }
 
             // Make sequential queue out of received packets
             while (true)
@@ -204,6 +201,10 @@ namespace Larnix.Socket
         {
             if (IsDead || IsError) return;
 
+            // Drop packets if too many
+            if (receivedPackets.Count >= MAX_STAYING_PACKETS ||
+               downloadablePackets.Count >= MAX_STAYING_PACKETS) return;
+
             SafePacket safePacket = new SafePacket();
             if (!hasSYN)
                 safePacket.Encrypt = new Encryption.Settings(Encryption.Settings.Type.AES, KeyAES);
@@ -249,7 +250,7 @@ namespace Larnix.Socket
                 IsDead = true;
         }
 
-        public void KillConnection()
+        public void FinishConnection()
         {
             if(IsDead || IsError) return;
 
@@ -268,7 +269,16 @@ namespace Larnix.Socket
                 Transmit(safePacket);
 
             IsDead = true;
+
+            WaitForPendingPackets();
         }
+
+        public void WaitForPendingPackets()
+        {
+            Task.WaitAll(pendingSendingTasks.ToArray());
+            pendingSendingTasks.RemoveAll(t => t.IsCompleted);
+        }
+
         private void SendSafePacket(SafePacket safePacket)
         {
             Transmit(safePacket);
@@ -283,14 +293,22 @@ namespace Larnix.Socket
             {
                 if (safePacket.HasFlag(SafePacket.PacketFlag.RSA))
                     UnityEngine.Debug.Log("Transmiting RSA-encrypted SYN.");
-                else if(IPAddress.IsLoopback(EndPoint.Address))
+                else if (IPAddress.IsLoopback(EndPoint.Address))
                     UnityEngine.Debug.LogWarning("Transmiting unencrypted SYN to localhost.");
                 else
                     UnityEngine.Debug.LogWarning("Transmiting unencrypted SYN!");
             }
 
             byte[] payload = safePacket.Serialize();
-            Udp.SendAsync(payload, payload.Length, EndPoint);
+            Task task = Udp.SendAsync(payload, payload.Length, EndPoint);
+            pendingSendingTasks.Add(task);
+
+            pendingSendingTasks.RemoveAll(t => t.IsCompleted);
+            while (pendingSendingTasks.Count > MAX_PENDING_SENDING)
+            {
+                Task completed = Task.WhenAny(pendingSendingTasks).GetAwaiter().GetResult();
+                pendingSendingTasks.Remove(completed);
+            }
         }
 
         private bool ReadyPacketTryEnqueue(SafePacket safePacket, bool is_safe)

@@ -18,7 +18,9 @@ namespace Larnix.Client
         private RSA MyRSA = null;
 
         public bool IsMultiplayer { get; private set; }
-        public ulong MyUID { get; private set; }
+        public ulong MyUID { get; private set; } = 0;
+
+        private bool loadingEnded = false;
 
         // Client initialization
         void Awake()
@@ -36,13 +38,21 @@ namespace Larnix.Client
 
             if (IsMultiplayer)
             {
-                CreateClient();
+                if (!CreateClient())
+                    return;
+
                 UnityEngine.Debug.Log("Remote world on address " + EndPoint.ToString());
             }
             else
             {
                 StartCoroutine(CreateServer());
             }
+        }
+
+        private void Start()
+        {
+            References.LoadingScreen.Enable();
+            References.LoadingScreen.info = "Connecting...";
         }
 
         // Server creation
@@ -118,12 +128,23 @@ namespace Larnix.Client
                         EntityBroadcast msg = new EntityBroadcast(packet);
                         if (msg.HasProblems) continue;
 
-                        References.EntityProjections.InterpretEntityBroadcast(msg);
+                        if(MyUID != 0)
+                        {
+                            References.EntityProjections.InterpretEntityBroadcast(msg);
+                            if(!loadingEnded)
+                            {
+                                References.LoadingScreen.Disable();
+                                loadingEnded = true;
+                            }
+                        }
                     }
                 }
 
                 if (LarnixClient.IsDead())
+                {
                     BackToMenu();
+                    return;
+                }
             }
 
             /*if(Input.GetKeyDown(KeyCode.Z))
@@ -149,7 +170,6 @@ namespace Larnix.Client
 
         private void OnDestroy()
         {
-            LarnixClient?.KillConnection();
             LarnixClient?.Dispose();
             MyRSA?.Dispose();
 

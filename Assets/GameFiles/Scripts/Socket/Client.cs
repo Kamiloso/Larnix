@@ -63,6 +63,8 @@ namespace Larnix.Socket
             else throw new System.NotSupportedException("Unknown address type.");
 
             udpClient.Client.Blocking = false;
+            udpClient.Client.ReceiveBufferSize = 1024 * 1024; // 1 MB
+
             return udpClient;
         }
 
@@ -102,9 +104,9 @@ namespace Larnix.Socket
             connection.Send(packet, safemode);
         }
 
-        public void KillConnection()
+        public void FinishConnection()
         {
-            connection.KillConnection();
+            connection.FinishConnection();
         }
 
         public bool IsDead()
@@ -114,6 +116,7 @@ namespace Larnix.Socket
 
         public void Dispose()
         {
+            FinishConnection();
             udpClient.Dispose();
         }
     }

@@ -23,7 +23,7 @@ namespace Larnix
 
         public static bool IsGoodPassword(string password) =>
             !password.Contains('\0') &&
-            password.Length is >= 3 and <= 32;
+            password.Length is >= 7 and <= 32;
 
         public static bool IsGoodMessage(string message) =>
             !message.Contains('\0') &&

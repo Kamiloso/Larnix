@@ -12,6 +12,9 @@ namespace Larnix.Client
         private uint LastKnown = 0;
         private Dictionary<ulong, EntityProjection> Projections = new Dictionary<ulong, EntityProjection>();
 
+        private bool AlreadyStarted = false;
+        private uint StartedFixed = 0;
+
         private void Awake()
         {
             References.EntityProjections = this;
@@ -23,6 +26,12 @@ namespace Larnix.Client
 
             if ((int)(msg.PacketFixedIndex - LastKnown) <= 0) return; // drop, older data
             LastKnown = msg.PacketFixedIndex;
+
+            if(!AlreadyStarted)
+            {
+                StartedFixed = msg.PacketFixedIndex;
+                AlreadyStarted = true;
+            }
 
             Dictionary<ulong, EntityData> dict = msg.EntityTransforms;
 
@@ -42,20 +51,27 @@ namespace Larnix.Client
             // Handle loaded projections
             foreach(var kvp in dict)
             {
-                if(Projections.ContainsKey(kvp.Key)) // update transform
+                ulong uid = kvp.Key;
+                EntityData entity = kvp.Value;
+
+                double time_update = msg.PacketUpdateTime;
+                double time_fixed = (double)((msg.PacketFixedIndex - StartedFixed) * Time.fixedDeltaTime);
+                double time = entity.ID != EntityID.Player ? time_fixed : time_update;
+
+                if (Projections.ContainsKey(uid)) // update transform
                 {
-                    Projections[kvp.Key].UpdateTransform(kvp.Value, msg.PacketUpdateTime);
+                    Projections[uid].UpdateTransform(entity, time);
                 }
                 else // create new projection
                 {
-                    Projections.Add(kvp.Key, CreateProjection(kvp.Key, kvp.Value, msg.PacketUpdateTime));
+                    Projections.Add(uid, CreateProjection(uid, entity, time));
                 }
             }
         }
 
         private EntityProjection CreateProjection(ulong uid, EntityData entityData, double time)
         {
-            GameObject gobj = EntityPrefabs.CreateObject(entityData.ID, "Client");
+            GameObject gobj = Prefabs.CreateEntity(entityData.ID, Prefabs.Mode.Client);
             gobj.transform.SetParent(transform, false);
             gobj.transform.name = entityData.ID.ToString() + " [" + uid + "]";
             EntityProjection projection = gobj.GetComponent<EntityProjection>();

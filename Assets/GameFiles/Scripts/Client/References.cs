@@ -9,5 +9,6 @@ namespace Larnix.Client
         public static Client Client;
         public static MainPlayer MainPlayer;
         public static EntityProjections EntityProjections;
+        public static LoadingScreen LoadingScreen;
     }
 }

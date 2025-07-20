@@ -24,17 +24,19 @@ namespace Larnix.Socket
 
         private const float CON_RESET_TIME = 1f; // seconds
         private float timeToResetCon = CON_RESET_TIME;
-        private Dictionary<IPAddress, uint> recentConCount = new Dictionary<IPAddress, uint>();
+        private Dictionary<IPAddress, uint> recentConCount = new();
 
-        private readonly Func<string, string, bool> TryLogin;
+        private readonly Action<IPEndPoint, string, string> TryLogin;
         private readonly Func<Packet, Packet> GetNcnAnswer;
+
+        private readonly Dictionary<IPEndPoint, PreLoginBuffer> PreLoginBuffers = new();
 
         public Server(
             ushort port,
             ushort max_clients,
             bool allowInternetTraffic,
             RSA keyRSA,
-            Func<string, string, bool> tryLogin,
+            Action<IPEndPoint, string, string> tryLogin,
             Func<Packet, Packet> getNcnAnswer)
         {
             TryLogin = tryLogin;
@@ -108,6 +110,9 @@ namespace Larnix.Socket
             udpClientV4.Client.Blocking = false;
             udpClientV6.Client.Blocking = false;
 
+            udpClientV4.Client.ReceiveBufferSize = 1024 * 1024; // 1 MB
+            udpClientV6.Client.ReceiveBufferSize = 1024 * 1024; // 1 MB
+
             Port = port;
             return true;
         }
@@ -133,6 +138,64 @@ namespace Larnix.Socket
                 return udpClientV6.Receive(ref remoteEP);
 
             return null;
+        }
+
+        private int findFreeUserSlot(IPEndPoint endPoint) // -1 => problem occured
+        {
+            foreach(Connection conn in connections)
+            {
+                if (conn != null && conn.EndPoint.Equals(endPoint))
+                    return -1; // endpoint collision
+            }
+
+            for (int i = 0; i < MaxClients; i++)
+            {
+                Connection conn = connections[i];
+
+                if (conn == null)
+                    return i; // found
+            }
+
+            return -1; // no free slot found
+        }
+
+        public void LoginAccept(IPEndPoint remoteEP)
+        {
+            if (!PreLoginBuffers.ContainsKey(remoteEP))
+                throw new InvalidOperationException("Couldn't find login request to accept.");
+
+            PreLoginBuffer preLoginBuffer = PreLoginBuffers[remoteEP];
+            AllowConnection allowConnection = preLoginBuffer.AllowConnection;
+
+            int freeSpace = findFreeUserSlot(remoteEP);
+            if (freeSpace == -1 || nicknames.Contains(allowConnection.Nickname))
+            {
+                LoginDeny(remoteEP);
+                return;
+            }
+
+            bool IsIPv4Client = (remoteEP.AddressFamily == AddressFamily.InterNetwork);
+            Connection connection = new Connection(IsIPv4Client ? udpClientV4 : udpClientV6, remoteEP, allowConnection.KeyAES);
+
+            bool hasSyn = true;
+            foreach (byte[] bytes in preLoginBuffer.GetBuffer())
+            {
+                connection.PushFromWeb(bytes, hasSyn);
+                hasSyn = false;
+            }
+
+            connections[freeSpace] = connection;
+            nicknames[freeSpace] = allowConnection.Nickname;
+
+            PreLoginBuffers.Remove(remoteEP);
+        }
+
+        public void LoginDeny(IPEndPoint remoteEP)
+        {
+            if (!PreLoginBuffers.ContainsKey(remoteEP))
+                throw new InvalidOperationException("Couldn't find login request to deny.");
+
+            PreLoginBuffers.Remove(remoteEP);
         }
 
         public Queue<PacketAndOwner> ServerTickAndReceive(float deltaTime)
@@ -221,22 +284,7 @@ namespace Larnix.Socket
                     {
                         if (header.HasFlag(SafePacket.PacketFlag.SYN)) // start connection
                         {
-                            bool foundSessionConflict = false;
-                            int foundFreeSpace = -1;
-                            for (int i = 0; i < MaxClients; i++)
-                            {
-                                Connection conn = connections[i];
-
-                                if (conn != null && conn.EndPoint.Equals(remoteEP))
-                                {
-                                    foundSessionConflict = true;
-                                    break;
-                                }
-
-                                if (conn == null && foundFreeSpace == -1)
-                                    foundFreeSpace = i;
-                            }
-                            if (foundSessionConflict || foundFreeSpace == -1)
+                            if (findFreeUserSlot(remoteEP) == -1)
                                 continue;
 
                             SafePacket safeSynPacket = new SafePacket();
@@ -258,23 +306,34 @@ namespace Larnix.Socket
                             string password = allowConnection.Password;
                             byte[] keyAES = allowConnection.KeyAES;
 
-                            if (nicknames.Contains(nickname) || !TryLogin(nickname, password))
+                            if (nicknames.Contains(nickname))
                                 continue;
 
-                            Connection connection = new Connection(IsIPv4Client ? udpClientV4 : udpClientV6, remoteEP, keyAES);
-                            connection.PushFromWeb(bytes, true);
+                            if (!PreLoginBuffers.ContainsKey(remoteEP))
+                            {
+                                PreLoginBuffer preLoginBuffer = new PreLoginBuffer(allowConnection);
+                                preLoginBuffer.AddPacket(bytes);
+                                PreLoginBuffers.Add(remoteEP, preLoginBuffer);
 
-                            connections[foundFreeSpace] = connection;
-                            nicknames[foundFreeSpace] = nickname;
+                                TryLogin(remoteEP, nickname, password);
+                            }
+
                         }
                         else // receive connection packet
                         {
-                            foreach (Connection conn in connections)
+                            if(PreLoginBuffers.ContainsKey(remoteEP))
                             {
-                                if (conn != null && conn.EndPoint.Equals(remoteEP))
+                                PreLoginBuffers[remoteEP].AddPacket(bytes);
+                            }
+                            else
+                            {
+                                foreach (Connection conn in connections)
                                 {
-                                    conn.PushFromWeb(bytes);
-                                    break;
+                                    if (conn != null && conn.EndPoint.Equals(remoteEP))
+                                    {
+                                        conn.PushFromWeb(bytes);
+                                        break;
+                                    }
                                 }
                             }
                         }
@@ -359,30 +418,31 @@ namespace Larnix.Socket
 
         public ushort CountPlayers() => (ushort)nicknames.Count(n => n != null);
 
-        public void KillConnection(string nickname)
+        public void FinishConnection(string nickname)
         {
             for (int i = 0; i < MaxClients; i++)
             {
                 Connection connection = connections[i];
                 if (nicknames[i] == nickname)
                 {
-                    connection.KillConnection();
+                    connection.FinishConnection();
                     break;
                 }
             }
         }
 
-        public void KillAllConnections()
+        public void FinishAllConnections()
         {
             foreach(Connection connection in connections)
             {
                 if (connection != null)
-                    connection.KillConnection();
+                    connection.FinishConnection();
             }
         }
         
         public void Dispose()
         {
+            FinishAllConnections();
             ResetDoubleSocket();
         }
 

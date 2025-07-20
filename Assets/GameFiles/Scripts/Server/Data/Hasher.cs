@@ -1,8 +1,9 @@
 using System;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
 
-public class Hasher
+public static class Hasher
 {
     public static string HashPassword(string password)
     {
@@ -19,7 +20,6 @@ public class Hasher
         }
     }
 
-
     public static bool VerifyPassword(string password, string storedSaltedHash)
     {
         string[] parts = storedSaltedHash.Split(':');
@@ -34,5 +34,15 @@ public class Hasher
             byte[] hash = pbkdf2.GetBytes(32);
             return CryptographicOperations.FixedTimeEquals(storedHash, hash);
         }
+    }
+
+    public static Task<string> HashPasswordAsync(string password)
+    {
+        return Task.Run(() => HashPassword(password));
+    }
+
+    public static Task<bool> VerifyPasswordAsync(string password, string storedSaltedHash)
+    {
+        return Task.Run(() => VerifyPassword(password, storedSaltedHash));
     }
 }

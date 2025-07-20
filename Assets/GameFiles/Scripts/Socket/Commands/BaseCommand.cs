@@ -6,26 +6,6 @@ using UnityEngine;
 
 namespace Larnix.Socket.Commands
 {
-    public enum Name : byte
-    {
-        // Connection commands
-        None,
-        AllowConnection,
-        Stop,
-        DebugMessage,
-
-        // Prompts and answers
-        P_ServerInfo,
-        A_ServerInfo,
-        P_PasswordChange,
-        A_PasswordChange,
-
-        // Game commands
-        PlayerInitialize,
-        PlayerUpdate,
-        EntityBroadcast,
-    }
-
     public abstract class BaseCommand
     {
         public bool HasProblems { get; protected set; } = false;

@@ -9,7 +9,8 @@ using Larnix.Server.Data;
 using System.Security.Cryptography;
 using System.Linq;
 using Larnix.Files;
-using Unity.VisualScripting;
+using System.Net;
+using System.Threading.Tasks;
 
 namespace Larnix.Server
 {
@@ -27,6 +28,9 @@ namespace Larnix.Server
         private float saveCycleTimer = 0f;
         private bool updateStartDone = false;
         private float broadcastCycleTimer = 0f;
+
+        private readonly Dictionary<IPAddress, uint> loginAmount = new();
+        private const uint MAX_LOGIN_AMOUNT = 6; // per minute
 
         // Server initialization
         private void Awake()
@@ -67,6 +71,22 @@ namespace Larnix.Server
             
             if (IsLocal)
                 WorldLoad.RsaPublicKey = KeyToPublicBytes(CompleteRSA);
+        }
+
+        private void Start()
+        {
+            StartCoroutine(RunEveryMinute());
+        }
+
+        private IEnumerator RunEveryMinute()
+        {
+            while (true)
+            {
+                // clean login limits
+                loginAmount.Clear();
+
+                yield return new WaitForSeconds(60f);
+            }
         }
 
         private void EarlyUpdate() // Executes BEFORE default Update() time
@@ -196,7 +216,7 @@ namespace Larnix.Server
         }
         public void Kick(string nickname)
         {
-            LarnixServer.KillConnection(nickname);
+            LarnixServer.FinishConnection(nickname);
         }
 
         private Packet AnswerToNcnPacket(Packet packet)
@@ -232,34 +252,60 @@ namespace Larnix.Server
                 return answer.GetPacket();
             }
 
-            if ((Name)packet.ID == Name.P_PasswordChange)
-            {
-                P_PasswordChange prompt = new P_PasswordChange(packet);
-                if (prompt.HasProblems)
-                    return null;
-
-                string checkNickname = prompt.Nickname;
-                string oldPassword = prompt.OldPassword;
-                string newPassword = prompt.NewPassword;
-
-                A_PasswordChange answer = new A_PasswordChange(
-                    Database.ChangePassword(checkNickname, oldPassword, newPassword)
-                    );
-                if (answer.HasProblems)
-                    throw new Exception("Error making password change answer.");
-
-                return answer.GetPacket();
-            }
-
             return null;
         }
 
-        private bool TryLogin(string username, string password)
+        private void TryLogin(IPEndPoint remoteEP, string username, string password)
+        {
+            StartCoroutine(LoginCoroutine(remoteEP, username, password));
+        }
+
+        private IEnumerator LoginCoroutine(IPEndPoint remoteEP, string username, string password)
         {
             if (!IsLocal && username == "Player")
-                return false;
+            {
+                LarnixServer.LoginDeny(remoteEP);
+                yield break; // "Player" nickname is reserved for singleplayer
+            }
 
-            return Database.AllowUser(username, password);
+            if (!loginAmount.ContainsKey(remoteEP.Address))
+                loginAmount[remoteEP.Address] = 0;
+
+            if (loginAmount[remoteEP.Address]++ >= MAX_LOGIN_AMOUNT)
+            {
+                LarnixServer.LoginDeny(remoteEP);
+                yield break; // too many login tries in this minute
+            }
+
+            if (Database.UserExists(username))
+            {
+                string password_hash = Database.GetPasswordHash(username);
+                Task<bool> verifyTask = Hasher.VerifyPasswordAsync(password, password_hash);
+
+                yield return new WaitUntil(() => verifyTask.IsCompleted);
+
+                if (verifyTask.Result)
+                {
+                    LarnixServer.LoginAccept(remoteEP);
+                    yield break; // good password
+                }
+                else
+                {
+                    LarnixServer.LoginDeny(remoteEP);
+                    yield break; // wrong password
+                }
+            }
+            else
+            {
+                Task<string> hashTask = Hasher.HashPasswordAsync(password);
+
+                yield return new WaitUntil(() => hashTask.IsCompleted);
+
+                string hashed_password = hashTask.Result;
+                Database.AddUser(username, hashed_password);
+                LarnixServer.LoginAccept(remoteEP);
+                yield break; // created new account
+            }
         }
 
         private static byte[] KeyToPublicBytes(RSA rsa)
@@ -305,7 +351,6 @@ namespace Larnix.Server
             SaveAllNow();
 
             // 5 --> SERVER
-            LarnixServer?.KillAllConnections();
             LarnixServer?.Dispose();
 
             // 4 ---> DATABASE

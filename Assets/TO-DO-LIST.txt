@@ -1,0 +1,11 @@
+=== Larnix TO-DO-LIST ===
+
+- Better smooth: split EntityBroadcast
+- IPv6 masking id : flood security
+- Password hashing cache
+- float formating problem in config.json
+- Unity Info server build into config
+- Chunk loading lag spikes
+- RectPhysics system
+- Client offset & Dimension system
+- NBT system: Internal / Visual

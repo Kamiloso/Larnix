@@ -5,7 +5,7 @@ namespace Larnix.Client
 {
     public class Smoother
     {
-        private const int IncludeCount = 3;
+        private const int IncludeCount = 4;
         private const float CorrectionProportion = 0.15f;
         private const float MaxPositionDifference = 1.0f;
 

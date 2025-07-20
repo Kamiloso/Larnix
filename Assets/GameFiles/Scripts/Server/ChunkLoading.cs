@@ -23,15 +23,13 @@ namespace Larnix.Server
             Full
         }
 
-        private readonly Dictionary<Vector2Int, LoadState> LoadedChunks = new Dictionary<Vector2Int, LoadState>();
-        private readonly Dictionary<Vector2Int, float> UnloadTimer = new Dictionary<Vector2Int, float>();
-        private readonly Dictionary<Vector2Int, GameObject> Chunks = new Dictionary<Vector2Int, GameObject>();
+        private readonly Dictionary<Vector2Int, LoadState> LoadedChunks = new();
+        private readonly Dictionary<Vector2Int, float> UnloadTimer = new();
+        private readonly Dictionary<Vector2Int, ChunkServer> Chunks = new();
 
         private const int LazyLoadingDistance = FullLoadingDistance + 1;
-        private const int FullLoadingDistance = 4;
+        private const int FullLoadingDistance = 3;
         private const float UnloadingTime = 4f; // seconds
-
-        [SerializeField] GameObject Chunk;
 
         private void Awake()
         {
@@ -97,10 +95,14 @@ namespace Larnix.Server
 
             if (!LoadedChunks.ContainsKey(chunk))
             {
-                GameObject chunkObj = Instantiate(Chunk, new Vector2(chunk.x * 16, chunk.y * 16), Quaternion.identity);
+                GameObject chunkObj = Prefabs.CreateChunk(Prefabs.Mode.Server);
+                chunkObj.transform.position = ChunkStartingCoords(chunk);
                 chunkObj.transform.SetParent(transform, false);
                 chunkObj.name = "Chunk [" + chunk.x + ", " + chunk.y + "]";
-                Chunks.Add(chunk, chunkObj);
+
+                ChunkServer chunkServer = chunkObj.GetComponent<ChunkServer>();
+                chunkServer.Initialize(chunk);
+                Chunks.Add(chunk, chunkServer);
             }
 
             // Load entities
@@ -121,7 +123,7 @@ namespace Larnix.Server
         {
             // Remove block chunk
 
-            Destroy(Chunks[chunk]);
+            Destroy(Chunks[chunk].gameObject);
             Chunks.Remove(chunk);
 
             // --- Entities will unload from EntityManager in the same frame ---
@@ -186,6 +188,11 @@ namespace Larnix.Server
                 (int)System.Math.Floor(position.x / 16),
                 (int)System.Math.Floor(position.y / 16)
                 );
+        }
+
+        public static Vector2 ChunkStartingCoords(Vector2Int chunk)
+        {
+            return 16 * new Vector2(chunk.x, chunk.y);
         }
     }
 }

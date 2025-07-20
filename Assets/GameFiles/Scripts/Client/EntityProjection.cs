@@ -53,7 +53,7 @@ namespace Larnix.Client
 
         public void UpdateTransform(EntityData entityData, double time)
         {
-            if(!Initialized)
+            if (!Initialized)
             {
                 Smoother = new Smoother(time, entityData.Position, entityData.Rotation);
                 Initialized = true;
