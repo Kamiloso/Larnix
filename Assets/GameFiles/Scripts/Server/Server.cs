@@ -29,8 +29,8 @@ namespace Larnix.Server
         private bool updateStartDone = false;
         private float broadcastCycleTimer = 0f;
 
-        private readonly Dictionary<IPAddress, uint> loginAmount = new();
-        private const uint MAX_LOGIN_AMOUNT = 6; // per minute
+        private readonly Dictionary<InternetID, uint> loginAmount = new();
+        private const uint MAX_HASHING_AMOUNT = 3; // logins per minute
 
         // Server initialization
         private void Awake()
@@ -53,6 +53,8 @@ namespace Larnix.Server
 
             // CONFIG --> 3
             ServerConfig = Config.Obtain(WorldDir, IsLocal);
+            InternetID.MaskIPv4 = ServerConfig.ClientIdentityPrefixSizeIPv4;
+            InternetID.MaskIPv6 = ServerConfig.ClientIdentityPrefixSizeIPv6;
 
             // DATABASE --> 4
             Database = new Database(WorldDir, "database.sqlite");
@@ -268,19 +270,24 @@ namespace Larnix.Server
                 yield break; // "Player" nickname is reserved for singleplayer
             }
 
-            if (!loginAmount.ContainsKey(remoteEP.Address))
-                loginAmount[remoteEP.Address] = 0;
+            InternetID internetID = new InternetID(remoteEP.Address);
 
-            if (loginAmount[remoteEP.Address]++ >= MAX_LOGIN_AMOUNT)
+            if (!loginAmount.ContainsKey(internetID))
+                loginAmount[internetID] = 0;
+
+            if (loginAmount[internetID] >= MAX_HASHING_AMOUNT)
             {
                 LarnixServer.LoginDeny(remoteEP);
-                yield break; // too many login tries in this minute
+                yield break; // too many hashing tries in this minute
             }
 
             if (Database.UserExists(username))
             {
                 string password_hash = Database.GetPasswordHash(username);
                 Task<bool> verifyTask = Hasher.VerifyPasswordAsync(password, password_hash);
+
+                if (!Hasher.InCache(password, password_hash))
+                    loginAmount[internetID]++; // hash will be calculated
 
                 yield return new WaitUntil(() => verifyTask.IsCompleted);
 
@@ -298,6 +305,8 @@ namespace Larnix.Server
             else
             {
                 Task<string> hashTask = Hasher.HashPasswordAsync(password);
+
+                loginAmount[internetID]++; // hash will be calculated
 
                 yield return new WaitUntil(() => hashTask.IsCompleted);
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 using Larnix.Files;
+using Larnix.Socket;
 
 namespace Larnix.Server.Data
 {
@@ -15,13 +16,15 @@ namespace Larnix.Server.Data
         Server (local / remote) can store its values into JSON file and load them on start.
         */
 
-        public ushort ConfigVersion = 1;
+        public ushort ConfigVersion = 2;
         public ushort MaxPlayers = 10;
         public ushort Port = 27682;
         public bool AllowRemoteClients = true;
         public string Motd = "Welcome to Larnix server!";
         public float DataSavingPeriod = 15.00f;
         public float EntityBroadcastPeriod = 0.04f;
+        public int ClientIdentityPrefixSizeIPv4 = 32;
+        public int ClientIdentityPrefixSizeIPv6 = 56;
 
         public Config(bool local)
         {
@@ -71,7 +74,12 @@ namespace Larnix.Server.Data
                 oldConfig.DataSavingPeriod = defaultConfig.DataSavingPeriod;
                 oldConfig.EntityBroadcastPeriod = defaultConfig.EntityBroadcastPeriod;
             }
-            // if(oldConfig.ConfigVersion < 2)
+            if(oldConfig.ConfigVersion < 2)
+            {
+                oldConfig.ClientIdentityPrefixSizeIPv4 = defaultConfig.ClientIdentityPrefixSizeIPv4;
+                oldConfig.ClientIdentityPrefixSizeIPv6 = defaultConfig.ClientIdentityPrefixSizeIPv6;
+            }
+            // if(oldConfig.ConfigVersion < 3)
             // {
             //     UPDATE MORE VARIABLES
             // }

@@ -24,7 +24,7 @@ namespace Larnix.Socket
 
         private const float CON_RESET_TIME = 1f; // seconds
         private float timeToResetCon = CON_RESET_TIME;
-        private Dictionary<IPAddress, uint> recentConCount = new();
+        private Dictionary<InternetID, uint> recentConCount = new();
 
         private readonly Action<IPEndPoint, string, string> TryLogin;
         private readonly Func<Packet, Packet> GetNcnAnswer;
@@ -226,8 +226,8 @@ namespace Larnix.Socket
                 SafePacket header = new SafePacket();
                 if (header.TryDeserialize(bytes, true))
                 {
-                    IPAddress ip = remoteEP.Address;
-                    uint conCount = recentConCount.ContainsKey(ip) ? recentConCount[ip] : 0;
+                    InternetID internetID = new InternetID(remoteEP.Address);
+                    uint conCount = recentConCount.ContainsKey(internetID) ? recentConCount[internetID] : 0;
 
                     // Limit packets with specific flags
                     if (header.HasFlag(SafePacket.PacketFlag.SYN) ||
@@ -235,7 +235,7 @@ namespace Larnix.Socket
                         header.HasFlag(SafePacket.PacketFlag.NCN))
                     {
                         if (conCount < 3)
-                            recentConCount[ip] = ++conCount;
+                            recentConCount[internetID] = ++conCount;
                         else
                             continue;
                     }
