@@ -12,6 +12,7 @@ namespace Larnix.Client
     {
         [SerializeField] Camera Camera;
         [SerializeField] EntityProjection EntityProjection;
+        [SerializeField] Vector2 CameraDeltaPosition;
         
         private uint FixedCounter = 0;
         private uint LastSentFixedCounter = 0;
@@ -20,11 +21,12 @@ namespace Larnix.Client
 
         private const float StepSize = 0.1f;
 
-        private const float CameraZoomMin = 2.4f;
-        private const float CameraZoomMax = 6.0f;
+        private const float CameraDefaultZoom = 6.0f;
+        private const float CameraZoomMin = 4.5f;
+        private const float CameraZoomMax = 7.5f;
         private const float CameraZoomStep = 0.3f;
 
-        private float CameraZoom = 4.2f; // default zoom
+        private float CameraZoom = CameraDefaultZoom;
 
         private void Awake()
         {
@@ -132,7 +134,7 @@ namespace Larnix.Client
             // Camera update
             
             Vector2 plr = EntityProjection.transform.position;
-            Camera.transform.position = new Vector3(plr.x, plr.y, Camera.transform.position.z);
+            Camera.transform.position = new Vector3(plr.x, plr.y, Camera.transform.position.z) + (Vector3)CameraDeltaPosition;
             Camera.orthographicSize = CameraZoom;
         }
 

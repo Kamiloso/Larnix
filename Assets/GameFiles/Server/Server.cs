@@ -26,17 +26,25 @@ namespace Larnix.Server
         public Database Database { get; private set; } = null;
 
         private float saveCycleTimer = 0f;
-        private bool updateStartDone = false;
         private float broadcastCycleTimer = 0f;
 
         private readonly Dictionary<InternetID, uint> loginAmount = new();
         private const uint MAX_HASHING_AMOUNT = 4; // max hashing amount per minute per client
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        static void SetupLogger()
+        {
+#if UNITY_SERVER && !UNITY_EDITOR
+            Debug.unityLogger.logEnabled = false;
+#endif
+        }
 
         // Server initialization
         private void Awake()
         {
             if(WorldLoad.LoadType == WorldLoad.LoadTypes.None)
                 WorldLoad.StartServer();
+
             WorldDir = WorldLoad.WorldDirectory;
             IsLocal = WorldLoad.LoadType == WorldLoad.LoadTypes.Local;
 
@@ -77,6 +85,29 @@ namespace Larnix.Server
 
         private void Start()
         {
+            Action<string> NormalLog;
+            Action<string> WarningLog;
+
+            if (IsLocal)
+            {
+                NormalLog = UnityEngine.Debug.Log;
+                WarningLog = UnityEngine.Debug.LogWarning;
+            }
+            else
+            {
+                NormalLog = (string s) => Console.Log(s);
+                WarningLog = (string s) => Console.LogWarning(s);
+            }
+
+            Console.SetTitle("Larnix Server " + Common.GAME_VERSION);
+            Console.LogRaw(new string('-', 60) + "\n");
+
+            NormalLog("Server started on port " + LarnixServer.Port);
+            if (CompleteRSA != null) NormalLog("AuthCodeRSA (copy to connect): " + KeyObtainer.ProduceAuthCodeRSA(KeyToPublicBytes(CompleteRSA)));
+            else WarningLog("Every connection will be unencrypted! Couldn't find or generate RSA keys!");
+
+            if (!IsLocal) Console.StartInputThread();
+
             StartCoroutine(RunEveryMinute());
         }
 
@@ -93,14 +124,6 @@ namespace Larnix.Server
 
         private void EarlyUpdate() // Executes BEFORE default Update() time
         {
-            if(!updateStartDone)
-            {
-                DedicatedConsole.LogSuccess("Server started on port " + LarnixServer.Port);
-                if (!IsLocal && CompleteRSA != null)
-                    UnityEngine.Debug.Log("AuthCodeRSA (copy to connect): " + KeyObtainer.ProduceAuthCodeRSA(KeyToPublicBytes(CompleteRSA)));
-                updateStartDone = true;
-            }
-
             References.ChunkLoading.FromEarlyUpdate(); // 1
             References.EntityManager.FromEarlyUpdate(); // 2
 
@@ -130,16 +153,7 @@ namespace Larnix.Server
                     }
 
                     // Info to console
-                    UnityEngine.Debug.Log(owner + " joined the game.");
-
-                    // Temporarily spawn Wildpig
-                    References.EntityManager.SummonEntity(new Entities.EntityData
-                    {
-                        ID = Entities.EntityID.Wildpig,
-                        Position = playerController.EntityData.Position,
-                        Rotation = 0f,
-                        NBT = "{}"
-                    });
+                    Console.Log(owner + " joined the game.");
                 }
 
                 if((Name)packet.ID == Name.Stop)
@@ -151,7 +165,7 @@ namespace Larnix.Server
                     References.PlayerManager.DisconnectPlayer(owner);
 
                     // Info to console
-                    UnityEngine.Debug.Log(owner + " disconnected.");
+                    Console.Log(owner + " disconnected.");
                 }
 
                 /*if((Name)packet.ID == Name.DebugMessage)
@@ -186,6 +200,8 @@ namespace Larnix.Server
                     }
                 }
             }
+
+            InterpretConsoleInput(); // LATE EarlyUpdate()
         }
 
         private void LateUpdate()
@@ -311,6 +327,49 @@ namespace Larnix.Server
                 Database.AddUser(username, hashed_password);
                 LarnixServer.LoginAccept(remoteEP);
                 yield break; // created new account
+            }
+        }
+
+        public void InterpretConsoleInput()
+        {
+            while(true)
+            {
+                string cmd = Console.GetCommand();
+                if (cmd == null) break;
+                string[] arg = cmd.Split(' ');
+
+                if (arg.Length == 1 && arg[0] == "help")
+                {
+                    Console.LogRaw("\n");
+                    Console.LogRaw(" | ------ COMMAND LIST ------\n");
+                    Console.LogRaw(" |\n");
+                    Console.LogRaw(" | help - Displays this documentation.\n");
+                    Console.LogRaw(" | stop - Turns off the server.\n");
+                    Console.LogRaw(" | kick [nickname] - Kicks the player if online.\n");
+                    Console.LogRaw("\n");
+                }
+
+                else if (arg.Length == 1 && arg[0] == "stop")
+                {
+                    if (!IsLocal) Application.Quit();
+                    else Kick("Player"); // when the main player is kicked, he will return to menu and the local server will close
+                }
+
+                else if (arg.Length == 2 && arg[0] == "kick")
+                {
+                    string nickname = arg[1];
+                    if (References.PlayerManager.GetPlayerState(nickname) != PlayerManager.PlayerState.None)
+                    {
+                        Kick(nickname);
+                        Console.LogSuccess("Player " + nickname + " has been kicked.");
+                    }
+                    else
+                    {
+                        Console.LogError("Player " + nickname + " is not online!");
+                    }
+                }
+
+                else Console.LogError("Unknown command! Type 'help' for documentation.");
             }
         }
 

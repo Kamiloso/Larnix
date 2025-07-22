@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Net;
-using UnityEngine;
 using Larnix.Socket.Commands;
 using Unity.VisualScripting;
 using System.Security.Cryptography;
@@ -62,14 +61,10 @@ namespace Larnix.Socket
                         {
                             ResetDoubleSocket();
                         }
-                        else
-                        {
-                            UnityEngine.Debug.Log("Created double socket on random dynamic port.");
-                            break;
-                        }
+                        else break; // SUCCESS: random dynamic port
                     }
                 }
-                else UnityEngine.Debug.Log("Created double socket on system-given dynamic port.");
+                else { } // SUCCESS: system-given dynamic port
             }
             else
             {
@@ -78,7 +73,7 @@ namespace Larnix.Socket
                     ResetDoubleSocket();
                     throw new Exception("Couldn't create double socket on port " + port);
                 }
-                else UnityEngine.Debug.Log("Created double socket on set port.");
+                else { } // SUCCESS: set port
             }
 
             MaxClients = max_clients;

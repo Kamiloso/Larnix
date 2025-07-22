@@ -18,16 +18,16 @@ namespace Larnix
         }
 
         public static LoadTypes LoadType { get; private set; } = LoadTypes.None;
-        public static string ServerAddress { get; set; } = string.Empty;
-        public static string WorldDirectory { get; set; } = string.Empty;
-        public static string ScreenLoad { get; set; } = "MainMenu";
+        public static string ServerAddress = "";
+        public static string WorldDirectory = "";
+        public static string ScreenLoad = "MainMenu";
 
         // Set on client start and reset on client exit, WARNING: null -> no SYN encryption
-        public static byte[] RsaPublicKey { get; set; } = null;
+        public static byte[] RsaPublicKey = null;
 
         // Client data
-        public static string Nickname { get; set; } = string.Empty;
-        public static string Password { get; set; } = string.Empty;
+        public static string Nickname = "";
+        public static string Password = "";
 
         public static void StartLocal(string worldName)
         {
@@ -39,8 +39,8 @@ namespace Larnix
             Nickname = "Player";
             Password = "SGP_PASSWORD";
 
+            // Client will load the server on awake
             SceneManager.LoadScene("Client");
-            // client will load the server on awake
         }
 
         public static void StartRemote(string server_address, string nickname, string password, byte[] public_key)
@@ -54,6 +54,7 @@ namespace Larnix
 
             RsaPublicKey = public_key;
 
+            // Client will try to connect to the server
             SceneManager.LoadScene("Client");
         }
 
