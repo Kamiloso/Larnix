@@ -34,6 +34,7 @@ namespace Larnix.Client
             }
 
             Dictionary<ulong, EntityData> dict = msg.EntityTransforms;
+            Dictionary<ulong, uint> fixeds = msg.PlayerFixedIndexes;
 
             if (dict.ContainsKey(References.Client.MyUID))
                 dict.Remove(References.Client.MyUID);
@@ -56,15 +57,17 @@ namespace Larnix.Client
 
                 double time_update = msg.PacketUpdateTime;
                 double time_fixed = (double)((msg.PacketFixedIndex - StartedFixed) * Time.fixedDeltaTime);
-                double time = entity.ID != EntityID.Player ? time_fixed : time_update;
+
+                if (fixeds.ContainsKey(uid)) // extra fixed (smoothing based on other client's info)
+                    time_fixed = (double)(fixeds[uid] * Time.fixedDeltaTime);
 
                 if (Projections.ContainsKey(uid)) // update transform
                 {
-                    Projections[uid].UpdateTransform(entity, time);
+                    Projections[uid].UpdateTransform(entity, time_fixed);
                 }
                 else // create new projection
                 {
-                    Projections.Add(uid, CreateProjection(uid, entity, time));
+                    Projections.Add(uid, CreateProjection(uid, entity, time_fixed));
                 }
             }
         }

@@ -5,6 +5,7 @@ using UnityEngine;
 using Larnix.Entities;
 using Larnix.Socket.Commands;
 using Larnix.Socket;
+using System.Linq;
 
 namespace Larnix.Server
 {
@@ -16,18 +17,9 @@ namespace Larnix.Server
         private readonly Dictionary<ulong, EntityData> UnloadedEntityData = new Dictionary<ulong, EntityData>();
         private readonly Dictionary<ulong, EntityData> DeletedEntityData = new Dictionary<ulong, EntityData>();
 
-        private uint LastFixedUpdateSend = 0;
-        private uint FixedUpdateCounter = 1;
-        private double SendingTime = 0.0;
-
         private void Awake()
         {
             References.EntityDataManager = this;
-        }
-
-        private void FixedUpdate()
-        {
-            FixedUpdateCounter++;
         }
 
         public EntityData TryFindEntityData(ulong uid)
@@ -46,7 +38,7 @@ namespace Larnix.Server
 
         public Dictionary<ulong, EntityData> GetUnloadedEntitiesByChunk(Vector2Int chunkCoords)
         {
-            Dictionary<ulong, EntityData> entityList = References.Server.Database.GetEntitiesByChunk(chunkCoords);
+            Dictionary<ulong, EntityData> entityList = References.Server.Database.GetEntitiesByChunkNoPlayers(chunkCoords);
 
             foreach(var vkp in EntityData)
             {
@@ -77,7 +69,10 @@ namespace Larnix.Server
                 else
                 {
                     if(in_the_chunk)
-                        entityList.Add(vkp.Key, newData); // additional data found
+                    {
+                        if(newData.ID != EntityID.Player)
+                            entityList.Add(vkp.Key, newData); // additional data found
+                    }
                 }
             }
 
@@ -120,26 +115,6 @@ namespace Larnix.Server
 
             References.Server.Database.FlushEntities(MergeDictionaries(EntityData, UnloadedEntityData));
             UnloadedEntityData.Clear();
-        }
-
-        public void SendEntityBroadcast()
-        {
-            if (LastFixedUpdateSend == FixedUpdateCounter)
-                return; // don't send the same thing with different TimeCounter
-
-            EntityBroadcast entityBroadcast = new EntityBroadcast(
-                FixedUpdateCounter,
-                SendingTime,
-                EntityData
-                );
-            if(!entityBroadcast.HasProblems) // Has problems if has over 2048 entities.
-            {
-                Packet packet = entityBroadcast.GetPacket();
-                References.Server.Broadcast(packet, false); // unsafe mode (over raw UDP)
-            }
-
-            LastFixedUpdateSend = FixedUpdateCounter;
-            SendingTime += References.Server.ServerConfig.EntityBroadcastPeriod;
         }
 
         private static Dictionary<ulong, EntityData> MergeDictionaries(

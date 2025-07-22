@@ -5,8 +5,8 @@ namespace Larnix.Client
 {
     public class Smoother
     {
-        private const int IncludeCount = 4;
-        private const float CorrectionProportion = 0.15f;
+        private const int IncludeCount = 3;
+        private const float SmoothTime = 0.15f;
         private const float MaxPositionDifference = 1.0f;
 
         private readonly List<double> Times = new List<double>();
@@ -29,6 +29,9 @@ namespace Larnix.Client
 
         public void AddRecord(double time, Vector2 position, float rotation)
         {
+            if (Times.Count > 0 && time <= Times[Times.Count - 1])
+                ResetPredictor(); // something is wrong, ignore previous records
+
             Times.Add(time);
             Positions.Add(position);
             Rotations.Add(rotation);
@@ -62,12 +65,12 @@ namespace Larnix.Client
             LocalRotation = ReduceAngle(LocalRotation);
 
             // Correction
-            if(Times.Count >= 2)
+            if(Times.Count >= 1)
             {
                 Vector2 targetPosition = Positions[Positions.Count - 1];
                 float targetRotation = Rotations[Rotations.Count - 1];
 
-                float FrameProportion = 1 - Mathf.Pow(1 - CorrectionProportion, 100 * Time.deltaTime);
+                float FrameProportion = 1 - Mathf.Exp(-deltaTime / SmoothTime);
 
                 LocalPosition += (targetPosition - LocalPosition) * FrameProportion;
                 LocalRotation += GetAngleDifference(targetRotation, LocalRotation) * FrameProportion;

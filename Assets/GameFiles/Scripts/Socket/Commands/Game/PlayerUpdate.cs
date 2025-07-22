@@ -11,16 +11,18 @@ namespace Larnix.Socket.Commands
     public class PlayerUpdate : BaseCommand
     {
         public override Name ID => Name.PlayerUpdate;
-        public const int SIZE = 3 * sizeof(float);
+        public const int SIZE = 3 * sizeof(float) + 1 * sizeof(uint);
 
         public Vector2 Position { get; private set; } // 4B + 4B
         public float Rotation { get; private set; } // 4B
+        public uint FixedFrame { get; private set; } // 4B
 
-        public PlayerUpdate(Vector2 position, float rotation, byte code = 0)
+        public PlayerUpdate(Vector2 position, float rotation, uint fixedFrame, byte code = 0)
             : base(Name.None, code)
         {
             Position = position;
             Rotation = rotation;
+            FixedFrame = fixedFrame;
 
             DetectDataProblems();
         }
@@ -39,6 +41,7 @@ namespace Larnix.Socket.Commands
                 BitConverter.ToSingle(bytes, 4)
                 );
             Rotation = BitConverter.ToSingle(bytes, 8);
+            FixedFrame = BitConverter.ToUInt32(bytes, 12);
 
             DetectDataProblems();
         }
@@ -48,8 +51,9 @@ namespace Larnix.Socket.Commands
             byte[] bytes1 = BitConverter.GetBytes(Position.x);
             byte[] bytes2 = BitConverter.GetBytes(Position.y);
             byte[] bytes3 = BitConverter.GetBytes(Rotation);
+            byte[] bytes4 = BitConverter.GetBytes(FixedFrame);
 
-            byte[] bytes = bytes1.Concat(bytes2).Concat(bytes3).ToArray();
+            byte[] bytes = bytes1.Concat(bytes2).Concat(bytes3).Concat(bytes4).ToArray();
 
             return new Packet((byte)ID, Code, bytes);
         }

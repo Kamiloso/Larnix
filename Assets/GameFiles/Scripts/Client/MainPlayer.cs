@@ -12,7 +12,9 @@ namespace Larnix.Client
     {
         [SerializeField] Camera Camera;
         [SerializeField] EntityProjection EntityProjection;
+        
         private uint FixedCounter = 0;
+        private uint LastSentFixedCounter = 0;
 
         private float Rotation;
 
@@ -30,42 +32,85 @@ namespace Larnix.Client
             transform.parent.gameObject.SetActive(false);
         }
 
+        private const float GRAVITY = 0.5f;
+        private const float MAX_VERTICAL_SPEED = 50f;
+        private const float GROUND_LEVEL = 0f;
+        private const float HORIZONTAL_FORCE = 2f;
+        private const float MAX_HORIZONTAL_SPEED = 7f;
+        private const float JUMP_SIZE = 15f;
+        private const float HORIZONTAL_DRAG = 2f;
+
+        private Vector2 velocity = Vector2.zero;
+
         private void FixedUpdate()
         {
-            // Arrows reaction
+            // Fixed counter increment
 
-            if (Input.GetKey(KeyCode.UpArrow))
-                transform.position += new Vector3(0f, StepSize, 0f);
+            FixedCounter++;
 
-            if (Input.GetKey(KeyCode.DownArrow))
-                transform.position += new Vector3(0f, -StepSize, 0f);
+            // Temporary physics
 
-            if (Input.GetKey(KeyCode.RightArrow))
-                transform.position += new Vector3(StepSize, 0f, 0f);
+            int want_horizontal = (Input.GetKey(KeyCode.RightArrow) ? 1 : 0) - (Input.GetKey(KeyCode.LeftArrow) ? 1 : 0);
+            if(want_horizontal != 0)
+            {
+                velocity += want_horizontal * HORIZONTAL_FORCE * Vector2.right;
+            }
+            else
+            {
+                int sgn1 = Math.Sign(velocity.x);
+                velocity -= new Vector2(sgn1 * HORIZONTAL_DRAG, 0f);
+                int sgn2 = Math.Sign(velocity.x);
+                if (sgn1 != sgn2) velocity = new Vector2(0f, velocity.y);
+            }
 
-            if (Input.GetKey(KeyCode.LeftArrow))
-                transform.position += new Vector3(-StepSize, 0f, 0f);
+            velocity += GRAVITY * Vector2.down;
+
+            if (velocity.x > MAX_HORIZONTAL_SPEED) velocity = new Vector2(MAX_HORIZONTAL_SPEED, velocity.y);
+            if (velocity.x < -MAX_HORIZONTAL_SPEED) velocity = new Vector2(-MAX_HORIZONTAL_SPEED, velocity.y);
+            if (velocity.y > MAX_VERTICAL_SPEED) velocity = new Vector2(velocity.x, MAX_VERTICAL_SPEED);
+            if (velocity.y < -MAX_VERTICAL_SPEED) velocity = new Vector2(velocity.x, -MAX_VERTICAL_SPEED);
+
+            transform.position += (Vector3)velocity * Time.fixedDeltaTime;
+
+            bool on_ground = false;
+            if(transform.position.y <= GROUND_LEVEL)
+            {
+                transform.position = new Vector2(transform.position.x, GROUND_LEVEL);
+                velocity = new Vector2(velocity.x, 0f);
+                on_ground = true;
+            }
+
+            if (on_ground && Input.GetKey(KeyCode.UpArrow))
+            {
+                velocity += new Vector2(0f, JUMP_SIZE);
+            }
 
             // Rotation reaction
 
-            RotationGet();
+            RotationUpdate();
 
             // Update entity object
             
-            UpdateEntityObject((++FixedCounter) * Time.fixedDeltaTime);
+            UpdateEntityObject(FixedCounter * Time.fixedDeltaTime);
         }
 
         private void Update()
         {
             // Send update to server
 
-            PlayerUpdate playerUpdate = new PlayerUpdate(
-                transform.position,
-                Rotation
-                );
-            if (!playerUpdate.HasProblems)
+            if(LastSentFixedCounter != FixedCounter)
             {
-                References.Client.Send(playerUpdate.GetPacket());
+                PlayerUpdate playerUpdate = new PlayerUpdate(
+                    transform.position,
+                    Rotation,
+                    FixedCounter
+                    );
+                if (!playerUpdate.HasProblems)
+                {
+                    References.Client.Send(playerUpdate.GetPacket(), false); // fast mode (over raw udp)
+                }
+
+                LastSentFixedCounter = FixedCounter;
             }
 
             // Ctrl + Scroll reaction
@@ -91,7 +136,7 @@ namespace Larnix.Client
             Camera.orthographicSize = CameraZoom;
         }
 
-        private void RotationGet()
+        private void RotationUpdate()
         {
             float mx = Input.mousePosition.x - (Screen.width / 2);
             float my = Input.mousePosition.y - (Screen.height / 2);
@@ -112,7 +157,7 @@ namespace Larnix.Client
         public void LoadPlayerData(PlayerInitialize msg)
         {
             transform.position = msg.Position;
-            RotationGet();
+            RotationUpdate();
             transform.parent.gameObject.SetActive(true);
             UpdateEntityObject(0f);
         }

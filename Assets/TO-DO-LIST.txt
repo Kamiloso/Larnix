@@ -1,6 +1,5 @@
 === Larnix TO-DO-LIST ===
 
-- Better smooth: split EntityBroadcast
 - Unity Info server build into config
 
 - Chunk loading lag spikes
@@ -13,3 +12,4 @@
 
 - Password hashing cache
 - IPv6 masking id : flood security
+- Better smooth: split EntityBroadcast

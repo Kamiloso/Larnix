@@ -191,7 +191,7 @@ namespace Larnix.Server.Data
             return null;
         }
 
-        public Dictionary<ulong, EntityData> GetEntitiesByChunk(Vector2Int chunkCoords)
+        public Dictionary<ulong, EntityData> GetEntitiesByChunkNoPlayers(Vector2Int chunkCoords)
         {
             using (var cmd = CreateCommand())
             {

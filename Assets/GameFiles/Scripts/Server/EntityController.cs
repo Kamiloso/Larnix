@@ -69,13 +69,13 @@ namespace Larnix.Server
             References.EntityDataManager.SetEntityData(uID, entityData);
         }
 
-        public void DeleteEntityInstant() // Execute only from after FixedUpdate
+        public void DeleteEntityInstant() // Execute only from after FromFixedUpdate
         {
             References.EntityDataManager.DeleteEntityData(uID);
             Destroy(gameObject);
         }
 
-        public void UnloadEntityInstant() // Execute only from after FixedUpdate
+        public void UnloadEntityInstant() // Execute only from after FromFixedUpdate
         {
             References.EntityDataManager.UnloadEntityData(uID);
             Destroy(gameObject);

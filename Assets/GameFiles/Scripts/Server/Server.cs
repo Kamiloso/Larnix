@@ -30,7 +30,7 @@ namespace Larnix.Server
         private float broadcastCycleTimer = 0f;
 
         private readonly Dictionary<InternetID, uint> loginAmount = new();
-        private const uint MAX_HASHING_AMOUNT = 3; // logins per minute
+        private const uint MAX_HASHING_AMOUNT = 4; // max hashing amount per minute per client
 
         // Server initialization
         private void Awake()
@@ -95,7 +95,7 @@ namespace Larnix.Server
         {
             if(!updateStartDone)
             {
-                UnityEngine.Debug.Log("Done! Server started on port " + LarnixServer.Port);
+                DedicatedConsole.LogSuccess("Server started on port " + LarnixServer.Port);
                 if (!IsLocal && CompleteRSA != null)
                     UnityEngine.Debug.Log("AuthCodeRSA (copy to connect): " + KeyObtainer.ProduceAuthCodeRSA(KeyToPublicBytes(CompleteRSA)));
                 updateStartDone = true;
@@ -115,8 +115,8 @@ namespace Larnix.Server
                     AllowConnection msg = new AllowConnection(packet);
                     if (msg.HasProblems) continue;
 
-                    // Initialize player controller
-                    References.EntityManager.CreatePlayerController(owner);
+                    // Create player connection
+                    References.PlayerManager.JoinPlayer(owner);
 
                     // Construct and send answer
                     EntityController playerController = References.EntityManager.GetPlayerController(owner);
@@ -130,8 +130,9 @@ namespace Larnix.Server
                     }
 
                     // Info to console
-                    UnityEngine.Debug.Log("Player [" + owner + "] joined.");
+                    UnityEngine.Debug.Log(owner + " joined the game.");
 
+                    // Temporarily spawn Wildpig
                     References.EntityManager.SummonEntity(new Entities.EntityData
                     {
                         ID = Entities.EntityID.Wildpig,
@@ -145,13 +146,12 @@ namespace Larnix.Server
                 {
                     Stop msg = new Stop(packet);
                     if(msg.HasProblems) continue;
-
-                    // Remove player controller
-                    if (References.EntityManager.GetPlayerController(owner) != null)
-                        References.EntityManager.UnloadPlayerController(owner);
+                    
+                    // Remove player connection
+                    References.PlayerManager.DisconnectPlayer(owner);
 
                     // Info to console
-                    UnityEngine.Debug.Log("Player [" + owner + "] disconnected.");
+                    UnityEngine.Debug.Log(owner + " disconnected.");
                 }
 
                 /*if((Name)packet.ID == Name.DebugMessage)
@@ -177,15 +177,12 @@ namespace Larnix.Server
                     PlayerUpdate msg = new PlayerUpdate(packet);
                     if (msg.HasProblems) continue;
 
-                    // Load data to player controller
-                    EntityController playerController = References.EntityManager.GetPlayerController(owner);
-                    if (playerController != null)
+                    // check if most recent data (fast mode receiving - over raw udp)
+                    Dictionary<string, PlayerUpdate> RecentPlayerUpdates = References.PlayerManager.RecentPlayerUpdates;
+                    if(!RecentPlayerUpdates.ContainsKey(owner) || RecentPlayerUpdates[owner].FixedFrame < msg.FixedFrame)
                     {
-                        playerController.ActivateIfNotActive();
-                        Entities.EntityData entityData = playerController.EntityData.ShallowCopy();
-                        entityData.Position = msg.Position;
-                        entityData.Rotation = msg.Rotation;
-                        playerController.UpdateEntityData(entityData);
+                        // Update player data
+                        References.PlayerManager.UpdatePlayerDataIfHasController(owner, msg);
                     }
                 }
             }
@@ -197,7 +194,7 @@ namespace Larnix.Server
             if(ServerConfig.EntityBroadcastPeriod > 0f && broadcastCycleTimer > ServerConfig.EntityBroadcastPeriod)
             {
                 broadcastCycleTimer %= ServerConfig.EntityBroadcastPeriod;
-                References.EntityDataManager.SendEntityBroadcast(); // must be in LateUpdate()
+                References.EntityManager.SendEntityBroadcast(); // must be in LateUpdate()
             }
 
             saveCycleTimer += Time.deltaTime;

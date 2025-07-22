@@ -42,7 +42,7 @@ namespace Larnix
         {
 #if !UNITY_EDITOR
         SaveCrashLog(log);
-        System.Diagnostics.Process.GetCurrentProcess().Kill(); // brutal kill
+        Environment.Exit(1); // process kill
 #endif
         }
 

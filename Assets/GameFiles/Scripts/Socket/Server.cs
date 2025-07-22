@@ -372,7 +372,7 @@ namespace Larnix.Socket
                 if (conn != null && conn.IsDead)
                 {
                     // add finishing message
-                    Commands.Stop cmdStop = new Commands.Stop(0);
+                    Commands.Stop cmdStop = new Commands.Stop();
                     Packet packet = cmdStop.GetPacket();
                     packetList.Enqueue(new PacketAndOwner(nicknames[i], packet));
 

@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Entities;
 using System.Linq;
+using Larnix.Socket;
+using Larnix.Socket.Commands;
 
 namespace Larnix.Server
 {
@@ -11,6 +13,9 @@ namespace Larnix.Server
         private readonly Dictionary<string, EntityController> PlayerControllers = new Dictionary<string, EntityController>();
         private readonly Dictionary<ulong, EntityController> EntityControllers = new Dictionary<ulong, EntityController>();
 
+        private uint FixedCounter = 0;
+        private uint LastSentFixedCounter = 0;
+
         private void Awake()
         {
             References.EntityManager = this;
@@ -18,38 +23,100 @@ namespace Larnix.Server
 
         private void FixedUpdate()
         {
+            // Fixed counter increment
+
+            FixedCounter++;
+
             // Execute entity behaviours
 
             foreach (var controller in EntityControllers.Values)
-                controller.FromFixedUpdate();
+                if(controller.gameObject.activeSelf && controller.EntityData.ID != EntityID.Player)
+                {
+                    controller.FromFixedUpdate();
+                }
 
             // Kill entities when needed
 
             foreach(ulong uid in EntityControllers.Keys.ToList())
-            {
-                if (EntityControllers[uid].EntityData.NBT == "something... idk")
-                    KillEntity(uid);
-            }
+                if (EntityControllers[uid].gameObject.activeSelf)
+                {
+                    if (EntityControllers[uid].EntityData.NBT == "something... idk")
+                        KillEntity(uid);
+                }
         }
 
         public void FromEarlyUpdate() // 2
         {
             // Unload entities
 
-            List<ulong> uidsToUnload = new List<ulong>();
-
-            foreach(var vkp in EntityControllers)
-            {
-                if(vkp.Value.EntityData.ID != EntityID.Player)
+            foreach(ulong uid in EntityControllers.Keys.ToList())
+                if (EntityControllers[uid].gameObject.activeSelf && EntityControllers[uid].EntityData.ID != EntityID.Player)
                 {
-                    if (!References.ChunkLoading.IsEntityInAliveZone(vkp.Value))
-                        uidsToUnload.Add(vkp.Key);
+                    if (!References.ChunkLoading.IsEntityInAliveZone(EntityControllers[uid]))
+                        UnloadEntity(uid);
                 }
-            }
+        }
 
-            foreach(ulong uid in uidsToUnload)
+        public void SendEntityBroadcast()
+        {
+            if(FixedCounter != LastSentFixedCounter)
             {
-                UnloadEntity(uid);
+                Dictionary<ulong, uint> FixedFrames = References.PlayerManager.GetFixedFramesByUID();
+                List<string> connected_nicknames = References.PlayerManager.PlayerUID.Keys.ToList();
+
+                foreach (string nickname in connected_nicknames)
+                {
+                    Vector2 playerPos = References.PlayerManager.GetPlayerRenderingPosition(nickname);
+
+                    Dictionary<ulong, EntityData> EntityList = new();
+                    Dictionary<ulong, uint> PlayerFixedIndexes = new();
+
+                    const float MAX_DISTANCE = 16f * 3;
+                    const int MAX_ENTITIES = 2048; // also in EntityBroadcast.cs
+                    const int MAX_FIXED_INDEXES = 1024; // also in EntityBroadcast.cs
+
+                    foreach (ulong uid in EntityControllers.Keys)
+                    {
+                        if (EntityList.Count >= MAX_ENTITIES)
+                            break;
+
+                        // -- checking entities to add --
+                        EntityController entity = EntityControllers[uid];
+                        Vector2 entityPos = entity.EntityData.Position;
+                        bool lookingAtPlayer = entity.EntityData.ID == EntityID.Player;
+
+                        if (!entity.gameObject.activeSelf)
+                            continue; // sending only active entities, active players always have a recent update object
+
+                        if (Vector2.Distance(playerPos, entityPos) < MAX_DISTANCE)
+                        {
+                            EntityList.Add(uid, entity.EntityData);
+
+                            if (PlayerFixedIndexes.Count >= MAX_FIXED_INDEXES)
+                                continue;
+
+                            // -- adding indexes --
+                            if(lookingAtPlayer)
+                            {
+                                PlayerFixedIndexes.Add(uid, FixedFrames[uid]);
+                            }
+                        }
+                    }
+
+                    EntityBroadcast entityBroadcast = new EntityBroadcast(
+                        FixedCounter,
+                        0.0, // relict
+                        EntityList,
+                        PlayerFixedIndexes
+                        );
+                    if (!entityBroadcast.HasProblems)
+                    {
+                        Packet packet = entityBroadcast.GetPacket();
+                        References.Server.Send(nickname, packet, false); // unsafe mode (over raw UDP)
+                    }
+                }
+
+                LastSentFixedCounter = FixedCounter;
             }
         }
 
@@ -65,6 +132,11 @@ namespace Larnix.Server
             if(PlayerControllers.ContainsKey(nickname))
                 return PlayerControllers[nickname];
             return null;
+        }
+
+        public string GetNicknameByOnlineUID(ulong uid)
+        {
+            return PlayerControllers.FirstOrDefault(kvp => kvp.Value.uID == uid).Key;
         }
 
         public void UnloadPlayerController(string nickname)
@@ -121,7 +193,7 @@ namespace Larnix.Server
             if (!EntityControllers.ContainsKey(uid))
                 throw new System.InvalidOperationException("Entity with ID " + uid + " is not loaded!");
 
-            string nickname = PlayerControllers.FirstOrDefault(kvp => kvp.Value.uID == uid).Key;
+            string nickname = GetNicknameByOnlineUID(uid);
             if(nickname != null)
                 PlayerControllers.Remove(nickname);
 

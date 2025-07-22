@@ -65,12 +65,7 @@ sysinfo.txt
 *.app
 
 # Unity Builds
-WindowsBuild/
-WindowsServer/
-LinuxBuild/
-LinuxServer/
-MacBuild/
-MacServer/
+Build/
 
 # Crashlytics generated file
 crashlytics-build.properties
