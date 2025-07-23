@@ -11,6 +11,7 @@ using System;
 using Org.BouncyCastle.Crypto.Parameters;
 using Larnix.Files;
 using System.Text;
+using System.Diagnostics;
 
 namespace Larnix.Server.Data
 {
@@ -97,23 +98,28 @@ namespace Larnix.Server.Data
 
         public static string ProduceAuthCodeRSA(byte[] key)
         {
-            // Example AuthCode: XXXXX-XXXXX-XXXXX-XXXXX
-            const string Base32 = "0123456789ABCDEFGHJKLMNPQRTVWXYZ";
-            byte[] hash = null;
+            // Example AuthCode: XXXX-XXXX-XXXX
+            const string Base32 = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+            const int ITERATIONS = 50_000;
+            byte[] hash = key;
 
-            using (SHA256 sha256 = SHA256.Create())
+            using (var incrementalHash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256))
             {
-                hash = sha256.ComputeHash(key);
+                for (int i = 0; i < ITERATIONS; i++)
+                {
+                    incrementalHash.AppendData(hash);
+                    hash = incrementalHash.GetHashAndReset();
+                }
             }
 
             StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < 3; i++)
             {
                 if (i != 0)
                     sb.Append('-');
 
-                for (int j = 0; j < 5; j++)
-                    sb.Append(Base32[hash[5 * i + j] % 32]);
+                for (int j = 0; j < 4; j++)
+                    sb.Append(Base32[hash[4 * i + j] % 32]);
             }
 
             return sb.ToString();

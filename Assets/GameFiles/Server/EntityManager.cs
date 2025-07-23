@@ -29,6 +29,8 @@ namespace Larnix.Server
 
             // Execute entity behaviours
 
+            // DON'T add .ToList() or anything like that here.
+            // We need a clear error message when accessing this dictionary inproperly.
             foreach (var controller in EntityControllers.Values)
                 if(controller.gameObject.activeSelf && controller.EntityData.ID != EntityID.Player)
                 {
@@ -71,7 +73,6 @@ namespace Larnix.Server
                     Dictionary<ulong, EntityData> EntityList = new();
                     Dictionary<ulong, uint> PlayerFixedIndexes = new();
 
-                    const float MAX_DISTANCE = 16f * 3;
                     const int MAX_ENTITIES = 2048; // also in EntityBroadcast.cs
                     const int MAX_FIXED_INDEXES = 1024; // also in EntityBroadcast.cs
 
@@ -88,6 +89,7 @@ namespace Larnix.Server
                         if (!entity.gameObject.activeSelf)
                             continue; // sending only active entities, active players always have a recent update object
 
+                        const float MAX_DISTANCE = 50f;
                         if (Vector2.Distance(playerPos, entityPos) < MAX_DISTANCE)
                         {
                             EntityList.Add(uid, entity.EntityData);
@@ -134,11 +136,6 @@ namespace Larnix.Server
             return null;
         }
 
-        public string GetNicknameByOnlineUID(ulong uid)
-        {
-            return PlayerControllers.FirstOrDefault(kvp => kvp.Value.uID == uid).Key;
-        }
-
         public void UnloadPlayerController(string nickname)
         {
             EntityController playerController = PlayerControllers[nickname];
@@ -175,6 +172,27 @@ namespace Larnix.Server
             }
         }
 
+        public void KillEntity(ulong uid)
+        {
+            if (!EntityControllers.ContainsKey(uid))
+                throw new System.InvalidOperationException("Entity with ID " + uid + " is not loaded!");
+
+            if (EntityControllers[uid].EntityData.ID == EntityID.Player)
+            {
+                foreach(string nickname in PlayerControllers.Keys.ToList())
+                {
+                    if (PlayerControllers[nickname].uID == uid)
+                    {
+                        PlayerControllers.Remove(nickname);
+                        break;
+                    }
+                }
+            }
+
+            EntityControllers[uid].DeleteEntityInstant();
+            EntityControllers.Remove(uid);
+        }
+
         private void UnloadEntity(ulong uid)
         {
             if (!EntityControllers.ContainsKey(uid))
@@ -185,19 +203,6 @@ namespace Larnix.Server
                 throw new System.InvalidOperationException("Cannot unload player this way!");
 
             EntityControllers[uid].UnloadEntityInstant();
-            EntityControllers.Remove(uid);
-        }
-
-        private void KillEntity(ulong uid)
-        {
-            if (!EntityControllers.ContainsKey(uid))
-                throw new System.InvalidOperationException("Entity with ID " + uid + " is not loaded!");
-
-            string nickname = GetNicknameByOnlineUID(uid);
-            if(nickname != null)
-                PlayerControllers.Remove(nickname);
-
-            EntityControllers[uid].DeleteEntityInstant();
             EntityControllers.Remove(uid);
         }
     }

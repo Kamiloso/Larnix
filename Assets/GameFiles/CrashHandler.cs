@@ -3,7 +3,6 @@ using System.IO;
 using UnityEngine;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using Larnix.Files;
 
 namespace Larnix
 {
@@ -42,7 +41,7 @@ namespace Larnix
         {
 #if !UNITY_EDITOR
         SaveCrashLog(log);
-        Environment.Exit(1); // process kill
+        System.Diagnostics.Process.GetCurrentProcess().Kill(); // brutal kill
 #endif
         }
 

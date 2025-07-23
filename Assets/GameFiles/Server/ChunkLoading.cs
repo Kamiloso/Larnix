@@ -27,9 +27,9 @@ namespace Larnix.Server
         private readonly Dictionary<Vector2Int, float> UnloadTimer = new();
         private readonly Dictionary<Vector2Int, ChunkServer> Chunks = new();
 
-        private const int LazyLoadingDistance = FullLoadingDistance + 1;
-        private const int FullLoadingDistance = 3;
-        private const float UnloadingTime = 4f; // seconds
+        public const int LazyLoadingDistance = FullLoadingDistance + 1;
+        public const int FullLoadingDistance = 3;
+        public const float UnloadingTime = 4f; // seconds
 
         private void Awake()
         {
@@ -146,8 +146,11 @@ namespace Larnix.Server
         {
             HashSet<Vector2Int> targetLoads = new HashSet<Vector2Int>();
 
-            List<EntityController> playerControllers = References.EntityManager.GetAllPlayerControllers();
-            foreach (Vector2Int center in GetCenterChunks(playerControllers))
+            List<Vector2> positions = new();
+            foreach (string nickname in References.PlayerManager.PlayerUID.Keys)
+                positions.Add(References.PlayerManager.GetPlayerRenderingPosition(nickname));
+
+            foreach (Vector2Int center in GetCenterChunks(positions))
             {
                 targetLoads.UnionWith(GetNearbyChunks(center, simDistance));
             }
@@ -155,12 +158,12 @@ namespace Larnix.Server
             return targetLoads;
         }
 
-        public static HashSet<Vector2Int> GetCenterChunks(List<EntityController> entityControllers)
+        public static HashSet<Vector2Int> GetCenterChunks(List<Vector2> positions)
         {
             HashSet<Vector2Int> returns = new HashSet<Vector2Int>();
-            foreach(EntityController controller in entityControllers)
+            foreach(Vector2 pos in positions)
             {
-                returns.Add(CoordsToChunk(controller.EntityData.Position));
+                returns.Add(CoordsToChunk(pos));
             }
             return returns;
         }

@@ -4,10 +4,10 @@ using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Socket.Commands;
 using System.Threading;
-using Unity.VisualScripting;
 using System.Linq;
 using UnityEngine.UI;
 using TMPro;
+using System.Threading.Tasks;
 
 namespace Larnix.Menu
 {
@@ -28,7 +28,7 @@ namespace Larnix.Menu
 
         // Threaded data
         private State state = State.None;
-        private volatile A_ServerInfo serverInfo = null;
+        private A_ServerInfo serverInfo = null;
 
         // UI components
         [SerializeField] TextMeshProUGUI FieldAddress;
@@ -59,7 +59,7 @@ namespace Larnix.Menu
             None,
             Waiting,
             Ready,
-            Failied,
+            Failed,
             WrongPublicKey
         }
 
@@ -98,30 +98,53 @@ namespace Larnix.Menu
 
         public IEnumerator RefreshInfoCoroutine()
         {
-            Thread thread = new Thread(() =>
-            {
-                serverInfo = Resolver.downloadServerInfo(Data.Address, Data.Nickname == "" ? "Player" : Data.Nickname);
-            });
-            thread.Start();
+            // download server info
 
-            while (thread.IsAlive)
+            string address = Data.Address;
+            string nickname = Data.Nickname;
+
+            Task<A_ServerInfo> downloading = new Task<A_ServerInfo>(() =>
+            {
+                return Resolver.downloadServerInfo(address, nickname == "" ? "Player" : nickname);
+            });
+            downloading.Start();
+            while (!downloading.IsCompleted)
                 yield return null;
 
-            if (serverInfo == null)
+            // ? fail
+
+            if (downloading.Result == null)
             {
-                state = State.Failied;
+                state = State.Failed;
+                serverInfo = null;
                 yield break;
             }
 
-            byte[] key_bytes = serverInfo.PublicKeyModulus.Concat(serverInfo.PublicKeyExponent).ToArray();
-            if (Server.Data.KeyObtainer.VerifyPublicKey(key_bytes, Data.AuthCodeRSA))
+            // check key using authcode
+
+            byte[] key_bytes = downloading.Result.PublicKeyModulus.Concat(downloading.Result.PublicKeyExponent).ToArray();
+            string authcode = Data.AuthCodeRSA;
+
+            Task<bool> checkingKey = new Task<bool>(() =>
+            {
+                return Server.Data.KeyObtainer.VerifyPublicKey(key_bytes, authcode);
+            });
+            checkingKey.Start();
+            while (!checkingKey.IsCompleted)
+                yield return null;
+
+            // ? success / ? wrong public key
+
+            if(checkingKey.Result)
             {
                 state = State.Ready;
+                serverInfo = downloading.Result;
                 yield break;
             }
             else
             {
                 state = State.WrongPublicKey;
+                serverInfo = null;
                 yield break;
             }
         }
@@ -155,7 +178,7 @@ namespace Larnix.Menu
                 FieldPlayerNumber.text = serverInfo.CurrentPlayers + " / " + serverInfo.MaxPlayers;
                 ButtonJoin.interactable = true;
             }
-            else if (state == State.Failied)
+            else if (state == State.Failed)
             {
                 FieldDescription.text = "ERROR: Server not found.";
                 FieldPlayerNumber.text = "ERROR";

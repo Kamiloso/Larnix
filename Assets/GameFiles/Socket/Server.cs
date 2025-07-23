@@ -411,6 +411,17 @@ namespace Larnix.Socket
             }
         }
 
+        public IPEndPoint GetClientEndPoint(string nickname)
+        {
+            for (int i = 0; i < MaxClients; i++)
+            {
+                Connection connection = connections[i];
+                if (nicknames[i] == nickname)
+                    return connection.EndPoint;
+            }
+            return null;
+        }
+
         public ushort CountPlayers() => (ushort)nicknames.Count(n => n != null);
 
         public void FinishConnection(string nickname)

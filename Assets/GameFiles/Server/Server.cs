@@ -31,14 +31,6 @@ namespace Larnix.Server
         private readonly Dictionary<InternetID, uint> loginAmount = new();
         private const uint MAX_HASHING_AMOUNT = 4; // max hashing amount per minute per client
 
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-        static void SetupLogger()
-        {
-#if UNITY_SERVER && !UNITY_EDITOR
-            Debug.unityLogger.logEnabled = false;
-#endif
-        }
-
         // Server initialization
         private void Awake()
         {
@@ -85,28 +77,20 @@ namespace Larnix.Server
 
         private void Start()
         {
-            Action<string> NormalLog;
-            Action<string> WarningLog;
-
-            if (IsLocal)
-            {
-                NormalLog = UnityEngine.Debug.Log;
-                WarningLog = UnityEngine.Debug.LogWarning;
-            }
-            else
-            {
-                NormalLog = (string s) => Console.Log(s);
-                WarningLog = (string s) => Console.LogWarning(s);
-            }
-
             Console.SetTitle("Larnix Server " + Common.GAME_VERSION);
+
             Console.LogRaw(new string('-', 60) + "\n");
 
-            NormalLog("Server started on port " + LarnixServer.Port);
-            if (CompleteRSA != null) NormalLog("AuthCodeRSA (copy to connect): " + KeyObtainer.ProduceAuthCodeRSA(KeyToPublicBytes(CompleteRSA)));
-            else WarningLog("Every connection will be unencrypted! Couldn't find or generate RSA keys!");
+            UnityEngine.Debug.Log(" Socket created on port " + LarnixServer.Port);
+            if (CompleteRSA != null) UnityEngine.Debug.Log(" Authcode (copy to connect): " + KeyObtainer.ProduceAuthCodeRSA(KeyToPublicBytes(CompleteRSA)));
+            else UnityEngine.Debug.LogWarning(" Every connection will be unencrypted! Couldn't find or generate RSA keys!");
 
-            if (!IsLocal) Console.StartInputThread();
+            Console.LogRaw(new string('-', 60) + "\n");
+
+            Console.LogSuccess("Server is ready!");
+
+            if (!IsLocal)
+                Console.StartInputThread();
 
             StartCoroutine(RunEveryMinute());
         }
@@ -126,6 +110,8 @@ namespace Larnix.Server
         {
             References.ChunkLoading.FromEarlyUpdate(); // 1
             References.EntityManager.FromEarlyUpdate(); // 2
+
+            InterpretConsoleInput(); // n
 
             Queue<PacketAndOwner> messages = LarnixServer.ServerTickAndReceive(Time.deltaTime);
             foreach (PacketAndOwner message in messages)
@@ -200,8 +186,6 @@ namespace Larnix.Server
                     }
                 }
             }
-
-            InterpretConsoleInput(); // LATE EarlyUpdate()
         }
 
         private void LateUpdate()
@@ -330,13 +314,14 @@ namespace Larnix.Server
             }
         }
 
-        public void InterpretConsoleInput()
+        public void InterpretConsoleInput() // n
         {
-            while(true)
+            while (true)
             {
                 string cmd = Console.GetCommand();
                 if (cmd == null) break;
                 string[] arg = cmd.Split(' ');
+                int len = arg.Length;
 
                 if (arg.Length == 1 && arg[0] == "help")
                 {
@@ -345,19 +330,36 @@ namespace Larnix.Server
                     Console.LogRaw(" |\n");
                     Console.LogRaw(" | help - Displays this documentation.\n");
                     Console.LogRaw(" | stop - Turns off the server.\n");
+                    Console.LogRaw(" | playerlist - Shows all players on the server.\n");
                     Console.LogRaw(" | kick [nickname] - Kicks the player if online.\n");
+                    Console.LogRaw(" | kill [nickname] - Kills the player if alive.\n");
                     Console.LogRaw("\n");
                 }
 
-                else if (arg.Length == 1 && arg[0] == "stop")
+                else if (len == 1 && arg[0] == "stop")
                 {
                     if (!IsLocal) Application.Quit();
                     else Kick("Player"); // when the main player is kicked, he will return to menu and the local server will close
                 }
 
-                else if (arg.Length == 2 && arg[0] == "kick")
+                else if(len == 1 && arg[0] == "playerlist")
+                {
+                    Console.LogRaw("\n");
+                    Console.LogRaw($" | ------ PLAYER LIST [ {LarnixServer.CountPlayers()} / {LarnixServer.MaxClients} ] ------\n");
+                    Console.LogRaw(" |\n");
+
+                    foreach (string nickname in References.PlayerManager.PlayerUID.Keys)
+                    {
+                        Console.LogRaw($" | {nickname} from {LarnixServer.GetClientEndPoint(nickname)} \n");
+                    }
+
+                    Console.LogRaw("\n");
+                }
+
+                else if (len == 2 && arg[0] == "kick")
                 {
                     string nickname = arg[1];
+
                     if (References.PlayerManager.GetPlayerState(nickname) != PlayerManager.PlayerState.None)
                     {
                         Kick(nickname);
@@ -366,6 +368,22 @@ namespace Larnix.Server
                     else
                     {
                         Console.LogError("Player " + nickname + " is not online!");
+                    }
+                }
+
+                else if (len == 2 && arg[0] == "kill")
+                {
+                    string nickname = arg[1];
+
+                    if(References.PlayerManager.GetPlayerState(nickname) == PlayerManager.PlayerState.Alive)
+                    {
+                        ulong uid = References.PlayerManager.PlayerUID[nickname];
+                        References.EntityManager.KillEntity(uid);
+                        Console.LogSuccess("Player " + nickname + " has been killed.");
+                    }
+                    else
+                    {
+                        Console.LogError("Player " + nickname + " is not alive!");
                     }
                 }
 
