@@ -23,16 +23,18 @@ namespace Larnix.Socket
         private uint LastSendSequence = 0; // control number to check packet order
         private uint LastReceiveSequence = 0; // control number to check packet order
 
-        public const uint MAX_RETRANSMISSIONS = 5;
+        public const uint MAX_RETRANSMISSIONS = 8;
         public const uint MAX_STAYING_PACKETS = 1024;
-        public bool IsDead { get; private set; } = false;
-        public bool IsError { get; private set; } = false; // blocks transmiting and receiving
+        public bool IsDead { get; private set; } = false; // blocks socket
+        public bool IsError { get; private set; } = false; // communiactes that an error occured
 
         public const float ACK_CYCLE_TIME = 0.1f;
         private float currentAckCycleTime = 0.0f;
 
         public const float SAFE_EMPTY_PACKET_CYCLE = 0.5f;
         private float currentSafeCycleTime = 0.0f;
+
+        private const float DEBUG_DROP_CHANCE = 0f;
 
         private List<SafePacket> sendingPackets = new List<SafePacket>();
         private List<SafePacket> receivedPackets = new List<SafePacket>();
@@ -76,7 +78,7 @@ namespace Larnix.Socket
 
         public void Tick(float deltaTime)
         {
-            if (IsDead || IsError) return;
+            if (IsDead) return;
 
             // Make sequential queue out of received packets
             while (true)
@@ -96,9 +98,8 @@ namespace Larnix.Socket
                         {
                             if (e.Message == "WRONG_PACKET_ORDER")
                             {
-                                IsDead = true;
+                                FinishConnection();
                                 IsError = true;
-                                UnityEngine.Debug.Log("Wrong packet order detected!");
                                 return;
                             }
                             else throw;
@@ -133,7 +134,7 @@ namespace Larnix.Socket
                         }
                         else
                         {
-                            IsDead = true;
+                            FinishConnection();
                             return;
                         }
                     }
@@ -165,7 +166,7 @@ namespace Larnix.Socket
 
         public void Send(Packet packet, bool safemode = true)
         {
-            if (IsDead || IsError) return;
+            if (IsDead) return;
 
             if (safemode)
             {
@@ -190,7 +191,7 @@ namespace Larnix.Socket
 
         public Queue<Packet> Receive()
         {
-            if (IsDead || IsError) return new Queue<Packet>();
+            if (IsDead) return new Queue<Packet>();
 
             Queue<Packet> readyToRead = downloadablePackets;
             downloadablePackets = new Queue<Packet>();
@@ -199,7 +200,7 @@ namespace Larnix.Socket
 
         public void PushFromWeb(byte[] bytes, bool hasSYN = false)
         {
-            if (IsDead || IsError) return;
+            if (IsDead) return;
 
             // Drop packets if too many
             if (receivedPackets.Count >= MAX_STAYING_PACKETS ||
@@ -232,9 +233,8 @@ namespace Larnix.Socket
                 {
                     if (e.Message == "WRONG_PACKET_ORDER")
                     {
-                        IsDead = true;
+                        FinishConnection();
                         IsError = true;
-                        UnityEngine.Debug.Log("Wrong packet order detected!");
                         return;
                     }
                     else throw;
@@ -252,7 +252,7 @@ namespace Larnix.Socket
 
         public void FinishConnection()
         {
-            if(IsDead || IsError) return;
+            if(IsDead) return;
 
             // Send 3 FIN flags (to ensure they arrive).
             // If they don't, protocol will automatically disconnect after a few seconds.
@@ -298,6 +298,9 @@ namespace Larnix.Socket
                 else
                     UnityEngine.Debug.LogWarning("Transmiting unencrypted SYN!");
             }
+
+            if (DEBUG_DROP_CHANCE > 0f && Common.Rand().NextDouble() < DEBUG_DROP_CHANCE)
+                return; // DROP SIMULATE
 
             byte[] payload = safePacket.Serialize();
             Task task = Udp.SendAsync(payload, payload.Length, EndPoint);

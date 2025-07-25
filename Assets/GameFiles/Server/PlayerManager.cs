@@ -2,6 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Socket.Commands;
+using System.Linq;
+using Larnix.Socket;
 
 namespace Larnix.Server
 {
@@ -9,6 +11,8 @@ namespace Larnix.Server
     {
         public readonly Dictionary<string, ulong> PlayerUID = new();
         public readonly Dictionary<string, PlayerUpdate> RecentPlayerUpdates = new(); // valid even for dead players, invalid for inactive players
+        public readonly Dictionary<string, HashSet<ulong>> NearbyUIDs = new();
+
         public enum PlayerState : byte
         {
             None, // non-existent or disconnected
@@ -26,6 +30,7 @@ namespace Larnix.Server
         {
             ulong uid = (ulong)References.Server.Database.GetUserID(nickname);
             PlayerUID[nickname] = uid;
+            NearbyUIDs[nickname] = new();
 
             CreatePlayerInstance(nickname);
         }
@@ -65,6 +70,49 @@ namespace Larnix.Server
 
             if(RecentPlayerUpdates.ContainsKey(nickname))
                 RecentPlayerUpdates.Remove(nickname);
+
+            NearbyUIDs.Remove(nickname);
+        }
+
+        public void UpdateNearbyUIDs(string nickname, HashSet<ulong> newUIDs, uint fixedFrame, bool sendAtLeastOne)
+        {
+            HashSet<ulong> oldUIDs = NearbyUIDs[nickname];
+
+            HashSet<ulong> added = new HashSet<ulong>(newUIDs);
+            added.ExceptWith(oldUIDs);
+
+            HashSet<ulong> removed = new HashSet<ulong>(oldUIDs);
+            removed.ExceptWith(newUIDs);
+
+            List<ulong> addedList = added.ToList();
+            List<ulong> removedList = removed.ToList();
+
+            bool sentAlready = false;
+            const int MAX_RECORDS = NearbyEntities.MAX_RECORDS;
+            for (int pos = 0; true; pos += MAX_RECORDS)
+            {
+                int sizeAdd = System.Math.Clamp(addedList.Count - pos, 0, MAX_RECORDS);
+                int sizeRem = System.Math.Clamp(removedList.Count - pos, 0, MAX_RECORDS);
+
+                if (sizeAdd == 0 && sizeRem == 0) // no data
+                    if (sentAlready || !sendAtLeastOne) // no need to send empty packet
+                        break;
+
+                NearbyEntities nearbyEntities = new NearbyEntities(
+                    fixedFrame,
+                    sizeAdd != 0 ? addedList.GetRange(pos, sizeAdd).ToList() : new(),
+                    sizeRem != 0 ? removedList.GetRange(pos, sizeRem).ToList() : new()
+                    );
+                if (!nearbyEntities.HasProblems)
+                {
+                    Packet packet = nearbyEntities.GetPacket();
+                    References.Server.Send(nickname, packet);
+                    sentAlready = true;
+                }
+                else throw new System.Exception("Couldn't construct NearbyEntities packet!");
+            }
+
+            NearbyUIDs[nickname] = newUIDs;
         }
 
         public PlayerState GetPlayerState(string nickname)

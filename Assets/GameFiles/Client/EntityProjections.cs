@@ -10,13 +10,15 @@ namespace Larnix.Client
 {
     public class EntityProjections : MonoBehaviour
     {
-        public bool ReceivedSomething { get; private set; } = false;
-        public uint LastKnown { get; private set; } = 0;
-
         private Dictionary<ulong, EntityProjection> Projections = new();
         private Dictionary<ulong, DelayedEntity> DelayedProjections = new();
 
+        private HashSet<ulong> NearbyUIDs = new HashSet<ulong>();
+
         private const double CREATION_TIME_PER_FRAME = 5.0; // miliseconds
+
+        private uint? StartedFixed = null;
+        private uint? NearbyFrameFixed = null; // Can be a bit old, but only up to ~1/4 seconds
 
         private class DelayedEntity
         {
@@ -30,79 +32,94 @@ namespace Larnix.Client
             }
         }
 
-        private bool AlreadyStarted = false;
-        private uint StartedFixed = 0;
-
         private void Awake()
         {
             References.EntityProjections = this;
+        }
+
+        public void ChangeNearbyUIDs(NearbyEntities msg)
+        {
+            List<ulong> add = msg.AddEntities;
+            List<ulong> remove = msg.RemoveEntities;
+
+            foreach(ulong uid in add)
+                NearbyUIDs.Add(uid);
+
+            foreach(ulong uid in remove)
+                if(NearbyUIDs.Contains(uid))
+                    NearbyUIDs.Remove(uid);
+
+            NearbyFrameFixed = msg.FixedFrame;
         }
 
         public void InterpretEntityBroadcast(EntityBroadcast msg)
         {
             if (References.Client.MyUID == 0) return; // drop, too early to display
 
-            if (ReceivedSomething && (int)(msg.PacketFixedIndex - LastKnown) <= 0) return; // drop, older data
-            ReceivedSomething = true;
-            LastKnown = msg.PacketFixedIndex;
-
-            if(!AlreadyStarted)
-            {
+            if (StartedFixed == null)
                 StartedFixed = msg.PacketFixedIndex;
-                AlreadyStarted = true;
-            }
+
+            uint RelativeFixedFrame = msg.PacketFixedIndex - (uint)StartedFixed;
 
             Dictionary<ulong, EntityData> dict = msg.EntityTransforms;
             Dictionary<ulong, uint> fixeds = msg.PlayerFixedIndexes;
 
-            if (dict.ContainsKey(References.Client.MyUID))
-                dict.Remove(References.Client.MyUID);
-
-            // Remove unloaded projections
-            HashSet<ulong> uids = Projections.Keys.ToHashSet();
-            uids.UnionWith(DelayedProjections.Keys.ToHashSet());
-            foreach (var key in uids)
-            {
-                if(!dict.ContainsKey(key))
-                {
-                    if (Projections.ContainsKey(key))
-                    {
-                        Destroy(Projections[key].gameObject);
-                        Projections.Remove(key);
-                    }
-
-                    if (DelayedProjections.ContainsKey(key))
-                    {
-                        DelayedProjections.Remove(key);
-                    }
-                }
-            }
-
-            // Handle loaded projections
+            // Update data
             foreach(var kvp in dict)
             {
                 ulong uid = kvp.Key;
                 EntityData entity = kvp.Value;
 
-                double time_update = msg.PacketUpdateTime;
-                double time_fixed = (double)((msg.PacketFixedIndex - StartedFixed) * Time.fixedDeltaTime);
+                if (uid == References.Client.MyUID || !NearbyUIDs.Contains(uid))
+                    continue;
+
+                double time_fixed = (double)(RelativeFixedFrame * Time.fixedDeltaTime);
 
                 if (fixeds.ContainsKey(uid)) // extra fixed (smoothing based on other client's info)
                     time_fixed = (double)(fixeds[uid] * Time.fixedDeltaTime);
 
                 if (Projections.ContainsKey(uid)) // update transform
                 {
-                    Projections[uid].UpdateTransform(entity, time_fixed);
+                    EntityProjection projection = Projections[uid];
+                    if (time_fixed > projection.LastTime)
+                    {
+                        projection.UpdateTransform(entity, time_fixed);
+                    }
                 }
                 else // create new projection (delay or overwrite delayed)
                 {
-                    DelayedProjections[uid] = new DelayedEntity(entity, time_fixed);
+                    DelayedProjections.TryGetValue(uid, out DelayedEntity delayed);
+                    if (delayed == null || time_fixed > delayed.time)
+                    {
+                        DelayedProjections[uid] = new DelayedEntity(entity, time_fixed);
+                    }
                 }
             }
         }
 
-        public void SpawnProjectionsAfterBroadcast()
+        public void AfterBroadcasts()
         {
+            // Remove no longer active projections
+
+            List<ulong> active_uids = Projections.Keys.ToList();
+            List<ulong> delayed_uids = DelayedProjections.Keys.ToList();
+
+            foreach(ulong uid in active_uids)
+                if (!NearbyUIDs.Contains(uid))
+                {
+                    EntityProjection projection = Projections[uid];
+                    Destroy(projection.gameObject);
+                    Projections.Remove(uid);
+                }
+
+            foreach(ulong uid in delayed_uids)
+                if(!NearbyUIDs.Contains(uid))
+                {
+                    DelayedProjections.Remove(uid);
+                }
+
+            // Spawn delayed projections
+
             Stopwatch timer = Stopwatch.StartNew();
 
             foreach (ulong uid in DelayedProjections.Keys.ToList())
@@ -119,9 +136,26 @@ namespace Larnix.Client
             timer.Stop();
         }
 
-        public int GetDelayedEntities()
+        public bool EverythingLoaded(uint atFrame)
         {
-            return DelayedProjections.Count;
+            const uint MIN_DELAY = 1; // should be 1, not 0
+            const uint CRITICAL_DELAY = 200; // 4 seconds at 50 TPS
+
+            if (NearbyFrameFixed == null)
+                return false; // no messages yet
+
+            int overtime = (int)((uint)NearbyFrameFixed - atFrame);
+
+            if (overtime < MIN_DELAY)
+                return false; // no information yet
+
+            else if (overtime >= MIN_DELAY && overtime < CRITICAL_DELAY)
+                return Projections.Count == NearbyUIDs.Count;
+
+            else if (overtime >= CRITICAL_DELAY)
+                return true; // waiting for too long, preventing deadlock
+
+            else throw new System.Exception("This exception will never be thrown.");
         }
 
         private EntityProjection CreateProjection(ulong uid, EntityData entityData, double time)

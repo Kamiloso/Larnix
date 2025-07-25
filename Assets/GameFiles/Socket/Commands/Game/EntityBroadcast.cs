@@ -12,20 +12,20 @@ namespace Larnix.Socket.Commands
     public class EntityBroadcast : BaseCommand
     {
         public override Name ID => Name.EntityBroadcast;
-        public const int BASE_SIZE = 1 * sizeof(uint) + 1 * sizeof(double) + 2 * sizeof(ushort);
+        public const int BASE_SIZE = 1 * sizeof(uint) + 2 * sizeof(ushort);
         public const int ENTRY_SIZE = 1 * sizeof(ulong) + 1 * sizeof(ushort) + 3 * sizeof(float); // entity transforms entry
         public const int PLAYER_SIZE = 1 * sizeof(ulong) + 1 * sizeof(uint); // player fixed indexes entry
 
+        public const int MAX_RECORDS = 40;
+
         public uint PacketFixedIndex { get; private set; } // 4B
-        public double PacketUpdateTime { get; private set; } // 8B
         public Dictionary<ulong, EntityData> EntityTransforms { get; private set; } // size[2B] + ENTRIES * 22B
         public Dictionary<ulong, uint> PlayerFixedIndexes { get; private set; } // size[2B] + PLAYER_ENTRIES * 12B
 
-        public EntityBroadcast(uint packetFixedIndex, double packetUpdateTime, Dictionary<ulong, EntityData> entityTransforms, Dictionary<ulong, uint> playerFixedIndexes, byte code = 0)
+        public EntityBroadcast(uint packetFixedIndex, Dictionary<ulong, EntityData> entityTransforms, Dictionary<ulong, uint> playerFixedIndexes, byte code = 0)
             : base(Name.None, code)
         {
             PacketFixedIndex = packetFixedIndex;
-            PacketUpdateTime = packetUpdateTime;
             EntityTransforms = entityTransforms;
             PlayerFixedIndexes = playerFixedIndexes;
 
@@ -42,10 +42,9 @@ namespace Larnix.Socket.Commands
             }
 
             PacketFixedIndex = BitConverter.ToUInt32(bytes, 0);
-            PacketUpdateTime = BitConverter.ToDouble(bytes, 4);
 
-            ushort sizeET = BitConverter.ToUInt16(bytes, 12);
-            ushort sizePF = BitConverter.ToUInt16(bytes, 14);
+            ushort sizeET = BitConverter.ToUInt16(bytes, 4);
+            ushort sizePF = BitConverter.ToUInt16(bytes, 6);
 
             int BASE1_SIZE = BASE_SIZE;
             int BASE2_SIZE = BASE_SIZE + sizeET * ENTRY_SIZE;
@@ -83,10 +82,9 @@ namespace Larnix.Socket.Commands
             byte[] bytes = new byte[BASE_SIZE + EntityTransforms.Count * ENTRY_SIZE + PlayerFixedIndexes.Count * PLAYER_SIZE];
 
             Buffer.BlockCopy(BitConverter.GetBytes(PacketFixedIndex), 0, bytes, 0, 4);
-            Buffer.BlockCopy(BitConverter.GetBytes(PacketUpdateTime), 0, bytes, 4, 8);
 
-            Buffer.BlockCopy(BitConverter.GetBytes((ushort)EntityTransforms.Count), 0, bytes, 12, 2);
-            Buffer.BlockCopy(BitConverter.GetBytes((ushort)PlayerFixedIndexes.Count), 0, bytes, 14, 2);
+            Buffer.BlockCopy(BitConverter.GetBytes((ushort)EntityTransforms.Count), 0, bytes, 4, 2);
+            Buffer.BlockCopy(BitConverter.GetBytes((ushort)PlayerFixedIndexes.Count), 0, bytes, 6, 2);
 
             int POS = BASE_SIZE;
             
@@ -114,8 +112,8 @@ namespace Larnix.Socket.Commands
         protected override void DetectDataProblems()
         {
             bool ok = (
-                EntityTransforms != null && EntityTransforms.Count <= 2048 &&
-                PlayerFixedIndexes != null && PlayerFixedIndexes.Count <= 1024
+                EntityTransforms != null && EntityTransforms.Count <= MAX_RECORDS &&
+                PlayerFixedIndexes != null && PlayerFixedIndexes.Count <= MAX_RECORDS
                 );
             HasProblems = HasProblems || !ok;
         }

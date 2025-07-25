@@ -20,6 +20,7 @@ namespace Larnix.Socket.Commands
         PlayerInitialize,
         PlayerUpdate,
         EntityBroadcast,
+        NearbyEntities,
         CodeInfo,
     }
 }

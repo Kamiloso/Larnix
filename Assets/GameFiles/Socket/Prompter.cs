@@ -39,7 +39,7 @@ namespace Larnix.Socket
             }
 
             udpClient = Client.CreateConfiguredClientObject(endPoint);
-            PromptID = (uint)(new System.Random()).Next();
+            PromptID = (uint)Common.Rand().Next();
 
             SafePacket.PacketFlag flags = SafePacket.PacketFlag.NCN;
             Encryption.Settings encrypt = null;

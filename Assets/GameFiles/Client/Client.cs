@@ -127,13 +127,18 @@ namespace Larnix.Client
                         EntityBroadcast msg = new EntityBroadcast(packet);
                         if (msg.HasProblems) continue;
 
-                        if(MyUID != 0)
-                        {
-                            References.EntityProjections.InterpretEntityBroadcast(msg);
-                        }
+                        References.EntityProjections.InterpretEntityBroadcast(msg);
                     }
 
-                    if((Name)packet.ID == Name.CodeInfo)
+                    if ((Name)packet.ID == Name.NearbyEntities)
+                    {
+                        NearbyEntities msg = new NearbyEntities(packet);
+                        if (msg.HasProblems) continue;
+
+                        References.EntityProjections.ChangeNearbyUIDs(msg);
+                    }
+
+                    if ((Name)packet.ID == Name.CodeInfo)
                     {
                         CodeInfo msg = new CodeInfo(packet);
                         if (msg.HasProblems) continue;
@@ -153,7 +158,7 @@ namespace Larnix.Client
                 }
             }
 
-            References.EntityProjections.SpawnProjectionsAfterBroadcast();
+            References.EntityProjections.AfterBroadcasts();
         }
 
         private void Update()

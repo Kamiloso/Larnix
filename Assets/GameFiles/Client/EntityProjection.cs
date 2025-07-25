@@ -16,6 +16,8 @@ namespace Larnix.Client
         private bool Initialized = false;
         private Smoother Smoother;
 
+        public double? LastTime { get; private set; } = null;
+
         public string NBT { get; private set; } = null;
 
         private void Start()
@@ -23,7 +25,7 @@ namespace Larnix.Client
             SetRenderingLayer();
         }
 
-        private static int previousLayer = (new System.Random()).Next(1, 6007);
+        private static int previousLayer = Common.Rand().Next(1, 6007);
         private void SetRenderingLayer()
         {
             int currentLayer = previousLayer * 211 % 6007;
@@ -66,11 +68,14 @@ namespace Larnix.Client
                     entityData.Rotation
                     );
             }
+
+            LastTime = time;
         }
 
         public void ResetSmoother()
         {
             Initialized = false;
+            LastTime = null;
         }
 
         private void Update()

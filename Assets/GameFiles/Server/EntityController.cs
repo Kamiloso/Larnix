@@ -46,6 +46,17 @@ namespace Larnix.Server
             return controller;
         }
 
+        public static EntityController ManualCreateEntityController(ulong uid, EntityData entityData, string nickname = null)
+        {
+            GameObject gobj = Prefabs.CreateEntity(entityData.ID, Prefabs.Mode.Server);
+            gobj.name = entityData.ID.ToString() + (nickname == null ? "" : $" ({nickname})") + " [" + uid + "]";
+            gobj.transform.SetParent(References.EntityDataManager.transform, false);
+            EntityController controller = gobj.GetComponent<EntityController>();
+
+            controller.Initialize(uid, entityData);
+            return controller;
+        }
+
         public ulong uID { get; private set; }
         public EntityData EntityData { get; private set; }
 

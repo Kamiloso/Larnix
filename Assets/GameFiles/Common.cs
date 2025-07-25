@@ -6,6 +6,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using Unity.Burst.Intrinsics;
 using UnityEngine;
 
@@ -71,6 +72,12 @@ namespace Larnix
             Span<byte> bytes = stackalloc byte[8];
             RandomNumberGenerator.Fill(bytes);
             return BitConverter.ToUInt64(bytes);
+        }
+
+        private static readonly ThreadLocal<System.Random> ThreadRandom = new(() => new System.Random());
+        public static System.Random Rand()
+        {
+            return ThreadRandom.Value;
         }
     }
 }

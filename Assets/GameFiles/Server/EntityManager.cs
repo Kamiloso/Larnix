@@ -15,6 +15,7 @@ namespace Larnix.Server
 
         private uint FixedCounter = 0;
         private uint LastSentFixedCounter = 0;
+        private uint UpdateCounter = 0; // just to check modulo when sending NearbyEntities packet
 
         private void Awake()
         {
@@ -73,18 +74,11 @@ namespace Larnix.Server
                     Dictionary<ulong, EntityData> EntityList = new();
                     Dictionary<ulong, uint> PlayerFixedIndexes = new();
 
-                    const int MAX_ENTITIES = 2048; // also in EntityBroadcast.cs
-                    const int MAX_FIXED_INDEXES = 1024; // also in EntityBroadcast.cs
-
                     foreach (ulong uid in EntityControllers.Keys)
                     {
-                        if (EntityList.Count >= MAX_ENTITIES)
-                            break;
-
                         // -- checking entities to add --
                         EntityController entity = EntityControllers[uid];
                         Vector2 entityPos = entity.EntityData.Position;
-                        bool lookingAtPlayer = entity.EntityData.ID == EntityID.Player;
 
                         if (!entity.gameObject.activeSelf)
                             continue; // sending only active entities, active players always have a recent update object
@@ -94,30 +88,54 @@ namespace Larnix.Server
                         {
                             EntityList.Add(uid, entity.EntityData);
 
-                            if (PlayerFixedIndexes.Count >= MAX_FIXED_INDEXES)
-                                continue;
-
                             // -- adding indexes --
-                            if(lookingAtPlayer)
+                            if(entity.EntityData.ID == EntityID.Player)
                             {
                                 PlayerFixedIndexes.Add(uid, FixedFrames[uid]);
                             }
                         }
                     }
 
-                    EntityBroadcast entityBroadcast = new EntityBroadcast(
-                        FixedCounter,
-                        0.0, // relict
-                        EntityList,
-                        PlayerFixedIndexes
-                        );
-                    if (!entityBroadcast.HasProblems)
+                    References.PlayerManager.UpdateNearbyUIDs(nickname, EntityList.Keys.ToHashSet(), FixedCounter, UpdateCounter % 6 == 0);
+
+                    const int MAX_RECORDS = EntityBroadcast.MAX_RECORDS;
+                    List<ulong> sendUIDs = EntityList.Keys.ToList();
+                    for (int pos = 0; true; pos += MAX_RECORDS)
                     {
-                        Packet packet = entityBroadcast.GetPacket();
-                        References.Server.Send(nickname, packet, false); // unsafe mode (over raw UDP)
+                        int sizeEnt = System.Math.Clamp(sendUIDs.Count - pos, 0, MAX_RECORDS);
+                        if (sizeEnt == 0) break;
+
+                        HashSet<ulong> fragmentedUIDs = sendUIDs.GetRange(pos, sizeEnt).ToHashSet();
+
+                        Dictionary<ulong, EntityData> fragmentEntities = new();
+                        foreach (ulong uid in fragmentedUIDs)
+                        {
+                            if (EntityList.TryGetValue(uid, out EntityData data))
+                                fragmentEntities[uid] = data;
+                        }
+
+                        Dictionary<ulong, uint> fragmentFixed = new();
+                        foreach (ulong uid in fragmentedUIDs)
+                        {
+                            if (PlayerFixedIndexes.TryGetValue(uid, out uint fixedIndex))
+                                fragmentFixed[uid] = fixedIndex;
+                        }
+
+                        EntityBroadcast entityBroadcast = new EntityBroadcast(
+                            FixedCounter,
+                            fragmentEntities,
+                            fragmentFixed
+                            );
+                        if (!entityBroadcast.HasProblems)
+                        {
+                            Packet packet = entityBroadcast.GetPacket();
+                            References.Server.Send(nickname, packet, false); // unsafe mode (over raw UDP)
+                        }
+                        else throw new System.Exception("Couldn't construct EntityBroadcast message!");
                     }
                 }
 
+                UpdateCounter++;
                 LastSentFixedCounter = FixedCounter;
             }
         }

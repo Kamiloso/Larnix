@@ -45,12 +45,7 @@ namespace Larnix.Client
 
         private bool ReadyEntities()
         {
-            var Ep = References.EntityProjections;
-            return (
-                Ep.ReceivedSomething &&
-                (int)(Ep.LastKnown - FixFrame) > 0 &&
-                Ep.GetDelayedEntities() == 0
-                );
+            return References.EntityProjections.EverythingLoaded(FixFrame);
         }
 
         private bool ReadyChunks()

@@ -108,11 +108,6 @@ namespace Larnix.Server
 
         private void EarlyUpdate() // Executes BEFORE default Update() time
         {
-            References.ChunkLoading.FromEarlyUpdate(); // 1
-            References.EntityManager.FromEarlyUpdate(); // 2
-
-            InterpretConsoleInput(); // n
-
             Queue<PacketAndOwner> messages = LarnixServer.ServerTickAndReceive(Time.deltaTime);
             foreach (PacketAndOwner message in messages)
             {
@@ -171,6 +166,11 @@ namespace Larnix.Server
                     }
                 }
             }
+
+            References.ChunkLoading.FromEarlyUpdate(); // 1
+            References.EntityManager.FromEarlyUpdate(); // 2
+
+            InterpretConsoleInput(); // n
         }
 
         private void LateUpdate()
@@ -318,6 +318,7 @@ namespace Larnix.Server
                     Console.LogRaw(" | playerlist - Shows all players on the server.\n");
                     Console.LogRaw(" | kick [nickname] - Kicks the player if online.\n");
                     Console.LogRaw(" | kill [nickname] - Kills the player if alive.\n");
+                    Console.LogRaw(" | spawn [entity] [x] [y] - Spawns entity at the given position.\n");
                     Console.LogRaw("\n");
                 }
 
@@ -327,7 +328,7 @@ namespace Larnix.Server
                     else Kick("Player"); // when the main player is kicked, he will return to menu and the local server will close
                 }
 
-                else if(len == 1 && arg[0] == "playerlist")
+                else if (len == 1 && arg[0] == "playerlist")
                 {
                     Console.LogRaw("\n");
                     Console.LogRaw($" | ------ PLAYER LIST [ {LarnixServer.CountPlayers()} / {LarnixServer.MaxClients} ] ------\n");
@@ -361,7 +362,7 @@ namespace Larnix.Server
                 {
                     string nickname = arg[1];
 
-                    if(References.PlayerManager.GetPlayerState(nickname) == PlayerManager.PlayerState.Alive)
+                    if (References.PlayerManager.GetPlayerState(nickname) == PlayerManager.PlayerState.Alive)
                     {
                         ulong uid = References.PlayerManager.PlayerUID[nickname];
                         References.EntityManager.KillEntity(uid);
@@ -371,6 +372,28 @@ namespace Larnix.Server
                     {
                         Console.LogError("Player " + nickname + " is not alive!");
                     }
+                }
+
+                else if (len == 4 && arg[0] == "spawn")
+                {
+                    string entityname = arg[1];
+
+                    if(Enum.TryParse(entityname, ignoreCase: true, out Entities.EntityID entityID) &&
+                        Enum.IsDefined(typeof(Entities.EntityID), entityID) &&
+                        entityID != Entities.EntityID.Player)
+                    {
+                        if (float.TryParse(arg[2], out float x) && float.TryParse(arg[3], out float y))
+                        {
+                            References.EntityManager.SummonEntity(new Entities.EntityData
+                            {
+                                ID = entityID,
+                                Position = new Vector2(x, y)
+                            });
+                            Console.LogSuccess($"Spawned {entityname} at position ({x}, {y}).");
+                        }
+                        else Console.LogError($"Cannot parse coordinates!");
+                    }
+                    else Console.LogError($"Cannot spawn entity named \"{entityname}\"!");
                 }
 
                 else Console.LogError("Unknown command! Type 'help' for documentation.");
