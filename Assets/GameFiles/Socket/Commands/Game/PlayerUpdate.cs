@@ -57,6 +57,7 @@ namespace Larnix.Socket.Commands
 
             return new Packet((byte)ID, Code, bytes);
         }
+
         protected override void DetectDataProblems()
         {
             bool ok = (

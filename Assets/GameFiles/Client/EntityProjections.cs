@@ -4,13 +4,31 @@ using UnityEngine;
 using Larnix.Socket.Commands;
 using Larnix.Entities;
 using System.Linq;
+using System.Diagnostics;
 
 namespace Larnix.Client
 {
     public class EntityProjections : MonoBehaviour
     {
-        private uint LastKnown = 0;
-        private Dictionary<ulong, EntityProjection> Projections = new Dictionary<ulong, EntityProjection>();
+        public bool ReceivedSomething { get; private set; } = false;
+        public uint LastKnown { get; private set; } = 0;
+
+        private Dictionary<ulong, EntityProjection> Projections = new();
+        private Dictionary<ulong, DelayedEntity> DelayedProjections = new();
+
+        private const double CREATION_TIME_PER_FRAME = 5.0; // miliseconds
+
+        private class DelayedEntity
+        {
+            public EntityData entityData;
+            public double time;
+
+            public DelayedEntity(EntityData entityData, double time)
+            {
+                this.entityData = entityData;
+                this.time = time;
+            }
+        }
 
         private bool AlreadyStarted = false;
         private uint StartedFixed = 0;
@@ -24,7 +42,8 @@ namespace Larnix.Client
         {
             if (References.Client.MyUID == 0) return; // drop, too early to display
 
-            if ((int)(msg.PacketFixedIndex - LastKnown) <= 0) return; // drop, older data
+            if (ReceivedSomething && (int)(msg.PacketFixedIndex - LastKnown) <= 0) return; // drop, older data
+            ReceivedSomething = true;
             LastKnown = msg.PacketFixedIndex;
 
             if(!AlreadyStarted)
@@ -40,12 +59,22 @@ namespace Larnix.Client
                 dict.Remove(References.Client.MyUID);
 
             // Remove unloaded projections
-            foreach (var key in Projections.Keys.ToList())
+            HashSet<ulong> uids = Projections.Keys.ToHashSet();
+            uids.UnionWith(DelayedProjections.Keys.ToHashSet());
+            foreach (var key in uids)
             {
                 if(!dict.ContainsKey(key))
                 {
-                    Destroy(Projections[key].gameObject);
-                    Projections.Remove(key);
+                    if (Projections.ContainsKey(key))
+                    {
+                        Destroy(Projections[key].gameObject);
+                        Projections.Remove(key);
+                    }
+
+                    if (DelayedProjections.ContainsKey(key))
+                    {
+                        DelayedProjections.Remove(key);
+                    }
                 }
             }
 
@@ -65,11 +94,34 @@ namespace Larnix.Client
                 {
                     Projections[uid].UpdateTransform(entity, time_fixed);
                 }
-                else // create new projection
+                else // create new projection (delay or overwrite delayed)
                 {
-                    Projections.Add(uid, CreateProjection(uid, entity, time_fixed));
+                    DelayedProjections[uid] = new DelayedEntity(entity, time_fixed);
                 }
             }
+        }
+
+        public void SpawnProjectionsAfterBroadcast()
+        {
+            Stopwatch timer = Stopwatch.StartNew();
+
+            foreach (ulong uid in DelayedProjections.Keys.ToList())
+            {
+                if (timer.Elapsed.TotalMilliseconds >= CREATION_TIME_PER_FRAME)
+                    break;
+
+                DelayedEntity delayedEntity = DelayedProjections[uid];
+                DelayedProjections.Remove(uid);
+
+                Projections[uid] = CreateProjection(uid, delayedEntity.entityData, delayedEntity.time);
+            }
+
+            timer.Stop();
+        }
+
+        public int GetDelayedEntities()
+        {
+            return DelayedProjections.Count;
         }
 
         private EntityProjection CreateProjection(ulong uid, EntityData entityData, double time)

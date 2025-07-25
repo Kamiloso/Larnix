@@ -34,6 +34,7 @@ namespace Larnix.Socket.Commands
         {
             return new Packet((byte)ID, Code, null);
         }
+
         protected override void DetectDataProblems()
         {
             HasProblems = HasProblems || false;

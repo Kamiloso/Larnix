@@ -1,11 +1,10 @@
 using UnityEditor;
-using UnityEngine;
 using System.IO;
 using System.Diagnostics;
 using UnityEditor.Build.Reporting;
 using System.Collections.Generic;
 
-public class CustomBuilds
+public class BuildAutomation
 {
     private static string buildRoot = "Builds/";
 
@@ -93,7 +92,7 @@ public class CustomBuilds
     [MenuItem("Build/Client/Windows")]
     public static void BuildClientWindows()
     {
-        string path = buildRoot + "Client/Windows/Larnix.exe";
+        string path = buildRoot + "Windows/Client/Larnix.exe";
         ClearBuildData();
         BuildClient(BuildTarget.StandaloneWindows64, path);
         LogBuildSummaryAndOpenFolders();
@@ -102,7 +101,7 @@ public class CustomBuilds
     [MenuItem("Build/Client/Linux")]
     public static void BuildClientLinux()
     {
-        string path = buildRoot + "Client/Linux/Larnix.x86_64";
+        string path = buildRoot + "Linux/Client/Larnix.x86_64";
         ClearBuildData();
         BuildClient(BuildTarget.StandaloneLinux64, path);
         LogBuildSummaryAndOpenFolders();
@@ -111,7 +110,7 @@ public class CustomBuilds
     [MenuItem("Build/Client/Mac")]
     public static void BuildClientMac()
     {
-        string path = buildRoot + "Client/Mac/Larnix.app";
+        string path = buildRoot + "Mac/Client/Larnix.app";
         ClearBuildData();
         BuildClient(BuildTarget.StandaloneOSX, path);
         LogBuildSummaryAndOpenFolders();
@@ -120,7 +119,7 @@ public class CustomBuilds
     [MenuItem("Build/Server/Windows")]
     public static void BuildServerWindows()
     {
-        string path = buildRoot + "Server/Windows/LarnixServer.exe";
+        string path = buildRoot + "Windows/Server/LarnixServer.exe";
         ClearBuildData();
         BuildServer(BuildTarget.StandaloneWindows64, path);
         LogBuildSummaryAndOpenFolders();
@@ -129,7 +128,7 @@ public class CustomBuilds
     [MenuItem("Build/Server/Linux")]
     public static void BuildServerLinux()
     {
-        string path = buildRoot + "Server/Linux/LarnixServer.x86_64";
+        string path = buildRoot + "Linux/Server/LarnixServer.x86_64";
         ClearBuildData();
         BuildServer(BuildTarget.StandaloneLinux64, path);
         LogBuildSummaryAndOpenFolders();
@@ -138,7 +137,7 @@ public class CustomBuilds
     [MenuItem("Build/Server/Mac")]
     public static void BuildServerMac()
     {
-        string path = buildRoot + "Server/Mac/LarnixServer.app";
+        string path = buildRoot + "Mac/Server/LarnixServer.app";
         ClearBuildData();
         BuildServer(BuildTarget.StandaloneOSX, path);
         LogBuildSummaryAndOpenFolders();
@@ -148,8 +147,8 @@ public class CustomBuilds
     public static void BuildClientServerWindows()
     {
         ClearBuildData();
-        BuildClient(BuildTarget.StandaloneWindows64, buildRoot + "Client/Windows/Larnix.exe");
-        BuildServer(BuildTarget.StandaloneWindows64, buildRoot + "Server/Windows/LarnixServer.exe");
+        BuildClient(BuildTarget.StandaloneWindows64, buildRoot + "Windows/Client/Larnix.exe");
+        BuildServer(BuildTarget.StandaloneWindows64, buildRoot + "Windows/Server/LarnixServer.exe");
         LogBuildSummaryAndOpenFolders();
     }
 
@@ -157,8 +156,8 @@ public class CustomBuilds
     public static void BuildClientServerLinux()
     {
         ClearBuildData();
-        BuildClient(BuildTarget.StandaloneLinux64, buildRoot + "Client/Linux/Larnix.x86_64");
-        BuildServer(BuildTarget.StandaloneLinux64, buildRoot + "Server/Linux/LarnixServer.x86_64");
+        BuildClient(BuildTarget.StandaloneLinux64, buildRoot + "Linux/Client/Larnix.x86_64");
+        BuildServer(BuildTarget.StandaloneLinux64, buildRoot + "Linux/Server/LarnixServer.x86_64");
         LogBuildSummaryAndOpenFolders();
     }
 
@@ -166,8 +165,8 @@ public class CustomBuilds
     public static void BuildClientServerMac()
     {
         ClearBuildData();
-        BuildClient(BuildTarget.StandaloneOSX, buildRoot + "Client/Mac/Larnix.app");
-        BuildServer(BuildTarget.StandaloneOSX, buildRoot + "Server/Mac/LarnixServer.app");
+        BuildClient(BuildTarget.StandaloneOSX, buildRoot + "Mac/Client/Larnix.app");
+        BuildServer(BuildTarget.StandaloneOSX, buildRoot + "Mac/Server/LarnixServer.app");
         LogBuildSummaryAndOpenFolders();
     }
 
@@ -176,13 +175,14 @@ public class CustomBuilds
     {
         ClearBuildData();
 
-        BuildClient(BuildTarget.StandaloneWindows64, buildRoot + "Client/Windows/Larnix.exe");
-        BuildClient(BuildTarget.StandaloneLinux64, buildRoot + "Client/Linux/Larnix.x86_64");
-        BuildClient(BuildTarget.StandaloneOSX, buildRoot + "Client/Mac/Larnix.app");
+        BuildClient(BuildTarget.StandaloneWindows64, buildRoot + "Windows/Client/Larnix.exe");
+        BuildServer(BuildTarget.StandaloneWindows64, buildRoot + "Windows/Server/LarnixServer.exe");
 
-        BuildServer(BuildTarget.StandaloneWindows64, buildRoot + "Server/Windows/LarnixServer.exe");
-        BuildServer(BuildTarget.StandaloneLinux64, buildRoot + "Server/Linux/LarnixServer.x86_64");
-        BuildServer(BuildTarget.StandaloneOSX, buildRoot + "Server/Mac/LarnixServer.app");
+        BuildClient(BuildTarget.StandaloneLinux64, buildRoot + "Linux/Client/Larnix.x86_64");
+        BuildServer(BuildTarget.StandaloneLinux64, buildRoot + "Linux/Server/LarnixServer.x86_64");
+
+        BuildClient(BuildTarget.StandaloneOSX, buildRoot + "Mac/Client/Larnix.app");
+        BuildServer(BuildTarget.StandaloneOSX, buildRoot + "Mac/Server/LarnixServer.app");
 
         LogBuildSummaryAndOpenFolders();
     }

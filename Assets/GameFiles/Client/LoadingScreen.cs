@@ -16,7 +16,7 @@ namespace Larnix.Client
         private const float OPACITY_SPEED = 2f;
 
         private bool active = true;
-        public string info { get; set; } = "Loading...";
+        private string info = "Loading...";
         private float opacity = 1f;
 
         private void Awake()
@@ -46,8 +46,10 @@ namespace Larnix.Client
             }
         }
 
-        public void Enable()
+        public void Enable(string info)
         {
+            this.info = info;
+
             active = true;
             Rotor.rotation = Quaternion.Euler(0f, 0f, 0f);
             opacity = 1f;

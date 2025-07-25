@@ -166,7 +166,13 @@ namespace Larnix.Menu
             // Update UI components
             FieldAddress.text = Data.Address;
 
-            if (state == State.None || state == State.Waiting)
+            if (state == State.None)
+            {
+                FieldDescription.text = "EMPTY: No server here.";
+                FieldPlayerNumber.text = "?? / ??";
+                ButtonJoin.interactable = false;
+            }
+            else if (state == State.Waiting)
             {
                 FieldDescription.text = "Downloading info...";
                 FieldPlayerNumber.text = "?? / ??";

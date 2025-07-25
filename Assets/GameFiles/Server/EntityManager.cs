@@ -127,6 +127,17 @@ namespace Larnix.Server
             EntityController playerController = EntityController.CreatePlayerController(nickname);
             PlayerControllers.Add(nickname, playerController);
             EntityControllers.Add(playerController.uID, playerController);
+
+            // Construct and send PlayerInitialize
+            PlayerInitialize answer = new PlayerInitialize(
+                playerController.EntityData.Position,
+                playerController.uID,
+                LastSentFixedCounter
+            );
+            if (!answer.HasProblems)
+            {
+                References.Server.Send(nickname, answer.GetPacket());
+            }
         }
 
         public EntityController GetPlayerController(string nickname)
@@ -184,6 +195,13 @@ namespace Larnix.Server
                     if (PlayerControllers[nickname].uID == uid)
                     {
                         PlayerControllers.Remove(nickname);
+
+                        CodeInfo codeInfo = new CodeInfo((byte)CodeInfo.Info.YouDie);
+                        if(!codeInfo.HasProblems)
+                        {
+                            References.Server.Send(nickname, codeInfo.GetPacket());
+                        }
+
                         break;
                     }
                 }

@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Runtime.ConstrainedExecution;
 using System.Security.Cryptography;
 using Larnix.Socket.Commands;
 
@@ -18,10 +19,23 @@ namespace Larnix.Socket
             if (address.Count(c => c == ':') >= 2 && !address.StartsWith("[") && !address.EndsWith("]"))
                 address = '[' + address + "]:27682";
 
+            string interface_str = null;
+
+            int p1 = address.IndexOf('%');
+            if (p1 != -1)
+            {
+                int p2 = p1 + 1;
+                while (p2 < address.Length && char.IsDigit(address[p2])) p2++;
+
+                interface_str = address.Substring(p1 + 1, p2 - p1 - 1);
+                address = address.Remove(p1, p2 - p1);
+            }
+
             try
             {
                 var uri = new Uri($"udp://{address}");
                 var ipAddresses = Dns.GetHostAddresses(uri.Host);
+                if(interface_str != null) ipAddresses[0].ScopeId = int.Parse(interface_str);
                 return new IPEndPoint(ipAddresses[0], uri.Port);
             }
             catch

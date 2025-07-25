@@ -1,10 +1,8 @@
 === Larnix TO-DO-LIST ===
 
-- Unity Info server build into config
-
+- EntityBroadcast fragmentation
 - Chunk loading lag spikes
 - Client offset & Dimension system
-
 - RectPhysics system
 - NBT system: Internal / Visual
 
@@ -12,4 +10,5 @@
 
 - Password hashing cache
 - IPv6 masking id : flood security
-- Better smooth: split EntityBroadcast
+- Better smooth: using individual FixedFrames
+- Unity Info server build into config

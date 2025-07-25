@@ -18,7 +18,14 @@ public class ScreenManager : MonoBehaviour
         currentScreen = parentName;
         foreach (var screen in Screens)
         {
-            screen.gameObject.SetActive(screen.transform.name == parentName);
+            CanvasGroup cg = screen.gameObject.GetComponent<CanvasGroup>();
+            if (cg == null)
+                cg = screen.gameObject.AddComponent<CanvasGroup>();
+
+            bool isActiveScreen = screen.name == parentName;
+            cg.alpha = isActiveScreen ? 1f : 0f;
+            cg.interactable = isActiveScreen;
+            cg.blocksRaycasts = isActiveScreen;
         }
     }
 
@@ -40,6 +47,11 @@ public class ScreenManager : MonoBehaviour
 
     private void Start()
     {
+        foreach(var screen in Screens)
+        {
+            screen.gameObject.SetActive(true);
+        }
+
         SetScreen(WorldLoad.ScreenLoad);
     }
 

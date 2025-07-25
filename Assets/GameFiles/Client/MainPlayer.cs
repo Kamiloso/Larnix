@@ -159,9 +159,25 @@ namespace Larnix.Client
         public void LoadPlayerData(PlayerInitialize msg)
         {
             transform.position = msg.Position;
-            RotationUpdate();
+        }
+
+        public void SetAlive()
+        {
+            if (transform.parent.gameObject.activeSelf)
+                throw new System.InvalidOperationException("Player is already alive!");
+
             transform.parent.gameObject.SetActive(true);
+            RotationUpdate();
             UpdateEntityObject(0f);
+        }
+
+        public void SetDead()
+        {
+            if (!transform.parent.gameObject.activeSelf)
+                throw new System.InvalidOperationException("Player is already dead!");
+
+            transform.parent.gameObject.SetActive(false);
+            EntityProjection.ResetSmoother();
         }
     }
 }

@@ -68,6 +68,11 @@ namespace Larnix.Client
             }
         }
 
+        public void ResetSmoother()
+        {
+            Initialized = false;
+        }
+
         private void Update()
         {
             // Update smooth & position

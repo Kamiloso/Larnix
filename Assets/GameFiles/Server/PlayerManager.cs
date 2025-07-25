@@ -8,7 +8,7 @@ namespace Larnix.Server
     public class PlayerManager : MonoBehaviour
     {
         public readonly Dictionary<string, ulong> PlayerUID = new();
-        public readonly Dictionary<string, PlayerUpdate> RecentPlayerUpdates = new(); // valid even for dead players
+        public readonly Dictionary<string, PlayerUpdate> RecentPlayerUpdates = new(); // valid even for dead players, invalid for inactive players
         public enum PlayerState : byte
         {
             None, // non-existent or disconnected
@@ -24,14 +24,19 @@ namespace Larnix.Server
 
         public void JoinPlayer(string nickname)
         {
-            CreatePlayerInstance(nickname);
-            ulong uid = References.EntityManager.GetPlayerController(nickname).uID;
+            ulong uid = (ulong)References.Server.Database.GetUserID(nickname);
             PlayerUID[nickname] = uid;
+
+            CreatePlayerInstance(nickname);
         }
 
         public void CreatePlayerInstance(string nickname)
         {
             References.EntityManager.CreatePlayerController(nickname);
+            
+            // Set to PlayerState.Inactive
+            if(RecentPlayerUpdates.ContainsKey(nickname))
+                RecentPlayerUpdates.Remove(nickname);
         }
 
         public void UpdatePlayerDataIfHasController(string nickname, PlayerUpdate msg)

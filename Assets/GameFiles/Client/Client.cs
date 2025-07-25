@@ -20,8 +20,6 @@ namespace Larnix.Client
         public bool IsMultiplayer { get; private set; }
         public ulong MyUID { get; private set; } = 0;
 
-        private bool loadingEnded = false;
-
         // Client initialization
         void Awake()
         {
@@ -51,8 +49,7 @@ namespace Larnix.Client
 
         private void Start()
         {
-            References.LoadingScreen.Enable();
-            References.LoadingScreen.info = "Connecting...";
+            References.Loading.StartLoading("Connecting...");
         }
 
         // Server creation
@@ -121,6 +118,8 @@ namespace Larnix.Client
 
                         References.MainPlayer.LoadPlayerData(msg);
                         MyUID = msg.MyUid;
+
+                        References.Loading.StartWaitingFrom(msg.LastFixedFrame);
                     }
 
                     if((Name)packet.ID == Name.EntityBroadcast)
@@ -131,11 +130,18 @@ namespace Larnix.Client
                         if(MyUID != 0)
                         {
                             References.EntityProjections.InterpretEntityBroadcast(msg);
-                            if(!loadingEnded)
-                            {
-                                References.LoadingScreen.Disable();
-                                loadingEnded = true;
-                            }
+                        }
+                    }
+
+                    if((Name)packet.ID == Name.CodeInfo)
+                    {
+                        CodeInfo msg = new CodeInfo(packet);
+                        if (msg.HasProblems) continue;
+
+                        switch((CodeInfo.Info)msg.Code)
+                        {
+                            case CodeInfo.Info.YouDie: References.MainPlayer.SetDead(); break;
+                            default: break;
                         }
                     }
                 }
@@ -147,17 +153,27 @@ namespace Larnix.Client
                 }
             }
 
-            /*if(Input.GetKeyDown(KeyCode.Z))
-            {
-                DebugMessage debugMessage = new DebugMessage("Test message :)");
-                if (!debugMessage.HasProblems)
-                {
-                    UnityEngine.Debug.Log("SENDING " + debugMessage.Data);
-                    Send(debugMessage.GetPacket());
-                }
-            }*/
+            References.EntityProjections.SpawnProjectionsAfterBroadcast();
+        }
 
-            if(Input.GetKeyDown(KeyCode.Escape))
+        private void Update()
+        {
+            // Base input
+
+            if (Input.GetKeyDown(KeyCode.R)) // temporary respawn using R
+            {
+                if(!References.MainPlayer.gameObject.activeInHierarchy)
+                {
+                    CodeInfo codeInfo = new CodeInfo((byte)CodeInfo.Info.RespawnMe);
+                    if (codeInfo.HasProblems)
+                        throw new System.Exception("Wrong respawn ask packet!");
+                    
+                    Send(codeInfo.GetPacket());
+                    References.Loading.StartLoading("Respawning...");
+                }
+            }
+
+            if (Input.GetKeyDown(KeyCode.Escape))
             {
                 BackToMenu();
             }

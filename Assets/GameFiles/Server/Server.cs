@@ -127,17 +127,6 @@ namespace Larnix.Server
                     // Create player connection
                     References.PlayerManager.JoinPlayer(owner);
 
-                    // Construct and send answer
-                    EntityController playerController = References.EntityManager.GetPlayerController(owner);
-                    PlayerInitialize answer = new PlayerInitialize(
-                        playerController.EntityData.Position,
-                        playerController.uID
-                    );
-                    if(!answer.HasProblems)
-                    {
-                        Send(owner, answer.GetPacket());
-                    }
-
                     // Info to console
                     Console.Log(owner + " joined the game.");
                 }
@@ -154,24 +143,6 @@ namespace Larnix.Server
                     Console.Log(owner + " disconnected.");
                 }
 
-                /*if((Name)packet.ID == Name.DebugMessage)
-                {
-                    DebugMessage msg = new DebugMessage(packet);
-                    if (msg.HasProblems) continue;
-
-                    // Temporary wildpig spawn
-                    EntityController playerController = References.EntityManager.GetPlayerController(owner);
-                    References.EntityManager.SummonEntity(new Entities.EntityData
-                    {
-                        ID = Entities.EntityID.Wildpig,
-                        Position = playerController == null ? Vector2.zero : playerController.EntityData.Position,
-                        Rotation = 0f,
-                        NBT = "{}"
-                    });
-
-                    UnityEngine.Debug.Log("DebugMessage [" + owner + "]: " + msg.Data);
-                }*/
-
                 if ((Name)packet.ID == Name.PlayerUpdate)
                 {
                     PlayerUpdate msg = new PlayerUpdate(packet);
@@ -183,6 +154,20 @@ namespace Larnix.Server
                     {
                         // Update player data
                         References.PlayerManager.UpdatePlayerDataIfHasController(owner, msg);
+                    }
+                }
+
+                if ((Name)packet.ID == Name.CodeInfo)
+                {
+                    CodeInfo msg = new CodeInfo(packet);
+                    if (msg.HasProblems) continue;
+
+                    CodeInfo.Info code = (CodeInfo.Info)msg.Code;
+
+                    if(code == CodeInfo.Info.RespawnMe)
+                    {
+                        if(References.PlayerManager.GetPlayerState(owner) == PlayerManager.PlayerState.Dead)
+                            References.PlayerManager.CreatePlayerInstance(owner);
                     }
                 }
             }
@@ -350,7 +335,8 @@ namespace Larnix.Server
 
                     foreach (string nickname in References.PlayerManager.PlayerUID.Keys)
                     {
-                        Console.LogRaw($" | {nickname} from {LarnixServer.GetClientEndPoint(nickname)} \n");
+                        Console.LogRaw($" | {nickname} from {LarnixServer.GetClientEndPoint(nickname)}" +
+                            $" is {References.PlayerManager.GetPlayerState(nickname).ToString().ToUpper()} \n");
                     }
 
                     Console.LogRaw("\n");
