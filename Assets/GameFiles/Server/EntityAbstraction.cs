@@ -22,15 +22,14 @@ namespace Larnix.Server
             Init(uid, entityData, nickname);
         }
 
-        public EntityAbstraction(EntityData entityData) // Create new entity abstraction
+        public EntityAbstraction(EntityData entityData, ulong? uid = null) // Create entity abstraction
         {
-            ulong uid = Common.GetRandomUID(); // It is supposed to be unique
-            Init(uid, entityData);
-        }
+            if (entityData.ID == EntityID.Player)
+                throw new System.ArgumentException("Cannot create player instance like entity!");
 
-        public EntityAbstraction(ulong uid, EntityData entityData) // Create existing entity abstraction
-        {
-            Init(uid, entityData);
+            // 8 bytes of entropy is enough to make collisions extremely unlikely
+            ulong _uid = uid == null ? Common.GetRandomUID() : (ulong)uid;
+            Init(_uid, entityData);
         }
 
         private void Init(ulong uid, EntityData entityData, string nickname = null)
@@ -59,31 +58,24 @@ namespace Larnix.Server
             if (IsActive)
                 throw new System.InvalidOperationException("Entity abstraction is already active!");
 
-            controller = EntityController.ManualCreateEntityController(delayed_uID, delayed_EntityData, delayed_nickname);
+            controller = EntityController.CreateRealEntityController(delayed_uID, delayed_EntityData, delayed_nickname);
         }
 
-        public void DeleteEntityInstant()
+        public EntityController GetRealController()
         {
-            if(IsActive)
-            {
-                controller.DeleteEntityInstant();
-            }
-            else
-            {
-
-            }
+            return IsActive ? controller : null;
         }
 
-        public void UnloadEntityInstant()
+        public void DeleteEntityInstant() // Execute only from after FromFixedUpdate()
         {
-            if(IsActive)
-            {
-                controller.UnloadEntityInstant();
-            }
-            else
-            {
+            References.EntityDataManager.DeleteEntityData(uID);
+            if (IsActive) GameObject.Destroy(controller.gameObject);
+        }
 
-            }
+        public void UnloadEntityInstant() // Execute only from after FromFixedUpdate()
+        {
+            References.EntityDataManager.UnloadEntityData(uID);
+            if (IsActive) GameObject.Destroy(controller.gameObject);
         }
 
         public void FromFixedUpdate()

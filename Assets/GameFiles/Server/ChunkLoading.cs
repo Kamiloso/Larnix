@@ -78,7 +78,7 @@ namespace Larnix.Server
             }
         }
 
-        public bool IsEntityInAliveZone(EntityController entity)
+        public bool IsEntityInAliveZone(EntityAbstraction entity)
         {
             Vector2Int chunk = CoordsToChunk(entity.EntityData.Position);
             if (LoadedChunks.ContainsKey(chunk))

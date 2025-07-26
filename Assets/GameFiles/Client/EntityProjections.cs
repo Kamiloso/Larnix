@@ -15,8 +15,6 @@ namespace Larnix.Client
 
         private HashSet<ulong> NearbyUIDs = new HashSet<ulong>();
 
-        private const double CREATION_TIME_PER_FRAME = 5.0; // miliseconds
-
         private uint? StartedFixed = null;
         private uint? NearbyFrameFixed = null; // Can be a bit old, but only up to ~1/4 seconds
 
@@ -120,11 +118,12 @@ namespace Larnix.Client
 
             // Spawn delayed projections
 
+            const double MAX_CREATION_MS = 3.0; // miliseconds
             Stopwatch timer = Stopwatch.StartNew();
 
             foreach (ulong uid in DelayedProjections.Keys.ToList())
             {
-                if (timer.Elapsed.TotalMilliseconds >= CREATION_TIME_PER_FRAME)
+                if (timer.Elapsed.TotalMilliseconds >= MAX_CREATION_MS)
                     break;
 
                 DelayedEntity delayedEntity = DelayedProjections[uid];

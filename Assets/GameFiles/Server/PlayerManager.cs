@@ -4,6 +4,7 @@ using UnityEngine;
 using Larnix.Socket.Commands;
 using System.Linq;
 using Larnix.Socket;
+using Larnix.Entities;
 
 namespace Larnix.Server
 {
@@ -46,15 +47,18 @@ namespace Larnix.Server
 
         public void UpdatePlayerDataIfHasController(string nickname, PlayerUpdate msg)
         {
-            EntityController playerController = References.EntityManager.GetPlayerController(nickname);
+            EntityAbstraction playerController = References.EntityManager.GetPlayerController(nickname);
             if (playerController != null) // Player is either PlayerState.Inactive or PlayerState.Alive
             {
+                // Activate controller if not active
+                if (!playerController.IsActive)
+                    playerController.Activate();
+
                 // Load data to player controller
-                playerController.ActivateIfNotActive();
-                Entities.EntityData entityData = playerController.EntityData.ShallowCopy();
+                EntityData entityData = playerController.EntityData.ShallowCopy();
                 entityData.Position = msg.Position;
                 entityData.Rotation = msg.Rotation;
-                playerController.UpdateEntityData(entityData);
+                playerController.GetRealController().UpdateEntityData(entityData);
 
                 // Update PlayerUpdate info
                 RecentPlayerUpdates[nickname] = msg;

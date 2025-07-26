@@ -9,68 +9,24 @@ namespace Larnix.Server
 {
     public class EntityController : MonoBehaviour
     {
-        public static EntityController CreatePlayerController(string nickname)
-        {
-            ulong uid = (ulong)References.Server.Database.GetUserID(nickname);
-            EntityData entityData = References.EntityDataManager.TryFindEntityData(uid);
+        // -------------------------------------------------------------------------------------------
+        //  WARNING: This class should only be used under the abstraction of EntityAbstraction class!
+        // -------------------------------------------------------------------------------------------
 
-            if (entityData == null)
-                entityData = new EntityData // Create new player
-                {
-                    ID = EntityID.Player
-                };
+        public ulong uID { get; private set; }
+        public EntityData EntityData { get; private set; }
 
-            GameObject gobj = Prefabs.CreateEntity(entityData.ID, Prefabs.Mode.Server);
-            gobj.name = "Player (" + nickname + ") [" + uid + "]";
-            gobj.transform.SetParent(References.EntityDataManager.transform, false);
-            EntityController controller = gobj.GetComponent<EntityController>();
-
-            controller.Initialize(uid, entityData);
-            return controller;
-        }
-
-        public static EntityController CreateNewEntityController(EntityData entityData)
-        {
-            ulong uid = Common.GetRandomUID(); // It is supposed to be unique
-            return CreateExistingEntityController(uid, entityData);
-        }
-
-        public static EntityController CreateExistingEntityController(ulong uid, EntityData entityData)
-        {
-            GameObject gobj = Prefabs.CreateEntity(entityData.ID, Prefabs.Mode.Server);
-            gobj.name = entityData.ID.ToString() + " [" + uid + "]";
-            gobj.transform.SetParent(References.EntityDataManager.transform, false);
-            EntityController controller = gobj.GetComponent<EntityController>();
-
-            controller.Initialize(uid, entityData);
-            return controller;
-        }
-
-        public static EntityController ManualCreateEntityController(ulong uid, EntityData entityData, string nickname = null)
+        public static EntityController CreateRealEntityController(ulong uid, EntityData entityData, string nickname = null)
         {
             GameObject gobj = Prefabs.CreateEntity(entityData.ID, Prefabs.Mode.Server);
             gobj.name = entityData.ID.ToString() + (nickname == null ? "" : $" ({nickname})") + " [" + uid + "]";
             gobj.transform.SetParent(References.EntityDataManager.transform, false);
             EntityController controller = gobj.GetComponent<EntityController>();
 
-            controller.Initialize(uid, entityData);
+            controller.uID = uid;
+            controller.EntityData = entityData;
+
             return controller;
-        }
-
-        public ulong uID { get; private set; }
-        public EntityData EntityData { get; private set; }
-
-        private void Initialize(ulong uid, EntityData entityData)
-        {
-            uID = uid;
-            UpdateEntityData(entityData);
-            gameObject.SetActive(false);
-        }
-
-        public void ActivateIfNotActive()
-        {
-            if (!gameObject.activeSelf)
-                gameObject.SetActive(true);
         }
 
         public void UpdateEntityData(EntityData entityData) // Also updates physical position!
@@ -78,18 +34,6 @@ namespace Larnix.Server
             EntityData = entityData;
             transform.position = entityData.Position;
             References.EntityDataManager.SetEntityData(uID, entityData);
-        }
-
-        public void DeleteEntityInstant() // Execute only from after FromFixedUpdate
-        {
-            References.EntityDataManager.DeleteEntityData(uID);
-            Destroy(gameObject);
-        }
-
-        public void UnloadEntityInstant() // Execute only from after FromFixedUpdate
-        {
-            References.EntityDataManager.UnloadEntityData(uID);
-            Destroy(gameObject);
         }
 
         public void FromFixedUpdate()

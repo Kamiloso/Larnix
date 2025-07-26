@@ -1,8 +1,9 @@
 === Larnix TO-DO-LIST ===
 
-- EntityBroadcast fragmentation
+- Make uIDs fully unique
 - Chunk loading lag spikes
-- Client offset & Dimension system
+- Client offset system
+- Block system
 - RectPhysics system
 - NBT system: Internal / Visual
 
@@ -12,3 +13,5 @@
 - IPv6 masking id : flood security
 - Better smooth: using individual FixedFrames
 - Unity Info server build into config
+- EntityBroadcast fragmentation
+- EntityAbstraction

@@ -258,6 +258,9 @@ namespace Larnix.Server.Data
 
         public bool DeleteEntities(List<ulong> uids)
         {
+            if (transaction == null)
+                throw new InvalidOperationException("Active transaction is needed for this method!");
+
             if (uids == null || uids.Count == 0)
                 return false;
 
@@ -281,7 +284,8 @@ namespace Larnix.Server.Data
                     string sql = $"DELETE FROM entities WHERE uid IN ({string.Join(", ", parameterNames)});";
                     cmd.CommandText = sql;
 
-                    anyDeleted = anyDeleted || cmd.ExecuteNonQuery() > 0;
+                    bool deleted = cmd.ExecuteNonQuery() > 0;
+                    anyDeleted = anyDeleted || deleted;
                 }
             }
 
