@@ -7,6 +7,8 @@ using System;
 using Larnix.Socket.Commands;
 using Larnix.Files;
 using Larnix.Entities;
+using Larnix.Server.Terrain;
+using Larnix.Blocks;
 
 namespace Larnix.Server.Data
 {
@@ -166,6 +168,15 @@ namespace Larnix.Server.Data
             throw new Exception("User doesn't exist in the database!");
         }
 
+        public long GetMinUID()
+        {
+            using (var cmd = CreateCommand())
+            {
+                cmd.CommandText = "SELECT IFNULL(MIN(uid), 0) FROM entities;";
+                return (long)cmd.ExecuteScalar();
+            }
+        }
+
         public EntityData FindEntity(ulong uid)
         {
             using (var cmd = CreateCommand())
@@ -182,7 +193,7 @@ namespace Larnix.Server.Data
                             ID = (EntityID)(long)reader["type"],
                             Position = new Vector2((float)(double)reader["pos_x"], (float)(double)reader["pos_y"]),
                             Rotation = (float)(double)reader["rotation"],
-                            NBT = reader["nbt"] as string
+                            NBT = (string)reader["nbt"]
                         };
                         return entityData;
                     }
@@ -241,7 +252,7 @@ namespace Larnix.Server.Data
                 foreach (var vkp in entities)
                 {
                     EntityData entity = vkp.Value;
-                    Vector2Int chunkCoords = ChunkLoading.CoordsToChunk(entity.Position);
+                    Vector2Int chunkCoords = ChunkMethods.CoordsToChunk(entity.Position);
 
                     paramUid.Value = (long)vkp.Key;
                     paramType.Value = (long)entity.ID;

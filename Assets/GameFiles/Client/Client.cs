@@ -149,6 +149,21 @@ namespace Larnix.Client
                             default: break;
                         }
                     }
+
+                    if((Name)packet.ID == Name.ChunkInfo)
+                    {
+                        ChunkInfo msg = new ChunkInfo(packet);
+                        if (msg.HasProblems) continue;
+
+                        if(msg.Blocks != null) // activation packet
+                        {
+                            References.GridManager.AddChunk(msg.Chunkpos, msg.Blocks);
+                        }
+                        else // removal packet
+                        {
+                            References.GridManager.RemoveChunk(msg.Chunkpos);
+                        }
+                    }
                 }
 
                 if (LarnixClient.IsDead())

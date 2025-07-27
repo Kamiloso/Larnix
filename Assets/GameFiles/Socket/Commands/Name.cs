@@ -22,5 +22,6 @@ namespace Larnix.Socket.Commands
         EntityBroadcast,
         NearbyEntities,
         CodeInfo,
+        ChunkInfo,
     }
 }

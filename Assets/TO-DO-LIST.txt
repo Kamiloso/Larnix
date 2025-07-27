@@ -1,10 +1,8 @@
 === Larnix TO-DO-LIST ===
 
-- Make uIDs fully unique
-- Chunk loading lag spikes
-- Client offset system
 - Block system
 - RectPhysics system
+- Client offset system
 - NBT system: Internal / Visual
 
 <<< === Larnix DONE :) === >>>
@@ -15,3 +13,5 @@
 - Unity Info server build into config
 - EntityBroadcast fragmentation
 - EntityAbstraction
+- Make uIDs fully unique
+- Chunk loading lag spikes

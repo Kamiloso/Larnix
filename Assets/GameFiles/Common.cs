@@ -52,26 +52,9 @@ namespace Larnix
             return Encoding.Unicode.GetString(bytes).TrimEnd('\0');
         }
 
-        public static float GridDistance(Vector2 v1, Vector2 v2)
+        public static int ManhattanDistance(Vector2Int v1, Vector2Int v2)
         {
-            Vector2 diff = v1 - v2;
-            return Math.Abs(diff.x) + Math.Abs(diff.y);
-        }
-
-        public static float InSquareDistance(Vector2 v1, Vector2 v2)
-        {
-            Vector2 diff = v1 - v2;
-            float d_x = Math.Abs(diff.x);
-            float d_y = Math.Abs(diff.y);
-            if(d_x > d_y) return d_x;
-            else return d_y;
-        }
-
-        public static ulong GetRandomUID()
-        {
-            Span<byte> bytes = stackalloc byte[8];
-            RandomNumberGenerator.Fill(bytes);
-            return BitConverter.ToUInt64(bytes);
+            return Math.Abs(v1.x - v2.x) + Math.Abs(v1.y - v2.y);
         }
 
         private static readonly ThreadLocal<System.Random> ThreadRandom = new(() => new System.Random());

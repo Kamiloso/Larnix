@@ -1,0 +1,7 @@
+<linker>
+  <assembly fullname="Assembly-CSharp">
+    <type fullname="Larnix.Server.Terrain.BlockServer" preserve="all"/>
+    <type fullname="Larnix.Modules.Blocks.Air" preserve="all"/>
+    <type fullname="Larnix.Modules.Blocks.Stone" preserve="all"/>
+  </assembly>
+</linker>

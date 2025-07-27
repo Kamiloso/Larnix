@@ -9,14 +9,14 @@ namespace Larnix
 {
     public static class Prefabs
     {
-        public enum Mode { Server, Client }
+        public enum Mode { Default, Server, Client }
         public static GameObject CreateEntity(EntityID entityID, Mode mode)
         {
-            GameObject prefab = GetPrefab("Entities/" + entityID.ToString(), mode);
+            GameObject prefab = GetPrefab("EntityPrefabs/" + entityID.ToString(), mode);
             if (prefab == null)
             {
                 UnityEngine.Debug.LogWarning("Couldn't find '" + entityID + "' entity prefab!");
-                prefab = GetPrefab("Entities/None", mode);
+                prefab = GetPrefab("EntityPrefabs/None", mode);
             }
 
             GameObject gobj = GameObject.Instantiate(prefab);
@@ -24,37 +24,25 @@ namespace Larnix
             return gobj;
         }
 
-        public static GameObject CreateChunk(Mode mode)
-        {
-            GameObject prefab = GetPrefab("Chunk", mode);
-            if (prefab == null)
-                throw new NotImplementedException("No chunk prefab!");
+        private static readonly Dictionary<string, GameObject> PrefabCache = new();
+        private const int MAX_CACHE = 512;
 
-            GameObject gobj = GameObject.Instantiate(prefab);
-            gobj.transform.name = "Chunk <" + mode + ">";
-            return gobj;
-        }
-
-        public static GameObject CreateBlock(BlockID blockID, Mode mode)
+        private static GameObject GetPrefab(string path, Mode mode = Mode.Default)
         {
-            GameObject prefab = GetPrefab("Blocks/" + blockID.ToString(), mode);
-            if (prefab == null)
+            if(!PrefabCache.TryGetValue(path, out GameObject prefab))
             {
-                UnityEngine.Debug.LogWarning("Couldn't find '" + blockID + "' block prefab!");
-                prefab = GetPrefab("Blocks/Air", mode);
+                if(PrefabCache.Count >= MAX_CACHE)
+                    PrefabCache.Clear();
+
+                prefab = Resources.Load<GameObject>(path);
+                PrefabCache[path] = prefab;
             }
-
-            GameObject gobj = GameObject.Instantiate(prefab);
-            gobj.transform.name = blockID.ToString() + " <" + mode + ">";
-            return gobj;
-        }
-
-        private static GameObject GetPrefab(string path, Mode mode)
-        {
-            GameObject prefab = Resources.Load<GameObject>(path);
 
             if (prefab == null)
                 return null;
+
+            if(mode == Mode.Default)
+                return prefab;
 
             foreach(Transform trn in prefab.transform)
             {

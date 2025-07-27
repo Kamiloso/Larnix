@@ -11,6 +11,8 @@ using System.Linq;
 using Larnix.Files;
 using System.Net;
 using System.Threading.Tasks;
+using Larnix.Server.Entities;
+using Larnix.Entities;
 
 namespace Larnix.Server
 {
@@ -104,6 +106,31 @@ namespace Larnix.Server
 
                 yield return new WaitForSeconds(60f);
             }
+        }
+
+        private ulong? privNextUID = null;
+        public ulong GetNextUID()
+        {
+            if (privNextUID != null)
+            {
+                ulong nextUID = (ulong)privNextUID;
+                privNextUID--;
+                return nextUID;
+            }
+            else
+            {
+                if (Database == null)
+                    throw new InvalidOperationException("Database connection doesn't exist yet!");
+
+                privNextUID = (ulong)(Database.GetMinUID() - 1);
+                return GetNextUID();
+            }
+        }
+
+        private void FixedUpdate()
+        {
+            References.ChunkLoading.FromFixedUpdate(); // FIX-1
+            References.EntityManager.FromFixedUpdate(); // FIX-2
         }
 
         private void EarlyUpdate() // Executes BEFORE default Update() time
@@ -378,13 +405,13 @@ namespace Larnix.Server
                 {
                     string entityname = arg[1];
 
-                    if(Enum.TryParse(entityname, ignoreCase: true, out Entities.EntityID entityID) &&
-                        Enum.IsDefined(typeof(Entities.EntityID), entityID) &&
-                        entityID != Entities.EntityID.Player)
+                    if(Enum.TryParse(entityname, ignoreCase: true, out EntityID entityID) &&
+                        Enum.IsDefined(typeof(EntityID), entityID) &&
+                        entityID != EntityID.Player)
                     {
                         if (float.TryParse(arg[2], out float x) && float.TryParse(arg[3], out float y))
                         {
-                            References.EntityManager.SummonEntity(new Entities.EntityData
+                            References.EntityManager.SummonEntity(new EntityData
                             {
                                 ID = entityID,
                                 Position = new Vector2(x, y)

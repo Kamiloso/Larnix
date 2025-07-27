@@ -12,6 +12,7 @@ namespace Larnix.Blocks
         public SingleBlockData Front = new();
         public SingleBlockData Back = new();
 
+        public BlockData() { }
         public BlockData(SingleBlockData front, SingleBlockData back)
         {
             Front = front;

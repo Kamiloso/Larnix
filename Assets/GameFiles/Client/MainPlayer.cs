@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using Larnix.Socket.Commands;
+using Larnix.Client.Entities;
 using Larnix.Entities;
 using System;
 
@@ -12,6 +13,7 @@ namespace Larnix.Client
     {
         [SerializeField] Camera Camera;
         [SerializeField] EntityProjection EntityProjection;
+        [SerializeField] Transform RaycastCenter; // simply player's head
         [SerializeField] Vector2 CameraDeltaPosition;
         
         private uint FixedCounter = 0;
@@ -140,9 +142,12 @@ namespace Larnix.Client
 
         private void RotationUpdate()
         {
-            float mx = Input.mousePosition.x - (Screen.width / 2);
-            float my = Input.mousePosition.y - (Screen.height / 2);
-            Rotation = Mathf.Atan2(my, mx) * 180f / Mathf.PI;
+            Vector2 mouse_pos = Input.mousePosition;
+            Vector2 head_pos = Camera.WorldToScreenPoint(RaycastCenter.position);
+
+            Vector2 raycast_vect = mouse_pos - head_pos;
+
+            Rotation = Mathf.Atan2(raycast_vect.y, raycast_vect.x) * 180f / Mathf.PI;
         }
 
         private void UpdateEntityObject(double time)
@@ -154,6 +159,11 @@ namespace Larnix.Client
                 Rotation = Rotation,
                 NBT = null
             }, time);
+        }
+
+        public Vector2 GetPosition()
+        {
+            return transform.position;
         }
 
         public void LoadPlayerData(PlayerInitialize msg)

@@ -1,6 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Larnix.Client.Terrain;
+using Larnix.Client.Entities;
+using Larnix.Client.UI;
 
 namespace Larnix.Client
 {
@@ -11,5 +14,6 @@ namespace Larnix.Client
         public static EntityProjections EntityProjections;
         public static LoadingScreen LoadingScreen;
         public static Loading Loading;
+        public static GridManager GridManager;
     }
 }
