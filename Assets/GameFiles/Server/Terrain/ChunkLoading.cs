@@ -256,7 +256,7 @@ namespace Larnix.Server.Terrain
                     break;
 
                 case LoadState.Active:
-                    Chunks[chunk].Instance.FlushData();
+                    Chunks[chunk].Instance.Dispose();
                     Chunks.Remove(chunk);
                     break;
 

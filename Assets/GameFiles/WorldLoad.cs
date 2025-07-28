@@ -21,6 +21,7 @@ namespace Larnix
         public static string ServerAddress = "";
         public static string WorldDirectory = "";
         public static string ScreenLoad = "MainMenu";
+        public static long? SeedSuggestion = null;
 
         // Set on client start and reset on client exit, WARNING: null -> no SYN encryption
         public static byte[] RsaPublicKey = null;

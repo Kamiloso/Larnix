@@ -61,6 +61,9 @@ namespace Larnix.Server
             // DATABASE --> 4
             Database = new Database(WorldDir, "database.sqlite");
 
+            // Generator (4.5)
+            References.Generator = new Worldgen.Generator(Database.GetSeed(WorldLoad.SeedSuggestion));
+
             // SERVER --> 5
             LarnixServer = new Socket.Server(
                 ServerConfig.Port,
@@ -328,6 +331,15 @@ namespace Larnix.Server
 
         public void InterpretConsoleInput() // n
         {
+            /*if(Input.GetKeyDown(KeyCode.Z)) // WILDPIG TESTING SPAWNING
+            {
+                References.EntityManager.SummonEntity(new EntityData
+                {
+                    ID = EntityID.Wildpig,
+                    Position = 50 * (new Vector2((float)Common.Rand().NextDouble(), (float)Common.Rand().NextDouble()) - new Vector2(0.5f, 0.5f))
+                });
+            }*/
+
             while (true)
             {
                 string cmd = Console.GetCommand();
@@ -346,6 +358,7 @@ namespace Larnix.Server
                     Console.LogRaw(" | kick [nickname] - Kicks the player if online.\n");
                     Console.LogRaw(" | kill [nickname] - Kills the player if alive.\n");
                     Console.LogRaw(" | spawn [entity] [x] [y] - Spawns entity at the given position.\n");
+                    Console.LogRaw(" | seed - Displays the server seed.\n");
                     Console.LogRaw("\n");
                 }
 
@@ -405,7 +418,7 @@ namespace Larnix.Server
                 {
                     string entityname = arg[1];
 
-                    if(Enum.TryParse(entityname, ignoreCase: true, out EntityID entityID) &&
+                    if (Enum.TryParse(entityname, ignoreCase: true, out EntityID entityID) &&
                         Enum.IsDefined(typeof(EntityID), entityID) &&
                         entityID != EntityID.Player)
                     {
@@ -421,6 +434,12 @@ namespace Larnix.Server
                         else Console.LogError($"Cannot parse coordinates!");
                     }
                     else Console.LogError($"Cannot spawn entity named \"{entityname}\"!");
+                }
+
+                else if (len == 1 && arg[0] == "seed")
+                {
+                    long seed = References.Generator.Seed;
+                    Console.Log("Seed: " + seed);
                 }
 
                 else Console.LogError("Unknown command! Type 'help' for documentation.");
@@ -454,6 +473,7 @@ namespace Larnix.Server
             try
             {
                 References.EntityDataManager.FlushIntoDatabase();
+                References.BlockDataManager.FlushIntoDatabase();
                 Database.CommitTransaction();
             }
             catch

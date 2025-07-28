@@ -4,6 +4,8 @@
 - RectPhysics system
 - Client offset system
 - NBT system: Internal / Visual
+- Entity generation
+- Menu
 
 <<< === Larnix DONE :) === >>>
 

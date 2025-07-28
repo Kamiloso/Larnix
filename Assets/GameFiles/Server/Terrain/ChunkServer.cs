@@ -6,23 +6,32 @@ using System;
 
 namespace Larnix.Server.Terrain
 {
-    public class ChunkServer
+    public class ChunkServer : IDisposable
     {
         public Vector2Int Chunkpos { get; private set; }
         private readonly BlockServer[,] BlocksFront = new BlockServer[16, 16];
         private readonly BlockServer[,] BlocksBack = new BlockServer[16, 16];
 
+        private readonly BlockData[,] ActiveChunkReference;
+
         public ChunkServer(Vector2Int chunkpos)
         {
             Chunkpos = chunkpos;
-            InitializeData();
+            ActiveChunkReference = References.BlockDataManager.GetChunkReference(Chunkpos);
+
+            for (int x = 0; x < 16; x++)
+                for (int y = 0; y < 16; y++)
+                {
+                    CreateBlock(new Vector2Int(x, y), ActiveChunkReference[x, y]);
+                }
         }
 
         public void ExecuteFrame()
         {
             // Pre-frame configure
             for (int y = 0; y < 16; y++)
-                for (int x = 0; x < 16; x++) {
+                for (int x = 0; x < 16; x++)
+                {
                     BlocksBack[x, y].MarkedToUpdate = true;
                     BlocksFront[x, y].MarkedToUpdate = true;
                 }
@@ -42,31 +51,6 @@ namespace Larnix.Server.Terrain
                     if (BlocksFront[x, y].MarkedToUpdate)
                         BlocksFront[x, y].DoFrameUpdate();
                 }
-        }
-
-        private void InitializeData()
-        {
-            BlockData[,] givenBlocks = new BlockData[16, 16]; // TEMPORARY INITIALIZATION
-            for (int y = 0; y < 16; y++)
-                for (int x = 0; x < 16; x++)
-                {
-                    BlockData blockData = UnityEngine.Random.Range(0, 5) == 0 ?
-                        new BlockData(new SingleBlockData { ID = BlockID.Stone }, new()) :
-                        new BlockData(new(), new());
-
-                    givenBlocks[x, y] = blockData;
-                }
-
-            for (int y = 0; y < 16; y++)
-                for (int x = 0; x < 16; x++)
-                {
-                    CreateBlock(new Vector2Int(x, y), givenBlocks[x, y]);
-                }
-        }
-
-        public void FlushData()
-        {
-            // not implemented yet
         }
 
         /// <summary>
@@ -96,11 +80,13 @@ namespace Larnix.Server.Terrain
             {
                 BlocksFront[pos.x, pos.y].DoOnBreak();
                 BlocksFront[pos.x, pos.y] = blockObj;
+                ActiveChunkReference[pos.x, pos.y].Front = block;
             }
             else
             {
                 BlocksBack[pos.x, pos.y].DoOnBreak();
                 BlocksBack[pos.x, pos.y] = blockObj;
+                ActiveChunkReference[pos.x, pos.y].Back = block;
             }
 
             return blockObj;
@@ -113,6 +99,11 @@ namespace Larnix.Server.Terrain
 
             BlockServer backBlock = BlockServer.ConstructBlockObject(ChunkMethods.GlobalBlockCoords(Chunkpos, pos), blockData.Back, false);
             BlocksBack[pos.x, pos.y] = backBlock;
+        }
+
+        public void Dispose()
+        {
+            References.BlockDataManager.DisableChunkReference(Chunkpos);
         }
     }
 }

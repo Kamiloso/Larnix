@@ -35,17 +35,17 @@ namespace Larnix.Client.Terrain
 
         private static Tile ConstructTile(SingleBlockData block, bool isFront)
         {
-            Texture2D texture = Resources.Load<Texture2D>("BlockTextures/" + block.ID.ToString());
+            Texture2D texture = Resources.Load<Texture2D>("BlockTextures/" + block.ID.ToString() + "-" + block.Variant);
             if (texture != null)
                 goto texture_ready;
 
-            texture = Resources.Load<Texture2D>("BlockTextures/" + block.ID.ToString() + ":" + block.Variant);
+            texture = Resources.Load<Texture2D>("BlockTextures/" + block.ID.ToString());
             if (texture != null)
                 goto texture_ready;
 
             texture = Resources.Load<Texture2D>("BlockTextures/Unknown");
             if (texture == null)
-                throw new System.NotImplementedException("Couldn't find texture for block: " + block.ID.ToString() + ":" + block.Variant);
+                throw new System.NotImplementedException("Couldn't find Unknown texture!");
 
             texture_ready:
 

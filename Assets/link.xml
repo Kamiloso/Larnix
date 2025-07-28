@@ -2,6 +2,9 @@
   <assembly fullname="Assembly-CSharp">
     <type fullname="Larnix.Server.Terrain.BlockServer" preserve="all"/>
     <type fullname="Larnix.Modules.Blocks.Air" preserve="all"/>
+    <type fullname="Larnix.Modules.Blocks.Dirt" preserve="all"/>
+    <type fullname="Larnix.Modules.Blocks.Planks" preserve="all"/>
     <type fullname="Larnix.Modules.Blocks.Stone" preserve="all"/>
+    <type fullname="Larnix.Modules.Blocks.Water" preserve="all"/>
   </assembly>
 </linker>

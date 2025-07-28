@@ -9,6 +9,7 @@ using Larnix.Files;
 using Larnix.Entities;
 using Larnix.Server.Terrain;
 using Larnix.Blocks;
+using System.Security.Cryptography;
 
 namespace Larnix.Server.Data
 {
@@ -59,6 +60,10 @@ namespace Larnix.Server.Data
                     chunk_y INTEGER,
                     block_bytes BLOB,
                     PRIMARY KEY(chunk_x, chunk_y)
+                );
+
+                CREATE TABLE IF NOT EXISTS seed (
+                    value INTEGER
                 );";
                 cmd.ExecuteNonQuery();
             }
@@ -303,6 +308,49 @@ namespace Larnix.Server.Data
             return anyDeleted;
         }
 
+        public long GetSeed(long? suggestion = null)
+        {
+            bool has_seed;
+            long seed;
+
+            using (var cmd = CreateCommand())
+            {
+                cmd.CommandText = "SELECT COUNT(value) FROM seed;";
+                has_seed = (long)cmd.ExecuteScalar() > 0;
+            }
+
+            if(has_seed)
+            {
+                using (var cmd = CreateCommand())
+                {
+                    cmd.CommandText = "SELECT value FROM seed;";
+                    seed = (long)cmd.ExecuteScalar();
+                }
+            }
+            else
+            {
+                if (suggestion == null)
+                {
+                    byte[] bytes = new byte[8];
+                    RandomNumberGenerator.Fill(bytes);
+                    seed = BitConverter.ToInt64(bytes, 0);
+                }
+                else
+                {
+                    seed = (long)suggestion;
+                }
+
+                using (var cmd = CreateCommand())
+                {
+                    cmd.CommandText = "INSERT INTO seed (value) VALUES ($seed);";
+                    cmd.Parameters.AddWithValue("$seed", seed);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+
+            return seed;
+        }
+
         public void SetChunk(int x, int y, byte[] block_bytes)
         {
             using (var cmd = CreateCommand())
@@ -315,21 +363,25 @@ namespace Larnix.Server.Data
             }
         }
 
-        public byte[] GetChunk(int x, int y)
+        public bool TryGetChunk(int x, int y, out byte[] block_bytes)
         {
             using(var cmd = CreateCommand())
             {
-                cmd.CommandText = "SELECT block_bytes FROM chunks WHERE x = $x AND y = $y;";
-                cmd.Parameters.AddWithValue("$x", x);
-                cmd.Parameters.AddWithValue("$y", y);
+                cmd.CommandText = "SELECT block_bytes FROM chunks WHERE chunk_x = $chunk_x AND chunk_y = $chunk_y;";
+                cmd.Parameters.AddWithValue("$chunk_x", x);
+                cmd.Parameters.AddWithValue("$chunk_y", y);
 
                 using (var reader = cmd.ExecuteReader())
                 {
                     if (reader.Read())
-                        return (byte[])reader["block_bytes"];
+                    {
+                        block_bytes = (byte[])reader["block_bytes"];
+                        return true;
+                    }
                 }
             }
-            return null;
+            block_bytes = null;
+            return false;
         }
 
         private SqliteCommand CreateCommand()

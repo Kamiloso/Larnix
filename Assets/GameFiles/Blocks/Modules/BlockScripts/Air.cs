@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Server.Terrain;
-using UnityEngine.Scripting;
 
 namespace Larnix.Modules.Blocks
 {

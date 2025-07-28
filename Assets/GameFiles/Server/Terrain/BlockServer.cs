@@ -15,6 +15,8 @@ namespace Larnix.Server.Terrain
 
         public bool MarkedToUpdate { get; set; } = false;
 
+        public static HashSet<string> WarningsDone = new();
+
         public BlockServer(Vector2Int position, SingleBlockData blockData, bool isFront)
         {
             Position = position;
@@ -51,7 +53,14 @@ namespace Larnix.Server.Terrain
                 )
             {
                 type = typeof(BlockServer);
-                UnityEngine.Debug.LogWarning($"Class {className} cannot be loaded! Loading base class instead...");
+
+                string warning = $"Class {className} cannot be loaded! Loading base class instead...";
+                if(!WarningsDone.Contains(warning))
+                {
+                    if(References.Server.IsLocal) UnityEngine.Debug.LogWarning(warning);
+                    else Console.LogWarning(warning);
+                    WarningsDone.Add(warning);
+                }
             }
 
             object instance = Activator.CreateInstance(type, POS, block, isFront);

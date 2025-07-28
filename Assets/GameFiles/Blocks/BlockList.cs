@@ -9,5 +9,8 @@ namespace Larnix.Blocks
     {
         Air,
         Stone,
+        Dirt,
+        Planks,
+        Water,
     }
 }

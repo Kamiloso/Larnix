@@ -4,12 +4,15 @@ using UnityEngine;
 using UnityEngine.Tilemaps;
 using Larnix.Blocks;
 using System.Linq;
+using System;
+using Unity.VisualScripting;
 
 namespace Larnix.Client.Terrain
 {
     public class GridManager : MonoBehaviour
     {
-        [SerializeField] Tilemap Tilemap;
+        [SerializeField] Tilemap TilemapFront;
+        [SerializeField] Tilemap TilemapBack;
 
         private readonly Dictionary<Vector2Int, BlockData[,]> Chunks = new();
         private readonly HashSet<Vector2Int> VisibleChunks = new();
@@ -42,25 +45,59 @@ namespace Larnix.Client.Terrain
 
         public void RedrawGrid()
         {
-            foreach(var chunk in DirtyChunks.ToList())
+            List<Vector2Int> sortedChunks;
+
+            // Ascending - ADD
+            sortedChunks = DirtyChunks.ToList();
+            sortedChunks.Sort((Vector2Int a, Vector2Int b) => ChunkDistance(a) - ChunkDistance(b));
+            foreach (var chunk in sortedChunks)
             {
-                bool active = Chunks.ContainsKey(chunk);
+                if (!Chunks.ContainsKey(chunk))
+                    continue;
 
-                for (int x = 0; x < 16; x++)
-                    for (int y = 0; y < 16; y++)
-                    {
-                        Vector2Int POS = ChunkMethods.GlobalBlockCoords(chunk, new Vector2Int(x, y));
-                        Tilemap.SetTile(new Vector3Int(POS.x, POS.y, -1), active ? Tiles.GetTile(Chunks[chunk][x, y].Back, false) : null);
-                        Tilemap.SetTile(new Vector3Int(POS.x, POS.y, 0), active ? Tiles.GetTile(Chunks[chunk][x, y].Front, true) : null);
-                    }
-
+                RedrawChunk(chunk);
                 DirtyChunks.Remove(chunk);
 
-                if (active) VisibleChunks.Add(chunk);
-                else VisibleChunks.Remove(chunk);
-
-                break; // only one redraw per frame (there are better places for simple updates)
+                return; // only one per frame
             }
+
+            // Descending - REMOVE
+            sortedChunks = DirtyChunks.ToList();
+            sortedChunks.Sort((Vector2Int a, Vector2Int b) => ChunkDistance(b) - ChunkDistance(a));
+            foreach (var chunk in sortedChunks)
+            {
+                if (Chunks.ContainsKey(chunk))
+                    continue;
+
+                RedrawChunk(chunk);
+                DirtyChunks.Remove(chunk);
+
+                return; // only one per frame
+            }
+        }
+
+        private void RedrawChunk(Vector2Int chunk)
+        {
+            bool active = Chunks.ContainsKey(chunk);
+
+            for (int x = 0; x < 16; x++)
+                for (int y = 0; y < 16; y++)
+                {
+                    Vector2Int POS = ChunkMethods.GlobalBlockCoords(chunk, new Vector2Int(x, y));
+                    TilemapFront.SetTile(new Vector3Int(POS.x, POS.y, 0), active ? Tiles.GetTile(Chunks[chunk][x, y].Front, true) : null);
+                    TilemapBack.SetTile(new Vector3Int(POS.x, POS.y, 0), active ? Tiles.GetTile(Chunks[chunk][x, y].Back, false) : null);
+                }
+
+            if (active) VisibleChunks.Add(chunk);
+            else VisibleChunks.Remove(chunk);
+        }
+
+        private int ChunkDistance(Vector2Int chunk)
+        {
+            return Common.ManhattanDistance(
+                ChunkMethods.CoordsToChunk(References.MainPlayer.GetPosition()),
+                chunk
+                );
         }
 
         public bool LoadedAroundPlayer()
