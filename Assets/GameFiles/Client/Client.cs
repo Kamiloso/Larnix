@@ -164,6 +164,30 @@ namespace Larnix.Client
                             References.GridManager.RemoveChunk(msg.Chunkpos);
                         }
                     }
+
+                    if((Name)packet.ID == Name.BlockUpdate)
+                    {
+                        BlockUpdate msg = new BlockUpdate(packet);
+                        if (msg.HasProblems) continue;
+
+                        var list = msg.BlockUpdates;
+                        foreach(var element in list)
+                        {
+                            References.GridManager.UpdateBlock(element.block, element.data);
+                        }
+                    }
+
+                    if((Name)packet.ID == Name.RetBlockChange)
+                    {
+                        RetBlockChange msg = new RetBlockChange(packet);
+                        if (msg.HasProblems) continue;
+
+                        References.GridManager.UpdateBlock(
+                            msg.BlockPosition,
+                            msg.CurrentBlock,
+                            msg.Operation
+                            ); // unlock and update block
+                    }
                 }
 
                 if (LarnixClient.IsDead())

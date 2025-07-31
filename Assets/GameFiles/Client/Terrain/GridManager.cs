@@ -5,7 +5,7 @@ using UnityEngine.Tilemaps;
 using Larnix.Blocks;
 using System.Linq;
 using System;
-using Unity.VisualScripting;
+using Larnix.Socket.Commands;
 
 namespace Larnix.Client.Terrain
 {
@@ -15,12 +15,30 @@ namespace Larnix.Client.Terrain
         [SerializeField] Tilemap TilemapBack;
 
         private readonly Dictionary<Vector2Int, BlockData[,]> Chunks = new();
-        private readonly HashSet<Vector2Int> VisibleChunks = new();
         private readonly HashSet<Vector2Int> DirtyChunks = new();
+        private readonly HashSet<Vector2Int> VisibleChunks = new();
+
+        private readonly List<BlockLock> LockedBlocks = new();
+        private const double BLOCK_LOCK_TIMEOUT = 5.0; // seconds
+
+        private class BlockLock
+        {
+            public Vector2Int POS;
+            public long operation;
+            public double timeout = BLOCK_LOCK_TIMEOUT;
+        }
 
         private void Awake()
         {
             References.GridManager = this;
+        }
+
+        private void Update()
+        {
+            foreach (var l in LockedBlocks)
+                l.timeout -= Time.deltaTime;
+
+            LockedBlocks.RemoveAll(l => l.timeout < 0);
         }
 
         private void LateUpdate()
@@ -41,51 +59,52 @@ namespace Larnix.Client.Terrain
 
             Chunks.Remove(chunk);
             DirtyChunks.Add(chunk);
+
+            UnlockChunk(chunk);
+        }
+
+        public void UpdateBlock(Vector2Int POS, BlockData data, long unlock = 0)
+        {
+            Vector2Int chunk = ChunkMethods.CoordsToChunk(POS);
+            Vector2Int pos = ChunkMethods.LocalBlockCoords(POS);
+
+            if (unlock != 0)
+                UnlockBlock(unlock);
+
+            if (Chunks.ContainsKey(chunk) && !IsBlockLocked(POS))
+                ChangeBlockData(POS, data);
         }
 
         public void RedrawGrid()
         {
-            List<Vector2Int> sortedChunks;
-
             // Ascending - ADD
-            sortedChunks = DirtyChunks.ToList();
-            sortedChunks.Sort((Vector2Int a, Vector2Int b) => ChunkDistance(a) - ChunkDistance(b));
-            foreach (var chunk in sortedChunks)
+            List<Vector2Int> addChunks = DirtyChunks.Where(c => Chunks.ContainsKey(c)).ToList();
+            addChunks.Sort((Vector2Int a, Vector2Int b) => ChunkDistance(a) - ChunkDistance(b));
+            foreach (var chunk in addChunks)
             {
-                if (!Chunks.ContainsKey(chunk))
-                    continue;
-
-                RedrawChunk(chunk);
+                RedrawChunk(chunk, true);
                 DirtyChunks.Remove(chunk);
-
                 return; // only one per frame
             }
 
             // Descending - REMOVE
-            sortedChunks = DirtyChunks.ToList();
-            sortedChunks.Sort((Vector2Int a, Vector2Int b) => ChunkDistance(b) - ChunkDistance(a));
-            foreach (var chunk in sortedChunks)
+            List<Vector2Int> removeChunks = DirtyChunks.Where(c => !Chunks.ContainsKey(c)).ToList();
+            removeChunks.Sort((Vector2Int a, Vector2Int b) => ChunkDistance(b) - ChunkDistance(a));
+            foreach (var chunk in removeChunks)
             {
-                if (Chunks.ContainsKey(chunk))
-                    continue;
-
-                RedrawChunk(chunk);
+                RedrawChunk(chunk, false);
                 DirtyChunks.Remove(chunk);
-
                 return; // only one per frame
             }
         }
 
-        private void RedrawChunk(Vector2Int chunk)
+        private void RedrawChunk(Vector2Int chunk, bool active)
         {
-            bool active = Chunks.ContainsKey(chunk);
-
             for (int x = 0; x < 16; x++)
                 for (int y = 0; y < 16; y++)
                 {
                     Vector2Int POS = ChunkMethods.GlobalBlockCoords(chunk, new Vector2Int(x, y));
-                    TilemapFront.SetTile(new Vector3Int(POS.x, POS.y, 0), active ? Tiles.GetTile(Chunks[chunk][x, y].Front, true) : null);
-                    TilemapBack.SetTile(new Vector3Int(POS.x, POS.y, 0), active ? Tiles.GetTile(Chunks[chunk][x, y].Back, false) : null);
+                    RedrawTileUnchecked(POS, active ? Chunks[chunk][x, y] : null);
                 }
 
             if (active) VisibleChunks.Add(chunk);
@@ -109,6 +128,109 @@ namespace Larnix.Client.Terrain
 
             nearbyChunks.ExceptWith(VisibleChunks);
             return nearbyChunks.Count == 0;
+        }
+
+        /// <summary>
+        /// Warning: Can be null if can't find a block!
+        /// </summary>
+        public BlockData BlockDataAtPOS(Vector2Int POS)
+        {
+            Vector2Int chunk = ChunkMethods.CoordsToChunk(POS);
+            if (!Chunks.ContainsKey(chunk))
+                return null;
+            
+            Vector2Int pos = ChunkMethods.LocalBlockCoords(POS);
+            return Chunks[chunk][pos.x, pos.y];
+        }
+
+        public long PlaceBlockClient(Vector2Int POS, SingleBlockData block, bool front)
+        {
+            BlockData oldblock = BlockDataAtPOS(POS);
+            if (oldblock == null)
+                throw new InvalidOperationException($"Cannot place block at {POS}");
+
+            Vector2Int chunk = ChunkMethods.CoordsToChunk(POS);
+            Vector2Int pos = ChunkMethods.LocalBlockCoords(POS);
+
+            BlockData blockdata = oldblock.ShallowCopy();
+
+            if (front) blockdata.Front = block;
+            else blockdata.Back = block;
+
+            ChangeBlockData(POS, blockdata);
+            long operation = LockBlock(POS);
+            return operation;
+        }
+
+        public long BreakBlockClient(Vector2Int POS, bool front)
+        {
+            BlockData oldblock = BlockDataAtPOS(POS);
+            if (oldblock == null)
+                throw new InvalidOperationException($"Cannot break block at {POS}");
+
+            Vector2Int chunk = ChunkMethods.CoordsToChunk(POS);
+            Vector2Int pos = ChunkMethods.LocalBlockCoords(POS);
+
+            BlockData blockdata = oldblock.ShallowCopy();
+
+            if (front) blockdata.Front = new SingleBlockData { };
+            else blockdata.Back = new SingleBlockData { };
+
+            ChangeBlockData(POS, blockdata);
+            long operation = LockBlock(POS);
+            return operation;
+        }
+
+        private void ChangeBlockData(Vector2Int POS, BlockData block)
+        {
+            Vector2Int chunk = ChunkMethods.CoordsToChunk(POS);
+            Vector2Int pos = ChunkMethods.LocalBlockCoords(POS);
+
+            Chunks[chunk][pos.x, pos.y] = block;
+            RedrawTileChecked(POS, block);
+        }
+
+        private void RedrawTileChecked(Vector2Int POS, BlockData block)
+        {
+            Vector2Int chunk = ChunkMethods.CoordsToChunk(POS);
+            if(VisibleChunks.Contains(chunk))
+                RedrawTileUnchecked(POS, block);
+        }
+
+        private void RedrawTileUnchecked(Vector2Int POS, BlockData block)
+        {
+            Tile tileFront = block != null ? Tiles.GetTile(block.Front, true) : null;
+            Tile tileBack = block != null ? Tiles.GetTile(block.Back, false) : null;
+
+            TilemapFront.SetTile(new Vector3Int(POS.x, POS.y, 0), tileFront);
+            TilemapBack.SetTile(new Vector3Int(POS.x, POS.y, 0), tileBack);
+        }
+
+        public bool IsBlockLocked(Vector2Int POS)
+        {
+            return LockedBlocks.Any(l => l.POS == POS);
+        }
+
+        private long LockBlock(Vector2Int POS)
+        {
+            System.Random Rand = Common.Rand();
+            long operation = ((long)Rand.Next(int.MinValue, int.MaxValue) << 32) | (uint)Rand.Next(int.MinValue, int.MaxValue);
+            LockedBlocks.Add(new BlockLock
+            {
+                POS = POS,
+                operation = operation,
+            });
+            return operation;
+        }
+
+        private void UnlockBlock(long operation)
+        {
+            LockedBlocks.RemoveAll(l => l.operation == operation);
+        }
+
+        private void UnlockChunk(Vector2Int chunk)
+        {
+            LockedBlocks.RemoveAll(l => ChunkMethods.InChunk(chunk, l.POS));
         }
     }
 }

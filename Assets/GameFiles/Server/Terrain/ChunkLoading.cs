@@ -12,9 +12,6 @@ namespace Larnix.Server.Terrain
 {
     public class ChunkLoading : MonoBehaviour
     {
-        public const int MIN_CHUNK = -16384;
-        public const int MAX_CHUNK = 16383;
-
         public const int LOADING_DISTANCE = 3; // chunks
         public const float UNLOADING_TIME = 4f; // seconds
         public const float PLAYER_SENDING_PERIOD = 0.15f; // seconds
@@ -323,10 +320,10 @@ namespace Larnix.Server.Terrain
 
         public static HashSet<Vector2Int> GetNearbyChunks(Vector2Int center, int simDistance)
         {
-            int min_x = System.Math.Clamp(center.x - simDistance, MIN_CHUNK, int.MaxValue);
-            int min_y = System.Math.Clamp(center.y - simDistance, MIN_CHUNK, int.MaxValue);
-            int max_x = System.Math.Clamp(center.x + simDistance, int.MinValue, MAX_CHUNK);
-            int max_y = System.Math.Clamp(center.y + simDistance, int.MinValue, MAX_CHUNK);
+            int min_x = System.Math.Clamp(center.x - simDistance, ChunkMethods.MIN_CHUNK, int.MaxValue);
+            int min_y = System.Math.Clamp(center.y - simDistance, ChunkMethods.MIN_CHUNK, int.MaxValue);
+            int max_x = System.Math.Clamp(center.x + simDistance, int.MinValue, ChunkMethods.MAX_CHUNK);
+            int max_y = System.Math.Clamp(center.y + simDistance, int.MinValue, ChunkMethods.MAX_CHUNK);
 
             HashSet<Vector2Int> returns = new();
             for (int x = min_x; x <= max_x; x++)

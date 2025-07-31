@@ -16,6 +16,7 @@ namespace Larnix.Server
         public static ChunkLoading ChunkLoading;
         public static PlayerManager PlayerManager;
         public static BlockDataManager BlockDataManager;
+        public static BlockSender BlockSender;
 
         // Normal Classes
         public static Generator Generator;

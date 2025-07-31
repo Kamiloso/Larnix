@@ -92,8 +92,8 @@ namespace Larnix.Socket.Commands
         protected override void DetectDataProblems()
         {
             bool ok = (
-                Chunkpos.x >= ChunkLoading.MIN_CHUNK && Chunkpos.x <= ChunkLoading.MAX_CHUNK &&
-                Chunkpos.y >= ChunkLoading.MIN_CHUNK && Chunkpos.y <= ChunkLoading.MAX_CHUNK &&
+                Chunkpos.x >= ChunkMethods.MIN_CHUNK && Chunkpos.x <= ChunkMethods.MAX_CHUNK &&
+                Chunkpos.y >= ChunkMethods.MIN_CHUNK && Chunkpos.y <= ChunkMethods.MAX_CHUNK &&
                 (Blocks == null || (Blocks.GetLength(0) == 16 && Blocks.GetLength(1) == 16))
                 );
             HasProblems = HasProblems || !ok;

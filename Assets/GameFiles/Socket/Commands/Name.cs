@@ -23,5 +23,8 @@ namespace Larnix.Socket.Commands
         NearbyEntities,
         CodeInfo,
         ChunkInfo,
+        BlockUpdate,
+        BlockChange,
+        RetBlockChange,
     }
 }

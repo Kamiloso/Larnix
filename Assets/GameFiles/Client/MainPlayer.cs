@@ -23,10 +23,10 @@ namespace Larnix.Client
 
         private const float StepSize = 0.1f;
 
-        private const float CameraDefaultZoom = 6.0f;
-        private const float CameraZoomMin = 4.5f;
-        private const float CameraZoomMax = 7.5f;
-        private const float CameraZoomStep = 0.3f;
+        private const float CameraDefaultZoom = 8.0f;
+        private const float CameraZoomMin = 5.5f;
+        private const float CameraZoomMax = 10.5f;
+        private const float CameraZoomStep = 0.5f;
 
         private float CameraZoom = CameraDefaultZoom;
 
@@ -54,39 +54,59 @@ namespace Larnix.Client
 
             // Temporary physics
 
-            int want_horizontal = (Input.GetKey(KeyCode.RightArrow) ? 1 : 0) - (Input.GetKey(KeyCode.LeftArrow) ? 1 : 0);
-            if(want_horizontal != 0)
+            const bool PHYSICS_MODE = false;
+            if (PHYSICS_MODE)
             {
-                velocity += want_horizontal * HORIZONTAL_FORCE * Vector2.right;
+                int want_horizontal = (Input.GetKey(KeyCode.RightArrow) ? 1 : 0) - (Input.GetKey(KeyCode.LeftArrow) ? 1 : 0);
+                if (want_horizontal != 0)
+                {
+                    velocity += want_horizontal * HORIZONTAL_FORCE * Vector2.right;
+                }
+                else
+                {
+                    int sgn1 = Math.Sign(velocity.x);
+                    velocity -= new Vector2(sgn1 * HORIZONTAL_DRAG, 0f);
+                    int sgn2 = Math.Sign(velocity.x);
+                    if (sgn1 != sgn2) velocity = new Vector2(0f, velocity.y);
+                }
+
+                velocity += GRAVITY * Vector2.down;
+
+                if (velocity.x > MAX_HORIZONTAL_SPEED) velocity = new Vector2(MAX_HORIZONTAL_SPEED, velocity.y);
+                if (velocity.x < -MAX_HORIZONTAL_SPEED) velocity = new Vector2(-MAX_HORIZONTAL_SPEED, velocity.y);
+                if (velocity.y > MAX_VERTICAL_SPEED) velocity = new Vector2(velocity.x, MAX_VERTICAL_SPEED);
+                if (velocity.y < -MAX_VERTICAL_SPEED) velocity = new Vector2(velocity.x, -MAX_VERTICAL_SPEED);
+
+                transform.position += (Vector3)velocity * Time.fixedDeltaTime;
+
+                bool on_ground = false;
+                if (transform.position.y <= GROUND_LEVEL)
+                {
+                    transform.position = new Vector2(transform.position.x, GROUND_LEVEL);
+                    velocity = new Vector2(velocity.x, 0f);
+                    on_ground = true;
+                }
+
+                if (on_ground && Input.GetKey(KeyCode.UpArrow))
+                {
+                    velocity += new Vector2(0f, JUMP_SIZE);
+                }
             }
             else
             {
-                int sgn1 = Math.Sign(velocity.x);
-                velocity -= new Vector2(sgn1 * HORIZONTAL_DRAG, 0f);
-                int sgn2 = Math.Sign(velocity.x);
-                if (sgn1 != sgn2) velocity = new Vector2(0f, velocity.y);
-            }
+                const float SPEED = 10f;
 
-            velocity += GRAVITY * Vector2.down;
+                if (Input.GetKey(KeyCode.W))
+                    transform.position += new Vector3(0f, SPEED) * Time.fixedDeltaTime;
 
-            if (velocity.x > MAX_HORIZONTAL_SPEED) velocity = new Vector2(MAX_HORIZONTAL_SPEED, velocity.y);
-            if (velocity.x < -MAX_HORIZONTAL_SPEED) velocity = new Vector2(-MAX_HORIZONTAL_SPEED, velocity.y);
-            if (velocity.y > MAX_VERTICAL_SPEED) velocity = new Vector2(velocity.x, MAX_VERTICAL_SPEED);
-            if (velocity.y < -MAX_VERTICAL_SPEED) velocity = new Vector2(velocity.x, -MAX_VERTICAL_SPEED);
+                if (Input.GetKey(KeyCode.S))
+                    transform.position += new Vector3(0f, -SPEED) * Time.fixedDeltaTime;
 
-            transform.position += (Vector3)velocity * Time.fixedDeltaTime;
+                if (Input.GetKey(KeyCode.D))
+                    transform.position += new Vector3(SPEED, 0f) * Time.fixedDeltaTime;
 
-            bool on_ground = false;
-            if(transform.position.y <= GROUND_LEVEL)
-            {
-                transform.position = new Vector2(transform.position.x, GROUND_LEVEL);
-                velocity = new Vector2(velocity.x, 0f);
-                on_ground = true;
-            }
-
-            if (on_ground && Input.GetKey(KeyCode.UpArrow))
-            {
-                velocity += new Vector2(0f, JUMP_SIZE);
+                if (Input.GetKey(KeyCode.A))
+                    transform.position += new Vector3(-SPEED, 0f) * Time.fixedDeltaTime;
             }
 
             // Rotation reaction
@@ -177,6 +197,8 @@ namespace Larnix.Client
                 throw new System.InvalidOperationException("Player is already alive!");
 
             transform.parent.gameObject.SetActive(true);
+            References.TileSelector.Enable();
+
             RotationUpdate();
             UpdateEntityObject(0f);
         }
@@ -187,6 +209,8 @@ namespace Larnix.Client
                 throw new System.InvalidOperationException("Player is already dead!");
 
             transform.parent.gameObject.SetActive(false);
+            References.TileSelector.Disable();
+
             EntityProjection.ResetSmoother();
         }
     }

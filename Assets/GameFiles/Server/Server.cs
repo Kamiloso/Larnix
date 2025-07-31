@@ -13,6 +13,8 @@ using System.Net;
 using System.Threading.Tasks;
 using Larnix.Server.Entities;
 using Larnix.Entities;
+using Larnix.Blocks;
+using Larnix.Server.Terrain;
 
 namespace Larnix.Server
 {
@@ -130,8 +132,15 @@ namespace Larnix.Server
             }
         }
 
+        private uint FixedFrame = 0;
+        public uint GetFixedFrame()
+        {
+            return FixedFrame;
+        }
         private void FixedUpdate()
         {
+            FixedFrame++;
+
             References.ChunkLoading.FromFixedUpdate(); // FIX-1
             References.EntityManager.FromFixedUpdate(); // FIX-2
         }
@@ -195,6 +204,49 @@ namespace Larnix.Server
                             References.PlayerManager.CreatePlayerInstance(owner);
                     }
                 }
+
+                if ((Name)packet.ID == Name.BlockChange)
+                {
+                    BlockChange msg = new BlockChange(packet);
+                    if (msg.HasProblems) continue;
+
+                    Vector2Int POS = msg.BlockPosition;
+                    Vector2Int chunk = ChunkMethods.CoordsToChunk(POS);
+                    bool front = msg.Front == 1;
+                    byte code = msg.Code;
+
+                    if(code == 0) // place item
+                    {
+                        bool has_item = true;
+                        bool in_chunk = References.PlayerManager.PlayerHasChunk(owner, chunk);
+                        bool can_place = WorldAPI.CanPlaceBlock(POS, msg.Item, front);
+
+                        bool success = has_item && in_chunk && can_place;
+                        
+                        if(success)
+                        {
+                            WorldAPI.PlaceBlockWithEffects(POS, msg.Item, front);
+                        }
+
+                        References.BlockSender.AddRetBlockChange(owner, msg.Operation, POS, front, success);
+                    }
+
+                    else if(code == 1) // break using item
+                    {
+                        bool has_tool = true;
+                        bool in_chunk = References.PlayerManager.PlayerHasChunk(owner, chunk);
+                        bool can_break = WorldAPI.CanBreakBlock(POS, msg.Item, msg.Tool, front);
+
+                        bool success = has_tool && in_chunk && can_break;
+
+                        if (success)
+                        {
+                            WorldAPI.BreakBlockWithEffects(POS, msg.Tool, front);
+                        }
+
+                        References.BlockSender.AddRetBlockChange(owner, msg.Operation, POS, front, success);
+                    }
+                }
             }
 
             References.ChunkLoading.FromEarlyUpdate(); // 1
@@ -205,6 +257,8 @@ namespace Larnix.Server
 
         private void LateUpdate()
         {
+            References.BlockSender.BroadcastInfo();
+
             broadcastCycleTimer += Time.deltaTime;
             if(ServerConfig.EntityBroadcastPeriod > 0f && broadcastCycleTimer > ServerConfig.EntityBroadcastPeriod)
             {
@@ -357,7 +411,8 @@ namespace Larnix.Server
                     Console.LogRaw(" | playerlist - Shows all players on the server.\n");
                     Console.LogRaw(" | kick [nickname] - Kicks the player if online.\n");
                     Console.LogRaw(" | kill [nickname] - Kills the player if alive.\n");
-                    Console.LogRaw(" | spawn [entity] [x] [y] - Spawns entity at the given position.\n");
+                    Console.LogRaw(" | spawn [entity] [x] [y] - Spawns entity at a given position.\n");
+                    Console.LogRaw(" | place [front/back] [x] [y] [block] [?variant] - Places block at a given position.\n");
                     Console.LogRaw(" | seed - Displays the server seed.\n");
                     Console.LogRaw("\n");
                 }
@@ -434,6 +489,41 @@ namespace Larnix.Server
                         else Console.LogError($"Cannot parse coordinates!");
                     }
                     else Console.LogError($"Cannot spawn entity named \"{entityname}\"!");
+                }
+
+                else if ((len == 5 || len == 6) && arg[0] == "place")
+                {
+                    bool front = arg[1] == "front";
+                    if (arg[1] != "front" && arg[1] != "back")
+                    {
+                        Console.LogError($"Phrase '{arg[1]}' is not valid in this context.");
+                        continue;
+                    }
+
+                    if (int.TryParse(arg[2], out int x) && int.TryParse(arg[3], out int y))
+                    {
+                        string blockname = arg[4];
+
+                        byte variant;
+                        if (len == 5 || !byte.TryParse(arg[5], out variant))
+                            variant = 0;
+
+                        if (Enum.TryParse(blockname, ignoreCase: true, out BlockID blockID) &&
+                            Enum.IsDefined(typeof(BlockID), blockID))
+                        {
+                            var result = WorldAPI.UpdateBlock(new Vector2Int(x, y), front, new SingleBlockData
+                            {
+                                ID = blockID,
+                                Variant = variant
+                            });
+
+                            if (result != null)
+                                Console.LogSuccess($"Block ({x}, {y}) changed to " + blockID.ToString() + (variant == 0 ? "" : "-" + variant));
+                            else
+                                Console.LogError($"Position ({x}, {y}) cannot be updated.");
+                        }
+                    }
+                    else Console.LogError($"Cannot parse coordinates!");
                 }
 
                 else if (len == 1 && arg[0] == "seed")

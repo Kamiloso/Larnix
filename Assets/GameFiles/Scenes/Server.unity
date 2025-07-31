@@ -280,6 +280,7 @@ GameObject:
   - component: {fileID: 1902110120}
   - component: {fileID: 1902110121}
   - component: {fileID: 1902110119}
+  - component: {fileID: 1902110122}
   m_Layer: 0
   m_Name: Chunks
   m_TagString: Untagged
@@ -326,7 +327,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 644b063ad17efeb48bc3229c5fa36031, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  DebugUnlinkDatabase: 1
+  DebugUnlinkDatabase: 0
+--- !u!114 &1902110122
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1902110118}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 29657d5b5b0f4104b8a86d2273f20b85, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

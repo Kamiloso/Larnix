@@ -178,7 +178,8 @@ namespace Larnix.Server.Data
             using (var cmd = CreateCommand())
             {
                 cmd.CommandText = "SELECT IFNULL(MIN(uid), 0) FROM entities;";
-                return (long)cmd.ExecuteScalar();
+                long min_uid = (long)cmd.ExecuteScalar();
+                return min_uid > 0 ? 0 : min_uid;
             }
         }
 

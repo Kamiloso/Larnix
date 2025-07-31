@@ -32,24 +32,22 @@ namespace Larnix.Server.Terrain
             for (int y = 0; y < 16; y++)
                 for (int x = 0; x < 16; x++)
                 {
-                    BlocksBack[x, y].MarkedToUpdate = true;
-                    BlocksFront[x, y].MarkedToUpdate = true;
+                    BlocksBack[x, y].PreFrameConfigure();
+                    BlocksFront[x, y].PreFrameConfigure();
                 }
 
             // Back update
             for (int y = 0; y < 16; y++)
                 for (int x = 0; x < 16; x++)
                 {
-                    if (BlocksBack[x, y].MarkedToUpdate)
-                        BlocksBack[x, y].DoFrameUpdate();
+                    BlocksBack[x, y].FrameUpdate();
                 }
 
             // Front update
             for (int y = 0; y < 16; y++)
                 for (int x = 0; x < 16; x++)
                 {
-                    if (BlocksFront[x, y].MarkedToUpdate)
-                        BlocksFront[x, y].DoFrameUpdate();
+                    BlocksFront[x, y].FrameUpdate();
                 }
         }
 
@@ -72,32 +70,67 @@ namespace Larnix.Server.Terrain
             return isFront ? BlocksFront[pos.x, pos.y] : BlocksBack[pos.x, pos.y];
         }
 
-        public BlockServer SetBlock(Vector2Int pos, bool isFront, SingleBlockData block)
+        public BlockServer UpdateBlock(Vector2Int pos, bool isFront, SingleBlockData block)
         {
-            BlockServer blockObj = BlockServer.ConstructBlockObject(ChunkMethods.GlobalBlockCoords(Chunkpos, pos), block, isFront);
+            BlockServer ret = null;
+
+            // Change blocks
+
+            SingleBlockData oldDataBack = ActiveChunkReference[pos.x, pos.y].Back;
+            SingleBlockData oldDataFront = ActiveChunkReference[pos.x, pos.y].Front;
 
             if (isFront)
             {
-                BlocksFront[pos.x, pos.y].DoOnBreak();
-                BlocksFront[pos.x, pos.y] = blockObj;
+                UpdateBlockInArray(ref BlocksFront[pos.x, pos.y], block);
                 ActiveChunkReference[pos.x, pos.y].Front = block;
+                ret = BlocksFront[pos.x, pos.y];
             }
             else
             {
-                BlocksBack[pos.x, pos.y].DoOnBreak();
-                BlocksBack[pos.x, pos.y] = blockObj;
+                UpdateBlockInArray(ref BlocksBack[pos.x, pos.y], block);
                 ActiveChunkReference[pos.x, pos.y].Back = block;
+                ret = BlocksBack[pos.x, pos.y];
             }
 
-            return blockObj;
+            SingleBlockData newDataBack = ActiveChunkReference[pos.x, pos.y].Back;
+            SingleBlockData newDataFront = ActiveChunkReference[pos.x, pos.y].Front;
+
+            // Push send update
+
+            if (
+                !SingleBlockData.BaseEquals(oldDataBack, newDataBack) ||
+                !SingleBlockData.BaseEquals(oldDataFront, newDataFront)
+                )
+            {
+                References.BlockSender.AddBlockUpdate((
+                    ChunkMethods.GlobalBlockCoords(Chunkpos, pos),
+                    new BlockData(newDataFront, newDataBack)
+                    ));
+            }
+
+            // Return
+
+            return ret;
+        }
+
+        private static void UpdateBlockInArray(ref BlockServer block, SingleBlockData data)
+        {
+            if (block.BlockData.ID == data.ID)
+            {
+                block.BlockData = data;
+            }
+            else
+            {
+                block = BlockFactory.ConstructBlockObject(block.Position, data, block.IsFront);
+            }
         }
 
         private void CreateBlock(Vector2Int pos, BlockData blockData)
         {
-            BlockServer frontBlock = BlockServer.ConstructBlockObject(ChunkMethods.GlobalBlockCoords(Chunkpos, pos), blockData.Front, true);
+            BlockServer frontBlock = BlockFactory.ConstructBlockObject(ChunkMethods.GlobalBlockCoords(Chunkpos, pos), blockData.Front, true);
             BlocksFront[pos.x, pos.y] = frontBlock;
 
-            BlockServer backBlock = BlockServer.ConstructBlockObject(ChunkMethods.GlobalBlockCoords(Chunkpos, pos), blockData.Back, false);
+            BlockServer backBlock = BlockFactory.ConstructBlockObject(ChunkMethods.GlobalBlockCoords(Chunkpos, pos), blockData.Back, false);
             BlocksBack[pos.x, pos.y] = backBlock;
         }
 

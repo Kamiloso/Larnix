@@ -6,6 +6,12 @@ namespace Larnix.Blocks
 {
     public static class ChunkMethods
     {
+        public const int MIN_CHUNK = -32768;
+        public const int MAX_CHUNK = -MIN_CHUNK - 1;
+
+        public const int MIN_BLOCK = MIN_CHUNK * 16;
+        public const int MAX_BLOCK = -MIN_BLOCK - 1;
+
         public static Vector2Int CoordsToChunk(Vector2 floatPosition)
         {
             return new Vector2Int(
@@ -16,7 +22,10 @@ namespace Larnix.Blocks
 
         public static Vector2Int CoordsToChunk(Vector2Int intPosition)
         {
-            return intPosition / 16;
+            return new Vector2Int(
+                intPosition.x >> 4,
+                intPosition.y >> 4
+                );
         }
 
         public static Vector2Int CoordsToBlock(Vector2 floatPosition)

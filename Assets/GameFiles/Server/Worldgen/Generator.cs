@@ -15,6 +15,7 @@ namespace Larnix.Server.Worldgen
         public readonly long Seed;
         
         private readonly Perlin NoiseSurface;
+        private readonly Perlin NoiseCave;
 
         public Generator(long seed)
         {
@@ -28,11 +29,22 @@ namespace Larnix.Server.Worldgen
                 seed: (int)SaltedSeed(1),
                 quality: QualityMode.High
                 );
+
+            NoiseCave = new Perlin(
+                frequency: 0.02,
+                lacunarity: 2.0,
+                persistence: 0.5,
+                octaves: 4,
+                seed: (int)SaltedSeed(2),
+                quality: QualityMode.High
+                );
         }
 
         public BlockData[,] GenerateChunk(Vector2Int chunk)
         {
             BlockData[,] blocks = new BlockData[16, 16];
+
+            // Base terrain
 
             for (int x = 0; x < 16; x++)
                 for (int y = 0; y < 16; y++)
@@ -53,7 +65,7 @@ namespace Larnix.Server.Worldgen
 
                     if (POS.y > surface_level) // air
                     {
-                        bool is_lake = POS.y <= (int)water_level;
+                        bool is_lake = POS.y <= water_level;
 
                         blocks[x, y] = new BlockData(
                             new SingleBlockData { ID = is_lake ? BlockID.Water : BlockID.Air },
@@ -75,6 +87,22 @@ namespace Larnix.Server.Worldgen
                             new SingleBlockData { ID = BlockID.Stone },
                             new SingleBlockData { ID = BlockID.Stone }
                             );
+                    }
+                }
+
+            // Cave generation
+
+            for (int x = 0; x < 16; x++)
+                for (int y = 0; y < 16; y++)
+                {
+                    Vector2Int POS = ChunkMethods.GlobalBlockCoords(chunk, new Vector2Int(x, y));
+
+                    const double CAVE_NOISE_WIDTH = 0.2f;
+                    double cave_value = NoiseCave.GetValue(POS.x, POS.y, 0);
+
+                    if (cave_value > -CAVE_NOISE_WIDTH && cave_value < CAVE_NOISE_WIDTH) // cave
+                    {
+                        blocks[x, y].Front = new SingleBlockData { };
                     }
                 }
 

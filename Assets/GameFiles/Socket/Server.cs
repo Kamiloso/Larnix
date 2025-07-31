@@ -135,7 +135,7 @@ namespace Larnix.Socket
             return null;
         }
 
-        private int findFreeUserSlot(IPEndPoint endPoint) // -1 => problem occured
+        private int FindFreeUserSlot(IPEndPoint endPoint) // -1 => problem occured
         {
             foreach(Connection conn in connections)
             {
@@ -162,7 +162,7 @@ namespace Larnix.Socket
             PreLoginBuffer preLoginBuffer = PreLoginBuffers[remoteEP];
             AllowConnection allowConnection = preLoginBuffer.AllowConnection;
 
-            int freeSpace = findFreeUserSlot(remoteEP);
+            int freeSpace = FindFreeUserSlot(remoteEP);
             if (freeSpace == -1 || nicknames.Contains(allowConnection.Nickname))
             {
                 LoginDeny(remoteEP);
@@ -279,7 +279,7 @@ namespace Larnix.Socket
                     {
                         if (header.HasFlag(SafePacket.PacketFlag.SYN)) // start connection
                         {
-                            if (findFreeUserSlot(remoteEP) == -1)
+                            if (FindFreeUserSlot(remoteEP) == -1)
                                 continue;
 
                             SafePacket safeSynPacket = new SafePacket();

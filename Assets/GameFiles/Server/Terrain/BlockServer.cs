@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Blocks;
 using System;
-using System.Linq;
 
 namespace Larnix.Server.Terrain
 {
@@ -11,11 +10,13 @@ namespace Larnix.Server.Terrain
     {
         public readonly Vector2Int Position;
         public readonly bool IsFront;
-        public readonly SingleBlockData BlockData;
+        public SingleBlockData BlockData;
 
-        public bool MarkedToUpdate { get; set; } = false;
+        private bool MarkedToUpdate = false;
+        private bool StateChanged = false;
 
-        public static HashSet<string> WarningsDone = new();
+        public event EventHandler FrameEvent;
+        public event EventHandler BlockUpdateEvent;
 
         public BlockServer(Vector2Int position, SingleBlockData blockData, bool isFront)
         {
@@ -24,69 +25,27 @@ namespace Larnix.Server.Terrain
             IsFront = isFront;
         }
 
-        public void DoFrameUpdate()
+        public void PreFrameConfigure()
         {
-            FrameUpdate();
-            MarkedToUpdate = false;
+            MarkedToUpdate = true;
         }
 
-        public void DoOnBreak()
+        public void BlockUpdate()
         {
-            OnBreak();
+            StateChanged = true;
         }
 
-        protected virtual void FrameUpdate() { }
-        protected virtual void OnBreak() { }
-
-        // ===== Static Methods =====
-
-        public static BlockServer ConstructBlockObject(Vector2Int POS, SingleBlockData block, bool isFront)
+        public void FrameUpdate()
         {
-            string blockName = block.ID.ToString();
-            string className = "Larnix.Modules.Blocks." + blockName;
-
-            Type type = Type.GetType(className);
-            if (
-                type == null ||
-                !typeof(BlockServer).IsAssignableFrom(type) ||
-                type.GetConstructor(new Type[] { typeof(Vector2Int), typeof(SingleBlockData), typeof(bool) }) == null
-                )
+            if (MarkedToUpdate)
             {
-                type = typeof(BlockServer);
+                if(StateChanged)
+                    BlockUpdateEvent?.Invoke(this, EventArgs.Empty);
+                StateChanged = false;
 
-                string warning = $"Class {className} cannot be loaded! Loading base class instead...";
-                if(!WarningsDone.Contains(warning))
-                {
-                    if(References.Server.IsLocal) UnityEngine.Debug.LogWarning(warning);
-                    else Console.LogWarning(warning);
-                    WarningsDone.Add(warning);
-                }
+                FrameEvent?.Invoke(this, EventArgs.Empty);
             }
-
-            object instance = Activator.CreateInstance(type, POS, block, isFront);
-            return instance as BlockServer;
-        }
-
-        public static BlockServer GetBlock(Vector2Int POS, bool isFront) // can return null if chunk is not loaded!
-        {
-            Vector2Int chunk = ChunkMethods.CoordsToChunk(POS);
-
-            if (!References.ChunkLoading.TryGetChunk(chunk, out var chunkObject))
-                return null;
-
-            Vector2Int pos = ChunkMethods.LocalBlockCoords(POS);
-            return chunkObject.GetBlock(pos, isFront);
-        }
-
-        public static BlockServer SetBlock(Vector2Int POS, bool isFront, SingleBlockData blockData) // can return null if chunk is not loaded!
-        {
-            Vector2Int chunk = ChunkMethods.CoordsToChunk(POS);
-
-            if (!References.ChunkLoading.TryGetChunk(chunk, out var chunkObject))
-                return null;
-
-            Vector2Int pos = ChunkMethods.LocalBlockCoords(POS);
-            return chunkObject.SetBlock(pos, isFront, blockData);
+            MarkedToUpdate = false;
         }
     }
 }
