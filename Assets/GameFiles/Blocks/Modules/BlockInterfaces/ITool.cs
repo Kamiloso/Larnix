@@ -18,9 +18,7 @@ namespace Larnix.Modules.Blocks
 
         public enum Type
         {
-            Any,
-            Surface,
-            Wood,
+            Normal,
         }
 
         public enum Tier

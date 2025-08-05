@@ -14,6 +14,7 @@ namespace Larnix.Server.Entities
     {
         private readonly Dictionary<string, EntityAbstraction> PlayerControllers = new();
         private readonly Dictionary<ulong, EntityAbstraction> EntityControllers = new();
+        public int EntityCount = 0;
 
         private uint FixedCounter = 0;
         private uint LastSentFixedCounter = 0;
@@ -48,6 +49,10 @@ namespace Larnix.Server.Entities
                     if (EntityControllers[uid].EntityData.NBT == "something... idk")
                         KillEntity(uid);
                 }
+
+            // Debug info
+
+            EntityCount = EntityControllers.Count;
         }
 
         public void FromEarlyUpdate() // 2

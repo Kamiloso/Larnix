@@ -333,7 +333,7 @@ namespace Larnix.Server
             if (!IsLocal && username == "Player")
             {
                 LarnixServer.LoginDeny(remoteEP);
-                yield break; // "Player" nickname is reserved for singleplayer
+                yield break; // Nickname "Player" is reserved for singleplayer
             }
 
             InternetID internetID = new InternetID(remoteEP.Address);
@@ -385,14 +385,16 @@ namespace Larnix.Server
 
         public void InterpretConsoleInput() // n
         {
-            /*if(Input.GetKeyDown(KeyCode.Z)) // WILDPIG TESTING SPAWNING
+#if UNITY_EDITOR
+            if(Input.GetKeyDown(KeyCode.Z)) // WILDPIG TESTING SPAWNING
             {
                 References.EntityManager.SummonEntity(new EntityData
                 {
                     ID = EntityID.Wildpig,
-                    Position = 50 * (new Vector2((float)Common.Rand().NextDouble(), (float)Common.Rand().NextDouble()) - new Vector2(0.5f, 0.5f))
+                    Position = References.EntityManager.GetPlayerController("Player").EntityData.Position,
                 });
-            }*/
+            }
+#endif
 
             while (true)
             {

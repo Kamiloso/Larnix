@@ -7,10 +7,18 @@ namespace Larnix.Blocks
     public enum BlockLayer : byte { Front, Back }
     public enum BlockID : ushort
     {
-        Air,
-        Stone,
-        Dirt,
-        Planks,
-        Water,
+        Air = 0,
+        Stone = 1,
+        Dirt = 2,
+        Planks = 3,
+        Water = 4,
+        Lava = 5,
+        Sand = 6,
+        Log = 7,
+        Leaves = 8,
+        Ice = 9,
+        Snow = 10,
+        Oil = 11,
+        WoodenPickaxe = 12,
     }
 }

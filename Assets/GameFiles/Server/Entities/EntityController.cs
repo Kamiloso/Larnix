@@ -24,7 +24,7 @@ namespace Larnix.Server.Entities
             EntityController controller = gobj.GetComponent<EntityController>();
 
             controller.uID = uid;
-            controller.EntityData = entityData;
+            controller.UpdateEntityData(entityData);
 
             return controller;
         }
@@ -34,6 +34,20 @@ namespace Larnix.Server.Entities
             EntityData = entityData;
             transform.position = entityData.Position;
             References.EntityDataManager.SetEntityData(uID, entityData);
+        }
+
+        public void ApplyTransform()
+        {
+            EntityData entityData = EntityData.ShallowCopy();
+            entityData.Position = transform.position;
+            UpdateEntityData(entityData);
+        }
+
+        public void UpdateRotation(float rotation)
+        {
+            EntityData entityData = EntityData.ShallowCopy();
+            entityData.Rotation = rotation;
+            UpdateEntityData(entityData);
         }
 
         public void FromFixedUpdate()

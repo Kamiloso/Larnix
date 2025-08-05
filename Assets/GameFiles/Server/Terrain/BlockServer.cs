@@ -13,10 +13,10 @@ namespace Larnix.Server.Terrain
         public SingleBlockData BlockData;
 
         private bool MarkedToUpdate = false;
-        private bool StateChanged = false;
 
-        public event EventHandler FrameEvent;
-        public event EventHandler BlockUpdateEvent;
+        public event EventHandler PreFrameEvent;
+        public event EventHandler FrameEventRandom;
+        public event EventHandler FrameEventSequential;
 
         public BlockServer(Vector2Int position, SingleBlockData blockData, bool isFront)
         {
@@ -25,25 +25,25 @@ namespace Larnix.Server.Terrain
             IsFront = isFront;
         }
 
-        public void PreFrameConfigure()
+        public void PreFrameTrigger()
         {
             MarkedToUpdate = true;
+            PreFrameEvent?.Invoke(this, EventArgs.Empty);
         }
 
-        public void BlockUpdate()
-        {
-            StateChanged = true;
-        }
-
-        public void FrameUpdate()
+        public void FrameUpdateRandom()
         {
             if (MarkedToUpdate)
             {
-                if(StateChanged)
-                    BlockUpdateEvent?.Invoke(this, EventArgs.Empty);
-                StateChanged = false;
+                FrameEventRandom?.Invoke(this, EventArgs.Empty);
+            }
+        }
 
-                FrameEvent?.Invoke(this, EventArgs.Empty);
+        public void FrameUpdateSequential()
+        {
+            if (MarkedToUpdate)
+            {
+                FrameEventSequential?.Invoke(this, EventArgs.Empty);
             }
             MarkedToUpdate = false;
         }

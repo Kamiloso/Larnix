@@ -4,6 +4,7 @@ using UnityEngine;
 using Larnix.Client.Terrain;
 using Larnix.Client.Entities;
 using Larnix.Client.UI;
+using Larnix.Physics;
 
 namespace Larnix.Client
 {
@@ -17,5 +18,6 @@ namespace Larnix.Client
         public static GridManager GridManager;
         public static TileSelector TileSelector;
         public static Inventory Inventory;
+        public static PhysicsManager PhysicsManager;
     }
 }

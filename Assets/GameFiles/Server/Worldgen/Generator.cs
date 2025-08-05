@@ -12,32 +12,61 @@ namespace Larnix.Server.Worldgen
 {
     public class Generator
     {
+        // Seed
         public readonly long Seed;
-        
-        private readonly Perlin NoiseSurface;
-        private readonly Perlin NoiseCave;
+
+        // Raw noise
+        private readonly ValueProvider NoiseSurface;
+        private readonly ValueProvider NoiseCave;
+
+        // Value providers
+        private readonly ValueProvider ProviderCave;
+
+        // Constants
+        const int WATER_LEVEL = -1;
 
         public Generator(long seed)
         {
             Seed = seed;
 
-            NoiseSurface = new Perlin(
+            // ------ BASE NOISES ------
+
+            NoiseSurface = ValueProvider.CreatePerlin(new Perlin(
                 frequency: 0.01,
                 lacunarity: 2.0,
                 persistence: 0.5,
                 octaves: 4,
                 seed: (int)SaltedSeed(1),
                 quality: QualityMode.High
-                );
+            ), -15.0, 25.0, 1);
 
-            NoiseCave = new Perlin(
+            NoiseCave = ValueProvider.CreatePerlin(new Perlin(
                 frequency: 0.02,
-                lacunarity: 2.0,
-                persistence: 0.5,
-                octaves: 4,
+                lacunarity: 1.8,
+                persistence: 0.4,
+                octaves: 6,
                 seed: (int)SaltedSeed(2),
                 quality: QualityMode.High
-                );
+            ), -1.0, 1.0, 2);
+
+            // ------ HELPFUL PROVIDERS ------
+
+            ValueProvider _SurfaceRelative = ValueProvider.CreateFunction((x, y, z) =>
+            {
+                return y - NoiseSurface.GetValue(x);
+            });
+
+            // ------ CAVE PROVIDER ------
+
+            ValueProvider _DryCheck_CAVES = ValueProvider.CreateCondition(NoiseSurface, 8.0, double.MaxValue, 4.0, true);
+            ValueProvider _UndergroundCheck_CAVES = ValueProvider.CreateCondition(_SurfaceRelative, -4.0, double.MaxValue, 16.0, false);
+
+            ValueProvider _Condition_CAVES = ValueProvider.CreateOr(new List<ValueProvider>{
+                _DryCheck_CAVES, _UndergroundCheck_CAVES
+            });
+
+            ProviderCave = ValueProvider.CreateFunction((x, y, z) =>
+                (NoiseCave.GetValue(x, y) + 1.0) * _Condition_CAVES.GetValue(x, y) - 1.0);
         }
 
         public BlockData[,] GenerateChunk(Vector2Int chunk)
@@ -51,21 +80,14 @@ namespace Larnix.Server.Worldgen
                 {
                     Vector2Int POS = ChunkMethods.GlobalBlockCoords(chunk, new Vector2Int(x, y));
 
-                    const double SURFACE_MIN = -20.0;
-                    const double SURFACE_MAX = 20.0;
-
                     const int DIRT_LAYER_SIZE = 3;
 
-                    double rawNoise = NoiseSurface.GetValue(POS.x, 0, 0);
-                    double normalizedNoise = (rawNoise + 1.0) / 2.0;
-
-                    int surface_level = Mathf.FloorToInt((float)(normalizedNoise * (SURFACE_MAX - SURFACE_MIN) + SURFACE_MIN));
+                    int surface_level = Mathf.FloorToInt((float)NoiseSurface.GetValue(POS.x));
                     int stone_level = surface_level - DIRT_LAYER_SIZE;
-                    int water_level = -1;
 
                     if (POS.y > surface_level) // air
                     {
-                        bool is_lake = POS.y <= water_level;
+                        bool is_lake = POS.y <= WATER_LEVEL;
 
                         blocks[x, y] = new BlockData(
                             new SingleBlockData { ID = is_lake ? BlockID.Water : BlockID.Air },
@@ -98,7 +120,7 @@ namespace Larnix.Server.Worldgen
                     Vector2Int POS = ChunkMethods.GlobalBlockCoords(chunk, new Vector2Int(x, y));
 
                     const double CAVE_NOISE_WIDTH = 0.2f;
-                    double cave_value = NoiseCave.GetValue(POS.x, POS.y, 0);
+                    double cave_value = ProviderCave.GetValue(POS.x, POS.y);
 
                     if (cave_value > -CAVE_NOISE_WIDTH && cave_value < CAVE_NOISE_WIDTH) // cave
                     {

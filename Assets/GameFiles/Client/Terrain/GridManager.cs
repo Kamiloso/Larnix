@@ -5,14 +5,14 @@ using UnityEngine.Tilemaps;
 using Larnix.Blocks;
 using System.Linq;
 using System;
-using Larnix.Socket.Commands;
+using Larnix.Modules.Blocks;
+using Larnix.Physics;
 
 namespace Larnix.Client.Terrain
 {
     public class GridManager : MonoBehaviour
     {
-        [SerializeField] Tilemap TilemapFront;
-        [SerializeField] Tilemap TilemapBack;
+        [SerializeField] ChunkedTilemap ChunkedTilemap;
 
         private readonly Dictionary<Vector2Int, BlockData[,]> Chunks = new();
         private readonly HashSet<Vector2Int> DirtyChunks = new();
@@ -20,6 +20,8 @@ namespace Larnix.Client.Terrain
 
         private readonly List<BlockLock> LockedBlocks = new();
         private const double BLOCK_LOCK_TIMEOUT = 5.0; // seconds
+
+        private Dictionary<Vector2Int, StaticCollider> BlockColliders = new();
 
         private class BlockLock
         {
@@ -49,6 +51,7 @@ namespace Larnix.Client.Terrain
         public void AddChunk(Vector2Int chunk, BlockData[,] BlockArray)
         {
             Chunks[chunk] = BlockArray;
+            UpdateChunkColliders(chunk);
             DirtyChunks.Add(chunk);
         }
 
@@ -58,18 +61,19 @@ namespace Larnix.Client.Terrain
                 return;
 
             Chunks.Remove(chunk);
+            UpdateChunkColliders(chunk);
             DirtyChunks.Add(chunk);
 
             UnlockChunk(chunk);
         }
 
-        public void UpdateBlock(Vector2Int POS, BlockData data, long unlock = 0)
+        public void UpdateBlock(Vector2Int POS, BlockData data, long? unlock = null)
         {
             Vector2Int chunk = ChunkMethods.CoordsToChunk(POS);
             Vector2Int pos = ChunkMethods.LocalBlockCoords(POS);
 
-            if (unlock != 0)
-                UnlockBlock(unlock);
+            if (unlock != null)
+                UnlockBlock((long)unlock);
 
             if (Chunks.ContainsKey(chunk) && !IsBlockLocked(POS))
                 ChangeBlockData(POS, data);
@@ -100,12 +104,7 @@ namespace Larnix.Client.Terrain
 
         private void RedrawChunk(Vector2Int chunk, bool active)
         {
-            for (int x = 0; x < 16; x++)
-                for (int y = 0; y < 16; y++)
-                {
-                    Vector2Int POS = ChunkMethods.GlobalBlockCoords(chunk, new Vector2Int(x, y));
-                    RedrawTileUnchecked(POS, active ? Chunks[chunk][x, y] : null);
-                }
+            ChunkedTilemap.RedrawChunk(chunk, active ? Chunks[chunk] : null);
 
             if (active) VisibleChunks.Add(chunk);
             else VisibleChunks.Remove(chunk);
@@ -187,23 +186,51 @@ namespace Larnix.Client.Terrain
             Vector2Int pos = ChunkMethods.LocalBlockCoords(POS);
 
             Chunks[chunk][pos.x, pos.y] = block;
-            RedrawTileChecked(POS, block);
+            RedrawTileChecked(chunk, pos, block);
+            UpdateBlockCollider(POS, block);
         }
 
-        private void RedrawTileChecked(Vector2Int POS, BlockData block)
+        private void RedrawTileChecked(Vector2Int chunk, Vector2Int pos, BlockData block)
         {
-            Vector2Int chunk = ChunkMethods.CoordsToChunk(POS);
             if(VisibleChunks.Contains(chunk))
-                RedrawTileUnchecked(POS, block);
+                ChunkedTilemap.RedrawExistingTile(chunk, pos, block);
         }
 
-        private void RedrawTileUnchecked(Vector2Int POS, BlockData block)
+        private void UpdateChunkColliders(Vector2Int chunk)
         {
-            Tile tileFront = block != null ? Tiles.GetTile(block.Front, true) : null;
-            Tile tileBack = block != null ? Tiles.GetTile(block.Back, false) : null;
+            if (!Chunks.TryGetValue(chunk, out BlockData[,] chunkBlocks))
+                chunkBlocks = null;
 
-            TilemapFront.SetTile(new Vector3Int(POS.x, POS.y, 0), tileFront);
-            TilemapBack.SetTile(new Vector3Int(POS.x, POS.y, 0), tileBack);
+            for (int x = 0; x < 16; x++)
+                for (int y = 0; y < 16; y++)
+                {
+                    Vector2Int POS = ChunkMethods.GlobalBlockCoords(chunk, new Vector2Int(x, y));
+                    UpdateBlockCollider(POS, chunkBlocks != null ? chunkBlocks[x, y] : null);
+                }
+
+            References.PhysicsManager.SetChunkActive(chunk, chunkBlocks != null);
+        }
+
+        private void UpdateBlockCollider(Vector2Int POS, BlockData block)
+        {
+            if (BlockColliders.TryGetValue(POS, out var statCollider))
+            {
+                References.PhysicsManager.RemoveColliderByReference(statCollider);
+                BlockColliders.Remove(POS);
+            }
+
+            if(block != null)
+            {
+                IHasCollider iface = BlockFactory.GetSlaveInstance<IHasCollider>(block.Front.ID);
+                if (iface != null)
+                {
+                    StaticCollider statCol = iface.STATIC_CreateStaticCollider(block.Front.Variant);
+                    statCol.MakeOffset(POS);
+
+                    References.PhysicsManager.AddCollider(statCol);
+                    BlockColliders.Add(POS, statCol);
+                }
+            }
         }
 
         public bool IsBlockLocked(Vector2Int POS)

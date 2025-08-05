@@ -4,6 +4,7 @@ using UnityEngine;
 using Larnix.Server.Terrain;
 using Larnix.Server.Entities;
 using Larnix.Server.Worldgen;
+using Larnix.Physics;
 
 namespace Larnix.Server
 {
@@ -17,6 +18,7 @@ namespace Larnix.Server
         public static PlayerManager PlayerManager;
         public static BlockDataManager BlockDataManager;
         public static BlockSender BlockSender;
+        public static PhysicsManager PhysicsManager;
 
         // Normal Classes
         public static Generator Generator;

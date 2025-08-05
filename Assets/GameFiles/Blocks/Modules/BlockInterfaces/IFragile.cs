@@ -1,13 +1,12 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Larnix.Server.Worldgen
+namespace Larnix.Modules.Blocks
 {
-    public class Noise
+    public interface IFragile
     {
-        Noise()
+        void Init()
         {
 
         }

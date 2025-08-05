@@ -3,31 +3,62 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Server.Entities;
+using Larnix.Physics;
 
 namespace Larnix.Entities.Server
 {
     public class WalkingAround : MonoBehaviour
     {
-        EntityController controller;
+        private EntityController controller;
+        private DynamicCollider dynamicCollider;
+
+        private int walking = 0;
+        private int walkingCounter = 0;
+        private float headRotation = 0f;
+
+        private const int THINKING_TIME_MIN = 30;
+        private const int THINKING_TIME_MAX = 150;
 
         private void Awake()
         {
             controller = GetComponent<EntityController>();
+
+            foreach(Transform trn in transform)
+            {
+                if(trn.name == "DynamicCollider")
+                {
+                    dynamicCollider = trn.GetComponent<DynamicCollider>();
+                    break;
+                }
+            }
+        }
+
+        private void Start()
+        {
+            dynamicCollider.Enable();
         }
 
         public void DoFixedUpdate()
         {
-            Vector2 position = controller.EntityData.Position;
-            float rotation = controller.EntityData.Rotation;
+            PhysicsReport report = dynamicCollider.physicsReport;
 
-            rotation += 2f;
-            position += 0.04f * new Vector2(Mathf.Cos(rotation * Mathf.Deg2Rad), Mathf.Sin(rotation * Mathf.Deg2Rad));
+            if (walkingCounter == 0)
+            {
+                walking = walking == 0 ? (Common.Rand().Next() % 2 == 0 ? -1 : 1) : 0;
+                if (walking != 0) headRotation = walking > 0 ? 0f : 180f;
+                walkingCounter = Common.Rand().Next(THINKING_TIME_MIN, THINKING_TIME_MAX + 1);
+            }
+            else walkingCounter--;
 
-            EntityData entityData = controller.EntityData.ShallowCopy();
-            entityData.Position = position;
-            entityData.Rotation = rotation;
+            dynamicCollider.PhysicsUpdate(new InputData
+            {
+                Left = walking < 0,
+                Right = walking > 0,
+                Jump = report.OnLeftWall || report.OnRightWall,
+            });
 
-            controller.UpdateEntityData(entityData);
+            controller.ApplyTransform();
+            controller.UpdateRotation(headRotation);
         }
     }
 }

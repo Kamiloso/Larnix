@@ -13,8 +13,8 @@ namespace Larnix.Modules.Blocks
             var Block = (BlockServer)this;
             // ---------------------------- //
 
-            Block.FrameEvent += (sender, args) => FloraDry();
-            Block.FrameEvent += (sender, args) => FloraGrowth();
+            Block.FrameEventSequential += (sender, args) => FloraDry();
+            Block.FrameEventSequential += (sender, args) => FloraGrowth();
         }
 
         double DRY_CHANCE();

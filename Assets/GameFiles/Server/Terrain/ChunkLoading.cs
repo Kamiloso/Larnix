@@ -12,7 +12,7 @@ namespace Larnix.Server.Terrain
 {
     public class ChunkLoading : MonoBehaviour
     {
-        public const int LOADING_DISTANCE = 3; // chunks
+        public const int LOADING_DISTANCE = 2; // chunks
         public const float UNLOADING_TIME = 4f; // seconds
         public const float PLAYER_SENDING_PERIOD = 0.15f; // seconds
 
@@ -53,16 +53,26 @@ namespace Larnix.Server.Terrain
 
         public void FromFixedUpdate() // FIX-1
         {
-            foreach (var kvp in Chunks.OrderBy(kv => kv.Key.y).ThenBy(kv => kv.Key.x))
+            var activeChunks = Chunks.Where(kv => ChunkState(kv.Key) == LoadState.Active).ToList();
+            var orderedChunks = activeChunks.OrderBy(kv => kv.Key.y).ThenBy(kv => kv.Key.x).ToList();
+            var shuffledChunks = activeChunks.OrderBy(_ => UnityEngine.Random.value).ToList();
+
+            foreach (var kvp in activeChunks) // pre-frame configure
             {
-                var chunk = kvp.Key;
-                var state = ChunkState(chunk);
-                
-                if(state == LoadState.Active)
-                {
-                    ChunkContainer container = kvp.Value;
-                    container.Instance.ExecuteFrame();
-                }
+                ChunkContainer container = kvp.Value;
+                container.Instance.PreExecuteFrame();
+            }
+
+            foreach (var kvp in shuffledChunks) // actual frame random
+            {
+                ChunkContainer container = kvp.Value;
+                container.Instance.ExecuteFrameRandom();
+            }
+
+            foreach (var kvp in orderedChunks) // actual frame sequential
+            {
+                ChunkContainer container = kvp.Value;
+                container.Instance.ExecuteFrameSequential();
             }
         }
 

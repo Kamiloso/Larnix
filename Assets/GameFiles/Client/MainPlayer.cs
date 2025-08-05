@@ -6,6 +6,7 @@ using Larnix.Socket.Commands;
 using Larnix.Client.Entities;
 using Larnix.Entities;
 using System;
+using Larnix.Physics;
 
 namespace Larnix.Client
 {
@@ -14,6 +15,8 @@ namespace Larnix.Client
         [SerializeField] Camera Camera;
         [SerializeField] EntityProjection EntityProjection;
         [SerializeField] Transform RaycastCenter; // simply player's head
+        [SerializeField] DynamicCollider DynamicCollider;
+        [SerializeField] TextMeshProUGUI CoordinatesText;
         [SerializeField] Vector2 CameraDeltaPosition;
         
         private uint FixedCounter = 0;
@@ -36,85 +39,18 @@ namespace Larnix.Client
             transform.parent.gameObject.SetActive(false);
         }
 
-        private const float GRAVITY = 0.5f;
-        private const float MAX_VERTICAL_SPEED = 50f;
-        private const float GROUND_LEVEL = 0f;
-        private const float HORIZONTAL_FORCE = 2f;
-        private const float MAX_HORIZONTAL_SPEED = 7f;
-        private const float JUMP_SIZE = 15f;
-        private const float HORIZONTAL_DRAG = 2f;
-
-        private Vector2 velocity = Vector2.zero;
-
         private void FixedUpdate()
         {
-            // Fixed counter increment
-
             FixedCounter++;
 
-            // Temporary physics
-
-            const bool PHYSICS_MODE = false;
-            if (PHYSICS_MODE)
+            DynamicCollider.PhysicsUpdate(new InputData
             {
-                int want_horizontal = (Input.GetKey(KeyCode.RightArrow) ? 1 : 0) - (Input.GetKey(KeyCode.LeftArrow) ? 1 : 0);
-                if (want_horizontal != 0)
-                {
-                    velocity += want_horizontal * HORIZONTAL_FORCE * Vector2.right;
-                }
-                else
-                {
-                    int sgn1 = Math.Sign(velocity.x);
-                    velocity -= new Vector2(sgn1 * HORIZONTAL_DRAG, 0f);
-                    int sgn2 = Math.Sign(velocity.x);
-                    if (sgn1 != sgn2) velocity = new Vector2(0f, velocity.y);
-                }
-
-                velocity += GRAVITY * Vector2.down;
-
-                if (velocity.x > MAX_HORIZONTAL_SPEED) velocity = new Vector2(MAX_HORIZONTAL_SPEED, velocity.y);
-                if (velocity.x < -MAX_HORIZONTAL_SPEED) velocity = new Vector2(-MAX_HORIZONTAL_SPEED, velocity.y);
-                if (velocity.y > MAX_VERTICAL_SPEED) velocity = new Vector2(velocity.x, MAX_VERTICAL_SPEED);
-                if (velocity.y < -MAX_VERTICAL_SPEED) velocity = new Vector2(velocity.x, -MAX_VERTICAL_SPEED);
-
-                transform.position += (Vector3)velocity * Time.fixedDeltaTime;
-
-                bool on_ground = false;
-                if (transform.position.y <= GROUND_LEVEL)
-                {
-                    transform.position = new Vector2(transform.position.x, GROUND_LEVEL);
-                    velocity = new Vector2(velocity.x, 0f);
-                    on_ground = true;
-                }
-
-                if (on_ground && Input.GetKey(KeyCode.UpArrow))
-                {
-                    velocity += new Vector2(0f, JUMP_SIZE);
-                }
-            }
-            else
-            {
-                const float SPEED = 10f;
-
-                if (Input.GetKey(KeyCode.W))
-                    transform.position += new Vector3(0f, SPEED) * Time.fixedDeltaTime;
-
-                if (Input.GetKey(KeyCode.S))
-                    transform.position += new Vector3(0f, -SPEED) * Time.fixedDeltaTime;
-
-                if (Input.GetKey(KeyCode.D))
-                    transform.position += new Vector3(SPEED, 0f) * Time.fixedDeltaTime;
-
-                if (Input.GetKey(KeyCode.A))
-                    transform.position += new Vector3(-SPEED, 0f) * Time.fixedDeltaTime;
-            }
-
-            // Rotation reaction
+                Left = Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A),
+                Right = Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D),
+                Jump = Input.GetKey(KeyCode.Space) || Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W),
+            });
 
             RotationUpdate();
-
-            // Update entity object
-            
             UpdateEntityObject(FixedCounter * Time.fixedDeltaTime);
         }
 
@@ -151,8 +87,16 @@ namespace Larnix.Client
             }
         }
 
+        private float? fps = null;
         private void LateUpdate()
         {
+            // Coordinates text update (temporary)
+
+            if(fps == null || FixedCounter % 15 == 0)
+                fps = (float)(Math.Round(1f / Time.deltaTime * 10f) / 10f);
+
+            CoordinatesText.text = $"FPS: {fps}\nX: {transform.position.x}\nY: {transform.position.y}";
+
             // Camera update
             
             Vector2 plr = EntityProjection.transform.position;
@@ -197,7 +141,10 @@ namespace Larnix.Client
                 throw new System.InvalidOperationException("Player is already alive!");
 
             transform.parent.gameObject.SetActive(true);
+            CoordinatesText.gameObject.SetActive(true);
             References.TileSelector.Enable();
+
+            DynamicCollider.Enable();
 
             RotationUpdate();
             UpdateEntityObject(0f);
@@ -209,7 +156,10 @@ namespace Larnix.Client
                 throw new System.InvalidOperationException("Player is already dead!");
 
             transform.parent.gameObject.SetActive(false);
+            CoordinatesText.gameObject.SetActive(false);
             References.TileSelector.Disable();
+
+            DynamicCollider.Disable();
 
             EntityProjection.ResetSmoother();
         }

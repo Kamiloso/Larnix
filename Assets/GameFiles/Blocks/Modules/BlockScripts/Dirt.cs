@@ -12,7 +12,7 @@ namespace Larnix.Modules.Blocks
 
         public bool ALLOW_PLACE_BACK() => false;
 
-        public ITool.Type MATERIAL_TYPE() => ITool.Type.Surface;
+        public ITool.Type MATERIAL_TYPE() => ITool.Type.Normal;
         public ITool.Tier MATERIAL_TIER() => ITool.Tier.None;
 
         public double DRY_CHANCE() => 0.001;

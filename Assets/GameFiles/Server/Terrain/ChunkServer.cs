@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Blocks;
 using System;
+using System.Linq;
+using Larnix.Physics;
+using Larnix.Modules.Blocks;
 
 namespace Larnix.Server.Terrain
 {
@@ -11,6 +14,7 @@ namespace Larnix.Server.Terrain
         public Vector2Int Chunkpos { get; private set; }
         private readonly BlockServer[,] BlocksFront = new BlockServer[16, 16];
         private readonly BlockServer[,] BlocksBack = new BlockServer[16, 16];
+        private readonly Dictionary<Vector2Int, StaticCollider> StaticColliders = new();
 
         private readonly BlockData[,] ActiveChunkReference;
 
@@ -24,31 +28,40 @@ namespace Larnix.Server.Terrain
                 {
                     CreateBlock(new Vector2Int(x, y), ActiveChunkReference[x, y]);
                 }
+
+            References.PhysicsManager.SetChunkActive(Chunkpos, true);
         }
 
-        public void ExecuteFrame()
+        public void PreExecuteFrame() // 1.
         {
-            // Pre-frame configure
             for (int y = 0; y < 16; y++)
                 for (int x = 0; x < 16; x++)
                 {
-                    BlocksBack[x, y].PreFrameConfigure();
-                    BlocksFront[x, y].PreFrameConfigure();
+                    BlocksBack[x, y].PreFrameTrigger();
+                    BlocksFront[x, y].PreFrameTrigger();
                 }
+        }
 
+        public void ExecuteFrameRandom() // 2.
+        {
+            foreach (var pos in GetShuffledPositions(16, 16))
+            {
+                BlocksBack[pos.x, pos.y].FrameUpdateRandom();
+                BlocksFront[pos.x, pos.y].FrameUpdateRandom();
+            }
+        }
+
+        public void ExecuteFrameSequential() // 3.
+        {
             // Back update
             for (int y = 0; y < 16; y++)
                 for (int x = 0; x < 16; x++)
-                {
-                    BlocksBack[x, y].FrameUpdate();
-                }
+                    BlocksBack[x, y].FrameUpdateSequential();
 
             // Front update
             for (int y = 0; y < 16; y++)
                 for (int x = 0; x < 16; x++)
-                {
-                    BlocksFront[x, y].FrameUpdate();
-                }
+                    BlocksFront[x, y].FrameUpdateSequential();
         }
 
         /// <summary>
@@ -92,6 +105,8 @@ namespace Larnix.Server.Terrain
                 ret = BlocksBack[pos.x, pos.y];
             }
 
+            RefreshCollider(pos);
+
             SingleBlockData newDataBack = ActiveChunkReference[pos.x, pos.y].Back;
             SingleBlockData newDataFront = ActiveChunkReference[pos.x, pos.y].Front;
 
@@ -132,10 +147,60 @@ namespace Larnix.Server.Terrain
 
             BlockServer backBlock = BlockFactory.ConstructBlockObject(ChunkMethods.GlobalBlockCoords(Chunkpos, pos), blockData.Back, false);
             BlocksBack[pos.x, pos.y] = backBlock;
+
+            RefreshCollider(pos);
+        }
+
+        private void RefreshCollider(Vector2Int pos)
+        {
+            if(StaticColliders.TryGetValue(pos, out var statCollider))
+            {
+                References.PhysicsManager.RemoveColliderByReference(statCollider);
+                StaticColliders.Remove(pos);
+            }
+
+            BlockServer blockServer = BlocksFront[pos.x, pos.y];
+            IHasCollider iface = blockServer as IHasCollider;
+            if(iface != null)
+            {
+                StaticCollider staticCollider = iface.STATIC_CreateStaticCollider(blockServer.BlockData.Variant);
+                staticCollider.MakeOffset(ChunkMethods.GlobalBlockCoords(Chunkpos, pos));
+                StaticColliders[pos] = staticCollider;
+                References.PhysicsManager.AddCollider(staticCollider);
+            }
+        }
+
+        private static List<(int x, int y)> GetShuffledPositions(int width, int height)
+        {
+            int total = width * height;
+            int[] indices = Enumerable.Range(0, total).ToArray();
+
+            var rng = new System.Random();
+            for (int i = total - 1; i > 0; i--)
+            {
+                int j = rng.Next(i + 1);
+                (indices[i], indices[j]) = (indices[j], indices[i]);
+            }
+
+            var result = new List<(int x, int y)>(total);
+            foreach (int idx in indices)
+            {
+                int x = idx % width;
+                int y = idx / width;
+                result.Add((x, y));
+            }
+
+            return result;
         }
 
         public void Dispose()
         {
+            foreach(StaticCollider staticCollider in StaticColliders.Values)
+            {
+                References.PhysicsManager.RemoveColliderByReference(staticCollider);
+            }
+
+            References.PhysicsManager.SetChunkActive(Chunkpos, false);
             References.BlockDataManager.DisableChunkReference(Chunkpos);
         }
     }

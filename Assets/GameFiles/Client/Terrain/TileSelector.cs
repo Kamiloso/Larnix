@@ -5,8 +5,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 using System;
-using UnityEngine.Playables;
-using Larnix.Server.Terrain;
 using Larnix.Modules.Blocks;
 
 namespace Larnix.Client.Terrain
@@ -19,90 +17,201 @@ namespace Larnix.Client.Terrain
         const float Transparency = 0.70f;
         const float BackDarking = 0.45f;
 
+        private bool isGameFocused = true;
+        private Vector2? old_cursor_pos = null;
         private bool active = false;
+
+        private int framesAlready = 0;
+        private const int MIN_FRAMES = 3;
 
         private void Awake()
         {
             References.TileSelector = this;
         }
 
+        private void OnApplicationFocus(bool hasFocus)
+        {
+            isGameFocused = hasFocus;
+        }
+
         public void FromInventoryUpdate()
         {
-            Selector.enabled = active;
-
-            if (active)
+            if(framesAlready < MIN_FRAMES)
             {
-                Vector2 mouse_pos = Input.mousePosition;
-                Vector2 cursor_pos = Camera.ScreenToWorldPoint(mouse_pos);
+                framesAlready++;
+                return;
+            }
+
+            Vector2 mouse_pos = Input.mousePosition;
+            Vector2 cursor_pos = Camera.ScreenToWorldPoint(mouse_pos);
+
+            bool onScreen = (mouse_pos.x >= 0 && mouse_pos.x <= Screen.width && mouse_pos.y >= 0 && mouse_pos.y <= Screen.height);
+
+            Selector.transform.localRotation = Quaternion.Euler(0, 0, 0);
+
+            if (active && isGameFocused && onScreen)
+            {
+                Selector.enabled = true;
 
                 Vector2Int pointed_block = ChunkMethods.CoordsToBlock(cursor_pos);
                 transform.position = (Vector2)pointed_block;
 
-                bool hold_0 = Input.GetMouseButton(0);
-                bool hold_1 = Input.GetMouseButton(1);
-                bool shift = Input.GetKey(KeyCode.LeftShift);
+                List<Vector2Int> grids = old_cursor_pos == null ?
+                    new List<Vector2Int> { pointed_block } :
+                    GetCellsIntersectedByLine((Vector2)old_cursor_pos, cursor_pos);
 
-                SingleBlockData item = References.Inventory.GetHoldingItem();
-                bool is_tool = BlockFactory.HasInterface<ITool>(item.ID);
-
-                Action HideSelector = () =>
+                foreach (Vector2Int grid in grids)
                 {
-                    Tile tile = Tiles.GetTile(new SingleBlockData { }, true);
+                    DoActionOn(grid);
+                }
+
+                old_cursor_pos = cursor_pos;
+            }
+            else
+            {
+                Selector.enabled = false;
+                old_cursor_pos = null;
+            }
+        }
+
+        private void DoActionOn(Vector2Int pointed_block)
+        {
+            bool hold_0 = Input.GetMouseButton(0);
+            bool hold_1 = Input.GetMouseButton(1);
+            bool hold_2 = Input.GetMouseButton(2);
+            bool shift = Input.GetKey(KeyCode.LeftShift);
+
+            SingleBlockData item = References.Inventory.GetHoldingItem();
+            bool is_tool = BlockFactory.HasInterface<ITool>(item.ID);
+
+            Action HideSelector = () =>
+            {
+                Tile tile = Tiles.GetTile(new SingleBlockData { }, true);
+                Selector.sprite = tile.sprite;
+            };
+
+            Tile tile = Tiles.GetTile(item, !shift);
+
+            if (is_tool)
+            {
+                Color transpColor = new Color(1, 1, 1);
+                Color darkerColor = new Color(0, 0, 0);
+
+                bool can_be_broken = WorldAPI.CanBeBroken(pointed_block, item, !shift);
+
+                Selector.sprite = tile.sprite;
+
+                if(!shift) // front
+                {
+                    Selector.sortingLayerID = SortingLayer.NameToID("FrontBlocks");
+                    Selector.color = transpColor;
+                }
+                else // back
+                {
+                    Selector.sortingLayerID = SortingLayer.NameToID("BackBlocks");
+                    Selector.color = transpColor;
+                    Selector.transform.localRotation = Quaternion.Euler(0, 0, -90);
+                }
+
+                if(hold_0)
+                {
+                    Selector.color = Color.Lerp(transpColor, darkerColor, BackDarking);
+                }
+
+                if (hold_0 && can_be_broken)
+                {
+                    WorldAPI.BreakBlock(pointed_block, item, !shift);
+                }
+            }
+            else
+            {
+                Color transpColor = new Color(1, 1, 1, Transparency);
+                Color darkerColor = new Color(0, 0, 0, Transparency);
+
+                if (WorldAPI.CanBePlaced(pointed_block, item, !shift))
+                {
                     Selector.sprite = tile.sprite;
-                };
 
-                Tile tile = Tiles.GetTile(item, !shift);
-
-                if (is_tool)
-                {
-                    if (WorldAPI.CanBeBroken(pointed_block, item, !shift))
+                    if (!shift) // front
                     {
-                        Color toolColor = new Color(1, 1, 1, 1);
-
-                        Selector.sprite = tile.sprite;
-                        Selector.sortingLayerID = SortingLayer.NameToID("OnTop");
-                        Selector.color = toolColor;
-
-                        if(hold_0)
-                        {
-                            WorldAPI.BreakBlock(pointed_block, item, !shift);
-                        }
+                        Selector.sortingLayerID = SortingLayer.NameToID("FrontBlocks");
+                        Selector.color = transpColor;
                     }
-                    else HideSelector();
+                    else // back
+                    {
+                        Selector.sortingLayerID = SortingLayer.NameToID("BackBlocks");
+                        Selector.color = Color.Lerp(transpColor, darkerColor, BackDarking);
+                    }
+
+                    if (hold_0)
+                    {
+                        WorldAPI.PlaceBlock(pointed_block, item, !shift);
+                    }
+                }
+                else HideSelector();
+            }
+        }
+
+        public static List<Vector2Int> GetCellsIntersectedByLine(Vector2 start, Vector2 end)
+        {
+            List<Vector2Int> cells = new List<Vector2Int>();
+            if (start == end)
+            {
+                cells.Add(Vector2Int.RoundToInt(start));
+                return cells;
+            }
+
+            Vector2 dir = end - start;
+
+            Vector2Int cell = Vector2Int.RoundToInt(start);
+            Vector2Int cellEnd = Vector2Int.RoundToInt(end);
+
+            int stepX = dir.x > 0 ? 1 : (dir.x < 0 ? -1 : 0);
+            int stepY = dir.y > 0 ? 1 : (dir.y < 0 ? -1 : 0);
+
+            float tDeltaX = stepX != 0 ? Mathf.Abs(1f / dir.x) : float.PositiveInfinity;
+            float tDeltaY = stepY != 0 ? Mathf.Abs(1f / dir.y) : float.PositiveInfinity;
+
+            float nextGridLineX = cell.x + (stepX > 0 ? 0.5f : -0.5f);
+            float nextGridLineY = cell.y + (stepY > 0 ? 0.5f : -0.5f);
+
+            float tMaxX = stepX != 0
+                ? (nextGridLineX - start.x) / dir.x
+                : float.PositiveInfinity;
+            float tMaxY = stepY != 0
+                ? (nextGridLineY - start.y) / dir.y
+                : float.PositiveInfinity;
+
+            cells.Add(cell);
+
+            while (cell != cellEnd)
+            {
+                if (tMaxX < tMaxY)
+                {
+                    cell.x += stepX;
+                    tMaxX += tDeltaX;
                 }
                 else
                 {
-                    if (WorldAPI.CanBePlaced(pointed_block, item, !shift))
-                    {
-                        Color transpColor = new Color(1, 1, 1, Transparency);
-                        Color darkerColor = new Color(0, 0, 0, Transparency);
+                    cell.y += stepY;
+                    tMaxY += tDeltaY;
+                }
+                cells.Add(cell);
 
-                        Selector.sprite = tile.sprite;
-
-                        if (!shift) // front
-                        {
-                            Selector.sortingLayerID = SortingLayer.NameToID("FrontBlocks");
-                            Selector.color = transpColor;
-                        }
-                        else // back
-                        {
-                            Selector.sortingLayerID = SortingLayer.NameToID("BackBlocks");
-                            Selector.color = Color.Lerp(transpColor, darkerColor, BackDarking);
-                        }
-
-                        if (hold_0)
-                        {
-                            WorldAPI.PlaceBlock(pointed_block, item, !shift);
-                        }
-                    }
-                    else HideSelector();
+                if(cells.Count > 256)
+                {
+                    UnityEngine.Debug.LogWarning("Trying to put over 256 cells into array!");
+                    break;
                 }
             }
+
+            return cells;
         }
 
         public void Enable()
         {
             active = true;
+            framesAlready = 0;
         }
 
         public void Disable()

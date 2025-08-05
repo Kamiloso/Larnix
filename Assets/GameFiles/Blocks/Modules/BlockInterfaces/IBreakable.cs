@@ -29,7 +29,7 @@ namespace Larnix.Modules.Blocks
             ITool.Type tool_type = BlockFactory.GetSlaveInstance<ITool>(tool.ID).TOOL_TYPE();
             ITool.Tier tool_tier = BlockFactory.GetSlaveInstance<ITool>(tool.ID).TOOL_TIER();
 
-            bool type_ok = tool_type == ITool.Type.Any || tool_type == MATERIAL_TYPE();
+            bool type_ok = tool_type == MATERIAL_TYPE();
             bool tier_ok = tool_tier >= MATERIAL_TIER();
 
             return type_ok && tier_ok;

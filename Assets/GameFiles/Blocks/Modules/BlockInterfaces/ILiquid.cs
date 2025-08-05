@@ -1,24 +1,28 @@
-using Larnix.Blocks;
-using Larnix.Client;
 using Larnix.Server.Terrain;
 using System.Collections;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 
 namespace Larnix.Modules.Blocks
 {
-    public interface ILiquid
+    public interface ILiquid : IMovingBehaviour
     {
         void Init()
         {
             var Block = (BlockServer)this;
             // ---------------------------- //
 
-            Block.FrameEvent += (sender, args) => Flow();
+            Block.FrameEventRandom += (sender, args) => Flow();
         }
 
         int FLOW_PERIOD();
+
+        /// <summary>
+        /// Use [kg / m^3] for consistency
+        /// </summary>
+        int LIQUID_DENSITY();
+        byte MEMORY_LEFT() => 0b0001;
+        byte MEMORY_RIGHT() => 0b0010;
 
         private void Flow()
         {
@@ -31,56 +35,74 @@ namespace Larnix.Modules.Blocks
             Vector2Int localpos = Block.Position;
             Vector2Int downpos = localpos - new Vector2Int(0, 1);
 
-            bool can_down = WillBlockBreak(downpos, Block.IsFront) == true;
+            int mem_direction = 
+                ((Block.BlockData.Variant & MEMORY_RIGHT()) != 0 ? 1 : 0) -
+                ((Block.BlockData.Variant & MEMORY_LEFT()) != 0 ? 1 : 0);
 
-            if(can_down == true) // go down
+            byte flagged_free = (byte)~(MEMORY_LEFT() | MEMORY_RIGHT());
+            byte byted_none = (byte)(flagged_free & Block.BlockData.Variant);
+
+            if (CanMove(localpos, downpos, Block.IsFront)) // go down
             {
-                MoveInto(downpos, Block.IsFront);
+                Move(localpos, downpos, Block.IsFront, byted_none);
             }
             else // go to side
             {
-                Vector2Int rightpos = localpos + new Vector2Int(1, 0);
                 Vector2Int leftpos = localpos - new Vector2Int(1, 0);
+                Vector2Int rightpos = localpos + new Vector2Int(1, 0);
+                Vector2Int leftpos_up = leftpos + new Vector2Int(0, 1);
+                Vector2Int rightpos_up = rightpos + new Vector2Int(0, 1);
 
-                bool can_right = WillBlockBreak(rightpos, Block.IsFront) == true;
-                bool can_left = WillBlockBreak(leftpos, Block.IsFront) == true;
+                bool can_left = CanMove(localpos, leftpos, Block.IsFront);
+                bool can_right = CanMove(localpos, rightpos, Block.IsFront);
+                bool can_left_up = CanMove(leftpos, leftpos_up, Block.IsFront);
+                bool can_right_up = CanMove(rightpos, rightpos_up, Block.IsFront);
 
-                if (!can_right && !can_left)
-                    return;
+                byte byted_left = (byte)(byted_none | MEMORY_LEFT());
+                byte byted_right = (byte)(byted_none | MEMORY_RIGHT());
 
-                else if(can_left && can_right)
+                if(mem_direction == 0)
                 {
-                    bool random = Common.Rand().Next() % 2 == 0;
+                    if (can_left && can_right)
+                        mem_direction = Common.Rand().Next() % 2 == 0 ? -1 : 1;
 
-                    if(random) MoveInto(rightpos, Block.IsFront);
-                    else MoveInto(leftpos, Block.IsFront);
+                    else if (can_left)
+                        mem_direction = -1;
+
+                    else if (can_right)
+                        mem_direction = 1;
                 }
 
-                else
+                // actual move
+
+                if(mem_direction == -1)
                 {
-                    if (can_right) MoveInto(rightpos, Block.IsFront);
-                    else MoveInto(leftpos, Block.IsFront);
+                    if (can_left)
+                    {
+                        if (can_left_up)
+                            Move(leftpos, leftpos_up, Block.IsFront);
+                        Move(localpos, leftpos, Block.IsFront, byted_left);
+                    }
+                    else
+                    {
+                        WorldAPI.UpdateBlockVariant(localpos, Block.IsFront, byted_none);
+                    }
+                }
+
+                if(mem_direction == 1)
+                {
+                    if (can_right)
+                    {
+                        if (can_right_up)
+                            Move(rightpos, rightpos_up, Block.IsFront);
+                        Move(localpos, rightpos, Block.IsFront, byted_right);
+                    }
+                    else
+                    {
+                        WorldAPI.UpdateBlockVariant(localpos, Block.IsFront, byted_none);
+                    }
                 }
             }
-        }
-
-        private void MoveInto(Vector2Int POS, bool isFront)
-        {
-            var Block = (BlockServer)this;
-            // ---------------------------- //
-
-            SingleBlockData data = Block.BlockData;
-            WorldAPI.UpdateBlock(Block.Position, Block.IsFront, new SingleBlockData { });
-            WorldAPI.UpdateBlock(POS, isFront, data);
-        }
-
-        private static bool? WillBlockBreak(Vector2Int POS, bool isFront)
-        {
-            BlockServer block = WorldAPI.GetBlock(POS, isFront);
-            if (block == null)
-                return null;
-
-            return block is Air || block is IBreaksOnLiquidContact;
         }
     }
 }
