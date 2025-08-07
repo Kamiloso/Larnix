@@ -28,6 +28,11 @@ namespace Larnix.Client.Terrain
             return tile;
         }
 
+        public static Sprite GetSprite(SingleBlockData item, bool isFront)
+        {
+            return GetTile(item, isFront).sprite;
+        }
+
         private static string TileStringID(SingleBlockData block, bool isFront)
         {
             return block.ID + ":" + block.Variant + ":" + isFront;

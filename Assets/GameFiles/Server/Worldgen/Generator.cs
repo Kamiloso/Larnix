@@ -105,6 +105,11 @@ namespace Larnix.Server.Worldgen
             //    _SurfaceRelative.GetValue(x, y, z));
         }
 
+        public Color SkyColorAt(Vector2 position)
+        {
+            return new Color32(105, 165, 255, 0);
+        }
+
         public BlockData[,] GenerateChunk(Vector2Int chunk)
         {
             ProtoBlock[,] protoBlocks = new ProtoBlock[16, 16];

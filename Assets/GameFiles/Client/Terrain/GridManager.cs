@@ -23,6 +23,8 @@ namespace Larnix.Client.Terrain
 
         private Dictionary<Vector2Int, StaticCollider> BlockColliders = new();
 
+        private bool isMenu;
+
         private class BlockLock
         {
             public Vector2Int POS;
@@ -32,7 +34,8 @@ namespace Larnix.Client.Terrain
 
         private void Awake()
         {
-            References.GridManager = this;
+            isMenu = gameObject.scene.name == "Menu";
+            if(!isMenu) References.GridManager = this;
         }
 
         private void Update()
@@ -48,11 +51,14 @@ namespace Larnix.Client.Terrain
             RedrawGrid();
         }
 
-        public void AddChunk(Vector2Int chunk, BlockData[,] BlockArray)
+        public void AddChunk(Vector2Int chunk, BlockData[,] BlockArray, bool instantLoad = false)
         {
             Chunks[chunk] = BlockArray;
             UpdateChunkColliders(chunk);
             DirtyChunks.Add(chunk);
+
+            if (instantLoad)
+                RedrawGrid(true);
         }
 
         public void RemoveChunk(Vector2Int chunk)
@@ -79,7 +85,7 @@ namespace Larnix.Client.Terrain
                 ChangeBlockData(POS, data);
         }
 
-        public void RedrawGrid()
+        public void RedrawGrid(bool instantLoad = false)
         {
             // Ascending - ADD
             List<Vector2Int> addChunks = DirtyChunks.Where(c => Chunks.ContainsKey(c)).ToList();
@@ -88,7 +94,7 @@ namespace Larnix.Client.Terrain
             {
                 RedrawChunk(chunk, true);
                 DirtyChunks.Remove(chunk);
-                return; // only one per frame
+                if(!instantLoad) return; // only one per frame
             }
 
             // Descending - REMOVE
@@ -98,7 +104,7 @@ namespace Larnix.Client.Terrain
             {
                 RedrawChunk(chunk, false);
                 DirtyChunks.Remove(chunk);
-                return; // only one per frame
+                if(!instantLoad) return; // only one per frame
             }
         }
 
@@ -113,13 +119,16 @@ namespace Larnix.Client.Terrain
         private int ChunkDistance(Vector2Int chunk)
         {
             return Common.ManhattanDistance(
-                ChunkMethods.CoordsToChunk(References.MainPlayer.GetPosition()),
+                ChunkMethods.CoordsToChunk(!isMenu ? References.MainPlayer.GetPosition() : new Vector2(0f, 0f)),
                 chunk
                 );
         }
 
         public bool LoadedAroundPlayer()
         {
+            if (isMenu)
+                return false;
+
             HashSet<Vector2Int> nearbyChunks = Server.Terrain.ChunkLoading.GetNearbyChunks(
                 ChunkMethods.CoordsToChunk(References.MainPlayer.GetPosition()),
                 Server.Terrain.ChunkLoading.LOADING_DISTANCE
@@ -208,14 +217,14 @@ namespace Larnix.Client.Terrain
                     UpdateBlockCollider(POS, chunkBlocks != null ? chunkBlocks[x, y] : null);
                 }
 
-            References.PhysicsManager.SetChunkActive(chunk, chunkBlocks != null);
+            if(!isMenu) References.PhysicsManager.SetChunkActive(chunk, chunkBlocks != null);
         }
 
         private void UpdateBlockCollider(Vector2Int POS, BlockData block)
         {
             if (BlockColliders.TryGetValue(POS, out var statCollider))
             {
-                References.PhysicsManager.RemoveColliderByReference(statCollider);
+                if(!isMenu) References.PhysicsManager.RemoveColliderByReference(statCollider);
                 BlockColliders.Remove(POS);
             }
 
@@ -227,7 +236,7 @@ namespace Larnix.Client.Terrain
                     StaticCollider statCol = iface.STATIC_CreateStaticCollider(block.Front.Variant);
                     statCol.MakeOffset(POS);
 
-                    References.PhysicsManager.AddCollider(statCol);
+                    if(!isMenu) References.PhysicsManager.AddCollider(statCol);
                     BlockColliders.Add(POS, statCol);
                 }
             }
