@@ -385,16 +385,17 @@ namespace Larnix.Server
 
         public void InterpretConsoleInput() // n
         {
-#if UNITY_EDITOR
-            if(Input.GetKeyDown(KeyCode.Z)) // WILDPIG TESTING SPAWNING
+            if(IsLocal && Client.References.Debug.SpawnWildpigsWithZ) // WILDPIG TEST SPAWNING
             {
-                References.EntityManager.SummonEntity(new EntityData
+                if (Input.GetKeyDown(KeyCode.Z))
                 {
-                    ID = EntityID.Wildpig,
-                    Position = References.EntityManager.GetPlayerController("Player").EntityData.Position,
-                });
+                    References.EntityManager.SummonEntity(new EntityData
+                    {
+                        ID = EntityID.Wildpig,
+                        Position = References.EntityManager.GetPlayerController("Player").EntityData.Position,
+                    });
+                }
             }
-#endif
 
             while (true)
             {

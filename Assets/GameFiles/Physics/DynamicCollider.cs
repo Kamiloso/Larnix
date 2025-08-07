@@ -126,28 +126,33 @@ namespace Larnix.Physics
             if (physicsReport.OnRightWall && velocity.x > VELOCITY_EPSILON)
                 velocity = new Vector2(VELOCITY_EPSILON, velocity.y);
 
-            // Generate report
+            // Generate report & update position
 
             SetWill(Center, (Vector2)transform.position + velocity * Time.fixedDeltaTime);
             physicsReport = physicsManager.MoveCollider(this);
-
-            // Update position
-
-            Vector3 colliderPosTarget = (physicsReport.Position ?? transform.position);
-            transform.parent.position = colliderPosTarget - localPos;
-            transform.position = colliderPosTarget;
+            UpdatePosition(physicsReport.Position ?? transform.position);
         }
 
-        public void Teleport(Vector2 newCenter)
+        public void NoPhysicsUpdate(Vector2 newPosition)
         {
-            OldCenter = null;
-            Center = newCenter;
+            Vector2 colliderPos = newPosition + (Vector2)localPos;
+            velocity = Vector2.zero;
+
+            SetWill(Center, colliderPos);
+            physicsReport = new PhysicsReport { Position = colliderPos };
+            UpdatePosition(colliderPos);
         }
 
         public void SetWill(Vector2 oldCenter, Vector2 newCenter)
         {
             OldCenter = oldCenter;
             Center = newCenter;
+        }
+
+        private void UpdatePosition(Vector2 colliderPosTarget)
+        {
+            transform.parent.position = colliderPosTarget - (Vector2)localPos;
+            transform.position = colliderPosTarget;
         }
 
         private void OnDrawGizmos()

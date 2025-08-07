@@ -13,7 +13,10 @@ namespace Larnix.Server.Terrain
         private readonly Dictionary<Vector2Int, BlockData[,]> ChunkCache = new();
         private readonly HashSet<Vector2Int> ReferencedChunks = new();
 
-        [SerializeField] bool DebugUnlinkDatabase;
+        private bool DebugUnlinkDatabase
+        {
+            get => Client.References.Debug != null && Client.References.Debug.UnlinkTerrainData;
+        }
 
         private void Awake()
         {

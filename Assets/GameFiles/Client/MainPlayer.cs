@@ -7,6 +7,7 @@ using Larnix.Client.Entities;
 using Larnix.Entities;
 using System;
 using Larnix.Physics;
+using Org.BouncyCastle.Asn1.Utilities;
 
 namespace Larnix.Client
 {
@@ -16,7 +17,6 @@ namespace Larnix.Client
         [SerializeField] EntityProjection EntityProjection;
         [SerializeField] Transform RaycastCenter; // simply player's head
         [SerializeField] DynamicCollider DynamicCollider;
-        [SerializeField] TextMeshProUGUI CoordinatesText;
         [SerializeField] Vector2 CameraDeltaPosition;
         
         private uint FixedCounter = 0;
@@ -43,12 +43,36 @@ namespace Larnix.Client
         {
             FixedCounter++;
 
-            DynamicCollider.PhysicsUpdate(new InputData
+            if (!References.Debug.SpectatorMode)
             {
-                Left = Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A),
-                Right = Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D),
-                Jump = Input.GetKey(KeyCode.Space) || Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W),
-            });
+                DynamicCollider.PhysicsUpdate(new InputData
+                {
+                    Left = Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A),
+                    Right = Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D),
+                    Jump = Input.GetKey(KeyCode.Space) || Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W),
+                });
+            }
+            else
+            {
+                const float WILL_SIZE = 45f;
+                const float STRONG_WILL_SIZE = 90f;
+
+                bool left = Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A);
+                bool right = Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D);
+                bool up = Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W);
+                bool down = Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.S);
+
+                bool turbo = Input.GetKey(KeyCode.Space);
+
+                Vector2 will = (turbo ? STRONG_WILL_SIZE : WILL_SIZE) * Time.fixedDeltaTime * (
+                    (right ? 1 : 0) * Vector2.right +
+                    (left ? 1 : 0) * Vector2.left +
+                    (up ? 1 : 0) * Vector2.up +
+                    (down ? 1 : 0) * Vector2.down
+                );
+
+                DynamicCollider.NoPhysicsUpdate((Vector2)transform.position + will);
+            }
 
             RotationUpdate();
             UpdateEntityObject(FixedCounter * Time.fixedDeltaTime);
@@ -87,21 +111,13 @@ namespace Larnix.Client
             }
         }
 
-        private float? fps = null;
         private void LateUpdate()
         {
-            // Coordinates text update (temporary)
-
-            if(fps == null || FixedCounter % 15 == 0)
-                fps = (float)(Math.Round(1f / Time.deltaTime * 10f) / 10f);
-
-            CoordinatesText.text = $"FPS: {fps}\nX: {transform.position.x}\nY: {transform.position.y}";
-
             // Camera update
             
             Vector2 plr = EntityProjection.transform.position;
             Camera.transform.position = new Vector3(plr.x, plr.y, Camera.transform.position.z) + (Vector3)CameraDeltaPosition;
-            Camera.orthographicSize = CameraZoom;
+            Camera.orthographicSize = CameraZoom + (References.Debug.SpectatorMode ? 10f : 0f);
         }
 
         private void RotationUpdate()
@@ -137,11 +153,10 @@ namespace Larnix.Client
 
         public void SetAlive()
         {
-            if (transform.parent.gameObject.activeSelf)
+            if (IsAlive)
                 throw new System.InvalidOperationException("Player is already alive!");
 
             transform.parent.gameObject.SetActive(true);
-            CoordinatesText.gameObject.SetActive(true);
             References.TileSelector.Enable();
 
             DynamicCollider.Enable();
@@ -152,16 +167,20 @@ namespace Larnix.Client
 
         public void SetDead()
         {
-            if (!transform.parent.gameObject.activeSelf)
+            if (!IsAlive)
                 throw new System.InvalidOperationException("Player is already dead!");
 
             transform.parent.gameObject.SetActive(false);
-            CoordinatesText.gameObject.SetActive(false);
             References.TileSelector.Disable();
 
             DynamicCollider.Disable();
 
             EntityProjection.ResetSmoother();
+        }
+
+        public bool IsAlive
+        {
+            get => transform.parent.gameObject.activeSelf;
         }
     }
 }

@@ -2,5 +2,6 @@
 	<assembly fullname="Assembly-CSharp">
 		<namespace fullname="Larnix.Modules.Blocks" preserve="all"/>
 		<namespace fullname="Larnix.Modules.Entities" preserve="all"/>
+		<namespace fullname="Larnix.Modules.Biomes" preserve="all"/>
 	</assembly>
 </linker>

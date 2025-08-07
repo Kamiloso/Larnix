@@ -2,6 +2,7 @@ using LibNoise.Generator;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Larnix.Server.Worldgen
@@ -11,8 +12,6 @@ namespace Larnix.Server.Worldgen
         Perlin,
         Function,
         Condition,
-        And,
-        Or,
     }
 
     public class ValueProvider
@@ -22,6 +21,13 @@ namespace Larnix.Server.Worldgen
 
         private ValueProvider(ProviderType type) => Type = type;
         public double GetValue(double x = 0, double y = 0, double z = 0) => Value(x, y, z);
+
+        public ValueProvider CastType(ProviderType type)
+        {
+            ValueProvider provider = new ValueProvider(type);
+            provider.Value = (x, y, z) => GetValue(x, y, z);
+            return provider;
+        }
 
         public static ValueProvider CreatePerlin(Perlin perlin, double min, double max, int dim)
         {
@@ -37,7 +43,7 @@ namespace Larnix.Server.Worldgen
             return provider;
         }
 
-        public static ValueProvider CreateCondition(ValueProvider baseProvider, double min, double max, double width, bool isInner)
+        public static ValueProvider CreateCondition(ValueProvider baseProvider, double min, double max, double width)
         {
             ValueProvider provider = new ValueProvider(ProviderType.Condition);
             provider.Value = (x, y, z) =>
@@ -51,56 +57,70 @@ namespace Larnix.Server.Worldgen
                 if (rightEnd < max) rightEnd = double.MaxValue;
 
                 if (v <= leftStart || v >= rightEnd)
-                    return isInner ? 0.0 : 1.0;
+                    return 0.0;
 
                 if (v >= min && v <= max)
-                    return isInner ? 1.0 : 0.0;
+                    return 1.0;
 
                 double t;
                 if (v < min)
                 {
                     t = (v - leftStart) / (min - leftStart);
                     double smooth = t * t * (3.0 - 2.0 * t);
-                    return isInner ? smooth : 1.0 - smooth;
+                    return smooth;
                 }
                 else // v > max
                 {
                     t = (v - max) / (rightEnd - max);
                     double smooth = t * t * (3.0 - 2.0 * t);
-                    return isInner ? 1.0 - smooth : smooth;
+                    return 1.0 - smooth;
                 }
             };
 
             return provider;
         }
 
-        public static ValueProvider CreateAnd(List<ValueProvider> providers)
+        public ValueProvider Stretch(double stretch_x = 1.0, double stretch_y = 1.0, double stretch_z = 1.0)
         {
-            ValueProvider provider = new ValueProvider(ProviderType.And);
-            provider.Value = (x, y, z) =>
-            {
-                double num = 1.0;
-                foreach (var p in providers)
-                {
-                    num *= p.GetValue(x, y, z);
-                }
-                return num;
-            };
+            ValueProvider provider = new ValueProvider(Type);
+            provider.Value = (x, y, z) => GetValue(x / stretch_x, y / stretch_y, z / stretch_z);
             return provider;
         }
 
-        public static ValueProvider CreateOr(List<ValueProvider> providers)
+        public ValueProvider Negate()
         {
-            ValueProvider provider = new ValueProvider(ProviderType.Or);
-            provider.Value = (x, y, z) =>
-            {
-                double num = 1.0;
-                foreach (var p in providers)
-                {
-                    num *= 1.0 - p.GetValue(x, y, z);
-                }
-                return 1.0 - num;
-            };
+            if (Type != ProviderType.Condition)
+                throw new Exception("Only conditional providers are allowed in Negate() operation.");
+
+            ValueProvider provider = new ValueProvider(ProviderType.Condition);
+            provider.Value = (x, y, z) => 1.0 - GetValue(x, y, z);
+            return provider;
+        }
+
+        public ValueProvider And(ValueProvider condition)
+        {
+            if (Type != ProviderType.Condition || condition.Type != ProviderType.Condition)
+                throw new Exception("Only conditional providers are allowed in And() operation.");
+
+            ValueProvider provider = new ValueProvider(ProviderType.Condition);
+            provider.Value = (x, y, z) => Math.Min(GetValue(x, y, z), condition.GetValue(x, y, z));
+            return provider;
+        }
+
+        public ValueProvider Or(ValueProvider condition)
+        {
+            if (Type != ProviderType.Condition || condition.Type != ProviderType.Condition)
+                throw new Exception("Only conditional providers are allowed in Or() operation.");
+
+            ValueProvider provider = new ValueProvider(ProviderType.Condition);
+            provider.Value = (x, y, z) => Math.Max(GetValue(x, y, z), condition.GetValue(x, y, z));
+            return provider;
+        }
+
+        public ValueProvider If(ValueProvider condition)
+        {
+            ValueProvider provider = new ValueProvider(ProviderType.Condition);
+            provider.Value = (x, y, z) => GetValue(x, y, z) * condition.GetValue(x, y, z);
             return provider;
         }
     }

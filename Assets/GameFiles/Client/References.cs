@@ -19,5 +19,6 @@ namespace Larnix.Client
         public static TileSelector TileSelector;
         public static Inventory Inventory;
         public static PhysicsManager PhysicsManager;
+        public static Debug Debug;
     }
 }
