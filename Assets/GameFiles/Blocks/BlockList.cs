@@ -18,7 +18,7 @@ namespace Larnix.Blocks
         Leaves = 8,
         Ice = 9,
         Snow = 10,
-        Oil = 11,
+        CrudeOil = 11,
         WoodenPickaxe = 12,
     }
 }

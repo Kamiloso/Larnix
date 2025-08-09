@@ -6,9 +6,9 @@ using Larnix.Server.Terrain;
 
 namespace Larnix.Modules.Blocks
 {
-    public class Oil : BlockServer, ILiquid, IPlaceable
+    public class CrudeOil : BlockServer, ILiquid, IPlaceable
     {
-        public Oil(Vector2Int POS, SingleBlockData block, bool isFront) : base(POS, block, isFront) { }
+        public CrudeOil(Vector2Int POS, SingleBlockData block, bool isFront) : base(POS, block, isFront) { }
 
         public int FLOW_PERIOD() => 40;
         public int LIQUID_DENSITY() => 800;

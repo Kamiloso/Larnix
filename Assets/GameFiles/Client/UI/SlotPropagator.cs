@@ -16,8 +16,6 @@ namespace Larnix.Client.UI
         {
             if(isRoot)
             {
-                Vector2 deltaPos = -(SlotAmount - 1) * DeltaPropagate / 2;
-
                 for (int i = 1; i < SlotAmount; i++)
                 {
                     Transform trn = Instantiate(gameObject, transform.position, transform.rotation).transform;
@@ -26,14 +24,14 @@ namespace Larnix.Client.UI
 
                     SlotPropagator spp = trn.GetComponent<SlotPropagator>();
                     spp.isRoot = false;
-                    spp.Initialize(i, deltaPos);
+                    spp.Initialize(i);
                 }
 
-                Initialize(0, deltaPos);
+                Initialize(0);
             }
         }
 
-        private void Initialize(int slotID, Vector2 deltaPos)
+        private void Initialize(int slotID, Vector2 deltaPos = new())
         {
             this.slotID = slotID;
             transform.localPosition += (Vector3)(slotID * DeltaPropagate + deltaPos);

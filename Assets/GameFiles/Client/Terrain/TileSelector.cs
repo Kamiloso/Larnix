@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEngine.Tilemaps;
 using System;
 using Larnix.Modules.Blocks;
+using System.Linq;
 
 namespace Larnix.Client.Terrain
 {
@@ -23,6 +24,8 @@ namespace Larnix.Client.Terrain
 
         private int framesAlready = 0;
         private const int MIN_FRAMES = 3;
+
+        private const float INTERACTION_RANGE = 7f;
 
         private void Awake()
         {
@@ -49,16 +52,30 @@ namespace Larnix.Client.Terrain
 
             Selector.transform.localRotation = Quaternion.Euler(0, 0, 0);
 
-            if (active && isGameFocused && onScreen)
+            if (active && isGameFocused && onScreen) // ENABLED CURSOR
             {
                 Selector.enabled = true;
 
                 Vector2Int pointed_block = ChunkMethods.CoordsToBlock(cursor_pos);
-                transform.position = (Vector2)pointed_block;
 
-                List<Vector2Int> grids = old_cursor_pos == null ?
-                    new List<Vector2Int> { pointed_block } :
-                    GetCellsIntersectedByLine((Vector2)old_cursor_pos, cursor_pos);
+                HashSet<Vector2Int> grids;
+                if(true || References.Debug.SpectatorMode)
+                {
+                    grids = old_cursor_pos != null ?
+                        GetCellsIntersectedByLine((Vector2)old_cursor_pos, cursor_pos) :
+                        new HashSet<Vector2Int> { pointed_block };
+                }
+                else
+                {
+                    Vector2 playerpos = References.MainPlayer.GetPosition();
+                    if (Common.InSquareDistance(cursor_pos, playerpos) > INTERACTION_RANGE)
+                    {
+                        cursor_pos = Common.ReduceIntoSquare(playerpos, cursor_pos, INTERACTION_RANGE);
+                        pointed_block = ChunkMethods.CoordsToBlock(cursor_pos);
+                    }
+
+                    grids = new HashSet<Vector2Int> { pointed_block };
+                }
 
                 foreach (Vector2Int grid in grids)
                 {
@@ -67,7 +84,7 @@ namespace Larnix.Client.Terrain
 
                 old_cursor_pos = cursor_pos;
             }
-            else
+            else // DISABLED CURSOR
             {
                 Selector.enabled = false;
                 old_cursor_pos = null;
@@ -76,6 +93,8 @@ namespace Larnix.Client.Terrain
 
         private void DoActionOn(Vector2Int pointed_block)
         {
+            transform.position = (Vector2)pointed_block;
+
             bool hold_0 = Input.GetMouseButton(0);
             bool hold_1 = Input.GetMouseButton(1);
             bool hold_2 = Input.GetMouseButton(2);
@@ -152,9 +171,9 @@ namespace Larnix.Client.Terrain
             }
         }
 
-        public static List<Vector2Int> GetCellsIntersectedByLine(Vector2 start, Vector2 end)
+        public static HashSet<Vector2Int> GetCellsIntersectedByLine(Vector2 start, Vector2 end)
         {
-            List<Vector2Int> cells = new List<Vector2Int>();
+            HashSet<Vector2Int> cells = new HashSet<Vector2Int>();
             if (start == end)
             {
                 cells.Add(Vector2Int.RoundToInt(start));

@@ -9,6 +9,7 @@ namespace Larnix.Client.UI
     public class Inventory : MonoBehaviour
     {
         [SerializeField] BlockID[] BlocksInSlots;
+        [SerializeField] byte[] VariantsInSlots;
 
         public int SelectedSlot { get; private set; } = 0;
         private const int MIN_SLOT = 0;
@@ -58,20 +59,23 @@ namespace Larnix.Client.UI
         public Item GetItemInSlot(int slotID)
         {
             BlockID blockID;
+            byte variant;
 
             try
             {
                 blockID = BlocksInSlots[slotID];
+                variant = VariantsInSlots[slotID];
             }
             catch(IndexOutOfRangeException)
             {
                 blockID = BlockID.Air;
+                variant = 0;
             }
 
             return new Item
             {
-                Block = new SingleBlockData { ID = blockID },
-                Count = 1
+                Block = new SingleBlockData { ID = blockID, Variant = variant },
+                Count = blockID == BlockID.Air ? 0 : 1
             };
         }
     }

@@ -15,6 +15,7 @@ using Larnix.Server.Entities;
 using Larnix.Entities;
 using Larnix.Blocks;
 using Larnix.Server.Terrain;
+using UnityEngine.SceneManagement;
 
 namespace Larnix.Server
 {
