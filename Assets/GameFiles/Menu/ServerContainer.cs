@@ -46,14 +46,6 @@ namespace Larnix.Menu
         [SerializeField] Button ButtonLogin;
         [SerializeField] Button ButtonRegister;
 
-        //[SerializeField] InputField InputOldPassword;
-        //[SerializeField] InputField InputNewPassword;
-        //[SerializeField] InputField InputConfirmNewPassword;
-        //[SerializeField] Button ButtonChangePassword;
-
-        // References
-        [SerializeField] ScreenManager ScreenManager;
-
         private enum State : byte
         {
             None,
@@ -71,7 +63,7 @@ namespace Larnix.Menu
             Data.Address = address;
             Data.AuthCodeRSA = authCodeRSA;
 
-            ScreenManager.SetScreen("Multiplayer");
+            References.Menu.SetScreen("Multiplayer");
         }
 
         public void SubmitPlayerData()
@@ -82,7 +74,7 @@ namespace Larnix.Menu
             Data.Nickname = nickname;
             Data.Password = password;
 
-            ScreenManager.SetScreen("Multiplayer");
+            References.Menu.SetScreen("Multiplayer");
         }
 
         public void RefreshInfo()

@@ -3,6 +3,7 @@ using Larnix.Server.Terrain;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using static UnityEngine.RuleTile.TilingRuleOutput;
 
 namespace Larnix.Modules.Blocks
 {
@@ -48,6 +49,8 @@ namespace Larnix.Modules.Blocks
                     bool? self_suppressed = IsSuppressed();
                     if (self_suppressed == false)
                     {
+                        List<BlockServer> candidates = new();
+
                         foreach (BlockServer neighbour in WorldAPI.GetBlocksAround(Block.Position, Block.IsFront))
                         {
                             IHasGrowingFlora other = neighbour as IHasGrowingFlora;
@@ -56,9 +59,15 @@ namespace Larnix.Modules.Blocks
                                 bool? other_suppressed = other.IsSuppressed();
                                 if (other_suppressed == false)
                                 {
-                                    WorldAPI.UpdateBlockVariant(neighbour.Position, Block.IsFront, Block.BlockData.Variant);
+                                    candidates.Add(neighbour);
                                 }
                             }
+                        }
+
+                        if(candidates.Count > 0)
+                        {
+                            int rand = Common.Rand().Next(0, candidates.Count);
+                            WorldAPI.UpdateBlockVariant(candidates[rand].Position, Block.IsFront, Block.BlockData.Variant);
                         }
                     }
                 }

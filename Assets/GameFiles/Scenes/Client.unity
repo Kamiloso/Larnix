@@ -198,6 +198,51 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 29640488}
   m_CullTransparentMesh: 1
+--- !u!1 &31173427
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 31173428}
+  - component: {fileID: 31173429}
+  m_Layer: 0
+  m_Name: Screenshots
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &31173428
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 31173427}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 968907755}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &31173429
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 31173427}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f5804937dcceca444aacc74e11b7e1fd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ScreenshotCamera: {fileID: 1891027114}
 --- !u!1 &110014389
 GameObject:
   m_ObjectHideFlags: 0
@@ -749,8 +794,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dc15cfbf038c4e742b47494445fe23fd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  BlocksInSlots: 0c0002000300040001000a000700080009000b00
-  VariantsInSlots: 00010000000000000000
+  BlocksInSlots: 0c000100020003000e00080009000a0004000b00
+  VariantsInSlots: 00000100000000000000
 --- !u!1 &855474395
 GameObject:
   m_ObjectHideFlags: 0
@@ -859,6 +904,7 @@ Transform:
   - {fileID: 301008702}
   - {fileID: 699687009}
   - {fileID: 978660080}
+  - {fileID: 31173428}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &968907756
@@ -873,7 +919,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 38a3b81d1217681419b576683af96b0c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ShowDebugInfo: 1
+  ShowDebugInfo: 0
   AdvancedDebugKeys: 1
   SpawnWildpigsWithZ: 1
   UnlinkTerrainData: 0

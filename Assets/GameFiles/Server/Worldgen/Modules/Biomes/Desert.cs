@@ -20,8 +20,8 @@ namespace Larnix.Modules.Biomes
 
                 case ProtoBlock.Stone:
                     return new BlockData(
-                    new SingleBlockData { ID = BlockID.Stone },
-                    new SingleBlockData { ID = BlockID.Stone }
+                    new SingleBlockData { ID = BlockID.Sandstone },
+                    new SingleBlockData { ID = BlockID.Sandstone }
                     );
 
                 case ProtoBlock.Soil:
@@ -34,7 +34,7 @@ namespace Larnix.Modules.Biomes
                 case ProtoBlock.Cave:
                     return new BlockData(
                     new SingleBlockData { },
-                    new SingleBlockData { ID = BlockID.Stone }
+                    new SingleBlockData { ID = BlockID.Sandstone }
                     );
 
                 case ProtoBlock.Liquid:

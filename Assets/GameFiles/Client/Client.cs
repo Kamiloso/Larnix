@@ -226,6 +226,14 @@ namespace Larnix.Client
         public void BackToMenu()
         {
             SceneManager.LoadScene("Menu");
+
+            if (WorldLoad.LoadType != WorldLoad.LoadTypes.None && !IsMultiplayer)
+            {
+                if (References.MainPlayer.IsAlive)
+                    References.Screenshots.CaptureTitleImage();
+                //else
+                //    References.Screenshots.RemoveTitleImage();
+            }
         }
 
         private void OnDestroy()

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using System;
+using System.Linq;
 
 namespace Larnix.Client
 {
@@ -19,6 +20,7 @@ namespace Larnix.Client
 
         private int FixedFrame = 0;
         private float? LastFPS = null;
+        private List<float> FrameTimes = new();
 
         private void Awake()
         {
@@ -51,10 +53,16 @@ namespace Larnix.Client
 
         private void LateUpdate()
         {
-            // Coordinates text update (temporary)
+            // FPS calculate
 
-            if (LastFPS == null || FixedFrame % 15 == 0)
-                LastFPS = (float)(Math.Round(1f / Time.deltaTime * 10f) / 10f);
+            FrameTimes.Add(Time.deltaTime);
+            if (LastFPS == null || FixedFrame % 25 == 0)
+            {
+                LastFPS = (float)(Math.Round(1f / FrameTimes.Average() * 10f) / 10f);
+                FrameTimes.Clear();
+            }
+
+            // Coordinates text update (temporary)
 
             Vector2 playerPos = References.MainPlayer.GetPosition();
 

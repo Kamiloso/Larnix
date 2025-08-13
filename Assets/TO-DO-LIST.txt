@@ -1,11 +1,13 @@
 === Larnix TO-DO-LIST ===
 
-- Block system
-- RectPhysics system
+- Multiplayer world menu
+- Server into threaded class
+- World host system
+
 - Client offset system
 - NBT system: Internal / Visual
+- Inventory
 - Entity generation
-- Menu
 
 <<< === Larnix DONE :) === >>>
 
@@ -17,3 +19,6 @@
 - EntityAbstraction
 - Make uIDs fully unique
 - Chunk loading lag spikes
+- Block system
+- RectPhysics system
+- Singleplayer world menu

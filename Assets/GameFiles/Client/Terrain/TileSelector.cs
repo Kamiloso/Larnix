@@ -19,13 +19,13 @@ namespace Larnix.Client.Terrain
         const float BackDarking = 0.45f;
 
         private bool isGameFocused = true;
-        private Vector2? old_cursor_pos = null;
+        private Vector2? old_mouse_pos = null;
         private bool active = false;
 
         private int framesAlready = 0;
         private const int MIN_FRAMES = 3;
 
-        private const float INTERACTION_RANGE = 7f;
+        private const float INTERACTION_RANGE = 8f;
 
         private void Awake()
         {
@@ -47,54 +47,41 @@ namespace Larnix.Client.Terrain
 
             Vector2 mouse_pos = Input.mousePosition;
             Vector2 cursor_pos = Camera.ScreenToWorldPoint(mouse_pos);
+            Vector2? old_cursor_pos = old_mouse_pos != null ? Camera.ScreenToWorldPoint((Vector2)old_mouse_pos) : null;
+            Vector2 player_pos = References.MainPlayer.GetPosition();
 
-            bool onScreen = (mouse_pos.x >= 0 && mouse_pos.x <= Screen.width && mouse_pos.y >= 0 && mouse_pos.y <= Screen.height);
+            bool pointsRight = cursor_pos.x >= player_pos.x;
 
-            Selector.transform.localRotation = Quaternion.Euler(0, 0, 0);
+            List<Vector2Int> grids = old_cursor_pos != null ?
+                GetCellsIntersectedByLine((Vector2)old_cursor_pos, cursor_pos) :
+                new List<Vector2Int> { ChunkMethods.CoordsToBlock(cursor_pos) };
 
-            if (active && isGameFocused && onScreen) // ENABLED CURSOR
+            if (!References.Debug.SpectatorMode)
+                grids.RemoveAll(grid => Vector2.Distance(grid, player_pos) > INTERACTION_RANGE);
+
+            if (active && isGameFocused && grids.Count > 0) // ENABLED CURSOR
             {
-                Selector.enabled = true;
-
-                Vector2Int pointed_block = ChunkMethods.CoordsToBlock(cursor_pos);
-
-                HashSet<Vector2Int> grids;
-                if(true || References.Debug.SpectatorMode)
-                {
-                    grids = old_cursor_pos != null ?
-                        GetCellsIntersectedByLine((Vector2)old_cursor_pos, cursor_pos) :
-                        new HashSet<Vector2Int> { pointed_block };
-                }
-                else
-                {
-                    Vector2 playerpos = References.MainPlayer.GetPosition();
-                    if (Common.InSquareDistance(cursor_pos, playerpos) > INTERACTION_RANGE)
-                    {
-                        cursor_pos = Common.ReduceIntoSquare(playerpos, cursor_pos, INTERACTION_RANGE);
-                        pointed_block = ChunkMethods.CoordsToBlock(cursor_pos);
-                    }
-
-                    grids = new HashSet<Vector2Int> { pointed_block };
-                }
+                Selector.transform.localRotation = Quaternion.identity; // rotation may change during DoActionOn(grid)
+                Selector.transform.localScale = Vector3.one; // scale may change during DoActionOn(grid)
 
                 foreach (Vector2Int grid in grids)
                 {
-                    DoActionOn(grid);
+                    Selector.transform.position = (Vector2)grid;
+                    DoActionOn(grid, pointsRight);
                 }
 
-                old_cursor_pos = cursor_pos;
+                Selector.enabled = true;
+                old_mouse_pos = mouse_pos;
             }
             else // DISABLED CURSOR
             {
                 Selector.enabled = false;
-                old_cursor_pos = null;
+                old_mouse_pos = null;
             }
         }
 
-        private void DoActionOn(Vector2Int pointed_block)
+        private void DoActionOn(Vector2Int pointed_block, bool pointsRight)
         {
-            transform.position = (Vector2)pointed_block;
-
             bool hold_0 = Input.GetMouseButton(0);
             bool hold_1 = Input.GetMouseButton(1);
             bool hold_2 = Input.GetMouseButton(2);
@@ -113,29 +100,13 @@ namespace Larnix.Client.Terrain
 
             if (is_tool)
             {
-                Color transpColor = new Color(1, 1, 1);
-                Color darkerColor = new Color(0, 0, 0);
-
                 bool can_be_broken = WorldAPI.CanBeBroken(pointed_block, item, !shift);
 
                 Selector.sprite = tile.sprite;
-
-                if(!shift) // front
-                {
-                    Selector.sortingLayerID = SortingLayer.NameToID("FrontBlocks");
-                    Selector.color = transpColor;
-                }
-                else // back
-                {
-                    Selector.sortingLayerID = SortingLayer.NameToID("BackBlocks");
-                    Selector.color = transpColor;
-                    Selector.transform.localRotation = Quaternion.Euler(0, 0, -90);
-                }
-
-                if(hold_0)
-                {
-                    Selector.color = Color.Lerp(transpColor, darkerColor, BackDarking);
-                }
+                Selector.color = new Color(1, 1, 1);
+                Selector.transform.localScale = new Vector3(pointsRight ? 1f : -1f, 1f, 1f) * 0.9f;
+                Selector.transform.localRotation = Quaternion.Euler(0f, 0f, (shift ? 1f : 0f) * (pointsRight ? -1f : 1f) * 90f);
+                Selector.sortingLayerID = !shift ? SortingLayer.NameToID("FrontBlocks") : SortingLayer.NameToID("BackBlocks");
 
                 if (hold_0 && can_be_broken)
                 {
@@ -171,9 +142,9 @@ namespace Larnix.Client.Terrain
             }
         }
 
-        public static HashSet<Vector2Int> GetCellsIntersectedByLine(Vector2 start, Vector2 end)
+        public static List<Vector2Int> GetCellsIntersectedByLine(Vector2 start, Vector2 end)
         {
-            HashSet<Vector2Int> cells = new HashSet<Vector2Int>();
+            List<Vector2Int> cells = new List<Vector2Int>();
             if (start == end)
             {
                 cells.Add(Vector2Int.RoundToInt(start));
@@ -216,12 +187,6 @@ namespace Larnix.Client.Terrain
                     tMaxY += tDeltaY;
                 }
                 cells.Add(cell);
-
-                if(cells.Count > 256)
-                {
-                    UnityEngine.Debug.LogWarning("Trying to put over 256 cells into array!");
-                    break;
-                }
             }
 
             return cells;

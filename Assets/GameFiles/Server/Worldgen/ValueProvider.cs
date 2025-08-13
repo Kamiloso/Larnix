@@ -31,8 +31,14 @@ namespace Larnix.Server.Worldgen
 
         public static ValueProvider CreatePerlin(Perlin perlin, double min, double max, int dim)
         {
+            if (dim >= 3)
+                UnityEngine.Debug.LogWarning("You cannot have a 3 or higher dimensional noise provider! Third axis must be used to remove zeros.");
+
             ValueProvider provider = new ValueProvider(ProviderType.Perlin);
-            provider.Value = (x, y, z) => (perlin.GetValue(dim >= 1 ? x : 0, dim >= 2 ? y : 0, dim >= 3 ? z : 0) + 1.0) / 2.0 * (max - min) + min;
+            provider.Value = (x, y, z) => (perlin.GetValue(
+                dim >= 1 ? x : 0,
+                dim >= 2 ? y : 0,
+                1.0 / perlin.Frequency / 2.0) + 1.0) / 2.0 * (max - min) + min;
             return provider;
         }
 
@@ -84,6 +90,13 @@ namespace Larnix.Server.Worldgen
         {
             ValueProvider provider = new ValueProvider(Type);
             provider.Value = (x, y, z) => GetValue(x / stretch_x, y / stretch_y, z / stretch_z);
+            return provider;
+        }
+
+        public ValueProvider Offset(Vector3 offset)
+        {
+            ValueProvider provider = new ValueProvider(Type);
+            provider.Value = (x, y, z) => GetValue(x - offset.x, y - offset.y, z - offset.z);
             return provider;
         }
 
