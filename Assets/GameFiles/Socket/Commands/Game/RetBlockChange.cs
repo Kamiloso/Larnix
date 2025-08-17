@@ -42,11 +42,11 @@ namespace Larnix.Socket.Commands
             }
 
             BlockPosition = new Vector2Int(
-                BitConverter.ToInt32(bytes, 0),
-                BitConverter.ToInt32(bytes, 4)
+                EndianUnsafe.FromBytes<int>(bytes, 0),
+                EndianUnsafe.FromBytes<int>(bytes, 4)
                 );
 
-            Operation = BitConverter.ToInt64(bytes, 8);
+            Operation = EndianUnsafe.FromBytes<long>(bytes, 8);
 
             CurrentBlock = new BlockData();
             CurrentBlock.DeserializeBaseData(bytes[16..21]);
@@ -59,18 +59,16 @@ namespace Larnix.Socket.Commands
 
         public override Packet GetPacket()
         {
-            using (var ms = new MemoryStream())
-            using (var bw = new BinaryWriter(ms))
-            {
-                bw.Write(BlockPosition.x);
-                bw.Write(BlockPosition.y);
-                bw.Write(Operation);
-                bw.Write(CurrentBlock.SerializeBaseData());
-                bw.Write(Front);
-                bw.Write(Success);
+            byte[] bytes = ArrayUtils.MegaConcat(
+                EndianUnsafe.GetBytes(BlockPosition.x),
+                EndianUnsafe.GetBytes(BlockPosition.y),
+                EndianUnsafe.GetBytes(Operation),
+                CurrentBlock.SerializeBaseData(),
+                EndianUnsafe.GetBytes(Front),
+                EndianUnsafe.GetBytes(Success)
+            );
 
-                return new Packet((byte)ID, Code, ms.ToArray());
-            }
+            return new Packet((byte)ID, Code, bytes);
         }
 
         protected override void DetectDataProblems()

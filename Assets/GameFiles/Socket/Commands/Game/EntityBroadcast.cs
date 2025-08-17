@@ -41,10 +41,10 @@ namespace Larnix.Socket.Commands
                 return;
             }
 
-            PacketFixedIndex = BitConverter.ToUInt32(bytes, 0);
+            PacketFixedIndex = EndianUnsafe.FromBytes<uint>(bytes, 0);
 
-            ushort sizeET = BitConverter.ToUInt16(bytes, 4);
-            ushort sizePF = BitConverter.ToUInt16(bytes, 6);
+            ushort sizeET = EndianUnsafe.FromBytes<ushort>(bytes, 4);
+            ushort sizePF = EndianUnsafe.FromBytes<ushort>(bytes, 6);
 
             int BASE1_SIZE = BASE_SIZE;
             int BASE2_SIZE = BASE_SIZE + sizeET * ENTRY_SIZE;
@@ -57,7 +57,7 @@ namespace Larnix.Socket.Commands
             EntityTransforms = new Dictionary<ulong, EntityData>();
             for (int i = 0; i < sizeET; i++)
             {
-                ulong uid_record = BitConverter.ToUInt64(bytes, BASE1_SIZE + i * ENTRY_SIZE);
+                ulong uid_record = EndianUnsafe.FromBytes<ulong>(bytes, BASE1_SIZE + i * ENTRY_SIZE);
 
                 EntityData entityData = new EntityData();
                 entityData.DeserializeTransform(bytes[(BASE1_SIZE + i * ENTRY_SIZE + 8)..(BASE1_SIZE + (i + 1) * ENTRY_SIZE)]);
@@ -68,8 +68,8 @@ namespace Larnix.Socket.Commands
             PlayerFixedIndexes = new Dictionary<ulong, uint>();
             for (int i = 0; i < sizePF; i++)
             {
-                ulong uid_record = BitConverter.ToUInt64(bytes, BASE2_SIZE + i * PLAYER_SIZE);
-                uint fixed_value = BitConverter.ToUInt32(bytes, BASE2_SIZE + i * PLAYER_SIZE + 8);
+                ulong uid_record = EndianUnsafe.FromBytes<ulong>(bytes, BASE2_SIZE + i * PLAYER_SIZE);
+                uint fixed_value = EndianUnsafe.FromBytes<uint>(bytes, BASE2_SIZE + i * PLAYER_SIZE + 8);
 
                 PlayerFixedIndexes.Add(uid_record, fixed_value);
             }
@@ -81,16 +81,16 @@ namespace Larnix.Socket.Commands
         {
             byte[] bytes = new byte[BASE_SIZE + EntityTransforms.Count * ENTRY_SIZE + PlayerFixedIndexes.Count * PLAYER_SIZE];
 
-            Buffer.BlockCopy(BitConverter.GetBytes(PacketFixedIndex), 0, bytes, 0, 4);
+            Buffer.BlockCopy(EndianUnsafe.GetBytes(PacketFixedIndex), 0, bytes, 0, 4);
 
-            Buffer.BlockCopy(BitConverter.GetBytes((ushort)EntityTransforms.Count), 0, bytes, 4, 2);
-            Buffer.BlockCopy(BitConverter.GetBytes((ushort)PlayerFixedIndexes.Count), 0, bytes, 6, 2);
+            Buffer.BlockCopy(EndianUnsafe.GetBytes((ushort)EntityTransforms.Count), 0, bytes, 4, 2);
+            Buffer.BlockCopy(EndianUnsafe.GetBytes((ushort)PlayerFixedIndexes.Count), 0, bytes, 6, 2);
 
             int POS = BASE_SIZE;
             
             foreach(var kvp in EntityTransforms)
             {
-                Buffer.BlockCopy(BitConverter.GetBytes(kvp.Key), 0, bytes, POS, 8);
+                Buffer.BlockCopy(EndianUnsafe.GetBytes(kvp.Key), 0, bytes, POS, 8);
                 POS += 8;
 
                 Buffer.BlockCopy(kvp.Value.SerializeTransform(), 0, bytes, POS, ENTRY_SIZE - 8);
@@ -99,10 +99,10 @@ namespace Larnix.Socket.Commands
 
             foreach (var kvp in PlayerFixedIndexes)
             {
-                Buffer.BlockCopy(BitConverter.GetBytes(kvp.Key), 0, bytes, POS, 8);
+                Buffer.BlockCopy(EndianUnsafe.GetBytes(kvp.Key), 0, bytes, POS, 8);
                 POS += 8;
 
-                Buffer.BlockCopy(BitConverter.GetBytes(kvp.Value), 0, bytes, POS, 4);
+                Buffer.BlockCopy(EndianUnsafe.GetBytes(kvp.Value), 0, bytes, POS, 4);
                 POS += 4;
             }
 

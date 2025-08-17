@@ -42,45 +42,43 @@ namespace Larnix.Socket.Commands
             }
 
             BlockPosition = new Vector2Int(
-                BitConverter.ToInt32(bytes, 0),
-                BitConverter.ToInt32(bytes, 4)
+                EndianUnsafe.FromBytes<int>(bytes, 0),
+                EndianUnsafe.FromBytes<int>(bytes, 4)
                 );
 
             Item = new SingleBlockData
             {
-                ID = (BlockID)BitConverter.ToUInt16(bytes, 8),
+                ID = EndianUnsafe.FromBytes<BlockID>(bytes, 8),
                 Variant = bytes[10]
             };
 
             Tool = new SingleBlockData
             {
-                ID = (BlockID)BitConverter.ToUInt16(bytes, 11),
+                ID = EndianUnsafe.FromBytes<BlockID>(bytes, 11),
                 Variant = bytes[13]
             };
 
             Front = bytes[14];
 
-            Operation = BitConverter.ToInt64(bytes, 15);
+            Operation = EndianUnsafe.FromBytes<long>(bytes, 15);
 
             DetectDataProblems();
         }
 
         public override Packet GetPacket()
         {
-            using (var ms = new MemoryStream())
-            using (var bw = new BinaryWriter(ms))
-            {
-                bw.Write(BlockPosition.x);
-                bw.Write(BlockPosition.y);
-                bw.Write((ushort)Item.ID);
-                bw.Write(Item.Variant);
-                bw.Write((ushort)Tool.ID);
-                bw.Write(Tool.Variant);
-                bw.Write(Front);
-                bw.Write(Operation);
+            byte[] bytes = ArrayUtils.MegaConcat(
+                EndianUnsafe.GetBytes(BlockPosition.x),
+                EndianUnsafe.GetBytes(BlockPosition.y),
+                EndianUnsafe.GetBytes(Item.ID),
+                EndianUnsafe.GetBytes(Item.Variant),
+                EndianUnsafe.GetBytes(Tool.ID),
+                EndianUnsafe.GetBytes(Tool.Variant),
+                EndianUnsafe.GetBytes(Front),
+                EndianUnsafe.GetBytes(Operation)
+            );
 
-                return new Packet((byte)ID, Code, ms.ToArray());
-            }
+            return new Packet((byte)ID, Code, bytes);
         }
 
         protected override void DetectDataProblems()

@@ -43,21 +43,21 @@ namespace Larnix.Socket.Commands
             Nickname = Common.FixedBinaryToString(bytes[0..32]);
             Password = Common.FixedBinaryToString(bytes[32..96]);
             KeyAES = bytes[96..112];
-            ServerSecret = BitConverter.ToInt64(bytes[112..120]);
-            ChallengeID = BitConverter.ToInt64(bytes[120..128]);
+            ServerSecret = EndianUnsafe.FromBytes<long>(bytes, 112);
+            ChallengeID = EndianUnsafe.FromBytes<long>(bytes, 120);
 
             DetectDataProblems();
         }
 
         public override Packet GetPacket()
         {
-            byte[] bytes1 = Common.StringToFixedBinary(Nickname, 16);
-            byte[] bytes2 = Common.StringToFixedBinary(Password, 32);
-            byte[] bytes3 = KeyAES;
-            byte[] bytes4 = BitConverter.GetBytes(ServerSecret);
-            byte[] bytes5 = BitConverter.GetBytes(ChallengeID);
-
-            byte[] bytes = bytes1.Concat(bytes2).Concat(bytes3).Concat(bytes4).Concat(bytes5).ToArray();
+            byte[] bytes = ArrayUtils.MegaConcat(
+                Common.StringToFixedBinary(Nickname, 16),
+                Common.StringToFixedBinary(Password, 32),
+                KeyAES,
+                EndianUnsafe.GetBytes(ServerSecret),
+                EndianUnsafe.GetBytes(ChallengeID)
+            );
 
             return new Packet((byte)ID, Code, bytes);
         }

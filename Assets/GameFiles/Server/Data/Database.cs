@@ -334,9 +334,7 @@ namespace Larnix.Server.Data
             {
                 if (suggestion == null)
                 {
-                    byte[] bytes = new byte[8];
-                    RandomNumberGenerator.Fill(bytes);
-                    seed = BitConverter.ToInt64(bytes, 0);
+                    seed = Common.GetSecureLong();
                 }
                 else
                 {

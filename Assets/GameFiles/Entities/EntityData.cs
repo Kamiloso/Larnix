@@ -26,22 +26,22 @@ namespace Larnix.Entities
 
         public byte[] SerializeTransform()
         {
-            byte[] bytes1 = BitConverter.GetBytes((ushort)ID);
-            byte[] bytes2 = BitConverter.GetBytes(Position.x);
-            byte[] bytes3 = BitConverter.GetBytes(Position.y);
-            byte[] bytes4 = BitConverter.GetBytes(Rotation);
-
-            return bytes1.Concat(bytes2).Concat(bytes3).Concat(bytes4).ToArray();
+            return ArrayUtils.MegaConcat(
+                EndianUnsafe.GetBytes(ID),
+                EndianUnsafe.GetBytes(Position.x),
+                EndianUnsafe.GetBytes(Position.y),
+                EndianUnsafe.GetBytes(Rotation)
+                );
         }
 
         public void DeserializeTransform(byte[] bytes)
         {
-            ID = (EntityID)BitConverter.ToUInt16(bytes, 0);
+            ID = EndianUnsafe.FromBytes<EntityID>(bytes, 0);
             Position = new Vector2(
-                BitConverter.ToSingle(bytes, 2),
-                BitConverter.ToSingle(bytes, 6)
+                EndianUnsafe.FromBytes<float>(bytes, 2),
+                EndianUnsafe.FromBytes<float>(bytes, 6)
                 );
-            Rotation = BitConverter.ToSingle(bytes, 10);
+            Rotation = EndianUnsafe.FromBytes<float>(bytes, 10);
             NBT = null;
         }
     }

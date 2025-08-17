@@ -44,22 +44,19 @@ namespace Larnix.Socket
 
         public byte[] Serialize()
         {
-            using (var ms = new MemoryStream())
-            using (var writer = new BinaryWriter(ms))
-            {
-                writer.Write(PROTOCOL_VERSION);
-                writer.Write(SeqNum);
-                writer.Write(AckNum);
-                writer.Write(Flags);
+            byte[] bytes1 = ArrayUtils.MegaConcat(
+                EndianUnsafe.GetBytes(PROTOCOL_VERSION),
+                EndianUnsafe.GetBytes(SeqNum),
+                EndianUnsafe.GetBytes(AckNum),
+                EndianUnsafe.GetBytes(Flags)
+                );
 
-                byte[] bytes1 = ms.ToArray();
-                byte[] bytes2 = Payload != null ? Payload.Serialize(Encrypt) : new byte[0];
+            byte[] bytes2 = Payload?.Serialize(Encrypt) ?? new byte[0];
 
-                ushort checksum = (ushort)(BytesSum(bytes1) + BytesSum(bytes2));
-                byte[] checksumBytes = BitConverter.GetBytes(checksum);
+            ushort checksum = (ushort)(BytesSum(bytes1) + BytesSum(bytes2));
+            byte[] checksumBytes = EndianUnsafe.GetBytes(checksum);
 
-                return checksumBytes.Concat(bytes1).Concat(bytes2).ToArray();
-            }
+            return ArrayUtils.MegaConcat(checksumBytes, bytes1, bytes2);
         }
 
         public bool TryDeserialize(byte[] bytes, bool ignorePayload = false)
@@ -69,22 +66,18 @@ namespace Larnix.Socket
 
             ushort ChecksumRead, ChecksumCalculated;
 
-            using (var ms = new MemoryStream(bytes))
-            using (var reader = new BinaryReader(ms))
-            {
-                ChecksumRead = reader.ReadUInt16();
-                ChecksumCalculated = BytesSum(bytes[2..]);
-                if (ChecksumRead != ChecksumCalculated)
-                    return false;
+            ChecksumRead = EndianUnsafe.FromBytes<ushort>(bytes, 0);
+            ChecksumCalculated = BytesSum(bytes[2..]);
+            if (ChecksumRead != ChecksumCalculated)
+                return false;
 
-                uint version = reader.ReadUInt32();
-                if (version != PROTOCOL_VERSION)
-                    return false;
+            uint version = EndianUnsafe.FromBytes<uint>(bytes, 2);
+            if (version != PROTOCOL_VERSION)
+                return false;
 
-                SeqNum = reader.ReadUInt32();
-                AckNum = reader.ReadUInt32();
-                Flags = reader.ReadByte();
-            }
+            SeqNum = EndianUnsafe.FromBytes<uint>(bytes, 6);
+            AckNum = EndianUnsafe.FromBytes<uint>(bytes, 10);
+            Flags = bytes[14];
 
             byte[] payload_bytes = bytes[HEADER_SIZE..];
 

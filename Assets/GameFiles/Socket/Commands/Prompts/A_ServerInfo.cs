@@ -5,7 +5,6 @@ using System;
 using Unity.Burst.Intrinsics;
 using UnityEngine;
 using System.Linq;
-using System.Security.Cryptography;
 
 namespace Larnix.Socket.Commands
 {
@@ -57,28 +56,25 @@ namespace Larnix.Socket.Commands
             PublicKeyModulus = bytes[0..256];
             PublicKeyExponent = bytes[256..264];
             Motd = Common.FixedBinaryToString(bytes[264..776]);
-            CurrentPlayers = System.BitConverter.ToUInt16(bytes[776..778]);
-            MaxPlayers = System.BitConverter.ToUInt16(bytes[778..780]);
-            GameVersion = System.BitConverter.ToUInt32(bytes[780..784]);
-            PasswordIndex = System.BitConverter.ToInt64(bytes[784..792]);
+            CurrentPlayers = EndianUnsafe.FromBytes<ushort>(bytes, 776);
+            MaxPlayers = EndianUnsafe.FromBytes<ushort>(bytes, 778);
+            GameVersion = EndianUnsafe.FromBytes<uint>(bytes, 780);
+            PasswordIndex = EndianUnsafe.FromBytes<long>(bytes, 784);
 
             DetectDataProblems();
         }
 
         public override Packet GetPacket()
         {
-            List<byte[]> byteList = new List<byte[]>();
-            byteList.Add(PublicKeyModulus);
-            byteList.Add(PublicKeyExponent);
-            byteList.Add(Common.StringToFixedBinary(Motd, 256));
-            byteList.Add(System.BitConverter.GetBytes(CurrentPlayers));
-            byteList.Add(System.BitConverter.GetBytes(MaxPlayers));
-            byteList.Add(System.BitConverter.GetBytes(GameVersion));
-            byteList.Add(System.BitConverter.GetBytes(PasswordIndex));
-
-            byte[] bytes = new byte[0];
-            foreach (byte[] byts in byteList)
-                bytes = bytes.Concat(byts).ToArray();
+            byte[] bytes = ArrayUtils.MegaConcat(
+                PublicKeyModulus,
+                PublicKeyExponent,
+                Common.StringToFixedBinary(Motd, 256),
+                EndianUnsafe.GetBytes(CurrentPlayers),
+                EndianUnsafe.GetBytes(MaxPlayers),
+                EndianUnsafe.GetBytes(GameVersion),
+                EndianUnsafe.GetBytes(PasswordIndex)
+                );
 
             return new Packet((byte)ID, Code, bytes);
         }

@@ -38,7 +38,7 @@ namespace Larnix.Socket.Commands
                 return;
             }
 
-            ushort size = BitConverter.ToUInt16(bytes, 0);
+            ushort size = EndianUnsafe.FromBytes<ushort>(bytes, 0);
 
             if (bytes.Length != BASE_SIZE + size * ENTRY_SIZE) { // wrong size
                 HasProblems = true;
@@ -51,8 +51,8 @@ namespace Larnix.Socket.Commands
                 int pos_s = BASE_SIZE + i * ENTRY_SIZE;
 
                 Vector2Int block = new Vector2Int(
-                    BitConverter.ToInt32(bytes[(pos_s + 0)..(pos_s + 4)]),
-                    BitConverter.ToInt32(bytes[(pos_s + 4)..(pos_s + 8)])
+                    EndianUnsafe.FromBytes<int>(bytes, pos_s),
+                    EndianUnsafe.FromBytes<int>(bytes, pos_s + 4)
                     );
                 BlockData data = new BlockData();
                 data.DeserializeBaseData(bytes[(pos_s + 8)..(pos_s + 13)]);
@@ -67,16 +67,16 @@ namespace Larnix.Socket.Commands
         {
             byte[] bytes = new byte[BASE_SIZE + BlockUpdates.Count * ENTRY_SIZE];
 
-            Buffer.BlockCopy(BitConverter.GetBytes((ushort)BlockUpdates.Count), 0, bytes, 0, 2);
+            Buffer.BlockCopy(EndianUnsafe.GetBytes((ushort)BlockUpdates.Count), 0, bytes, 0, 2);
 
             int POS = BASE_SIZE;
             
             foreach(var element in BlockUpdates)
             {
-                Buffer.BlockCopy(BitConverter.GetBytes(element.block.x), 0, bytes, POS, 4);
+                Buffer.BlockCopy(EndianUnsafe.GetBytes(element.block.x), 0, bytes, POS, 4);
                 POS += 4;
 
-                Buffer.BlockCopy(BitConverter.GetBytes(element.block.y), 0, bytes, POS, 4);
+                Buffer.BlockCopy(EndianUnsafe.GetBytes(element.block.y), 0, bytes, POS, 4);
                 POS += 4;
 
                 Buffer.BlockCopy(element.data.SerializeBaseData(), 0, bytes, POS, 5);

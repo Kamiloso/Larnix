@@ -40,10 +40,10 @@ namespace Larnix.Socket.Commands
                 return;
             }
 
-            FixedFrame = BitConverter.ToUInt32(bytes, 0);
+            FixedFrame = EndianUnsafe.FromBytes<uint>(bytes, 0);
 
-            ushort sizeAE = BitConverter.ToUInt16(bytes, 4);
-            ushort sizeRE = BitConverter.ToUInt16(bytes, 6);
+            ushort sizeAE = EndianUnsafe.FromBytes<ushort>(bytes, 4);
+            ushort sizeRE = EndianUnsafe.FromBytes<ushort>(bytes, 6);
 
             int BASE1_SIZE = BASE_SIZE;
             int BASE2_SIZE = BASE_SIZE + sizeAE * ENTRY_SIZE;
@@ -56,14 +56,14 @@ namespace Larnix.Socket.Commands
             AddEntities = new List<ulong>();
             for (int i = 0; i < sizeAE; i++)
             {
-                ulong uid = BitConverter.ToUInt64(bytes, BASE1_SIZE + i * ENTRY_SIZE);
+                ulong uid = EndianUnsafe.FromBytes<ulong>(bytes, BASE1_SIZE + i * ENTRY_SIZE);
                 AddEntities.Add(uid);
             }
 
             RemoveEntities = new List<ulong>();
             for (int i = 0; i < sizeRE; i++)
             {
-                ulong uid = BitConverter.ToUInt64(bytes, BASE2_SIZE + i * ENTRY_SIZE);
+                ulong uid = EndianUnsafe.FromBytes<ulong>(bytes, BASE2_SIZE + i * ENTRY_SIZE);
                 RemoveEntities.Add(uid);
             }
 
@@ -74,21 +74,21 @@ namespace Larnix.Socket.Commands
         {
             byte[] bytes = new byte[BASE_SIZE + (AddEntities.Count + RemoveEntities.Count) * ENTRY_SIZE];
 
-            Buffer.BlockCopy(BitConverter.GetBytes(FixedFrame), 0, bytes, 0, 4);
-            Buffer.BlockCopy(BitConverter.GetBytes((ushort)AddEntities.Count), 0, bytes, 4, 2);
-            Buffer.BlockCopy(BitConverter.GetBytes((ushort)RemoveEntities.Count), 0, bytes, 6, 2);
+            Buffer.BlockCopy(EndianUnsafe.GetBytes(FixedFrame), 0, bytes, 0, 4);
+            Buffer.BlockCopy(EndianUnsafe.GetBytes((ushort)AddEntities.Count), 0, bytes, 4, 2);
+            Buffer.BlockCopy(EndianUnsafe.GetBytes((ushort)RemoveEntities.Count), 0, bytes, 6, 2);
 
             int POS = BASE_SIZE;
             
             foreach(ulong uid in AddEntities)
             {
-                Buffer.BlockCopy(BitConverter.GetBytes(uid), 0, bytes, POS, 8);
+                Buffer.BlockCopy(EndianUnsafe.GetBytes(uid), 0, bytes, POS, 8);
                 POS += 8;
             }
 
             foreach (ulong uid in RemoveEntities)
             {
-                Buffer.BlockCopy(BitConverter.GetBytes(uid), 0, bytes, POS, 8);
+                Buffer.BlockCopy(EndianUnsafe.GetBytes(uid), 0, bytes, POS, 8);
                 POS += 8;
             }
 

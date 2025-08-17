@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System;
+using Larnix.Socket.Commands;
 
 namespace Larnix.Socket
 {

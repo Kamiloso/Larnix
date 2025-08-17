@@ -37,23 +37,23 @@ namespace Larnix.Socket.Commands
             }
 
             Position = new Vector2(
-                BitConverter.ToSingle(bytes, 0),
-                BitConverter.ToSingle(bytes, 4)
+                EndianUnsafe.FromBytes<float>(bytes, 0),
+                EndianUnsafe.FromBytes<float>(bytes, 4)
                 );
-            MyUid = BitConverter.ToUInt64(bytes, 8);
-            LastFixedFrame = BitConverter.ToUInt32(bytes, 16);
+            MyUid = EndianUnsafe.FromBytes<ulong>(bytes, 8);
+            LastFixedFrame = EndianUnsafe.FromBytes<uint>(bytes, 16);
 
             DetectDataProblems();
         }
 
         public override Packet GetPacket()
         {
-            byte[] bytes1 = BitConverter.GetBytes(Position.x);
-            byte[] bytes2 = BitConverter.GetBytes(Position.y);
-            byte[] bytes3 = BitConverter.GetBytes(MyUid);
-            byte[] bytes4 = BitConverter.GetBytes(LastFixedFrame);
-
-            byte[] bytes = bytes1.Concat(bytes2).Concat(bytes3).Concat(bytes4).ToArray();
+            byte[] bytes = ArrayUtils.MegaConcat(
+                EndianUnsafe.GetBytes(Position.x),
+                EndianUnsafe.GetBytes(Position.y),
+                EndianUnsafe.GetBytes(MyUid),
+                EndianUnsafe.GetBytes(LastFixedFrame)
+            );
 
             return new Packet((byte)ID, Code, bytes);
         }

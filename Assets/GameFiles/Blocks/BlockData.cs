@@ -40,17 +40,17 @@ namespace Larnix.Blocks
 
         public byte[] SerializeBaseData()
         {
-            byte[] bytes1 = BitConverter.GetBytes((ushort)Front.ID);
-            byte[] bytes2 = BitConverter.GetBytes((ushort)Back.ID);
-            byte[] bytes3 = { (byte)(16 * Front.Variant + Back.Variant) };
-
-            return bytes1.Concat(bytes2).Concat(bytes3).ToArray();
+            return ArrayUtils.MegaConcat(
+                EndianUnsafe.GetBytes(Front.ID),
+                EndianUnsafe.GetBytes(Back.ID),
+                new byte[] { (byte)(16 * Front.Variant + Back.Variant) }
+                );
         }
 
         public void DeserializeBaseData(byte[] bytes)
         {
-            Front.ID = (BlockID)BitConverter.ToInt16(bytes[0..2]);
-            Back.ID = (BlockID)BitConverter.ToInt16(bytes[2..4]);
+            Front.ID = EndianUnsafe.FromBytes<BlockID>(bytes, 0);
+            Back.ID = EndianUnsafe.FromBytes<BlockID>(bytes, 2);
 
             byte variants = bytes[4];
             Front.Variant = (byte)(variants / 16);

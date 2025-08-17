@@ -24,21 +24,14 @@ namespace Larnix.Socket
 
         public byte[] Serialize(Encryption.Settings encryption = null)
         {
-            using (var ms = new MemoryStream())
-            using (var writer = new BinaryWriter(ms))
-            {
-                writer.Write(ID);
-                writer.Write(Code);
-                writer.Write(ControlSequence);
+            byte[] bytes = ArrayUtils.MegaConcat(
+                EndianUnsafe.GetBytes(ID),
+                EndianUnsafe.GetBytes(Code),
+                EndianUnsafe.GetBytes(ControlSequence),
+                Bytes ?? new byte[0]
+                );
 
-                if (Bytes != null)
-                    writer.Write(Bytes);
-
-                byte[] bytes = ms.ToArray();
-                if (encryption != null)
-                    bytes = encryption.Encrypt(bytes);
-                return bytes;
-            }
+            return encryption?.Encrypt(bytes) ?? bytes;
         }
 
         public bool TryDeserialize(byte[] bytes, Encryption.Settings decryption = null)
@@ -49,14 +42,10 @@ namespace Larnix.Socket
             if (bytes.Length < MIN_SIZE)
                 return false;
 
-            using (var ms = new MemoryStream(bytes))
-            using (var reader = new BinaryReader(ms))
-            {
-                ID = reader.ReadByte();
-                Code = reader.ReadByte();
-                ControlSequence = reader.ReadUInt32();
-                Bytes = reader.ReadBytes(bytes.Length - MIN_SIZE);
-            }
+            ID = bytes[0];
+            Code = bytes[1];
+            ControlSequence = EndianUnsafe.FromBytes<uint>(bytes, 2);
+            Bytes = bytes[MIN_SIZE..bytes.Length];
 
             return true;
         }

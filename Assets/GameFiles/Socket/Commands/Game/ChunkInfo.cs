@@ -40,8 +40,8 @@ namespace Larnix.Socket.Commands
             bool removes = bytes.Length == BASE_SIZE;
 
             Chunkpos = new Vector2Int(
-                BitConverter.ToInt32(bytes, 0),
-                BitConverter.ToInt32(bytes, 4)
+                EndianUnsafe.FromBytes<int>(bytes, 0),
+                EndianUnsafe.FromBytes<int>(bytes, 4)
                 );
 
             if(removes)
@@ -71,8 +71,8 @@ namespace Larnix.Socket.Commands
         {
             byte[] bytes = new byte[Blocks != null ? SIZE : BASE_SIZE];
 
-            Buffer.BlockCopy(BitConverter.GetBytes(Chunkpos.x), 0, bytes, 0, 4);
-            Buffer.BlockCopy(BitConverter.GetBytes(Chunkpos.y), 0, bytes, 4, 4);
+            Buffer.BlockCopy(EndianUnsafe.GetBytes(Chunkpos.x), 0, bytes, 0, 4);
+            Buffer.BlockCopy(EndianUnsafe.GetBytes(Chunkpos.y), 0, bytes, 4, 4);
 
             if(Blocks != null)
             {
