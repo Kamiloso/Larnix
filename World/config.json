@@ -1,8 +1,0 @@
-{
-    "MaxPlayers": 10,
-    "Port": 27682,
-    "AllowRemoteClients": true,
-    "Motd": "Welcome to Larnix server!",
-    "DataSavingPeriod": 0.0,
-    "EntityBroadcastPeriod": 0.0
-}

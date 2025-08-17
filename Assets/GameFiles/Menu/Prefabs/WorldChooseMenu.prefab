@@ -35,7 +35,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 323.7}
-  m_SizeDelta: {x: 400, y: 45}
+  m_SizeDelta: {x: 400, y: 37}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &5182761173481580895
 CanvasRenderer:
@@ -65,7 +65,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: My very creative world name
+  m_text: World Name
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: dde5bbe4488ef7549bd492a3a7120f7d, type: 2}
   m_sharedMaterial: {fileID: -2989537211540036378, guid: dde5bbe4488ef7549bd492a3a7120f7d, type: 2}
@@ -92,7 +92,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 25.5
+  m_fontSize: 28
   m_fontSizeBase: 28
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -2093,7 +2093,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 4194412079650900467}
   m_HandleRect: {fileID: 7276150501731406045}
   m_Direction: 0
-  m_Value: 1
+  m_Value: 0
   m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:

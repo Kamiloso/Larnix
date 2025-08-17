@@ -8,6 +8,8 @@ using System.Linq;
 using UnityEngine.UI;
 using TMPro;
 using System.Threading.Tasks;
+using Larnix.Server.Data;
+using Larnix.Menu.Worlds;
 
 namespace Larnix.Menu
 {
@@ -150,7 +152,9 @@ namespace Larnix.Menu
             byte[] exponent = serverInfo.PublicKeyExponent;
             byte[] public_key = modulus.Concat(exponent).ToArray();
 
-            WorldLoad.StartRemote(Data.Address, Data.Nickname, Data.Password, public_key);
+            long serverSecret = KeyObtainer.GetSecretFromAuthCode(Data.AuthCodeRSA);
+
+            WorldLoad.StartRemote(Data.Address, Data.Nickname, Data.Password, public_key, serverSecret, serverInfo.PasswordIndex);
         }
 
         private void Update()

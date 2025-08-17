@@ -101,19 +101,14 @@ namespace Larnix.Server.Data
 
         public void ChangePassword(string username, string new_password_hash)
         {
-            byte password_index = (byte)(GetPasswordIndex(username) + 1);
-            if (password_index == 0) password_index = 1;
-
             using (var cmd = CreateCommand())
             {
                 cmd.CommandText = @"
                     UPDATE users
-                    SET password_hash = $new_password_hash,
-                        password_index = $new_password_index
+                    SET password_hash = $new_password_hash
                     WHERE username = $username;";
 
                 cmd.Parameters.AddWithValue("$new_password_hash", new_password_hash);
-                cmd.Parameters.AddWithValue("$new_password_index", password_index);
                 cmd.Parameters.AddWithValue("$username", username);
                 cmd.ExecuteNonQuery();
             }
@@ -135,7 +130,7 @@ namespace Larnix.Server.Data
             return null;
         }
 
-        public byte GetPasswordIndex(string username) // 0 -> user doesn't exist
+        public long GetPasswordIndex(string username) // 0 -> user doesn't exist
         {
             using (var cmd = CreateCommand())
             {
@@ -146,15 +141,22 @@ namespace Larnix.Server.Data
                 {
                     if (reader.Read())
                     {
-                        long value = reader.GetInt64(0);
-                        if (value < 0 || value > 255)
-                            throw new InvalidOperationException("Wrong value inside 'password_index' column.");
-                        else
-                            return (byte)value;
+                        long password_index = reader.GetInt64(0);
+                        return password_index;
                     }
                 }
             }
             return 0;
+        }
+
+        public void IncrementPasswordIndex(string username)
+        {
+            using (var cmd = CreateCommand())
+            {
+                cmd.CommandText = "UPDATE users SET password_index = password_index + 1 WHERE username = $username;";
+                cmd.Parameters.AddWithValue("$username", username);
+                cmd.ExecuteNonQuery();
+            }
         }
 
         public long GetUserID(string username)

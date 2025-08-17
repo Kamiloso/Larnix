@@ -87,5 +87,27 @@ namespace Larnix
         {
             return ThreadRandom.Value;
         }
+
+        public static long GetSecureLong()
+        {
+            var buffer = new byte[8];
+            RandomNumberGenerator.Fill(buffer);
+            return BitConverter.ToInt64(buffer, 0);
+        }
+
+        public static string InsertDashes(string input, int n)
+        {
+            if (string.IsNullOrEmpty(input) || n <= 0)
+                return input;
+
+            StringBuilder sb = new StringBuilder(input.Length + input.Length / n);
+            for (int i = 0; i < input.Length; i++)
+            {
+                if (i > 0 && i % n == 0)
+                    sb.Append('-');
+                sb.Append(input[i]);
+            }
+            return sb.ToString();
+        }
     }
 }

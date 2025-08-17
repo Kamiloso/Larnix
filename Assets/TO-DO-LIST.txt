@@ -1,9 +1,13 @@
 === Larnix TO-DO-LIST ===
 
+- Endianess consistency
+- DDOS limiting
+- LoginTry split for NCN, password change
 - Multiplayer world menu
 - Server into threaded class
-- World host system
+- World host system + special server
 
+- Better smooth
 - Client offset system
 - NBT system: Internal / Visual
 - Inventory
@@ -22,3 +26,5 @@
 - Block system
 - RectPhysics system
 - Singleplayer world menu
+- AuthCode changed: server secret added
+- Login requires telling server secret and challengeID (increments with every login for player)

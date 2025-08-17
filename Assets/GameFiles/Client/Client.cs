@@ -86,7 +86,7 @@ namespace Larnix.Client
                 MyRSA.ImportParameters(rsaParameters);
             }
 
-            LarnixClient = new Socket.Client(EndPoint, WorldLoad.Nickname, WorldLoad.Password, MyRSA);
+            LarnixClient = new Socket.Client(EndPoint, WorldLoad.Nickname, WorldLoad.Password, WorldLoad.ServerSecret, WorldLoad.ChallengeID, MyRSA);
             return true;
         }
 

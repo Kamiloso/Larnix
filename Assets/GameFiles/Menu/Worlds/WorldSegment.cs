@@ -10,6 +10,7 @@ namespace Larnix.Menu.Worlds
     {
         [SerializeField] TextMeshProUGUI NameText;
         [SerializeField] Button SelectButton;
+        [SerializeField] Button PlayButton;
 
         private UniversalSelect MySelect;
 
@@ -24,6 +25,11 @@ namespace Larnix.Menu.Worlds
         private void Update()
         {
             NameText.text = Name;
+
+            if (MySelect is ServerSelect)
+            {
+                PlayButton.interactable = GetComponent<ServerThinker>().GetLoginState() == LoginState.Good;
+            }
         }
 
         public void SetSelection(string worldName)

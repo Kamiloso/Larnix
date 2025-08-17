@@ -15,7 +15,7 @@ namespace Larnix.Socket
         private Connection connection = null;
         private IPEndPoint remoteEndPoint = null;
 
-        public Client(IPEndPoint endPoint, string nickname, string password, RSA keyPublicRSA = null)
+        public Client(IPEndPoint endPoint, string nickname, string password, long serverSecret, long challengeID, RSA keyPublicRSA = null)
         {
             Nickname = nickname;
             remoteEndPoint = endPoint;
@@ -31,7 +31,9 @@ namespace Larnix.Socket
             Commands.AllowConnection allowConnection = new Commands.AllowConnection(
                 Nickname,
                 password,
-                keyAES
+                keyAES,
+                serverSecret,
+                challengeID
                 );
             if (allowConnection.HasProblems)
                 throw new System.Exception("Couldn't construct AllowConnection command.");

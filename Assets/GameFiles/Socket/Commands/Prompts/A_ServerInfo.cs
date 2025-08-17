@@ -12,7 +12,7 @@ namespace Larnix.Socket.Commands
     public class A_ServerInfo : BaseCommand
     {
         public override Name ID => Name.A_ServerInfo;
-        public const int SIZE = 256 + 8 + 512 + 2 + 2 + 1 + 4;
+        public const int SIZE = 256 + 8 + 512 + 2 + 2 + 4 + 8;
 
         public byte[] PublicKeyModulus {  get; private set; } // 256B
         public byte[] PublicKeyExponent { get; private set; } // 8B
@@ -20,7 +20,7 @@ namespace Larnix.Socket.Commands
         public ushort CurrentPlayers { get; private set; } // 2B
         public ushort MaxPlayers { get; private set; } // 2B
         public uint GameVersion { get; private set; } // 4B
-        public byte PasswordIndex { get; private set; } // 1B
+        public long PasswordIndex { get; private set; } // 8B
 
         public A_ServerInfo(
             byte[] publicKeyModulus,
@@ -29,7 +29,7 @@ namespace Larnix.Socket.Commands
             ushort currentPlayers,
             ushort maxPlayers,
             uint gameVersion,
-            byte passwordIndex,
+            long passwordIndex,
             byte code = 0
             )
             : base(Name.None, code)
@@ -60,7 +60,7 @@ namespace Larnix.Socket.Commands
             CurrentPlayers = System.BitConverter.ToUInt16(bytes[776..778]);
             MaxPlayers = System.BitConverter.ToUInt16(bytes[778..780]);
             GameVersion = System.BitConverter.ToUInt32(bytes[780..784]);
-            PasswordIndex = bytes[784];
+            PasswordIndex = System.BitConverter.ToInt64(bytes[784..792]);
 
             DetectDataProblems();
         }
@@ -74,7 +74,7 @@ namespace Larnix.Socket.Commands
             byteList.Add(System.BitConverter.GetBytes(CurrentPlayers));
             byteList.Add(System.BitConverter.GetBytes(MaxPlayers));
             byteList.Add(System.BitConverter.GetBytes(GameVersion));
-            byteList.Add(new byte[]{ PasswordIndex });
+            byteList.Add(System.BitConverter.GetBytes(PasswordIndex));
 
             byte[] bytes = new byte[0];
             foreach (byte[] byts in byteList)

@@ -29,6 +29,8 @@ namespace Larnix
         // Client data
         public static string Nickname = "";
         public static string Password = "";
+        public static long ServerSecret = 0;
+        public static long ChallengeID = 0;
 
         public static void StartLocal(string worldName)
         {
@@ -39,12 +41,13 @@ namespace Larnix
             // NEVER change Nickname / Password local settings (compatibility with older worlds)
             Nickname = "Player";
             Password = "SGP_PASSWORD";
+            // ServerSecret and ChallengeID are downloaded using A_ServerInfo command
 
             // Client will load the server on awake
             SceneManager.LoadScene("Client");
         }
 
-        public static void StartRemote(string server_address, string nickname, string password, byte[] public_key)
+        public static void StartRemote(string server_address, string nickname, string password, byte[] public_key, long serverSecret, long challengeID)
         {
             LoadType = LoadTypes.Remote;
             ServerAddress = server_address;
@@ -52,6 +55,8 @@ namespace Larnix
 
             Nickname = nickname;
             Password = password;
+            ServerSecret = serverSecret;
+            ChallengeID = challengeID;
 
             RsaPublicKey = public_key;
 

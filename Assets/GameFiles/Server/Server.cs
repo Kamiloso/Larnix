@@ -23,6 +23,7 @@ namespace Larnix.Server
     {
         private Locker locker = null;
         private RSA CompleteRSA = null;
+        private long ServerSecret = 0;
         private Socket.Server LarnixServer = null;
 
         public string WorldDir { get; private set; } = "";
@@ -54,7 +55,8 @@ namespace Larnix.Server
                 throw new Exception("Trying to access world that is already open.");
 
             // RSA --> 2
-            CompleteRSA = KeyObtainer.ObtainKeyRSA(WorldDir, false);
+            CompleteRSA = KeyObtainer.ObtainKeyRSA(WorldDir);
+            ServerSecret = KeyObtainer.ObtainSecret(WorldDir);
 
             // CONFIG --> 3
             ServerConfig = Config.Obtain(WorldDir, IsLocal);
@@ -78,6 +80,8 @@ namespace Larnix.Server
             );
 
             WorldLoad.ServerAddress = "localhost:" + LarnixServer.Port;
+            WorldLoad.ServerSecret = ServerSecret;
+            WorldLoad.ChallengeID = Database.GetPasswordIndex("Player");
             
             if (IsLocal)
                 WorldLoad.RsaPublicKey = KeyToPublicBytes(CompleteRSA);
@@ -90,7 +94,7 @@ namespace Larnix.Server
             Console.LogRaw(new string('-', 60) + "\n");
 
             UnityEngine.Debug.Log(" Socket created on port " + LarnixServer.Port);
-            if (CompleteRSA != null) UnityEngine.Debug.Log(" Authcode (copy to connect): " + KeyObtainer.ProduceAuthCodeRSA(KeyToPublicBytes(CompleteRSA)));
+            if (CompleteRSA != null) UnityEngine.Debug.Log(" Authcode (copy to connect): " + KeyObtainer.ProduceAuthCodeRSA(KeyToPublicBytes(CompleteRSA), ServerSecret));
             else UnityEngine.Debug.LogWarning(" Every connection will be unencrypted! Couldn't find or generate RSA keys!");
 
             Console.LogRaw(new string('-', 60) + "\n");
@@ -324,13 +328,19 @@ namespace Larnix.Server
             return null;
         }
 
-        private void TryLogin(IPEndPoint remoteEP, string username, string password)
+        private void TryLogin(IPEndPoint remoteEP, string username, string password, long serverSecret, long challengeID)
         {
-            StartCoroutine(LoginCoroutine(remoteEP, username, password));
+            StartCoroutine(LoginCoroutine(remoteEP, username, password, serverSecret, challengeID));
         }
 
-        private IEnumerator LoginCoroutine(IPEndPoint remoteEP, string username, string password)
+        private IEnumerator LoginCoroutine(IPEndPoint remoteEP, string username, string password, long serverSecret, long challengeID)
         {
+            if (serverSecret != ServerSecret)
+            {
+                LarnixServer.LoginDeny(remoteEP);
+                yield break; // wrong server secret
+            }
+
             if (!IsLocal && username == "Player")
             {
                 LarnixServer.LoginDeny(remoteEP);
@@ -348,6 +358,12 @@ namespace Larnix.Server
                 yield break; // too many hashing tries in this minute
             }
 
+            if (challengeID != Database.GetPasswordIndex(username))
+            {
+                LarnixServer.LoginDeny(remoteEP);
+                yield break; // wrong challengeID
+            }
+
             if (Database.UserExists(username))
             {
                 string password_hash = Database.GetPasswordHash(username);
@@ -360,7 +376,9 @@ namespace Larnix.Server
 
                 if (verifyTask.Result)
                 {
+                    Database.IncrementPasswordIndex(username);
                     LarnixServer.LoginAccept(remoteEP);
+
                     yield break; // good password
                 }
                 else
@@ -379,7 +397,10 @@ namespace Larnix.Server
 
                 string hashed_password = hashTask.Result;
                 Database.AddUser(username, hashed_password);
+
+                Database.IncrementPasswordIndex(username);
                 LarnixServer.LoginAccept(remoteEP);
+
                 yield break; // created new account
             }
         }

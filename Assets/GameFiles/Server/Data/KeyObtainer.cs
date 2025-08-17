@@ -18,8 +18,9 @@ namespace Larnix.Server.Data
     public static class KeyObtainer
     {
         private const string filename = "rsa_keypair.pem";
+        private const string secretfile = "server_secret.txt";
 
-        public static RSA ObtainKeyRSA(string path, bool onlyLoad)
+        public static RSA ObtainKeyRSA(string path)
         {
             AsymmetricCipherKeyPair keyPair = null;
             string data = null;
@@ -34,9 +35,6 @@ namespace Larnix.Server.Data
                 }
             }
 
-            if (onlyLoad)
-                return null;
-
             var keyGen = new RsaKeyPairGenerator();
             keyGen.Init(new KeyGenerationParameters(new SecureRandom(), 2048));
             keyPair = keyGen.GenerateKeyPair();
@@ -44,6 +42,20 @@ namespace Larnix.Server.Data
             data = ConvertKeyPairToPem(keyPair);
             FileManager.Write(path, filename, data);
             return BouncyToRSA(keyPair);
+        }
+
+        public static long ObtainSecret(string path)
+        {
+            string data = FileManager.Read(path, secretfile);
+            if (data != null)
+            {
+                if (long.TryParse(data, out long readSecret))
+                    return readSecret;
+            }
+
+            long secret = Common.GetSecureLong();
+            FileManager.Write(path, secretfile, secret.ToString());
+            return secret;
         }
 
         private static AsymmetricCipherKeyPair ParseRSA(string text)
@@ -96,10 +108,20 @@ namespace Larnix.Server.Data
             return rsa;
         }
 
-        public static string ProduceAuthCodeRSA(byte[] key)
+        const string Base64 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz#&";
+        private const int VERIFY_PART_LENGTH = 12;
+        private const int SECRET_PART_LENGTH = 11; // must be at least 11, must fit one long
+        private const int TOTAL_LENGTH = VERIFY_PART_LENGTH + SECRET_PART_LENGTH + 1 /* checksum */;
+        private const int SEGMENT_SIZE = 6;
+
+        public static string ProduceAuthCodeRSA(byte[] key, long secret)
         {
-            // Example AuthCode: XXXX-XXXX-XXXX
-            const string Base32 = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+            string raw = ProduceRawAuthCodeRSA(key, secret);
+            return Common.InsertDashes(raw, SEGMENT_SIZE);
+        }
+
+        private static string ProduceRawAuthCodeRSA(byte[] key, long secret)
+        {
             const int ITERATIONS = 50_000;
             byte[] hash = key;
 
@@ -113,21 +135,75 @@ namespace Larnix.Server.Data
             }
 
             StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < 3; i++)
-            {
-                if (i != 0)
-                    sb.Append('-');
+            for (int i = 0; i < VERIFY_PART_LENGTH; i++)
+                sb.Append(Base64[hash[i] % 64]);
 
-                for (int j = 0; j < 4; j++)
-                    sb.Append(Base32[hash[4 * i + j] % 32]);
+            ulong usecret = (ulong)secret;
+            while (usecret != 0)
+            {
+                int mod = (int)(usecret % 64);
+                usecret /= 64;
+                sb.Insert(VERIFY_PART_LENGTH, Base64[mod]);
             }
+
+            while (sb.Length < TOTAL_LENGTH - 1)
+                sb.Insert(VERIFY_PART_LENGTH, Base64[0]);
+
+            int checksum = 0;
+            foreach (char c in sb.ToString())
+            {
+                checksum += c;
+            }
+            sb.Append(Base64[checksum % 64]);
 
             return sb.ToString();
         }
 
+        public static bool IsGoodAuthcode(string authCodeRSA)
+        {
+            if (authCodeRSA == null)
+                return false;
+
+            string code = authCodeRSA.Replace("-", "");
+            
+            if (code.Length != TOTAL_LENGTH)
+                return false;
+
+            foreach (char c in code)
+            {
+                if (!Base64.Contains(c))
+                    return false;
+            }
+
+            int checksum = 0;
+            for (int i = 0; i < TOTAL_LENGTH - 1; i++)
+            {
+                checksum += code[i];
+            }
+
+            return Base64[checksum % 64] == code[TOTAL_LENGTH - 1];
+        }
+
         public static bool VerifyPublicKey(byte[] key, string authCodeRSA)
         {
-            return ProduceAuthCodeRSA(key) == authCodeRSA;
+            string code1 = authCodeRSA.Replace("-", "").Substring(0, VERIFY_PART_LENGTH);
+            string code2 = ProduceRawAuthCodeRSA(key, 0).Substring(0, VERIFY_PART_LENGTH);
+
+            return code1 == code2;
+        }
+
+        public static long GetSecretFromAuthCode(string authCodeRSA)
+        {
+            string code1 = authCodeRSA.Replace("-", "").Substring(VERIFY_PART_LENGTH, SECRET_PART_LENGTH);
+
+            ulong usecret = 0;
+            for (int i = 0; i < SECRET_PART_LENGTH; i++)
+            {
+                usecret *= 64;
+                usecret += (ulong)Base64.IndexOf(code1[i]);
+            }
+
+            return (long)usecret;
         }
     }
 }

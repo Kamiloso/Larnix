@@ -25,7 +25,7 @@ namespace Larnix.Socket
         private float timeToResetCon = CON_RESET_TIME;
         private Dictionary<InternetID, uint> recentConCount = new();
 
-        private readonly Action<IPEndPoint, string, string> TryLogin;
+        private readonly System.Action<IPEndPoint, string, string, long, long> TryLogin;
         private readonly Func<Packet, Packet> GetNcnAnswer;
 
         private readonly Dictionary<IPEndPoint, PreLoginBuffer> PreLoginBuffers = new();
@@ -35,7 +35,7 @@ namespace Larnix.Socket
             ushort max_clients,
             bool allowInternetTraffic,
             RSA keyRSA,
-            Action<IPEndPoint, string, string> tryLogin,
+            System.Action<IPEndPoint, string, string, long, long> tryLogin,
             Func<Packet, Packet> getNcnAnswer)
         {
             TryLogin = tryLogin;
@@ -300,6 +300,8 @@ namespace Larnix.Socket
                             string nickname = allowConnection.Nickname;
                             string password = allowConnection.Password;
                             byte[] keyAES = allowConnection.KeyAES;
+                            long serverSecret = allowConnection.ServerSecret;
+                            long challengeID = allowConnection.ChallengeID;
 
                             if (nicknames.Contains(nickname))
                                 continue;
@@ -310,7 +312,7 @@ namespace Larnix.Socket
                                 preLoginBuffer.AddPacket(bytes);
                                 PreLoginBuffers.Add(remoteEP, preLoginBuffer);
 
-                                TryLogin(remoteEP, nickname, password);
+                                TryLogin(remoteEP, nickname, password, serverSecret, challengeID);
                             }
 
                         }
