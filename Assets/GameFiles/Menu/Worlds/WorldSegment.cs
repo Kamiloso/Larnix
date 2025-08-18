@@ -14,21 +14,42 @@ namespace Larnix.Menu.Worlds
 
         private UniversalSelect MySelect;
 
-        private string Name;
+        public string Name { get; private set; }
 
         public void Init(string name, UniversalSelect mySelect)
         {
             Name = name;
             MySelect = mySelect;
+
+            var cb = PlayButton.colors;
+            float oldDuration = cb.fadeDuration;
+            cb.fadeDuration = 0f;
+            PlayButton.colors = cb;
+
+            UpdateView();
+
+            cb.fadeDuration = oldDuration;
+            PlayButton.colors = cb;
         }
 
         private void Update()
         {
+            UpdateView();
+        }
+
+        private void UpdateView()
+        {
             NameText.text = Name;
+
+            if (MySelect is WorldSelect)
+            {
+                PlayButton.interactable = true;
+            }
 
             if (MySelect is ServerSelect)
             {
-                PlayButton.interactable = GetComponent<ServerThinker>().GetLoginState() == LoginState.Good;
+                ServerThinker thinker = GetComponent<ServerThinker>();
+                PlayButton.interactable = thinker != null ? thinker.GetLoginState() == LoginState.Good : false;
             }
         }
 

@@ -6,9 +6,9 @@ using Larnix.Server.Terrain;
 
 namespace Larnix.Modules.Blocks
 {
-    public class Soil : BlockServer, ISolid, IPlaceable, IBreakable, IHasGrowingFlora
+    public class Dirt : BlockServer, ISolid, IPlaceable, IBreakable, IHasGrowingFlora
     {
-        public Soil(Vector2Int POS, SingleBlockData block, bool isFront) : base(POS, block, isFront) { }
+        public Dirt(Vector2Int POS, SingleBlockData block, bool isFront) : base(POS, block, isFront) { }
 
         public bool ALLOW_PLACE_BACK() => true;
 

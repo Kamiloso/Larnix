@@ -26,13 +26,13 @@ namespace Larnix.Modules.Biomes
 
                 case ProtoBlock.Soil:
                     return new BlockData(
-                    new SingleBlockData { ID = BlockID.Dirt },
+                    new SingleBlockData { ID = BlockID.Soil },
                     new SingleBlockData { }
                     );
 
                 case ProtoBlock.SoilSurface:
                     return new BlockData(
-                    new SingleBlockData { ID = BlockID.Dirt, Variant = 1 }, // grass
+                    new SingleBlockData { ID = BlockID.Soil, Variant = 1 }, // grass
                     new SingleBlockData { }
                     );
 

@@ -81,7 +81,7 @@ namespace Larnix.Menu.Worlds
 
                 rt.name = $"WorldSegment: \"{worldName}\"";
                 rt.GetComponent<WorldSegment>().Init(worldName, this);
-                ScrollView.PushElement(rt);
+                ScrollView.EntryPushElement(rt);
             }
         }
 
@@ -138,40 +138,6 @@ namespace Larnix.Menu.Worlds
                 Sprite blackSprite = Sprite.Create(blackTex, rect, pivot);
                 targetImage.sprite = blackSprite;
             }
-        }
-
-        private static List<string> GetSortedWorldPaths(string parentFolderPath, string sortByFile)
-        {
-            if (!Directory.Exists(parentFolderPath))
-                Directory.CreateDirectory(parentFolderPath);
-
-            string[] folders = Directory.GetDirectories(parentFolderPath);
-
-            var foldersWithDate = folders
-                .Select(folderPath =>
-                {
-                    string sortFile = Path.Combine(folderPath, sortByFile);
-                    DateTime? modificationDate = null;
-
-                    if (File.Exists(sortFile))
-                    {
-                        modificationDate = File.GetLastWriteTime(sortFile);
-                    }
-
-                    return new { folderPath, modificationDate };
-                });
-
-            var sortedFolders = foldersWithDate
-                .OrderByDescending(x => x.modificationDate ?? DateTime.MinValue)
-                .Select(x => x.folderPath)
-                .ToList();
-
-            return sortedFolders;
-        }
-
-        private static string WorldPathToName(string worldPath)
-        {
-            return Path.GetFileName(worldPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
         }
     }
 }

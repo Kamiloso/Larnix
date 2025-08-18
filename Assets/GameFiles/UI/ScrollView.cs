@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,35 +15,58 @@ namespace Larnix.UI
         private readonly Stack<(RectTransform, float)> Elements = new();
         private float NextY = 0f;
 
-        public void PushElement(RectTransform rt, float spacing = 0f)
+        public void EntryPushElement(RectTransform rt, float spacing = 0f)
         {
-            rt.SetParent(Container, false);
-            rt.anchorMin = new Vector2(0f, 1f);
-            rt.anchorMax = new Vector2(1f, 1f);
-            rt.pivot = new Vector2(0f, 1f);
-            rt.anchoredPosition = new Vector2(0f, -NextY);
-
             float spacedSize = rt.rect.height + spacing;
-            ChangeScale(spacedSize);
-            Elements.Push((rt, spacedSize));
+            PushElement((rt, spacedSize));
         }
 
-        public bool RemoveTopElement()
+        private void PushElement((RectTransform, float) element)
         {
-            if (Elements.Count > 0)
+            element.Item1.SetParent(Container, false);
+            element.Item1.anchoredPosition = new Vector2(0f, -NextY);
+            ChangeScale(element.Item2);
+            Elements.Push(element);
+        }
+
+        public (RectTransform, float) PopElement()
+        {
+            var element = Elements.Pop();
+            ChangeScale(-element.Item2);
+            return element;
+        }
+
+        public void RemoveWhere(Func<RectTransform, bool> condition)
+        {
+            Stack<(RectTransform, float)> otherStack = new();
+
+            while (Elements.Count > 0)
             {
-                var element = Elements.Pop();
-                Destroy(element.Item1.gameObject);
-                ChangeScale(-element.Item2);
-                return true;
+                var element = PopElement();
+                if (condition(element.Item1))
+                {
+                    Destroy(element.Item1.gameObject);
+                }
+                else
+                {
+                    otherStack.Push(element);
+                }
             }
-            return false;
+
+            while (otherStack.Count > 0)
+            {
+                var element = otherStack.Pop();
+                PushElement(element);
+            }
         }
 
         public void ClearAll()
         {
             while (Elements.Count > 0)
-                RemoveTopElement();
+            {
+                var element = PopElement();
+                Destroy(element.Item1.gameObject);
+            }
         }
 
         public List<RectTransform> GetAllTransforms()

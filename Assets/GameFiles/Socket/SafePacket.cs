@@ -78,12 +78,15 @@ namespace Larnix.Socket
             SeqNum = EndianUnsafe.FromBytes<uint>(bytes, 6);
             AckNum = EndianUnsafe.FromBytes<uint>(bytes, 10);
             Flags = bytes[14];
+            Payload = null;
 
-            byte[] payload_bytes = bytes[HEADER_SIZE..];
-
-            Payload = new Packet();
-            if (ignorePayload || !Payload.TryDeserialize(payload_bytes, Encrypt))
-                Payload = null;
+            if (!ignorePayload)
+            {
+                Payload = new Packet();
+                byte[] payload_bytes = bytes[HEADER_SIZE..];
+                if (!Payload.TryDeserialize(payload_bytes, Encrypt))
+                    Payload = null;
+            }
 
             return true;
         }

@@ -1,17 +1,19 @@
 === Larnix TO-DO-LIST ===
 
-- Endianess consistency
-- DDOS limiting
-- LoginTry split for NCN, password change
 - Multiplayer world menu
 - Server into threaded class
-- World host system + special server
+- World host system
+- Help relay server
 
 - Better smooth
 - Client offset system
 - NBT system: Internal / Visual
 - Inventory
 - Entity generation
+
+=== KNOWN BUGS ===
+
+- Collisions work weirdly, sometimes allowing entities to go into colliders
 
 <<< === Larnix DONE :) === >>>
 
@@ -28,3 +30,5 @@
 - Singleplayer world menu
 - AuthCode changed: server secret added
 - Login requires telling server secret and challengeID (increments with every login for player)
+- Endianess consistency
+- Parallel hashing limiting to 6 global and 4 per client per minute

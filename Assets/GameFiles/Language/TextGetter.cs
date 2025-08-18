@@ -11,7 +11,7 @@ namespace Larnix.Language
     {
         static readonly Dictionary<(BlockID, int), string> BlockNames = new()
         {
-            {(BlockID.Dirt, 1), "Grass Block"},
+            {(BlockID.Soil, 1), "Grassy Soil"},
             // add more as you want
         };
 

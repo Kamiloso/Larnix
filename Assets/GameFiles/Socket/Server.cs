@@ -25,8 +25,8 @@ namespace Larnix.Socket
         private float timeToResetCon = CON_RESET_TIME;
         private Dictionary<InternetID, uint> recentConCount = new();
 
-        private readonly System.Action<IPEndPoint, string, string, long, long> TryLogin;
-        private readonly Func<Packet, Packet> GetNcnAnswer;
+        private readonly System.Action<IPEndPoint, string, string, long, long> TryLogin; // (EndPoint, username, password, serverSecret, challengeID) [ challengeID = passwordIndex ]
+        private readonly Func<Packet, Packet> GetNcnAnswer; // (question) -> (answer)
 
         private readonly Dictionary<IPEndPoint, PreLoginBuffer> PreLoginBuffers = new();
 

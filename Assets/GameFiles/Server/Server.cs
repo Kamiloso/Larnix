@@ -36,6 +36,8 @@ namespace Larnix.Server
 
         private readonly Dictionary<InternetID, uint> loginAmount = new();
         private const uint MAX_HASHING_AMOUNT = 4; // max hashing amount per minute per client
+        private uint currentHashingAmount = 0;
+        private const uint MAX_PARALLEL_HASHINGS = 6;
 
         // Server initialization
         private void Awake()
@@ -330,60 +332,66 @@ namespace Larnix.Server
 
         private void TryLogin(IPEndPoint remoteEP, string username, string password, long serverSecret, long challengeID)
         {
-            StartCoroutine(LoginCoroutine(remoteEP, username, password, serverSecret, challengeID));
+            StartCoroutine(
+                LoginCoroutine(remoteEP, username, password, serverSecret, challengeID,
+                ExecuteSuccess: () =>
+                {
+                    Database.IncrementPasswordIndex(username);
+                    LarnixServer.LoginAccept(remoteEP);
+                },
+                ExecuteFailed: () => // failed
+                {
+                    LarnixServer.LoginDeny(remoteEP);
+                }
+                ));
         }
 
-        private IEnumerator LoginCoroutine(IPEndPoint remoteEP, string username, string password, long serverSecret, long challengeID)
+        private IEnumerator LoginCoroutine(
+            IPEndPoint remoteEP, string username, string password, long serverSecret, long challengeID,
+            Action ExecuteSuccess, Action ExecuteFailed
+            )
         {
-            if (serverSecret != ServerSecret)
+            if (
+                serverSecret != ServerSecret || // wrong server secret
+                currentHashingAmount >= MAX_PARALLEL_HASHINGS || // hashing slots full
+                (!IsLocal && username == "Player")) // nickname "Player" is reserved for singleplayer
             {
-                LarnixServer.LoginDeny(remoteEP);
-                yield break; // wrong server secret
-            }
-
-            if (!IsLocal && username == "Player")
-            {
-                LarnixServer.LoginDeny(remoteEP);
-                yield break; // Nickname "Player" is reserved for singleplayer
+                ExecuteFailed();
+                yield break;
             }
 
             InternetID internetID = new InternetID(remoteEP.Address);
-
             if (!loginAmount.ContainsKey(internetID))
                 loginAmount[internetID] = 0;
 
-            if (loginAmount[internetID] >= MAX_HASHING_AMOUNT)
+            if (loginAmount[internetID] >= MAX_HASHING_AMOUNT || // too many hashing tries in this minute
+                challengeID != Database.GetPasswordIndex(username)) // wrong challengeID
             {
-                LarnixServer.LoginDeny(remoteEP);
-                yield break; // too many hashing tries in this minute
-            }
-
-            if (challengeID != Database.GetPasswordIndex(username))
-            {
-                LarnixServer.LoginDeny(remoteEP);
-                yield break; // wrong challengeID
+                ExecuteFailed();
+                yield break;
             }
 
             if (Database.UserExists(username))
             {
                 string password_hash = Database.GetPasswordHash(username);
-                Task<bool> verifyTask = Hasher.VerifyPasswordAsync(password, password_hash);
 
                 if (!Hasher.InCache(password, password_hash))
                     loginAmount[internetID]++; // hash will be calculated
 
+                Task<bool> verifyTask = Hasher.VerifyPasswordAsync(password, password_hash);
+                currentHashingAmount++;
+
                 yield return new WaitUntil(() => verifyTask.IsCompleted);
+                currentHashingAmount--;
 
                 if (verifyTask.Result)
                 {
-                    Database.IncrementPasswordIndex(username);
-                    LarnixServer.LoginAccept(remoteEP);
-
+                    ExecuteSuccess();
                     yield break; // good password
                 }
                 else
                 {
-                    LarnixServer.LoginDeny(remoteEP);
+                    ExecuteFailed();
                     yield break; // wrong password
                 }
             }
@@ -398,9 +406,7 @@ namespace Larnix.Server
                 string hashed_password = hashTask.Result;
                 Database.AddUser(username, hashed_password);
 
-                Database.IncrementPasswordIndex(username);
-                LarnixServer.LoginAccept(remoteEP);
-
+                ExecuteSuccess();
                 yield break; // created new account
             }
         }

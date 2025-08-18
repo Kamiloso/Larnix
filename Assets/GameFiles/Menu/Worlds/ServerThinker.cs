@@ -10,11 +10,12 @@ namespace Larnix.Menu.Worlds
 {
     public class ServerData
     {
-        public string Address = null;
-        public string AuthCodeRSA = null;
-        public string Nickname = null;
-        public string Password = null;
-        public uint PasswordIndex = 0;
+        public string FolderName = "";
+        public string Address = "";
+        public string AuthCodeRSA = "";
+        public string Nickname = "";
+        public string Password = "";
+        public long PasswordIndex = 0;
     }
 
     public enum ThinkerState
@@ -44,22 +45,41 @@ namespace Larnix.Menu.Worlds
         Coroutine loginCoroutine = null;
         public bool? LoginSuccess { get; private set; } = null;
 
+        public void SetServerData(ServerData serverData)
+        {
+            this.serverData = serverData;
+        }
+
         public void SubmitServer(string address, string authCodeRSA)
         {
             serverData.Address = address;
             serverData.AuthCodeRSA = authCodeRSA;
+            serverData.Nickname = null;
+            serverData.Password = null;
+
+            // to file
+            ServerSelect.SaveServerData(serverData);
         }
 
         public void SubmitUser(string nickname, string password)
         {
             serverData.Nickname = nickname;
             serverData.Password = password;
-            Logout();
 
+            Logout();
             if (State == ThinkerState.Ready)
-            {
                 loginCoroutine = StartCoroutine(LoginCoroutine());
-            }
+
+            // to file
+            ServerSelect.SaveServerData(serverData);
+        }
+
+        public void SetPasswordIndex(long passwordIndex)
+        {
+            serverData.PasswordIndex = passwordIndex;
+
+            // to file
+            ServerSelect.SaveServerData(serverData);
         }
 
         public void Logout()
@@ -139,6 +159,7 @@ namespace Larnix.Menu.Worlds
             {
                 State = ThinkerState.Ready;
                 serverInfo = downloading.Result;
+                SetPasswordIndex(serverInfo.PasswordIndex);
                 yield break;
             }
             else
@@ -151,9 +172,9 @@ namespace Larnix.Menu.Worlds
 
         private IEnumerator LoginCoroutine()
         {
-            yield return new WaitForSecondsRealtime(2f);
-            LoginSuccess = Common.Rand().Next() % 2 == 0;
+            yield return new WaitForSecondsRealtime(1f);
 
+            LoginSuccess = false;
             loginCoroutine = null;
             yield break;
         }

@@ -35,5 +35,39 @@ namespace Larnix.Menu.Worlds
 
             OnWorldSelect(worldName);
         }
+
+        protected static List<string> GetSortedWorldPaths(string parentFolderPath, string sortByFile)
+        {
+            if (!Directory.Exists(parentFolderPath))
+                Directory.CreateDirectory(parentFolderPath);
+
+            string[] folders = Directory.GetDirectories(parentFolderPath);
+
+            var foldersWithDate = folders
+                .Select(folderPath =>
+                {
+                    string sortFile = Path.Combine(folderPath, sortByFile);
+                    DateTime? modificationDate = null;
+
+                    if (File.Exists(sortFile))
+                    {
+                        modificationDate = File.GetLastWriteTime(sortFile);
+                    }
+
+                    return new { folderPath, modificationDate };
+                });
+
+            var sortedFolders = foldersWithDate
+                .OrderByDescending(x => x.modificationDate ?? DateTime.MinValue)
+                .Select(x => x.folderPath)
+                .ToList();
+
+            return sortedFolders;
+        }
+
+        protected static string WorldPathToName(string worldPath)
+        {
+            return Path.GetFileName(worldPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+        }
     }
 }

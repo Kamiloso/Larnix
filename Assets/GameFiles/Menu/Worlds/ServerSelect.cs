@@ -11,12 +11,14 @@ using Larnix.Socket.Commands;
 using System.Threading.Tasks;
 using Larnix.Socket;
 using Unity.VisualScripting;
+using Larnix.Files;
+using Larnix.Server.Data;
 
 namespace Larnix.Menu.Worlds
 {
     public class ServerSelect : UniversalSelect
     {
-        public static string MultiplayerFile { get => Path.Combine(Application.persistentDataPath, "servers.txt"); }
+        public static string MultiplayerPath { get => Path.Combine(Application.persistentDataPath, "Multiplayer"); }
 
         private readonly Dictionary<string, ServerThinker> ServerThinkers = new();
         private ServerThinker serverThinker = null;
@@ -53,7 +55,19 @@ namespace Larnix.Menu.Worlds
 
         public void AddServer()
         {
-            UnityEngine.Debug.Log("ADD SERVER");
+            UnityEngine.Debug.Log("ADD SERVER (temporary add)");
+
+            SaveServerData(new ServerData
+            {
+                FolderName = Guid.NewGuid().ToString("N"),
+                Address = "::1",
+                AuthCodeRSA = "aaaaaa-bbbbbb-cccccc-dddddd",
+                Nickname = "",
+                Password = "",
+                PasswordIndex = 0,
+            });
+
+            ReloadWorldList();
         }
 
         public void JoinServer()
@@ -74,14 +88,19 @@ namespace Larnix.Menu.Worlds
 
         public void RemoveServer()
         {
-            UnityEngine.Debug.Log("REMOVE: " + (SelectedWorld ?? "null"));
-
-            ReloadWorldList();
+            if(SelectedWorld != null)
+            {
+                string folderName = ServerThinkers[SelectedWorld].serverData.FolderName;
+                Directory.Delete(Path.Combine(MultiplayerPath, folderName), true);
+                ScrollView.RemoveWhere(rt => ReferenceEquals(rt, ServerThinkers[SelectedWorld].transform as RectTransform));
+                ServerThinkers.Remove(SelectedWorld);
+                SelectWorld(null);
+            }
         }
 
         public void Login()
         {
-            UnityEngine.Debug.Log("LOGIN");
+            UnityEngine.Debug.Log("LOGIN (temporary submit)");
 
             serverThinker.SubmitUser("Kamiloso", "haslo123");
         }
@@ -124,21 +143,21 @@ namespace Larnix.Menu.Worlds
             ServerThinkers.Clear();
 
             // Server Segments
-            List<string> availableWorldPaths = new() { "::1", "127.0.0.1", "192.168.0.1", "Test string", "@Kamiloso.240.89.72" };
-            foreach (string serverName in availableWorldPaths)
+            Dictionary<string, ServerData> servers = ReadServerDataDictionary();
+            foreach (string name in servers.Keys)
             {
                 RectTransform rt = Instantiate(WorldSegmentPrefab).transform as RectTransform;
                 if (rt == null)
                     throw new System.InvalidOperationException("Prefab should be of type RectTransform!");
 
-                rt.name = $"Server: \"{serverName}\"";
-                rt.GetComponent<WorldSegment>().Init(serverName, this);
-                ScrollView.PushElement(rt);
+                rt.name = $"Server: \"{name}\"";
+                rt.GetComponent<WorldSegment>().Init(name, this);
+                ScrollView.EntryPushElement(rt);
 
                 ServerThinker thinker = rt.AddComponent<ServerThinker>();
-                thinker.SubmitServer(serverName, "TTHX-RFF6-7Q8Q");
+                thinker.SetServerData(servers[name]);
                 thinker.SafeRefresh();
-                ServerThinkers[serverName] = thinker;
+                ServerThinkers[name] = thinker;
             }
         }
 
@@ -238,6 +257,55 @@ namespace Larnix.Menu.Worlds
             BT_ChangePassword.interactable = activeLogged;
 
             BT_Join.interactable = logState == LoginState.Good;
+        }
+
+        public static Dictionary<string, ServerData> ReadServerDataDictionary()
+        {
+            Dictionary<string, ServerData> returns = new();
+            List<string> sortedPaths = GetSortedWorldPaths(MultiplayerPath, "info.txt");
+
+            foreach (string path in sortedPaths)
+            {
+                string data = FileManager.Read(path, "info.txt");
+                if (data == null) continue;
+
+                string[] arg = data.Split('\n');
+                if (arg.Length < 5) continue;
+
+                long.TryParse(arg[4], out long passwordIndex);
+                if (!returns.ContainsKey(arg[0]))
+                {
+                    returns.Add(arg[0], new ServerData
+                    {
+                        FolderName = WorldPathToName(path),
+                        Address = arg[0],
+                        AuthCodeRSA = arg[1],
+                        Nickname = arg[2],
+                        Password = arg[3],
+                        PasswordIndex = passwordIndex
+                    });
+                }
+                else
+                {
+                    Directory.Delete(path, true);
+                    UnityEngine.Debug.LogWarning("Detected and removed saved server name conflict. Address: " + arg[0]);
+                }
+            }
+
+            return returns;
+        }
+
+        public static void SaveServerData(ServerData serverData)
+        {
+            string data = string.Join("\n", new string[]
+            {
+                serverData.Address,
+                serverData.AuthCodeRSA,
+                serverData.Nickname,
+                serverData.Password,
+                serverData.PasswordIndex.ToString()
+            });
+            FileManager.Write(Path.Combine(MultiplayerPath, serverData.FolderName), "info.txt", data);
         }
     }
 }
