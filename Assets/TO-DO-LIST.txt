@@ -1,6 +1,6 @@
 === Larnix TO-DO-LIST ===
 
-- Multiplayer world menu
+- Finish world menu
 - Server into threaded class
 - World host system
 - Help relay server

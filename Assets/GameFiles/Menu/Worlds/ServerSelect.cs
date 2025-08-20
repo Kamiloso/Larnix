@@ -46,10 +46,6 @@ namespace Larnix.Menu.Worlds
         private void Awake()
         {
             References.ServerSelect = this;
-        }
-
-        private void Start()
-        {
             ReloadWorldList();
         }
 
@@ -57,22 +53,37 @@ namespace Larnix.Menu.Worlds
         {
             UnityEngine.Debug.Log("ADD SERVER (temporary add)");
 
-            SaveServerData(new ServerData
+            string address = "::1";
+            ServerData serverData = new ServerData
             {
                 FolderName = Guid.NewGuid().ToString("N"),
-                Address = "::1",
-                AuthCodeRSA = "aaaaaa-bbbbbb-cccccc-dddddd",
+                Address = address,
+                AuthCodeRSA = "wwnTuF-l6dNeN-D73onX-plNtrb",
                 Nickname = "",
                 Password = "",
-                PasswordIndex = 0,
-            });
+            };
 
-            ReloadWorldList();
+            // Can throw InvalidOperationException if trying to add duplicate address, be careful!
+            try
+            {
+                AddServerSegment(address, serverData, true);
+            }
+            catch (InvalidOperationException ex)
+            {
+                UnityEngine.Debug.LogError(ex.Message);
+                return;
+            }
+
+            SelectWorld(address, true);
+            SaveServerData(serverData);
         }
 
         public void JoinServer()
         {
             UnityEngine.Debug.Log("JOIN");
+
+            // Save only to change last edit date
+            SaveServerData(serverThinker.serverData);
         }
 
         public void EditServer()
@@ -146,19 +157,31 @@ namespace Larnix.Menu.Worlds
             Dictionary<string, ServerData> servers = ReadServerDataDictionary();
             foreach (string name in servers.Keys)
             {
-                RectTransform rt = Instantiate(WorldSegmentPrefab).transform as RectTransform;
-                if (rt == null)
-                    throw new System.InvalidOperationException("Prefab should be of type RectTransform!");
-
-                rt.name = $"Server: \"{name}\"";
-                rt.GetComponent<WorldSegment>().Init(name, this);
-                ScrollView.EntryPushElement(rt);
-
-                ServerThinker thinker = rt.AddComponent<ServerThinker>();
-                thinker.SetServerData(servers[name]);
-                thinker.SafeRefresh();
-                ServerThinkers[name] = thinker;
+                AddServerSegment(name, servers[name], false);
             }
+        }
+
+        private void AddServerSegment(string name, ServerData serverData, bool asFirst)
+        {
+            if (ServerThinkers.ContainsKey(name))
+                throw new System.InvalidOperationException("Trying to add server segment with a duplicate name: " + name);
+
+            RectTransform rt = Instantiate(WorldSegmentPrefab).transform as RectTransform;
+            if (rt == null)
+                throw new System.InvalidOperationException("Prefab should be of type RectTransform!");
+
+            rt.name = $"Server: \"{name}\"";
+            rt.GetComponent<WorldSegment>().Init(name, this);
+
+            if (asFirst) ScrollView.TopAddElement(rt);
+            else ScrollView.BottomAddElement(rt);
+
+            ServerThinker thinker = rt.AddComponent<ServerThinker>();
+            thinker.SetServerData(serverData);
+            thinker.SafeRefresh();
+
+            ServerThinkers[name] = thinker;
+                
         }
 
         private void UpdateUI()
@@ -196,12 +219,12 @@ namespace Larnix.Menu.Worlds
                 BT_Refresh.interactable = false;
                 BT_Remove.interactable = true;
             }
-            else if (state == ThinkerState.Ready)
+            else if (state == ThinkerState.Ready || state == ThinkerState.Incompatible)
             {
                 NameText.text = SelectedWorld ?? "";
-                TX_Description.text = "Version: 0.0.0\nDifficulty: UNKNOWN";
-                TX_Motd.text = "This is a test motd.";
-                TX_PlayerAmount.text = "ACTIVE\n0 / 0";
+                TX_Description.text = $"Version: {new Version(serverThinker.serverInfo.GameVersion)}\nDifficulty: UNKNOWN";
+                TX_Motd.text = serverThinker.serverInfo.Motd;
+                TX_PlayerAmount.text = $"ACTIVE\n{serverThinker.serverInfo.CurrentPlayers} / {serverThinker.serverInfo.MaxPlayers}";
 
                 switch (logState)
                 {
@@ -211,6 +234,9 @@ namespace Larnix.Menu.Worlds
                     case LoginState.Good: TX_LoginInfo.text = $"Playing as {serverThinker.serverData.Nickname}"; break;
                     case LoginState.Bad: TX_LoginInfo.text = "Login failed!"; break;
                 }
+
+                if (state == ThinkerState.Incompatible)
+                    TX_LoginInfo.text = "Incompatible version!";
 
                 BT_Edit.interactable = true;
                 BT_Refresh.interactable = true;
@@ -270,9 +296,8 @@ namespace Larnix.Menu.Worlds
                 if (data == null) continue;
 
                 string[] arg = data.Split('\n');
-                if (arg.Length < 5) continue;
+                if (arg.Length < 4) continue;
 
-                long.TryParse(arg[4], out long passwordIndex);
                 if (!returns.ContainsKey(arg[0]))
                 {
                     returns.Add(arg[0], new ServerData
@@ -282,7 +307,6 @@ namespace Larnix.Menu.Worlds
                         AuthCodeRSA = arg[1],
                         Nickname = arg[2],
                         Password = arg[3],
-                        PasswordIndex = passwordIndex
                     });
                 }
                 else
@@ -303,7 +327,6 @@ namespace Larnix.Menu.Worlds
                 serverData.AuthCodeRSA,
                 serverData.Nickname,
                 serverData.Password,
-                serverData.PasswordIndex.ToString()
             });
             FileManager.Write(Path.Combine(MultiplayerPath, serverData.FolderName), "info.txt", data);
         }

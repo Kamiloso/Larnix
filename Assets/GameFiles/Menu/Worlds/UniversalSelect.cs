@@ -22,13 +22,24 @@ namespace Larnix.Menu.Worlds
         public abstract void ReloadWorldList();
         protected abstract void OnWorldSelect(string worldName);
 
-        public void SelectWorld(string worldName)
+        public bool TrySelectTopElement(bool instant)
+        {
+            List<RectTransform> list = ScrollView.GetAllTransforms();
+            if (list.Count > 0)
+            {
+                SelectWorld(list[list.Count - 1].GetComponent<WorldSegment>().Name, instant);
+                return true;
+            }
+            return false;
+        }
+
+        public void SelectWorld(string worldName, bool instant = false)
         {
             List<RectTransform> list = ScrollView.GetAllTransforms();
             foreach (RectTransform rt in list)
             {
                 WorldSegment sgm = rt.GetComponent<WorldSegment>();
-                if (sgm != null) sgm.SetSelection(worldName);
+                if (sgm != null) sgm.SetSelection(worldName, instant);
             }
 
             SelectedWorld = worldName ?? null;

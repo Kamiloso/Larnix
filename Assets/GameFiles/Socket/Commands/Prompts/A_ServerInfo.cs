@@ -13,6 +13,12 @@ namespace Larnix.Socket.Commands
         public override Name ID => Name.A_ServerInfo;
         public const int SIZE = 256 + 8 + 512 + 2 + 2 + 4 + 8;
 
+        // ------------------------------------------------
+        // YOU ARE NOT ALLOWED TO CHANGE ALREADY SPECIFIED
+        // FIELDS IN THE PACKET FOR FUTURE COMPATIBILITY !!!
+        // You can only add new ones at the end.
+        // ------------------------------------------------
+
         public byte[] PublicKeyModulus {  get; private set; } // 256B
         public byte[] PublicKeyExponent { get; private set; } // 8B
         public string Motd { get; private set; } // 512B (256 chars)

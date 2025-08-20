@@ -15,7 +15,6 @@ namespace Larnix.Menu.Worlds
         public string AuthCodeRSA = "";
         public string Nickname = "";
         public string Password = "";
-        public long PasswordIndex = 0;
     }
 
     public enum ThinkerState
@@ -24,7 +23,8 @@ namespace Larnix.Menu.Worlds
         Waiting,
         Ready,
         Failed,
-        WrongPublicKey
+        WrongPublicKey,
+        Incompatible
     }
 
     public enum LoginState
@@ -44,6 +44,8 @@ namespace Larnix.Menu.Worlds
 
         Coroutine loginCoroutine = null;
         public bool? LoginSuccess { get; private set; } = null;
+
+        private long PasswordIndex = 0;
 
         public void SetServerData(ServerData serverData)
         {
@@ -67,19 +69,16 @@ namespace Larnix.Menu.Worlds
             serverData.Password = password;
 
             Logout();
-            if (State == ThinkerState.Ready)
-                loginCoroutine = StartCoroutine(LoginCoroutine());
+            Login();
 
             // to file
             ServerSelect.SaveServerData(serverData);
         }
 
-        public void SetPasswordIndex(long passwordIndex)
+        private void Login()
         {
-            serverData.PasswordIndex = passwordIndex;
-
-            // to file
-            ServerSelect.SaveServerData(serverData);
+            if (State == ThinkerState.Ready)
+                loginCoroutine = StartCoroutine(LoginCoroutine());
         }
 
         public void Logout()
@@ -122,10 +121,13 @@ namespace Larnix.Menu.Worlds
 
             string address = serverData.Address;
             string nickname = serverData.Nickname;
+            string password = serverData.Password;
+
+            bool knowsUserData = nickname != "" && password != "";
 
             Task<A_ServerInfo> downloading = new Task<A_ServerInfo>(() =>
             {
-                return Resolver.downloadServerInfo(address, nickname ?? "Player");
+                return Resolver.downloadServerInfo(address, knowsUserData ? nickname : "Player");
             });
             downloading.Start();
             while (!downloading.IsCompleted)
@@ -157,9 +159,15 @@ namespace Larnix.Menu.Worlds
 
             if (checkingKey.Result)
             {
-                State = ThinkerState.Ready;
                 serverInfo = downloading.Result;
-                SetPasswordIndex(serverInfo.PasswordIndex);
+                State = Version.Current.CompatibleWith(new Version(serverInfo.GameVersion)) ? ThinkerState.Ready : ThinkerState.Incompatible;
+                
+                if (knowsUserData && State != ThinkerState.Incompatible)
+                {
+                    PasswordIndex = serverInfo.PasswordIndex;
+                    Login();
+                }
+                
                 yield break;
             }
             else

@@ -111,7 +111,7 @@ namespace Larnix.Server.Data
         const string Base64 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz#&";
         private const int VERIFY_PART_LENGTH = 12;
         private const int SECRET_PART_LENGTH = 11; // must be at least 11, must fit one long
-        private const int TOTAL_LENGTH = VERIFY_PART_LENGTH + SECRET_PART_LENGTH + 1 /* checksum */;
+        private const int TOTAL_LENGTH = VERIFY_PART_LENGTH + SECRET_PART_LENGTH + 1 /* +checksum */;
         private const int SEGMENT_SIZE = 6;
 
         public static string ProduceAuthCodeRSA(byte[] key, long secret)
@@ -139,15 +139,12 @@ namespace Larnix.Server.Data
                 sb.Append(Base64[hash[i] % 64]);
 
             ulong usecret = (ulong)secret;
-            while (usecret != 0)
+            while (sb.Length < VERIFY_PART_LENGTH + SECRET_PART_LENGTH)
             {
                 int mod = (int)(usecret % 64);
                 usecret /= 64;
                 sb.Insert(VERIFY_PART_LENGTH, Base64[mod]);
             }
-
-            while (sb.Length < TOTAL_LENGTH - 1)
-                sb.Insert(VERIFY_PART_LENGTH, Base64[0]);
 
             int checksum = 0;
             foreach (char c in sb.ToString())

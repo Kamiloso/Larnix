@@ -64,7 +64,7 @@ namespace Larnix.Menu
             UniversalSelect[] universalSelects = FindObjectsByType<UniversalSelect>(FindObjectsSortMode.None);
             foreach (var usl in universalSelects)
             {
-                usl.SelectWorld(null);
+                usl.TrySelectTopElement(true);
             }
         }
 

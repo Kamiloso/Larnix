@@ -91,7 +91,7 @@ namespace Larnix.Server
 
         private void Start()
         {
-            Console.SetTitle("Larnix Server " + Common.GAME_VERSION);
+            Console.SetTitle("Larnix Server " + Version.Current);
 
             Console.LogRaw(new string('-', 60) + "\n");
 
@@ -318,7 +318,7 @@ namespace Larnix.Server
                     Common.IsGoodMessage(ServerConfig.Motd) ? ServerConfig.Motd : "Invalid motd format :(",
                     LarnixServer.CountPlayers(),
                     LarnixServer.MaxClients,
-                    Common.GAME_VERSION_UINT,
+                    Version.Current.ID,
                     Database.GetPasswordIndex(checkNickname)
                     );
                 if (answer.HasProblems)

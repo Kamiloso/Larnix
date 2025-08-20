@@ -7,16 +7,12 @@ using System.Linq.Expressions;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
-using Unity.Burst.Intrinsics;
 using UnityEngine;
 
 namespace Larnix
 {
     public static class Common
     {
-        public static string GAME_VERSION = "0.0.1";
-        public const uint GAME_VERSION_UINT = 1;
-
         public static bool IsGoodNickname(string nickname) =>
             !nickname.Contains('\0') &&
             nickname.Length is >= 3 and <= 16 &&

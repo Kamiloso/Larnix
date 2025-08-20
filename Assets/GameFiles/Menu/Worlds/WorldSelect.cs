@@ -25,10 +25,6 @@ namespace Larnix.Menu.Worlds
         private void Awake()
         {
             References.WorldSelect = this;
-        }
-
-        private void Start()
-        {
             ReloadWorldList();
         }
 
@@ -81,7 +77,7 @@ namespace Larnix.Menu.Worlds
 
                 rt.name = $"WorldSegment: \"{worldName}\"";
                 rt.GetComponent<WorldSegment>().Init(worldName, this);
-                ScrollView.EntryPushElement(rt);
+                ScrollView.BottomAddElement(rt);
             }
         }
 
@@ -98,7 +94,7 @@ namespace Larnix.Menu.Worlds
             if (enable)
             {
                 LoadImageOrClear(Path.Combine(SavesPath, worldName, "last_image.png"), TitleImage);
-                DescriptionText.text = $"Version: {"0.0.0"}\n" +
+                DescriptionText.text = $"Version: {"?.?.?"}\n" +
                                        $"Difficulty: {"UNKNOWN"}";
             }
             else

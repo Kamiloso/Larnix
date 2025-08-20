@@ -15,10 +15,29 @@ namespace Larnix.UI
         private readonly Stack<(RectTransform, float)> Elements = new();
         private float NextY = 0f;
 
-        public void EntryPushElement(RectTransform rt, float spacing = 0f)
+        public void BottomAddElement(RectTransform rt, float spacing = 0f)
         {
             float spacedSize = rt.rect.height + spacing;
             PushElement((rt, spacedSize));
+        }
+
+        public void TopAddElement(RectTransform rt, float spacing = 0f)
+        {
+            Stack<(RectTransform, float)> otherStack = new();
+
+            while (Elements.Count > 0)
+            {
+                var element = PopElement();
+                otherStack.Push(element);
+            }
+
+            BottomAddElement(rt, spacing);
+
+            while (otherStack.Count > 0)
+            {
+                var element = otherStack.Pop();
+                PushElement(element);
+            }
         }
 
         private void PushElement((RectTransform, float) element)

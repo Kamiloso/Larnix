@@ -23,7 +23,10 @@ namespace Larnix.Socket
 
         private const float CON_RESET_TIME = 1f; // seconds
         private float timeToResetCon = CON_RESET_TIME;
+        private uint MAX_CON = 3; // limit heavy packets per IP mask (internetID)
+        private uint MAX_GLOBAL_CON = 30; // limit heavy packets globally
         private Dictionary<InternetID, uint> recentConCount = new();
+        private uint globalConCount = 0;
 
         private readonly System.Action<IPEndPoint, string, string, long, long> TryLogin; // (EndPoint, username, password, serverSecret, challengeID) [ challengeID = passwordIndex ]
         private readonly Func<Packet, Packet> GetNcnAnswer; // (question) -> (answer)
@@ -229,10 +232,11 @@ namespace Larnix.Socket
                         header.HasFlag(SafePacket.PacketFlag.RSA) ||
                         header.HasFlag(SafePacket.PacketFlag.NCN))
                     {
-                        if (conCount < 3)
-                            recentConCount[internetID] = ++conCount;
-                        else
-                            continue;
+                        if (conCount < MAX_CON) recentConCount[internetID] = ++conCount;
+                        else continue;
+
+                        if (globalConCount < MAX_GLOBAL_CON) globalConCount++;
+                        else continue;
                     }
 
                     if (header.HasFlag(SafePacket.PacketFlag.RSA)) // encrypted with RSA
@@ -385,6 +389,7 @@ namespace Larnix.Socket
             {
                 timeToResetCon = CON_RESET_TIME;
                 recentConCount.Clear();
+                globalConCount = 0;
             }
 
             // Return packets

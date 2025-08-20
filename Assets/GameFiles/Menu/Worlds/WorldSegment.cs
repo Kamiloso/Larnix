@@ -1,3 +1,4 @@
+using Larnix.UI;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -21,15 +22,10 @@ namespace Larnix.Menu.Worlds
             Name = name;
             MySelect = mySelect;
 
-            var cb = PlayButton.colors;
-            float oldDuration = cb.fadeDuration;
-            cb.fadeDuration = 0f;
-            PlayButton.colors = cb;
-
-            UpdateView();
-
-            cb.fadeDuration = oldDuration;
-            PlayButton.colors = cb;
+            using (new ButtonFadeDisabler(SelectButton))
+            {
+                UpdateView();
+            }
         }
 
         private void Update()
@@ -53,9 +49,11 @@ namespace Larnix.Menu.Worlds
             }
         }
 
-        public void SetSelection(string worldName)
+        public void SetSelection(string worldName, bool instant)
         {
+            ButtonFadeDisabler bfd = instant ? new ButtonFadeDisabler(SelectButton) : null;
             SelectButton.interactable = worldName != Name;
+            bfd?.Dispose();
         }
 
         public void SelectWorld()
