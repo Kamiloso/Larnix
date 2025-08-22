@@ -110,7 +110,7 @@ namespace Larnix.Server.Data
 
         const string Base64 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz#&";
         private const int VERIFY_PART_LENGTH = 12;
-        private const int SECRET_PART_LENGTH = 11; // must be at least 11, must fit one long
+        private const int SECRET_PART_LENGTH = 11; // must be at least 11 to fit one long
         private const int TOTAL_LENGTH = VERIFY_PART_LENGTH + SECRET_PART_LENGTH + 1 /* +checksum */;
         private const int SEGMENT_SIZE = 6;
 
@@ -162,6 +162,8 @@ namespace Larnix.Server.Data
                 return false;
 
             string code = authCodeRSA.Replace("-", "");
+            if (Common.InsertDashes(code, SEGMENT_SIZE) != authCodeRSA)
+                return false;
             
             if (code.Length != TOTAL_LENGTH)
                 return false;

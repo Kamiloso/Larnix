@@ -15,6 +15,8 @@ namespace Larnix.Socket.Commands
         // Prompts and answers
         P_ServerInfo,
         A_ServerInfo,
+        P_LoginTry,
+        A_LoginTry,
 
         // Game commands
         PlayerInitialize,

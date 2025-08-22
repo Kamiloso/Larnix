@@ -11,7 +11,7 @@ namespace Larnix.Socket.Commands
     public class A_ServerInfo : BaseCommand
     {
         public override Name ID => Name.A_ServerInfo;
-        public const int SIZE = 256 + 8 + 512 + 2 + 2 + 4 + 8;
+        public const int SIZE = 256 + 8 + 512 + 2 + 2 + 4 + 8 + 32;
 
         // ------------------------------------------------
         // YOU ARE NOT ALLOWED TO CHANGE ALREADY SPECIFIED
@@ -26,6 +26,7 @@ namespace Larnix.Socket.Commands
         public ushort MaxPlayers { get; private set; } // 2B
         public uint GameVersion { get; private set; } // 4B
         public long PasswordIndex { get; private set; } // 8B
+        public string Owner { get; private set; } // 32B (16 chars)
 
         public A_ServerInfo(
             byte[] publicKeyModulus,
@@ -35,6 +36,7 @@ namespace Larnix.Socket.Commands
             ushort maxPlayers,
             uint gameVersion,
             long passwordIndex,
+            string owner,
             byte code = 0
             )
             : base(Name.None, code)
@@ -46,6 +48,7 @@ namespace Larnix.Socket.Commands
             MaxPlayers = maxPlayers;
             GameVersion = gameVersion;
             PasswordIndex = passwordIndex;
+            Owner = owner;
 
             DetectDataProblems();
         }
@@ -54,7 +57,7 @@ namespace Larnix.Socket.Commands
             : base(packet)
         {
             byte[] bytes = packet.Bytes;
-            if(bytes == null || bytes.Length < SIZE) { // can be bigger than size for future compatibility
+            if(bytes == null || bytes.Length < SIZE) { // can be bigger than size - will be able to see newer servers
                 HasProblems = true;
                 return;
             }
@@ -66,6 +69,7 @@ namespace Larnix.Socket.Commands
             MaxPlayers = EndianUnsafe.FromBytes<ushort>(bytes, 778);
             GameVersion = EndianUnsafe.FromBytes<uint>(bytes, 780);
             PasswordIndex = EndianUnsafe.FromBytes<long>(bytes, 784);
+            Owner = Common.FixedBinaryToString(bytes[792..824]);
 
             DetectDataProblems();
         }
@@ -79,7 +83,8 @@ namespace Larnix.Socket.Commands
                 EndianUnsafe.GetBytes(CurrentPlayers),
                 EndianUnsafe.GetBytes(MaxPlayers),
                 EndianUnsafe.GetBytes(GameVersion),
-                EndianUnsafe.GetBytes(PasswordIndex)
+                EndianUnsafe.GetBytes(PasswordIndex),
+                Common.StringToFixedBinary(Owner, 16)
                 );
 
             return new Packet((byte)ID, Code, bytes);
@@ -89,7 +94,8 @@ namespace Larnix.Socket.Commands
             bool ok = (
                 PublicKeyModulus.Length == 256 &&
                 PublicKeyExponent.Length == 8 &&
-                Common.IsGoodMessage(Motd)
+                Common.IsGoodMessage(Motd) &&
+                Common.IsGoodNickname(Owner)
                 );
             HasProblems = HasProblems || !ok;
         }

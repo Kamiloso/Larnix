@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using UnityEngine;
 using Larnix.Socket;
 using System.Linq;
+using Larnix.Server.Data;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Larnix.Menu.Worlds
 {
@@ -15,6 +17,12 @@ namespace Larnix.Menu.Worlds
         public string AuthCodeRSA = "";
         public string Nickname = "";
         public string Password = "";
+    }
+
+    public class LoginInfo
+    {
+        public string Nickname = "";
+        public long ChallengeID = 0;
     }
 
     public enum ThinkerState
@@ -41,44 +49,59 @@ namespace Larnix.Menu.Worlds
         public ThinkerState State { get; private set; } = ThinkerState.None;
         public ServerData serverData = new(); // input
         public A_ServerInfo serverInfo = null; // output
+        public LoginInfo loginInfo = null; // how you should login?
 
         Coroutine loginCoroutine = null;
         public bool? LoginSuccess { get; private set; } = null;
 
-        private long PasswordIndex = 0;
+        private string oldNickname = null;
+        private string oldPassword = null;
 
         public void SetServerData(ServerData serverData)
         {
             this.serverData = serverData;
+            SafeRefresh();
         }
 
         public void SubmitServer(string address, string authCodeRSA)
         {
+            if (serverData.AuthCodeRSA != authCodeRSA) // reset user data when changing authcode (for security)
+            {
+                serverData.Nickname = "";
+                serverData.Password = "";
+            }
+
             serverData.Address = address;
             serverData.AuthCodeRSA = authCodeRSA;
-            serverData.Nickname = null;
-            serverData.Password = null;
 
             // to file
             ServerSelect.SaveServerData(serverData);
+
+            SafeRefresh();
         }
 
-        public void SubmitUser(string nickname, string password)
+        public void SubmitUser(string nickname, string password, bool isRegistration)
         {
+            oldNickname = serverData.Nickname;
+            oldPassword = serverData.Password;
+
             serverData.Nickname = nickname;
             serverData.Password = password;
 
             Logout();
-            Login();
+            Login(isRegistration);
 
-            // to file
-            ServerSelect.SaveServerData(serverData);
+            if (!isRegistration)
+            {
+                // to file
+                ServerSelect.SaveServerData(serverData);
+            }
         }
 
-        private void Login()
+        private void Login(bool isRegistration)
         {
             if (State == ThinkerState.Ready)
-                loginCoroutine = StartCoroutine(LoginCoroutine());
+                loginCoroutine = StartCoroutine(LoginCoroutine(isRegistration));
         }
 
         public void Logout()
@@ -116,6 +139,7 @@ namespace Larnix.Menu.Worlds
             Logout();
             State = ThinkerState.Waiting;
             serverInfo = null;
+            loginInfo = null;
 
             // download server info
 
@@ -164,8 +188,12 @@ namespace Larnix.Menu.Worlds
                 
                 if (knowsUserData && State != ThinkerState.Incompatible)
                 {
-                    PasswordIndex = serverInfo.PasswordIndex;
-                    Login();
+                    loginInfo = new LoginInfo
+                    {
+                        Nickname = nickname,
+                        ChallengeID = serverInfo.PasswordIndex
+                    };
+                    Login(false);
                 }
                 
                 yield break;
@@ -178,13 +206,98 @@ namespace Larnix.Menu.Worlds
             }
         }
 
-        private IEnumerator LoginCoroutine()
+        private IEnumerator LoginCoroutine(bool isRegistration)
         {
-            yield return new WaitForSecondsRealtime(1f);
+            string address = serverData.Address;
+            string nickname = serverData.Nickname;
+            string password = serverData.Password;
 
-            LoginSuccess = false;
-            loginCoroutine = null;
-            yield break;
+            long serverSecret = KeyObtainer.GetSecretFromAuthCode(serverData.AuthCodeRSA);
+
+            // challengeID obtain
+
+            if (loginInfo == null || loginInfo.Nickname != nickname)
+            {
+                Task<A_ServerInfo> downloading = new Task<A_ServerInfo>(() =>
+                {
+                    return Resolver.downloadServerInfo(address, nickname);
+                });
+                downloading.Start();
+                while (!downloading.IsCompleted)
+                    yield return null;
+
+                A_ServerInfo dinfo = downloading.Result;
+                if (dinfo == null)
+                    goto login_failed;
+
+                loginInfo = new LoginInfo
+                {
+                    Nickname = nickname,
+                    ChallengeID = dinfo.PasswordIndex,
+                };
+            }
+
+            long challengeID = loginInfo.ChallengeID;
+
+            if (!isRegistration)
+            {
+                // login
+
+                byte[] public_key = serverInfo.PublicKeyModulus.Concat(serverInfo.PublicKeyExponent).ToArray();
+                Task<A_LoginTry> login = new Task<A_LoginTry>(() =>
+                {
+                    return Resolver.tryLogin(address, public_key, nickname, password, serverSecret, challengeID);
+                });
+                login.Start();
+                while (!login.IsCompleted)
+                    yield return null;
+
+                A_LoginTry linfo = login.Result;
+                if (linfo == null)
+                    goto login_failed;
+
+                if (linfo.Code == 1) goto login_success;
+                else goto login_failed;
+            }
+            else
+            {
+                // register (fake... but will be true in a moment)
+
+                if (challengeID == 0) goto login_success;
+                else goto login_failed;
+            }
+
+            // goto statements
+
+            login_failed:
+            {
+                if (isRegistration) // revert data
+                {
+                    serverData.Nickname = oldNickname;
+                    serverData.Password = oldPassword;
+                }
+
+                LoginSuccess = false;
+                loginCoroutine = null;
+                yield break;
+            }
+
+            login_success:
+            {
+                if (isRegistration) // apply data
+                {
+                    ServerSelect.SaveServerData(serverData);
+                }
+
+                if (!isRegistration) // logged in, increment
+                {
+                    loginInfo.ChallengeID++;
+                }
+
+                LoginSuccess = true;
+                loginCoroutine = null;
+                yield break;
+            }
         }
     }
 }

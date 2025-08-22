@@ -10,12 +10,15 @@ using Larnix.Socket.Commands;
 using System.Linq;
 using System;
 using Larnix.Menu.Worlds;
+using TMPro;
 
 namespace Larnix.Menu
 {
     public class Menu : MonoBehaviour
     {
+        [SerializeField] TextMeshProUGUI VersionText;
         [SerializeField] List<RectTransform> Screens;
+        [SerializeField] List<string> UniversalSelectScreens;
         [SerializeField] List<string> EscapeList;
 
         private string currentScreen = null;
@@ -30,6 +33,8 @@ namespace Larnix.Menu
 
         private void Start()
         {
+            VersionText.text = "Version " + Version.Current;
+
             foreach (var screen in Screens)
             {
                 screen.gameObject.SetActive(true);
@@ -46,25 +51,27 @@ namespace Larnix.Menu
             }
         }
 
-        public void SetScreen(string parentName)
+        public void SetScreen(string newScreen)
         {
-            currentScreen = parentName;
+            string oldScreen = currentScreen;
+            currentScreen = newScreen;
+
             foreach (var screen in Screens)
             {
                 CanvasGroup cg = screen.gameObject.GetComponent<CanvasGroup>();
                 if (cg == null)
                     cg = screen.gameObject.AddComponent<CanvasGroup>();
 
-                bool isActiveScreen = screen.name == parentName;
+                bool isActiveScreen = screen.name == newScreen;
                 cg.alpha = isActiveScreen ? 1f : 0f;
                 cg.interactable = isActiveScreen;
                 cg.blocksRaycasts = isActiveScreen;
             }
 
-            UniversalSelect[] universalSelects = FindObjectsByType<UniversalSelect>(FindObjectsSortMode.None);
-            foreach (var usl in universalSelects)
+            if (UniversalSelectScreens.Contains(newScreen))
             {
-                usl.TrySelectTopElement(true);
+                if (!EscapeList.Contains(oldScreen + "~" + newScreen)) // if not going back
+                SelectTopElements();
             }
         }
 
@@ -87,6 +94,15 @@ namespace Larnix.Menu
         public void Quit()
         {
             Application.Quit();
+        }
+
+        private void SelectTopElements()
+        {
+            UniversalSelect[] universalSelects = FindObjectsByType<UniversalSelect>(FindObjectsSortMode.None);
+            foreach (var usl in universalSelects)
+            {
+                usl.TrySelectTopElement(true);
+            }
         }
     }
 }

@@ -10,6 +10,7 @@ namespace Larnix.UI
 {
     public class ScrollView : MonoBehaviour
     {
+        [SerializeField] public UnityEngine.UI.ScrollRect ScrollRect;
         [SerializeField] RectTransform Container;
 
         private readonly Stack<(RectTransform, float)> Elements = new();
@@ -32,6 +33,27 @@ namespace Larnix.UI
             }
 
             BottomAddElement(rt, spacing);
+
+            while (otherStack.Count > 0)
+            {
+                var element = otherStack.Pop();
+                PushElement(element);
+            }
+        }
+
+        public void BubbleUp(RectTransform rt)
+        {
+            Stack<(RectTransform, float)> otherStack = new();
+            (RectTransform, float) bubble = default;
+
+            while (Elements.Count > 0)
+            {
+                var element = PopElement();
+                if (!ReferenceEquals(element.Item1, rt)) otherStack.Push(element);
+                else bubble = element;
+            }
+
+            PushElement(bubble);
 
             while (otherStack.Count > 0)
             {

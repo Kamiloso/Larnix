@@ -7,9 +7,36 @@ using System.IO;
 using System.Linq;
 using UnityEngine.UI;
 using TMPro;
+using Larnix.Menu.Forms;
+using System.Runtime.InteropServices;
+using Larnix.Files;
 
 namespace Larnix.Menu.Worlds
 {
+    public struct MetadataSGP
+    {
+        public Version version;
+        public string nickname;
+
+        public MetadataSGP(Version version, string nickname)
+        {
+            this.version = version;
+            this.nickname = nickname;
+        }
+
+        public MetadataSGP(string text)
+        {
+            string[] arg = text.Split('\n');
+            version = new Version(uint.Parse(arg[0]));
+            nickname = arg[1];
+        }
+
+        public string GetString()
+        {
+            return version.ID + "\n" + nickname;
+        }
+    }
+
     public class WorldSelect : UniversalSelect
     {
         public static string SavesPath { get => Path.Combine(Application.persistentDataPath, "Saves"); }
@@ -22,6 +49,8 @@ namespace Larnix.Menu.Worlds
         [SerializeField] Button BT_Rename;
         [SerializeField] Button BT_Delete;
 
+        private readonly Dictionary<string, MetadataSGP> MetadatasSGP = new();
+
         private void Awake()
         {
             References.WorldSelect = this;
@@ -30,40 +59,35 @@ namespace Larnix.Menu.Worlds
 
         public void CreateWorld()
         {
-            string newWorldName = "Random World " + Common.Rand().Next();
-            WorldLoad.StartLocal(newWorldName);
+            BaseForm.GetInstance<WorldCreateForm>().EnterForm();
         }
 
         public void PlayWorld()
         {
-            WorldLoad.StartLocal(SelectedWorld);
+            MetadataSGP mdata = ReadMetadataSGP(SelectedWorld);
+            WorldLoad.StartLocal(SelectedWorld, mdata.nickname);
         }
 
         public void HostWorld()
         {
-            UnityEngine.Debug.LogWarning("Hosting worlds not implemented yet.");
+            
         }
 
         public void RenameWorld()
         {
-            UnityEngine.Debug.LogWarning("Renaming worlds not implemented yet.");
-
-            ReloadWorldList();
+            BaseForm.GetInstance<WorldRenameForm>().EnterForm(SelectedWorld);
         }
 
         public void DeleteWorld()
         {
-            string delPath = Path.Combine(SavesPath, SelectedWorld);
-            if (Directory.Exists(delPath))
-                Directory.Delete(delPath, true);
-
-            ReloadWorldList();
+            BaseForm.GetInstance<WorldDeleteForm>().EnterForm(SelectedWorld);
         }
 
         public override void ReloadWorldList()
         {
             SelectWorld(null);
             ScrollView.ClearAll();
+            MetadatasSGP.Clear();
 
             // World Segments
             List<string> availableWorldPaths = GetSortedWorldPaths(SavesPath, "database.sqlite");
@@ -78,6 +102,8 @@ namespace Larnix.Menu.Worlds
                 rt.name = $"WorldSegment: \"{worldName}\"";
                 rt.GetComponent<WorldSegment>().Init(worldName, this);
                 ScrollView.BottomAddElement(rt);
+
+                MetadatasSGP[worldName] = ReadMetadataSGP(worldPath);
             }
         }
 
@@ -86,16 +112,23 @@ namespace Larnix.Menu.Worlds
             NameText.text = worldName ?? "";
 
             bool enable = worldName != null;
-            BT_Play.interactable = enable;
+            bool compatible = enable ? MetadatasSGP[worldName].version <= Version.Current : false;
+
+            BT_Play.interactable = enable && compatible;
             BT_Host.interactable = enable;
             BT_Rename.interactable = enable;
             BT_Delete.interactable = enable;
 
             if (enable)
             {
+                string versionDisplay = MetadatasSGP[worldName].version.ToString();
+                string playerDisplay = MetadatasSGP[worldName].nickname;
+
                 LoadImageOrClear(Path.Combine(SavesPath, worldName, "last_image.png"), TitleImage);
-                DescriptionText.text = $"Version: {"?.?.?"}\n" +
-                                       $"Difficulty: {"UNKNOWN"}";
+                string description = $"Version: {versionDisplay}[REPLACE]\n" +
+                                     (playerDisplay != "Player" ? $"Player: {playerDisplay}" : "Detached World");
+
+                DescriptionText.text = description.Replace("[REPLACE]", compatible ? "" : " - Incompatible");
             }
             else
             {
@@ -133,6 +166,29 @@ namespace Larnix.Menu.Worlds
                 Vector2 pivot = new Vector2(0.5f, 0.5f);
                 Sprite blackSprite = Sprite.Create(blackTex, rect, pivot);
                 targetImage.sprite = blackSprite;
+            }
+        }
+
+        public static void SaveMetadataSGP(string worldName, MetadataSGP metadataSGP, bool fullPath = false)
+        {
+            string path = fullPath ? worldName : Path.Combine(SavesPath, worldName);
+            FileManager.Write(path, "metadata.txt", metadataSGP.GetString());
+        }
+
+        public static MetadataSGP ReadMetadataSGP(string worldName, bool fullPath = false)
+        {
+            string path = fullPath ? worldName : Path.Combine(SavesPath, worldName);
+            string contents = FileManager.Read(path, "metadata.txt");
+
+            try
+            {
+                return new MetadataSGP(contents);
+            }
+            catch
+            {
+                MetadataSGP mdata = new MetadataSGP(Version.Current, "Player");
+                SaveMetadataSGP(path, mdata);
+                return mdata;
             }
         }
     }

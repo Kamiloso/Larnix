@@ -26,7 +26,7 @@ namespace Larnix.Client.UI
 
         private void Update()
         {
-            if(!Input.GetKey(KeyCode.LeftControl))
+            if (!Input.GetKey(KeyCode.LeftControl))
             {
                 float scroll = Input.GetAxis("Mouse ScrollWheel");
                 SelectedSlot -= System.Math.Sign(scroll);
@@ -46,6 +46,15 @@ namespace Larnix.Client.UI
 
             if (SelectedSlot > MAX_SELECTABLE)
                 SelectedSlot = MIN_SELECTABLE;
+
+            // TEMPORARY BLOCK CHANGE
+            {
+                int deltaBlock = (Input.GetKeyDown(KeyCode.O) ? 1 : 0) - (Input.GetKeyDown(KeyCode.I) ? 1 : 0);
+                int deltaVariant = (Input.GetKeyDown(KeyCode.L) ? 1 : 0) - (Input.GetKeyDown(KeyCode.K) ? 1 : 0);
+
+                BlocksInSlots[SelectedSlot] = (BlockID)((int)BlocksInSlots[SelectedSlot] + deltaBlock);
+                VariantsInSlots[SelectedSlot] += (byte)deltaVariant;
+            }
 
             References.TileSelector.FromInventoryUpdate();
         }

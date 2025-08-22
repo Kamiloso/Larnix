@@ -29,7 +29,7 @@ namespace Larnix.Socket
         private uint globalConCount = 0;
 
         private readonly System.Action<IPEndPoint, string, string, long, long> TryLogin; // (EndPoint, username, password, serverSecret, challengeID) [ challengeID = passwordIndex ]
-        private readonly Func<Packet, Packet> GetNcnAnswer; // (question) -> (answer)
+        private readonly Func<IPEndPoint, uint, Packet, Packet> GetNcnAnswer; // (endPoint, ncnID, question) -> (answer)
 
         private readonly Dictionary<IPEndPoint, PreLoginBuffer> PreLoginBuffers = new();
 
@@ -39,7 +39,7 @@ namespace Larnix.Socket
             bool allowInternetTraffic,
             RSA keyRSA,
             System.Action<IPEndPoint, string, string, long, long> tryLogin,
-            Func<Packet, Packet> getNcnAnswer)
+            Func<IPEndPoint, uint, Packet, Packet> getNcnAnswer)
         {
             TryLogin = tryLogin;
             GetNcnAnswer = getNcnAnswer;
@@ -219,8 +219,6 @@ namespace Larnix.Socket
                 if (bytes == null)
                     continue;
 
-                bool IsIPv4Client = (remoteEP.AddressFamily == AddressFamily.InterNetwork);
-
                 SafePacket header = new SafePacket();
                 if (header.TryDeserialize(bytes, true))
                 {
@@ -261,23 +259,11 @@ namespace Larnix.Socket
                         if (!ncnPacket.TryDeserialize(bytes))
                             continue;
 
-                        Packet answer = GetNcnAnswer(ncnPacket.Payload);
+                        Packet answer = GetNcnAnswer(remoteEP, ncnPacket.SeqNum, ncnPacket.Payload);
                         if (answer == null)
                             continue;
 
-                        SafePacket safeAnswer = new SafePacket(
-                            ncnPacket.SeqNum,
-                            0,
-                            (byte)SafePacket.PacketFlag.NCN,
-                            answer
-                            );
-
-                        byte[] sendBytes = safeAnswer.Serialize();
-
-                        if (IsIPv4Client)
-                            udpClientV4.SendAsync(sendBytes, sendBytes.Length, remoteEP);
-                        else
-                            udpClientV6.SendAsync(sendBytes, sendBytes.Length, remoteEP);
+                        SendNCN(remoteEP, ncnPacket.SeqNum, answer);
                     }
                     else
                     {
@@ -416,6 +402,28 @@ namespace Larnix.Socket
                 if (connection != null)
                     connection.Send(packet, safemode);
             }
+        }
+
+        public void SendNCN(IPEndPoint endPoint, uint ncnID, Packet packet)
+        {
+            SafePacket safeAnswer = new SafePacket(
+                ncnID,
+                0,
+                (byte)SafePacket.PacketFlag.NCN,
+                packet
+                );
+
+            byte[] sendBytes = safeAnswer.Serialize();
+            SendWithUDP(sendBytes, endPoint);
+        }
+
+        private void SendWithUDP(byte[] bytes, IPEndPoint endPoint)
+        {
+            bool IsIPv4Client = endPoint.AddressFamily == AddressFamily.InterNetwork;
+            if (IsIPv4Client)
+                udpClientV4.SendAsync(bytes, bytes.Length, endPoint);
+            else
+                udpClientV6.SendAsync(bytes, bytes.Length, endPoint);
         }
 
         public IPEndPoint GetClientEndPoint(string nickname)

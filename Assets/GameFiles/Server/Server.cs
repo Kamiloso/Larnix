@@ -16,6 +16,7 @@ using Larnix.Entities;
 using Larnix.Blocks;
 using Larnix.Server.Terrain;
 using UnityEngine.SceneManagement;
+using Larnix.Menu.Worlds;
 
 namespace Larnix.Server
 {
@@ -25,6 +26,7 @@ namespace Larnix.Server
         private RSA CompleteRSA = null;
         private long ServerSecret = 0;
         private Socket.Server LarnixServer = null;
+        private MetadataSGP? Mdata = null;
 
         public string WorldDir { get; private set; } = "";
         public bool IsLocal { get; private set; } = false;
@@ -83,7 +85,7 @@ namespace Larnix.Server
 
             WorldLoad.ServerAddress = "localhost:" + LarnixServer.Port;
             WorldLoad.ServerSecret = ServerSecret;
-            WorldLoad.ChallengeID = Database.GetPasswordIndex("Player");
+            WorldLoad.ChallengeID = Database.GetPasswordIndex(WorldLoad.Nickname);
             
             if (IsLocal)
                 WorldLoad.RsaPublicKey = KeyToPublicBytes(CompleteRSA);
@@ -91,22 +93,58 @@ namespace Larnix.Server
 
         private void Start()
         {
+            // title set
             Console.SetTitle("Larnix Server " + Version.Current);
-
             Console.LogRaw(new string('-', 60) + "\n");
 
-            UnityEngine.Debug.Log(" Socket created on port " + LarnixServer.Port);
-            if (CompleteRSA != null) UnityEngine.Debug.Log(" Authcode (copy to connect): " + KeyObtainer.ProduceAuthCodeRSA(KeyToPublicBytes(CompleteRSA), ServerSecret));
-            else UnityEngine.Debug.LogWarning(" Every connection will be unencrypted! Couldn't find or generate RSA keys!");
+            // world metadata
+            Mdata = WorldSelect.ReadMetadataSGP(WorldLoad.WorldDirectory, true);
+            Mdata = new MetadataSGP(Version.Current, Mdata?.nickname);
+            WorldSelect.SaveMetadataSGP(WorldLoad.WorldDirectory, (MetadataSGP)Mdata, true);
 
+            // force change default password
+            if (!IsLocal && Mdata?.nickname != "Player")
+            {
+                string sgpNickname = Mdata?.nickname;
+
+                Console.LogRaw("This world was previously in use by " + sgpNickname + ".\n");
+                Console.LogRaw("Choose a password for this player to start the server.\n");
+
+                password_ask:
+                {
+                    Console.LogRaw("> ");
+                    string input = Console.GetInputSync();
+                    if (Common.IsGoodPassword(input))
+                    {
+                        Database.ChangePassword(sgpNickname, Hasher.HashPassword(input));
+                        Mdata = new MetadataSGP(Version.Current, "Player");
+                        WorldSelect.SaveMetadataSGP(WorldLoad.WorldDirectory, (MetadataSGP)Mdata, true);
+                    }
+                    else
+                    {
+                        Console.LogRaw("Password should be 7-32 characters and not use: NULL (0x00).\n");
+                        goto password_ask;
+                    }
+                }
+
+                Console.LogRaw("Password changed.\n");
+                Console.LogRaw(new string('-', 60) + "\n");
+            }
+
+            // socket information
+            UnityEngine.Debug.Log("Socket created on port " + LarnixServer.Port);
+            if (CompleteRSA != null) UnityEngine.Debug.Log("Authcode (copy to connect): " + KeyObtainer.ProduceAuthCodeRSA(KeyToPublicBytes(CompleteRSA), ServerSecret));
+            else
+            {
+                UnityEngine.Debug.LogError("Couldn't find or generate RSA keys!");
+                Application.Quit();
+            }
             Console.LogRaw(new string('-', 60) + "\n");
 
-            Console.LogSuccess("Server is ready!");
-
-            if (!IsLocal)
-                Console.StartInputThread();
-
+            // additional initialization
+            if (!IsLocal) Console.StartInputThread();
             StartCoroutine(RunEveryMinute());
+            Console.LogSuccess("Server is ready!");
         }
 
         private IEnumerator RunEveryMinute()
@@ -294,16 +332,15 @@ namespace Larnix.Server
             LarnixServer.FinishConnection(nickname);
         }
 
-        private Packet AnswerToNcnPacket(Packet packet)
+        private Packet AnswerToNcnPacket(IPEndPoint remoteEP, uint ncnID, Packet packet)
         {
             if (packet == null)
                 return null;
 
-            if((Name)packet.ID == Name.P_ServerInfo)
+            if ((Name)packet.ID == Name.P_ServerInfo)
             {
                 P_ServerInfo prompt = new P_ServerInfo(packet);
-                if (prompt.HasProblems)
-                    return null;
+                if (prompt.HasProblems) return null;
 
                 string checkNickname = prompt.Nickname;
                 byte[] publicKey = KeyToPublicBytes(CompleteRSA);
@@ -314,17 +351,47 @@ namespace Larnix.Server
 
                 A_ServerInfo answer = new A_ServerInfo(
                     publicKey[0..256],
-                    publicKey[256..264],
+                    publicKey[256..],
                     Common.IsGoodMessage(ServerConfig.Motd) ? ServerConfig.Motd : "Invalid motd format :(",
                     LarnixServer.CountPlayers(),
                     LarnixServer.MaxClients,
                     Version.Current.ID,
-                    Database.GetPasswordIndex(checkNickname)
+                    Database.GetPasswordIndex(checkNickname),
+                    Mdata?.nickname ?? "Player"
                     );
                 if (answer.HasProblems)
                     throw new Exception("Error making server info answer.");
 
                 return answer.GetPacket();
+            }
+
+            if ((Name)packet.ID == Name.P_LoginTry)
+            {
+                P_LoginTry prompt = new P_LoginTry(packet);
+                if (prompt.HasProblems) return null;
+
+                StartCoroutine(
+                    LoginCoroutine(remoteEP, prompt.Nickname, prompt.Password, prompt.ServerSecret, prompt.ChallengeID,
+                    ExecuteSuccess: () =>
+                    {
+                        Database.IncrementPasswordIndex(prompt.Nickname);
+                        A_LoginTry answer = new A_LoginTry(1); // success
+                        if (!answer.HasProblems)
+                        {
+                            LarnixServer.SendNCN(remoteEP, ncnID, answer.GetPacket());
+                        }
+                    },
+                    ExecuteFailed: () =>
+                    {
+                        A_LoginTry answer = new A_LoginTry(0); // fail
+                        if (!answer.HasProblems)
+                        {
+                            LarnixServer.SendNCN(remoteEP, ncnID, answer.GetPacket());
+                        }
+                    }
+                    ));
+
+                return null;
             }
 
             return null;
@@ -339,7 +406,7 @@ namespace Larnix.Server
                     Database.IncrementPasswordIndex(username);
                     LarnixServer.LoginAccept(remoteEP);
                 },
-                ExecuteFailed: () => // failed
+                ExecuteFailed: () =>
                 {
                     LarnixServer.LoginDeny(remoteEP);
                 }
@@ -405,6 +472,7 @@ namespace Larnix.Server
 
                 string hashed_password = hashTask.Result;
                 Database.AddUser(username, hashed_password);
+                Console.Log(username + " registered from " + remoteEP.Address);
 
                 ExecuteSuccess();
                 yield break; // created new account
@@ -567,7 +635,7 @@ namespace Larnix.Server
             }
         }
 
-        private static byte[] KeyToPublicBytes(RSA rsa)
+        public static byte[] KeyToPublicBytes(RSA rsa)
         {
             if (rsa == null)
                 return null;

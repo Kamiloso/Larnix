@@ -28,6 +28,11 @@ namespace Larnix.Menu.Worlds
             }
         }
 
+        public void ReInit(string name)
+        {
+            Init(name, MySelect);
+        }
+
         private void Update()
         {
             UpdateView();
@@ -39,7 +44,8 @@ namespace Larnix.Menu.Worlds
 
             if (MySelect is WorldSelect)
             {
-                PlayButton.interactable = true;
+                MetadataSGP mdata = WorldSelect.ReadMetadataSGP(Name);
+                PlayButton.interactable = mdata.version <= Version.Current;
             }
 
             if (MySelect is ServerSelect)
@@ -65,12 +71,13 @@ namespace Larnix.Menu.Worlds
         {
             if (MySelect is WorldSelect)
             {
-                WorldLoad.StartLocal(Name);
+                MetadataSGP mdata = WorldSelect.ReadMetadataSGP(Name);
+                WorldLoad.StartLocal(Name, mdata.nickname);
             }
             
             else if (MySelect is ServerSelect)
             {
-                References.Menu.GoBack();
+                References.ServerSelect.JoinServer();
             }
         }
     }

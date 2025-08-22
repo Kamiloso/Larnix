@@ -13,6 +13,7 @@ using Larnix.Socket;
 using Unity.VisualScripting;
 using Larnix.Files;
 using Larnix.Server.Data;
+using Larnix.Menu.Forms;
 
 namespace Larnix.Menu.Worlds
 {
@@ -51,44 +52,30 @@ namespace Larnix.Menu.Worlds
 
         public void AddServer()
         {
-            UnityEngine.Debug.Log("ADD SERVER (temporary add)");
-
-            string address = "::1";
-            ServerData serverData = new ServerData
-            {
-                FolderName = Guid.NewGuid().ToString("N"),
-                Address = address,
-                AuthCodeRSA = "wwnTuF-l6dNeN-D73onX-plNtrb",
-                Nickname = "",
-                Password = "",
-            };
-
-            // Can throw InvalidOperationException if trying to add duplicate address, be careful!
-            try
-            {
-                AddServerSegment(address, serverData, true);
-            }
-            catch (InvalidOperationException ex)
-            {
-                UnityEngine.Debug.LogError(ex.Message);
-                return;
-            }
-
-            SelectWorld(address, true);
-            SaveServerData(serverData);
+            BaseForm.GetInstance<ServerEditForm>().EnterForm("ADD");
         }
 
         public void JoinServer()
         {
-            UnityEngine.Debug.Log("JOIN");
-
             // Save only to change last edit date
             SaveServerData(serverThinker.serverData);
+
+            ServerThinker thinker = ServerThinkers[SelectedWorld];
+
+            WorldLoad.StartRemote(
+                server_address: thinker.serverData.Address,
+                nickname: thinker.serverData.Nickname,
+                password: thinker.serverData.Password,
+                public_key: ArrayUtils.MegaConcat(thinker.serverInfo.PublicKeyModulus, thinker.serverInfo.PublicKeyExponent),
+                serverSecret: KeyObtainer.GetSecretFromAuthCode(thinker.serverData.AuthCodeRSA),
+                challengeID: thinker.loginInfo.ChallengeID
+                );
         }
 
         public void EditServer()
         {
-            UnityEngine.Debug.Log("EDIT");
+            ServerThinker thinker = ServerThinkers[SelectedWorld];
+            BaseForm.GetInstance<ServerEditForm>().EnterForm("EDIT", SelectedWorld, thinker.serverData.AuthCodeRSA);
         }
 
         public void RefreshServer()
@@ -111,14 +98,24 @@ namespace Larnix.Menu.Worlds
 
         public void Login()
         {
-            UnityEngine.Debug.Log("LOGIN (temporary submit)");
+            ServerThinker thinker = ServerThinkers[SelectedWorld];
+            ServerLoginForm form = BaseForm.GetInstance<ServerLoginForm>();
 
-            serverThinker.SubmitUser("Kamiloso", "haslo123");
+            form.ProvideServerThinker(thinker);
+            form.EnterForm(
+                SelectedWorld,
+                thinker.serverData.Nickname,
+                thinker.serverData.Password
+                );
         }
 
         public void Register()
         {
-            UnityEngine.Debug.Log("REGISTER");
+            ServerThinker thinker = ServerThinkers[SelectedWorld];
+            ServerRegisterForm form = BaseForm.GetInstance<ServerRegisterForm>();
+
+            form.ProvideServerThinker(thinker);
+            form.EnterForm(SelectedWorld);
         }
 
         public void Logout()
@@ -161,7 +158,7 @@ namespace Larnix.Menu.Worlds
             }
         }
 
-        private void AddServerSegment(string name, ServerData serverData, bool asFirst)
+        public void AddServerSegment(string name, ServerData serverData, bool asFirst)
         {
             if (ServerThinkers.ContainsKey(name))
                 throw new System.InvalidOperationException("Trying to add server segment with a duplicate name: " + name);
@@ -178,10 +175,8 @@ namespace Larnix.Menu.Worlds
 
             ServerThinker thinker = rt.AddComponent<ServerThinker>();
             thinker.SetServerData(serverData);
-            thinker.SafeRefresh();
 
             ServerThinkers[name] = thinker;
-                
         }
 
         private void UpdateUI()
@@ -215,14 +210,17 @@ namespace Larnix.Menu.Worlds
                 TX_PlayerAmount.text = "LOADING\n?? / ??";
                 TX_LoginInfo.text = "";
 
-                BT_Edit.interactable = true;
+                BT_Edit.interactable = false;
                 BT_Refresh.interactable = false;
                 BT_Remove.interactable = true;
             }
             else if (state == ThinkerState.Ready || state == ThinkerState.Incompatible)
             {
+                string versionDisplay = new Version(serverThinker.serverInfo.GameVersion).ToString();
+                string hostDisplay = serverThinker.serverInfo.Owner != "Player" ? $"Host: {serverThinker.serverInfo.Owner}" : "Detached Server";
+
                 NameText.text = SelectedWorld ?? "";
-                TX_Description.text = $"Version: {new Version(serverThinker.serverInfo.GameVersion)}\nDifficulty: UNKNOWN";
+                TX_Description.text = $"Version: {versionDisplay}\n{hostDisplay}";
                 TX_Motd.text = serverThinker.serverInfo.Motd;
                 TX_PlayerAmount.text = $"ACTIVE\n{serverThinker.serverInfo.CurrentPlayers} / {serverThinker.serverInfo.MaxPlayers}";
 
@@ -329,6 +327,31 @@ namespace Larnix.Menu.Worlds
                 serverData.Password,
             });
             FileManager.Write(Path.Combine(MultiplayerPath, serverData.FolderName), "info.txt", data);
+        }
+
+        public bool ContainsAddress(string address)
+        {
+            return ServerThinkers.ContainsKey(address);
+        }
+
+        public void EditSegment(string address, string newAddress, string newAuthcode)
+        {
+            ServerThinker thinker = ServerThinkers[address];
+            if (address != newAddress)
+            {
+                ServerThinkers.Remove(address);
+                ServerThinkers[newAddress] = thinker;
+            }
+            thinker.SubmitServer(newAddress, newAuthcode);
+
+            RectTransform rt = thinker.transform as RectTransform;
+            rt.GetComponent<WorldSegment>().ReInit(newAddress);
+            ScrollView.BubbleUp(rt);
+
+            if (SelectedWorld == address)
+            {
+                SelectWorld(newAddress);
+            }
         }
     }
 }

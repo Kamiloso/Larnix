@@ -32,14 +32,14 @@ namespace Larnix
         public static long ServerSecret = 0;
         public static long ChallengeID = 0;
 
-        public static void StartLocal(string worldName)
+        public static void StartLocal(string worldName, string nickname)
         {
             LoadType = LoadTypes.Local;
             WorldDirectory = Path.Combine(Application.persistentDataPath, "Saves", worldName);
             ScreenLoad = "GameUI";
 
-            // NEVER change Nickname / Password local settings (compatibility with older worlds)
-            Nickname = "Player";
+            // NEVER change Password local settings (compatibility with older worlds)
+            Nickname = nickname;
             Password = "SGP_PASSWORD";
             // ServerSecret and ChallengeID are downloaded using A_ServerInfo command
 

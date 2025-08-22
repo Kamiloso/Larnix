@@ -104,5 +104,10 @@ namespace Larnix.Server
                 }
             }
         }
+
+        public static string GetInputSync()
+        {
+            return System.Console.ReadLine();
+        }
     }
 }

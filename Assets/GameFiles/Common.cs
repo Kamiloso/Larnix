@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
@@ -13,18 +12,36 @@ namespace Larnix
 {
     public static class Common
     {
+        private static List<string> reservedFolders = new List<string>
+        {
+            "CON", "PRN", "AUX", "NUL",
+            "COM1","COM2","COM3","COM4","COM5","COM6","COM7","COM8","COM9",
+            "LPT1","LPT2","LPT3","LPT4","LPT5","LPT6","LPT7","LPT8","LPT9"
+        };
+
         public static bool IsGoodNickname(string nickname) =>
+            nickname != null &&
             !nickname.Contains('\0') &&
             nickname.Length is >= 3 and <= 16 &&
             nickname.All(c => char.IsLetterOrDigit(c) || c == '-' || c == '_');
 
         public static bool IsGoodPassword(string password) =>
+            password != null &&
             !password.Contains('\0') &&
             password.Length is >= 7 and <= 32;
 
         public static bool IsGoodMessage(string message) =>
+            message != null &&
             !message.Contains('\0') &&
             message.Length <= 256;
+
+        public static bool IsValidWorldName(string worldName) =>
+        worldName != null &&
+            !worldName.Contains('\0') &&
+            worldName.Length is >= 1 and <= 32 &&
+            worldName.All(c => char.IsLetterOrDigit(c) || c == '-' || c == '_' || c == ' ') &&
+            worldName == worldName.Trim() &&
+            !reservedFolders.Contains(worldName.ToUpperInvariant());
 
         public static byte[] StringToFixedBinary(string str, int stringSize)
         {
@@ -104,6 +121,13 @@ namespace Larnix
                 sb.Append(input[i]);
             }
             return sb.ToString();
+        }
+
+        public static long GetSeedFromString(string input)
+        {
+            using var sha = SHA256.Create();
+            byte[] hash = sha.ComputeHash(Encoding.UTF8.GetBytes(input));
+            return BitConverter.ToInt64(hash, 0);
         }
     }
 }

@@ -28,6 +28,7 @@ namespace Larnix.Menu.Worlds
             if (list.Count > 0)
             {
                 SelectWorld(list[list.Count - 1].GetComponent<WorldSegment>().Name, instant);
+                ScrollView.ScrollRect.verticalNormalizedPosition = 1f; // scroll max up
                 return true;
             }
             return false;
@@ -76,7 +77,7 @@ namespace Larnix.Menu.Worlds
             return sortedFolders;
         }
 
-        protected static string WorldPathToName(string worldPath)
+        public static string WorldPathToName(string worldPath)
         {
             return Path.GetFileName(worldPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
         }

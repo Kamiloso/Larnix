@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Runtime.ConstrainedExecution;
 using System.Security.Cryptography;
+using Larnix.Server.Data;
 using Larnix.Socket.Commands;
 
 namespace Larnix.Socket
@@ -60,6 +61,37 @@ namespace Larnix.Socket
                     return null;
 
                 A_ServerInfo answer = new A_ServerInfo(packet);
+                if (answer.HasProblems)
+                    return null;
+
+                return answer;
+            }
+            else return null;
+        }
+
+        public static A_LoginTry tryLogin(string address, byte[] public_key, string nickname, string password, long serverSecret, long challengeID)
+        {
+            P_LoginTry prompt = new P_LoginTry(nickname, password, serverSecret, challengeID); // P_LoginTry doesn't accept challengeID == 0
+            if (prompt.HasProblems)
+                return null;
+
+            using RSA rsa = RSA.Create();
+            rsa.ImportParameters(new RSAParameters
+            {
+                Modulus = public_key[0..256],
+                Exponent = public_key[256..],
+            });
+
+            Prompter prompter = WaitForPrompter(new Prompter(address, prompt.GetPacket(), rsa));
+            prompter.Clean();
+
+            if (prompter.State == Prompter.PrompterState.Ready)
+            {
+                Packet packet = prompter.AnswerPacket;
+                if (packet == null || packet.ID != (byte)Name.A_LoginTry)
+                    return null;
+
+                A_LoginTry answer = new A_LoginTry(packet);
                 if (answer.HasProblems)
                     return null;
 
