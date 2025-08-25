@@ -21,7 +21,8 @@ namespace Larnix.Menu
         [SerializeField] List<string> UniversalSelectScreens;
         [SerializeField] List<string> EscapeList;
 
-        private string currentScreen = null;
+        public string CurrentScreen { get; private set; } = null;
+        public int ScreenLock { get; private set; } = 0; // 0 = unlocked
 
         public void Awake()
         {
@@ -53,8 +54,10 @@ namespace Larnix.Menu
 
         public void SetScreen(string newScreen)
         {
-            string oldScreen = currentScreen;
-            currentScreen = newScreen;
+            if (ScreenLock > 0) return;
+
+            string oldScreen = CurrentScreen;
+            CurrentScreen = newScreen;
 
             foreach (var screen in Screens)
             {
@@ -82,13 +85,23 @@ namespace Larnix.Menu
                 string[] rule = str.Split('~');
                 if (rule.Length >= 2)
                 {
-                    if (currentScreen == rule[0])
+                    if (CurrentScreen == rule[0])
                     {
                         SetScreen(rule[1]);
                         break;
                     }
                 }
             }
+        }
+
+        public void LockScreen()
+        {
+            ScreenLock++;
+        }
+
+        public void UnlockScreen()
+        {
+            ScreenLock--;
         }
 
         public void Quit()

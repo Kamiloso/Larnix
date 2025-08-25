@@ -57,10 +57,15 @@ namespace Larnix.Menu.Worlds
 
         public void JoinServer()
         {
-            // Save only to change last edit date
-            SaveServerData(serverThinker.serverData);
+            JoinByName(null);
+        }
 
-            ServerThinker thinker = ServerThinkers[SelectedWorld];
+        public void JoinByName(string name = null)
+        {
+            ServerThinker thinker = ServerThinkers[name ?? SelectedWorld];
+
+            // Save only to change last edit date
+            SaveServerData(thinker.serverData);
 
             WorldLoad.StartRemote(
                 server_address: thinker.serverData.Address,
@@ -125,7 +130,11 @@ namespace Larnix.Menu.Worlds
 
         public void PasswordChange()
         {
-            UnityEngine.Debug.Log("PASSWORD CHANGE");
+            ServerThinker thinker = ServerThinkers[SelectedWorld];
+            PasswordChangeForm form = BaseForm.GetInstance<PasswordChangeForm>();
+
+            form.ProvideServerThinker(thinker);
+            form.EnterForm(SelectedWorld, thinker.serverData.Nickname);
         }
 
         protected override void OnWorldSelect(string worldName)
@@ -224,13 +233,14 @@ namespace Larnix.Menu.Worlds
                 TX_Motd.text = serverThinker.serverInfo.Motd;
                 TX_PlayerAmount.text = $"ACTIVE\n{serverThinker.serverInfo.CurrentPlayers} / {serverThinker.serverInfo.MaxPlayers}";
 
+                bool regist = serverThinker.WasRegistration;
                 switch (logState)
                 {
                     case LoginState.None: TX_LoginInfo.text = ""; break;
                     case LoginState.Ready: TX_LoginInfo.text = "Login or register to continue..."; break;
-                    case LoginState.Waiting: TX_LoginInfo.text = "Logging in..."; break;
+                    case LoginState.Waiting: TX_LoginInfo.text = regist ? "Signing up..." : "Logging in..."; break;
                     case LoginState.Good: TX_LoginInfo.text = $"Playing as {serverThinker.serverData.Nickname}"; break;
-                    case LoginState.Bad: TX_LoginInfo.text = "Login failed!"; break;
+                    case LoginState.Bad: TX_LoginInfo.text = regist ? "Register failed!" : "Login failed!"; break;
                 }
 
                 if (state == ThinkerState.Incompatible)

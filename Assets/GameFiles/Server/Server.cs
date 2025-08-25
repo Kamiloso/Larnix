@@ -37,9 +37,9 @@ namespace Larnix.Server
         private float broadcastCycleTimer = 0f;
 
         private readonly Dictionary<InternetID, uint> loginAmount = new();
-        private const uint MAX_HASHING_AMOUNT = 4; // max hashing amount per minute per client
+        private const uint MAX_HASHING_AMOUNT = 6; // max hashing amount per minute per client
+        private const uint MAX_PARALLEL_HASHINGS = 6; // max hashing amount at the time globally
         private uint currentHashingAmount = 0;
-        private const uint MAX_PARALLEL_HASHINGS = 6;
 
         // Server initialization
         private void Awake()
@@ -319,19 +319,6 @@ namespace Larnix.Server
             }
         }
 
-        public void Send(string nickname, Packet packet, bool safemode = true)
-        {
-            LarnixServer.Send(nickname, packet, safemode);
-        }
-        public void Broadcast(Packet packet, bool safemode = true)
-        {
-            LarnixServer.Broadcast(packet, safemode);
-        }
-        public void Kick(string nickname)
-        {
-            LarnixServer.FinishConnection(nickname);
-        }
-
         private Packet AnswerToNcnPacket(IPEndPoint remoteEP, uint ncnID, Packet packet)
         {
             if (packet == null)
@@ -357,7 +344,7 @@ namespace Larnix.Server
                     LarnixServer.MaxClients,
                     Version.Current.ID,
                     Database.GetPasswordIndex(checkNickname),
-                    Mdata?.nickname ?? "Player"
+                    Mdata?.nickname
                     );
                 if (answer.HasProblems)
                     throw new Exception("Error making server info answer.");
@@ -365,33 +352,45 @@ namespace Larnix.Server
                 return answer.GetPacket();
             }
 
-            if ((Name)packet.ID == Name.P_LoginTry)
+            else if ((Name)packet.ID == Name.P_LoginTry)
             {
                 P_LoginTry prompt = new P_LoginTry(packet);
                 if (prompt.HasProblems) return null;
+
+                Action<byte> AnswerLoginTry = (byte b) =>
+                {
+                    A_LoginTry answer = new A_LoginTry(b);
+                    if (!answer.HasProblems)
+                    {
+                        LarnixServer.SendNCN(remoteEP, ncnID, answer.GetPacket());
+                    }
+                };
 
                 StartCoroutine(
                     LoginCoroutine(remoteEP, prompt.Nickname, prompt.Password, prompt.ServerSecret, prompt.ChallengeID,
                     ExecuteSuccess: () =>
                     {
                         Database.IncrementPasswordIndex(prompt.Nickname);
-                        A_LoginTry answer = new A_LoginTry(1); // success
-                        if (!answer.HasProblems)
+
+                        if (prompt.Password == prompt.NewPassword) // normal login try
                         {
-                            LarnixServer.SendNCN(remoteEP, ncnID, answer.GetPacket());
+                            AnswerLoginTry(1);
+                        }
+                        else // change password mode
+                        {
+                            InternetID internetID = new InternetID(remoteEP.Address);
+                            if (!loginAmount.ContainsKey(internetID))
+                                loginAmount[internetID] = 0;
+
+                            loginAmount[internetID]++; // increment hashing counter
+                            StartCoroutine(ChangePasswordCoroutine(prompt.Nickname, prompt.NewPassword, () => AnswerLoginTry(1)));
                         }
                     },
                     ExecuteFailed: () =>
                     {
-                        A_LoginTry answer = new A_LoginTry(0); // fail
-                        if (!answer.HasProblems)
-                        {
-                            LarnixServer.SendNCN(remoteEP, ncnID, answer.GetPacket());
-                        }
+                        AnswerLoginTry(0);
                     }
                     ));
-
-                return null;
             }
 
             return null;
@@ -430,6 +429,9 @@ namespace Larnix.Server
             InternetID internetID = new InternetID(remoteEP.Address);
             if (!loginAmount.ContainsKey(internetID))
                 loginAmount[internetID] = 0;
+
+            // It should block user even if it doesn't want to hash anything.
+            // Otherwise, the system would be exploitable by constantly changing passwords.
 
             if (loginAmount[internetID] >= MAX_HASHING_AMOUNT || // too many hashing tries in this minute
                 challengeID != Database.GetPasswordIndex(username)) // wrong challengeID
@@ -479,6 +481,20 @@ namespace Larnix.Server
             }
         }
 
+        private IEnumerator ChangePasswordCoroutine(string username, string newPassword, Action Finally)
+        {
+            Task changing = new Task(() =>
+            {
+                string hash = Hasher.HashPassword(newPassword);
+                Database.ChangePassword(username, hash);
+            });
+            changing.Start();
+            while (!changing.IsCompleted)
+                yield return null;
+
+            Finally();
+        }
+
         public void InterpretConsoleInput() // n
         {
             if(IsLocal && Client.References.Debug.SpawnWildpigsWithZ) // WILDPIG TEST SPAWNING
@@ -488,7 +504,7 @@ namespace Larnix.Server
                     References.EntityManager.SummonEntity(new EntityData
                     {
                         ID = EntityID.Wildpig,
-                        Position = References.EntityManager.GetPlayerController("Player").EntityData.Position,
+                        Position = References.EntityManager.GetPlayerController(Mdata?.nickname).EntityData.Position,
                     });
                 }
             }
@@ -519,7 +535,7 @@ namespace Larnix.Server
                 else if (len == 1 && arg[0] == "stop")
                 {
                     if (!IsLocal) Application.Quit();
-                    else Kick("Player"); // when the main player is kicked, he will return to menu and the local server will close
+                    else Kick(Mdata?.nickname); // when the main player is kicked, he will return to menu and the local server will close
                 }
 
                 else if (len == 1 && arg[0] == "playerlist")
@@ -633,6 +649,21 @@ namespace Larnix.Server
 
                 else Console.LogError("Unknown command! Type 'help' for documentation.");
             }
+        }
+
+        public void Send(string nickname, Packet packet, bool safemode = true)
+        {
+            LarnixServer.Send(nickname, packet, safemode);
+        }
+
+        public void Broadcast(Packet packet, bool safemode = true)
+        {
+            LarnixServer.Broadcast(packet, safemode);
+        }
+
+        public void Kick(string nickname)
+        {
+            LarnixServer.FinishConnection(nickname);
         }
 
         public static byte[] KeyToPublicBytes(RSA rsa)

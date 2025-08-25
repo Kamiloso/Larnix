@@ -8,6 +8,7 @@ using Larnix.Menu.Worlds;
 using Larnix.Server.Data;
 using System;
 using Larnix.Socket.Commands;
+using Larnix.Forms;
 
 namespace Larnix.Menu.Forms
 {
@@ -16,8 +17,15 @@ namespace Larnix.Menu.Forms
         [SerializeField] TMP_InputField IF_Address;
         [SerializeField] TMP_InputField IF_Nickname;
         [SerializeField] TMP_InputField IF_Password;
+        [SerializeField] TMP_InputField IF_Confirm;
 
         private ServerThinker thinker = null;
+        private InputSwapper swapper = null;
+
+        private void Awake()
+        {
+            swapper = GetComponent<InputSwapper>();
+        }
 
         public void ProvideServerThinker(ServerThinker thinker)
         {
@@ -29,6 +37,10 @@ namespace Larnix.Menu.Forms
             IF_Address.text = args[0];
             IF_Nickname.text = "";
             IF_Password.text = "";
+            IF_Confirm.text = "";
+
+            swapper.SetState(0);
+            IF_Nickname.interactable = true;
 
             TX_ErrorText.text = "Your login data will be visible to the server owner.";
 
@@ -40,6 +52,7 @@ namespace Larnix.Menu.Forms
             string address = IF_Address.text;
             string nickname = IF_Nickname.text;
             string password = IF_Password.text;
+            string confirm = IF_Confirm.text;
 
             if (!Common.IsGoodNickname(nickname))
                 return ErrorCode.NICKNAME_FORMAT;
@@ -47,16 +60,30 @@ namespace Larnix.Menu.Forms
             if (!Common.IsGoodPassword(password))
                 return ErrorCode.PASSWORD_FORMAT;
 
+            if (swapper.State == 1)
+            {
+                if (password != confirm)
+                    return ErrorCode.PASSWORDS_NOT_MATCH;
+            }
+
             return ErrorCode.SUCCESS;
         }
 
         protected override void RealSubmit()
         {
-            string nickname = IF_Nickname.text;
-            string password = IF_Password.text;
+            if (swapper.State == 0) // before submit 1
+            {
+                swapper.SetState(1);
+                IF_Nickname.interactable = false;
+            }
+            else if (swapper.State == 1) // before submit 2
+            {
+                string nickname = IF_Nickname.text;
+                string password = IF_Password.text;
 
-            thinker.SubmitUser(nickname, password, true);
-            References.Menu.GoBack();
+                thinker.SubmitUser(nickname, password, true);
+                References.Menu.GoBack();
+            }
         }
     }
 }

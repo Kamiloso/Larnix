@@ -574,12 +574,16 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 0}
     - target: {fileID: 6834480199388300163, guid: 146a31db192f117438d671c08b2ed747, type: 3}
+      propertyPath: m_InputType
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 6834480199388300163, guid: 146a31db192f117438d671c08b2ed747, type: 3}
       propertyPath: m_RegexValue
       value: ^[A-Za-z0-9 _-]+$
       objectReference: {fileID: 0}
     - target: {fileID: 6834480199388300163, guid: 146a31db192f117438d671c08b2ed747, type: 3}
       propertyPath: m_ContentType
-      value: 0
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 6834480199388300163, guid: 146a31db192f117438d671c08b2ed747, type: 3}
       propertyPath: m_CharacterLimit

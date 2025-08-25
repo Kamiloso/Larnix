@@ -53,6 +53,7 @@ namespace Larnix.Menu.Worlds
 
         Coroutine loginCoroutine = null;
         public bool? LoginSuccess { get; private set; } = null;
+        public bool WasRegistration { get; private set; } = false;
 
         private string oldNickname = null;
         private string oldPassword = null;
@@ -96,6 +97,14 @@ namespace Larnix.Menu.Worlds
                 // to file
                 ServerSelect.SaveServerData(serverData);
             }
+        }
+
+        internal void SubmitUserOnlyData(string nickname, string password)
+        {
+            serverData.Nickname = nickname;
+            serverData.Password = password;
+
+            ServerSelect.SaveServerData(serverData);
         }
 
         private void Login(bool isRegistration)
@@ -211,8 +220,9 @@ namespace Larnix.Menu.Worlds
             string address = serverData.Address;
             string nickname = serverData.Nickname;
             string password = serverData.Password;
-
             long serverSecret = KeyObtainer.GetSecretFromAuthCode(serverData.AuthCodeRSA);
+
+            WasRegistration = isRegistration;
 
             // challengeID obtain
 
@@ -239,33 +249,23 @@ namespace Larnix.Menu.Worlds
 
             long challengeID = loginInfo.ChallengeID;
 
-            if (!isRegistration)
+            // login
+
+            byte[] public_key = serverInfo.PublicKeyModulus.Concat(serverInfo.PublicKeyExponent).ToArray();
+            Task<A_LoginTry> login = new Task<A_LoginTry>(() =>
             {
-                // login
+                return Resolver.tryLogin(address, public_key, nickname, password, serverSecret, challengeID, isRegistration);
+            });
+            login.Start();
+            while (!login.IsCompleted)
+                yield return null;
 
-                byte[] public_key = serverInfo.PublicKeyModulus.Concat(serverInfo.PublicKeyExponent).ToArray();
-                Task<A_LoginTry> login = new Task<A_LoginTry>(() =>
-                {
-                    return Resolver.tryLogin(address, public_key, nickname, password, serverSecret, challengeID);
-                });
-                login.Start();
-                while (!login.IsCompleted)
-                    yield return null;
+            A_LoginTry linfo = login.Result;
+            if (linfo == null)
+                goto login_failed;
 
-                A_LoginTry linfo = login.Result;
-                if (linfo == null)
-                    goto login_failed;
-
-                if (linfo.Code == 1) goto login_success;
-                else goto login_failed;
-            }
-            else
-            {
-                // register (fake... but will be true in a moment)
-
-                if (challengeID == 0) goto login_success;
-                else goto login_failed;
-            }
+            if (linfo.Code == 1) goto login_success;
+            else goto login_failed;
 
             // goto statements
 
@@ -289,10 +289,9 @@ namespace Larnix.Menu.Worlds
                     ServerSelect.SaveServerData(serverData);
                 }
 
-                if (!isRegistration) // logged in, increment
-                {
-                    loginInfo.ChallengeID++;
-                }
+                // Needs to increment every successfull login
+                // Twice for registration: one for [account creation] and second for [successful login]
+                loginInfo.ChallengeID += (isRegistration ? 2 : 1);
 
                 LoginSuccess = true;
                 loginCoroutine = null;

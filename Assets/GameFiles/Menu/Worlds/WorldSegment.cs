@@ -77,7 +77,7 @@ namespace Larnix.Menu.Worlds
             
             else if (MySelect is ServerSelect)
             {
-                References.ServerSelect.JoinServer();
+                References.ServerSelect.JoinByName(Name);
             }
         }
     }

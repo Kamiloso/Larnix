@@ -70,7 +70,8 @@ namespace Larnix.Menu.Worlds
 
         public void HostWorld()
         {
-            
+            MetadataSGP mdata = ReadMetadataSGP(SelectedWorld);
+            BaseForm.GetInstance<WorldHostForm>().EnterForm(SelectedWorld, mdata.nickname);
         }
 
         public void RenameWorld()

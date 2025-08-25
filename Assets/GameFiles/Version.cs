@@ -8,7 +8,7 @@ namespace Larnix
 {
     public struct Version
     {
-        public static readonly Version Current = new Version("0.0.3");
+        public static readonly Version Current = new Version("0.0.4");
         public readonly uint ID;
 
         public Version(uint id)

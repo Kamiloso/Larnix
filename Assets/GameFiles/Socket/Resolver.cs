@@ -69,9 +69,13 @@ namespace Larnix.Socket
             else return null;
         }
 
-        public static A_LoginTry tryLogin(string address, byte[] public_key, string nickname, string password, long serverSecret, long challengeID)
+        public static A_LoginTry tryLogin(string address, byte[] public_key, string nickname, string password, long serverSecret, long challengeID, bool isRegistration, string optionalNewPassword = null)
         {
-            P_LoginTry prompt = new P_LoginTry(nickname, password, serverSecret, challengeID); // P_LoginTry doesn't accept challengeID == 0
+            if (!isRegistration && challengeID == 0) return null; // login must have challengeID != 0
+            if (isRegistration && challengeID != 0) return null; // registration must have challengeID == 0
+
+            P_LoginTry prompt = new P_LoginTry(nickname, password, serverSecret, challengeID);
+            if (optionalNewPassword != null) prompt.SetNewPassword(optionalNewPassword);
             if (prompt.HasProblems)
                 return null;
 
