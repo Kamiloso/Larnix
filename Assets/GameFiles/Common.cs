@@ -35,6 +35,11 @@ namespace Larnix
             !message.Contains('\0') &&
             message.Length <= 256;
 
+        public static bool IsGoodUserText(string message) =>
+            message != null &&
+            !message.Contains('\0') &&
+            message.Length <= 128;
+
         public static bool IsValidWorldName(string worldName) =>
         worldName != null &&
             !worldName.Contains('\0') &&

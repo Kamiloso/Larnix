@@ -7,12 +7,9 @@ using System.IO;
 using System.Linq;
 using UnityEngine.UI;
 using TMPro;
-using Larnix.Socket.Commands;
-using System.Threading.Tasks;
-using Larnix.Socket;
 using Unity.VisualScripting;
 using Larnix.Files;
-using Larnix.Server.Data;
+using Larnix.Socket.Data;
 using Larnix.Menu.Forms;
 
 namespace Larnix.Menu.Worlds
@@ -68,12 +65,10 @@ namespace Larnix.Menu.Worlds
             SaveServerData(thinker.serverData);
 
             WorldLoad.StartRemote(
-                server_address: thinker.serverData.Address,
+                address: thinker.serverData.Address,
+                authcode: thinker.serverData.AuthCodeRSA,
                 nickname: thinker.serverData.Nickname,
-                password: thinker.serverData.Password,
-                public_key: ArrayUtils.MegaConcat(thinker.serverInfo.PublicKeyModulus, thinker.serverInfo.PublicKeyExponent),
-                serverSecret: KeyObtainer.GetSecretFromAuthCode(thinker.serverData.AuthCodeRSA),
-                challengeID: thinker.loginInfo.ChallengeID
+                password: thinker.serverData.Password
                 );
         }
 
@@ -226,11 +221,12 @@ namespace Larnix.Menu.Worlds
             else if (state == ThinkerState.Ready || state == ThinkerState.Incompatible)
             {
                 string versionDisplay = new Version(serverThinker.serverInfo.GameVersion).ToString();
-                string hostDisplay = serverThinker.serverInfo.Owner != "Player" ? $"Host: {serverThinker.serverInfo.Owner}" : "Detached Server";
+                string nicknameText = serverThinker.serverInfo.UserText2;
+                string hostDisplay = nicknameText != "Player" ? $"Host: {nicknameText}" : "Detached Server";
 
                 NameText.text = SelectedWorld ?? "";
                 TX_Description.text = $"Version: {versionDisplay}\n{hostDisplay}";
-                TX_Motd.text = serverThinker.serverInfo.Motd;
+                TX_Motd.text = serverThinker.serverInfo.UserText1;
                 TX_PlayerAmount.text = $"ACTIVE\n{serverThinker.serverInfo.CurrentPlayers} / {serverThinker.serverInfo.MaxPlayers}";
 
                 bool regist = serverThinker.WasRegistration;

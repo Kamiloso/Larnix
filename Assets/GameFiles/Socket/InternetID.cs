@@ -1,19 +1,31 @@
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System;
 
 namespace Larnix.Socket
 {
     public class InternetID
     {
-        public static int MaskIPv4 { get; set; } = 32;
-        public static int MaskIPv6 { get; set; } = 56;
+        private static int MaskIPv4;
+        private static int MaskIPv6;
+        private static bool MasksInitialized = false;
 
         public readonly IPAddress Address;
         public readonly bool IsIPv6;
 
+        public static void InitializeMasks(int maskIPv4 = 32, int maskIPv6 = 56)
+        {
+            MaskIPv4 = maskIPv4;
+            MaskIPv6 = maskIPv6;
+            MasksInitialized = true;
+        }
+
         public InternetID(IPAddress address)
         {
+            if (!MasksInitialized)
+                throw new System.InvalidOperationException("You must initialize IP masks using static InternetID.InitializeMasks(int, int) method.");
+
             Address = address;
 
             if (address.AddressFamily == AddressFamily.InterNetwork)
@@ -22,7 +34,7 @@ namespace Larnix.Socket
             else if (address.AddressFamily == AddressFamily.InterNetworkV6)
                 IsIPv6 = true;
 
-            else throw new System.ArgumentException("Unsupported address type! Only IPv4 and IPv6 are accepted.");
+            else throw new ArgumentException("Unsupported address type! Only IPv4 and IPv6 are accepted.");
         }
 
         public static bool operator ==(InternetID left, InternetID right)

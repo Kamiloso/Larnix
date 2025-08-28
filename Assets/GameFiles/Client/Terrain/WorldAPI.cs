@@ -6,6 +6,7 @@ using UnityEngine;
 using Larnix.Socket.Commands;
 using System;
 using Larnix.Socket;
+using Larnix.Socket.Channel;
 
 namespace Larnix.Client.Terrain
 {

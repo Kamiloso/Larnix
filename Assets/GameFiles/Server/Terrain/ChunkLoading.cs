@@ -7,6 +7,7 @@ using Larnix.Blocks;
 using Larnix.Socket.Commands;
 using Larnix.Socket;
 using Larnix.Server.Entities;
+using Larnix.Socket.Channel;
 
 namespace Larnix.Server.Terrain
 {

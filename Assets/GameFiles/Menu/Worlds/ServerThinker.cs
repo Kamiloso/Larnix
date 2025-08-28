@@ -5,8 +5,8 @@ using System.Threading.Tasks;
 using UnityEngine;
 using Larnix.Socket;
 using System.Linq;
-using Larnix.Server.Data;
-using System.Security.Cryptography.X509Certificates;
+using Larnix.Socket.Data;
+using Larnix.Socket.Frontend;
 
 namespace Larnix.Menu.Worlds
 {
@@ -17,12 +17,6 @@ namespace Larnix.Menu.Worlds
         public string AuthCodeRSA = "";
         public string Nickname = "";
         public string Password = "";
-    }
-
-    public class LoginInfo
-    {
-        public string Nickname = "";
-        public long ChallengeID = 0;
     }
 
     public enum ThinkerState
@@ -49,7 +43,6 @@ namespace Larnix.Menu.Worlds
         public ThinkerState State { get; private set; } = ThinkerState.None;
         public ServerData serverData = new(); // input
         public A_ServerInfo serverInfo = null; // output
-        public LoginInfo loginInfo = null; // how you should login?
 
         Coroutine loginCoroutine = null;
         public bool? LoginSuccess { get; private set; } = null;
@@ -147,70 +140,34 @@ namespace Larnix.Menu.Worlds
 
             Logout();
             State = ThinkerState.Waiting;
-            serverInfo = null;
-            loginInfo = null;
 
             // download server info
 
             string address = serverData.Address;
+            string authcode = serverData.AuthCodeRSA;
             string nickname = serverData.Nickname;
             string password = serverData.Password;
 
             bool knowsUserData = nickname != "" && password != "";
 
-            Task<A_ServerInfo> downloading = new Task<A_ServerInfo>(() =>
-            {
-                return Resolver.downloadServerInfo(address, knowsUserData ? nickname : "Player");
-            });
-            downloading.Start();
-            while (!downloading.IsCompleted)
-                yield return null;
+            Task<A_ServerInfo> downloading = Resolver.DownloadServerInfoAsync(address, authcode, knowsUserData ? nickname : "Player");
+            yield return new WaitUntil(() => downloading.IsCompleted);
 
-            // ? fail
-
-            if (downloading.Result == null)
-            {
-                State = ThinkerState.Failed;
-                serverInfo = null;
-                yield break;
-            }
-
-            // check key using authcode
-
-            byte[] key_bytes = downloading.Result.PublicKeyModulus.Concat(downloading.Result.PublicKeyExponent).ToArray();
-            string authcode = serverData.AuthCodeRSA;
-
-            Task<bool> checkingKey = new Task<bool>(() =>
-            {
-                return Server.Data.KeyObtainer.VerifyPublicKey(key_bytes, authcode);
-            });
-            checkingKey.Start();
-            while (!checkingKey.IsCompleted)
-                yield return null;
-
-            // ? success / ? wrong public key
-
-            if (checkingKey.Result)
+            if (downloading.Result != null) // fail
             {
                 serverInfo = downloading.Result;
                 State = Version.Current.CompatibleWith(new Version(serverInfo.GameVersion)) ? ThinkerState.Ready : ThinkerState.Incompatible;
-                
+
                 if (knowsUserData && State != ThinkerState.Incompatible)
                 {
-                    loginInfo = new LoginInfo
-                    {
-                        Nickname = nickname,
-                        ChallengeID = serverInfo.PasswordIndex
-                    };
                     Login(false);
                 }
-                
                 yield break;
             }
-            else
+            else // success
             {
-                State = ThinkerState.WrongPublicKey;
                 serverInfo = null;
+                State = ThinkerState.Failed;
                 yield break;
             }
         }
@@ -218,58 +175,29 @@ namespace Larnix.Menu.Worlds
         private IEnumerator LoginCoroutine(bool isRegistration)
         {
             string address = serverData.Address;
+            string authcode = serverData.AuthCodeRSA;
             string nickname = serverData.Nickname;
             string password = serverData.Password;
-            long serverSecret = KeyObtainer.GetSecretFromAuthCode(serverData.AuthCodeRSA);
 
             WasRegistration = isRegistration;
 
-            // challengeID obtain
+            Task<bool?> login = isRegistration ?
+                Resolver.TryRegisterAsync(address, authcode, nickname, password) :
+                Resolver.TryLoginAsync(address, authcode, nickname, password);
+            yield return new WaitUntil(() => login.IsCompleted);
 
-            if (loginInfo == null || loginInfo.Nickname != nickname)
+            if (login.Result == true)
             {
-                Task<A_ServerInfo> downloading = new Task<A_ServerInfo>(() =>
+                if (isRegistration) // apply data
                 {
-                    return Resolver.downloadServerInfo(address, nickname);
-                });
-                downloading.Start();
-                while (!downloading.IsCompleted)
-                    yield return null;
+                    ServerSelect.SaveServerData(serverData);
+                }
 
-                A_ServerInfo dinfo = downloading.Result;
-                if (dinfo == null)
-                    goto login_failed;
-
-                loginInfo = new LoginInfo
-                {
-                    Nickname = nickname,
-                    ChallengeID = dinfo.PasswordIndex,
-                };
+                LoginSuccess = true;
+                loginCoroutine = null;
+                yield break;
             }
-
-            long challengeID = loginInfo.ChallengeID;
-
-            // login
-
-            byte[] public_key = serverInfo.PublicKeyModulus.Concat(serverInfo.PublicKeyExponent).ToArray();
-            Task<A_LoginTry> login = new Task<A_LoginTry>(() =>
-            {
-                return Resolver.tryLogin(address, public_key, nickname, password, serverSecret, challengeID, isRegistration);
-            });
-            login.Start();
-            while (!login.IsCompleted)
-                yield return null;
-
-            A_LoginTry linfo = login.Result;
-            if (linfo == null)
-                goto login_failed;
-
-            if (linfo.Code == 1) goto login_success;
-            else goto login_failed;
-
-            // goto statements
-
-            login_failed:
+            else
             {
                 if (isRegistration) // revert data
                 {
@@ -278,22 +206,6 @@ namespace Larnix.Menu.Worlds
                 }
 
                 LoginSuccess = false;
-                loginCoroutine = null;
-                yield break;
-            }
-
-            login_success:
-            {
-                if (isRegistration) // apply data
-                {
-                    ServerSelect.SaveServerData(serverData);
-                }
-
-                // Needs to increment every successfull login
-                // Twice for registration: one for [account creation] and second for [successful login]
-                loginInfo.ChallengeID += (isRegistration ? 2 : 1);
-
-                LoginSuccess = true;
                 loginCoroutine = null;
                 yield break;
             }

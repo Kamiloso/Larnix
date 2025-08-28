@@ -4,6 +4,7 @@ using System;
 using System.Security.Cryptography;
 using System.IO;
 using UnityEngine;
+using Larnix.Menu.Worlds;
 
 namespace Larnix
 {
@@ -17,48 +18,62 @@ namespace Larnix
             Server // start server without client
         }
 
-        public static LoadTypes LoadType { get; private set; } = LoadTypes.None;
-        public static string ServerAddress = "";
-        public static string WorldDirectory = "";
+        // Universal data
+        public static LoadTypes LoadType = LoadTypes.None;
         public static string ScreenLoad = "MainMenu";
-        public static long? SeedSuggestion = null;
 
-        // Set on client start and reset on client exit, WARNING: null -> no SYN encryption
-        public static byte[] RsaPublicKey = null;
+        // Server data
+        public static string WorldDirectory = "";
+        public static bool IsHost = false;
 
         // Client data
+        public static string Address = "";
+        public static string Authcode = "";
         public static string Nickname = "";
         public static string Password = "";
-        public static long ServerSecret = 0;
-        public static long ChallengeID = 0;
 
-        public static void StartLocal(string worldName, string nickname)
+        // Seed suggestion
+        private static long? _SeedSuggestion;
+        public static long? SeedSuggestion
+        {
+            get
+            {
+                long? temp = _SeedSuggestion;
+                _SeedSuggestion = null;
+                return temp;
+            }
+            set
+            {
+                _SeedSuggestion = value;
+            }
+        }
+
+        public static void StartLocal(string world, string nickname)
         {
             LoadType = LoadTypes.Local;
-            WorldDirectory = Path.Combine(Application.persistentDataPath, "Saves", worldName);
             ScreenLoad = "GameUI";
 
-            // NEVER change Password local settings (compatibility with older worlds)
+            WorldDirectory = Path.Combine(WorldSelect.SavesPath, world);
+            IsHost = false;
+
+            Address = null; // server will set
+            Authcode = null; // server will set
             Nickname = nickname;
             Password = "SGP_PASSWORD";
-            // ServerSecret and ChallengeID are downloaded using A_ServerInfo command
 
             // Client will load the server on awake
             SceneManager.LoadScene("Client");
         }
 
-        public static void StartRemote(string server_address, string nickname, string password, byte[] public_key, long serverSecret, long challengeID)
+        public static void StartRemote(string address, string authcode, string nickname, string password)
         {
             LoadType = LoadTypes.Remote;
-            ServerAddress = server_address;
             ScreenLoad = "GameUI";
 
+            Address = address;
+            Authcode = authcode;
             Nickname = nickname;
             Password = password;
-            ServerSecret = serverSecret;
-            ChallengeID = challengeID;
-
-            RsaPublicKey = public_key;
 
             // Client will try to connect to the server
             SceneManager.LoadScene("Client");
@@ -68,7 +83,10 @@ namespace Larnix
         public static void StartServer()
         {
             LoadType = LoadTypes.Server;
+            ScreenLoad = "None";
+
             WorldDirectory = Path.Combine(".", "World");
+            IsHost = true;
         }
     }
 }

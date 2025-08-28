@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 using Larnix.Files;
-using Larnix.Socket;
 
 namespace Larnix.Server.Data
 {
@@ -16,27 +15,18 @@ namespace Larnix.Server.Data
         Server (local / remote) can store its values into JSON file and load them on start.
         */
 
-        public ushort ConfigVersion = 2;
+        public ushort ConfigVersion = 3;
         public ushort MaxPlayers = 10;
         public ushort Port = 27682;
-        public bool AllowRemoteClients = true;
         public string Motd = "Welcome to Larnix server!";
         public float DataSavingPeriod = 15.00f;
         public float EntityBroadcastPeriod = 0.04f;
         public int ClientIdentityPrefixSizeIPv4 = 32;
         public int ClientIdentityPrefixSizeIPv6 = 56;
 
-        public Config(bool local)
-        {
-            if(local)
-            {
-                MaxPlayers = 1;
-                Port = 0;
-                AllowRemoteClients = false;
-            }
-        }
+        private Config() { }
 
-        public static Config Obtain(string path, bool defaultIsLocal)
+        public static Config Obtain(string path)
         {
             string data = FileManager.Read(path, "config.json");
             
@@ -45,7 +35,7 @@ namespace Larnix.Server.Data
                 if (data != null)
                 {
                     Config readConfig = JsonUtility.FromJson<Config>(data);
-                    UpdateConfig(readConfig, defaultIsLocal);
+                    readConfig.UpdateConfig();
                     return readConfig;
                 }
             }
@@ -54,39 +44,43 @@ namespace Larnix.Server.Data
                 UnityEngine.Debug.LogWarning("File " + Path.Combine(path, "config.json") + " was broken! Generating new...");
             }
             
-            Config newConfig = new Config(defaultIsLocal);
-            Save(path, newConfig);
+            Config newConfig = new Config();
+            newConfig.Save(path);
             return newConfig;
         }
 
-        public static void Save(string path, Config config)
+        public void Save(string path)
         {
-            string data = JsonUtility.ToJson(config, true);
+            string data = JsonUtility.ToJson(this, true);
             FileManager.Write(path, "config.json", data);
         }
 
-        private static void UpdateConfig(Config oldConfig, bool defaultIsLocal)
+        private void UpdateConfig()
         {
-            Config defaultConfig = new Config(defaultIsLocal);
+            Config defaultConfig = new Config();
             
-            if(oldConfig.ConfigVersion < 1)
+            if(ConfigVersion < 1)
             {
-                oldConfig.DataSavingPeriod = defaultConfig.DataSavingPeriod;
-                oldConfig.EntityBroadcastPeriod = defaultConfig.EntityBroadcastPeriod;
+                DataSavingPeriod = defaultConfig.DataSavingPeriod;
+                EntityBroadcastPeriod = defaultConfig.EntityBroadcastPeriod;
             }
-            if(oldConfig.ConfigVersion < 2)
+            if(ConfigVersion < 2)
             {
-                oldConfig.ClientIdentityPrefixSizeIPv4 = defaultConfig.ClientIdentityPrefixSizeIPv4;
-                oldConfig.ClientIdentityPrefixSizeIPv6 = defaultConfig.ClientIdentityPrefixSizeIPv6;
+                ClientIdentityPrefixSizeIPv4 = defaultConfig.ClientIdentityPrefixSizeIPv4;
+                ClientIdentityPrefixSizeIPv6 = defaultConfig.ClientIdentityPrefixSizeIPv6;
             }
-            // if(oldConfig.ConfigVersion < 3)
+            if(ConfigVersion < 3)
+            {
+                // no new variables
+            }
+            // if(oldConfig.ConfigVersion < 4)
             // {
             //     UPDATE MORE VARIABLES
             // }
 
             // Add more if(s) when updating config.
 
-            oldConfig.ConfigVersion = defaultConfig.ConfigVersion;
+            ConfigVersion = defaultConfig.ConfigVersion;
         }
     }
 }

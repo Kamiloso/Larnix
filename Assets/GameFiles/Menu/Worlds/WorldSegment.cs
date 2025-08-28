@@ -71,8 +71,7 @@ namespace Larnix.Menu.Worlds
         {
             if (MySelect is WorldSelect)
             {
-                MetadataSGP mdata = WorldSelect.ReadMetadataSGP(Name);
-                WorldLoad.StartLocal(Name, mdata.nickname);
+                WorldSelect.PlayWorldByName(Name);
             }
             
             else if (MySelect is ServerSelect)

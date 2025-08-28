@@ -27,7 +27,7 @@ namespace Larnix.Server.Entities
             if (entityData.ID == EntityID.Player)
                 throw new System.ArgumentException("Cannot create player instance like entity!");
 
-            ulong _uid = uid == null ? References.Server.GetNextUID() : (ulong)uid;
+            ulong _uid = uid == null ? GetNextUID() : (ulong)uid;
             Init(_uid, entityData);
         }
 
@@ -83,6 +83,23 @@ namespace Larnix.Server.Entities
                 throw new System.InvalidOperationException("Cannot execute FromFixedUpdate() on inactive entity abstraction!");
 
             controller.FromFixedUpdate();
+        }
+
+        // ==== Static Things ====
+        private static ulong? privNextUID = null;
+        private static ulong GetNextUID()
+        {
+            if (privNextUID != null)
+            {
+                ulong nextUID = (ulong)privNextUID;
+                privNextUID--;
+                return nextUID;
+            }
+            else
+            {
+                privNextUID = (ulong)(References.Server.Database.GetMinUID() - 1);
+                return GetNextUID();
+            }
         }
     }
 }

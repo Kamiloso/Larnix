@@ -1,12 +1,10 @@
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using Larnix.Menu.Worlds;
-using Unity.VisualScripting;
-using Larnix.Server.Data;
+using Larnix.Socket.Data;
 using System;
 
 namespace Larnix.Menu.Forms
@@ -52,7 +50,7 @@ namespace Larnix.Menu.Forms
             if ((args[0] == "ADD" || args[0] == "EDIT" && args[1] != address) && References.ServerSelect.ContainsAddress(address))
                 return ErrorCode.ADDRESS_EXISTS;
 
-            if (!KeyObtainer.IsGoodAuthcode(authcode))
+            if (!Authcode.IsGoodAuthcode(authcode))
                 return ErrorCode.AUTHCODE_FORMAT;
 
             return ErrorCode.SUCCESS;

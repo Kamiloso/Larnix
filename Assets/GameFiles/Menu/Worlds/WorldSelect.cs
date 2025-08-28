@@ -8,8 +8,8 @@ using System.Linq;
 using UnityEngine.UI;
 using TMPro;
 using Larnix.Menu.Forms;
-using System.Runtime.InteropServices;
 using Larnix.Files;
+using Larnix.Menu.Settings;
 
 namespace Larnix.Menu.Worlds
 {
@@ -64,8 +64,16 @@ namespace Larnix.Menu.Worlds
 
         public void PlayWorld()
         {
-            MetadataSGP mdata = ReadMetadataSGP(SelectedWorld);
-            WorldLoad.StartLocal(SelectedWorld, mdata.nickname);
+            PlayWorldByName(SelectedWorld);
+        }
+
+        public static void PlayWorldByName(string name)
+        {
+            MetadataSGP mdata = ReadMetadataSGP(name);
+            WorldLoad.StartLocal(name, mdata.nickname);
+
+            if(mdata.nickname != "Player")
+                Settings.Settings.Instance.SetValue("$last-nickname-SGP", mdata.nickname, true);
         }
 
         public void HostWorld()

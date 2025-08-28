@@ -3,22 +3,28 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Net;
-using Larnix.Socket;
 using Larnix.Socket.Commands;
 using System.Security.Cryptography;
-using Larnix.Entities;
+using Larnix.Socket.Data;
+using Larnix.Socket.Channel;
+using Larnix.Socket.Frontend;
+using System.Threading.Tasks;
 
 namespace Larnix.Client
 {
     public class Client : MonoBehaviour
     {
-        private Socket.Client LarnixClient = null;
-        private IPEndPoint EndPoint = null;
-        private Queue<Socket.PacketAndOwner> delayedPackets = new Queue<Socket.PacketAndOwner>();
-        private RSA MyRSA = null;
+        private Socket.Frontend.Client LarnixClient = null;
+        private Queue<(Packet packet, bool safemode)> delayedPackets = new();
+        private Receiver Receiver = null;
 
-        public bool IsMultiplayer { get; private set; }
-        public ulong MyUID { get; private set; } = 0;
+        private string Address;
+        private string Authcode;
+        private string Nickname;
+        private string Password;
+
+        public bool IsMultiplayer;
+        public ulong MyUID = 0;
 
         // Client initialization
         void Awake()
@@ -32,18 +38,16 @@ namespace Larnix.Client
             EarlyUpdateInjector.InjectEarlyUpdate(this.EarlyUpdate);
 
             References.Client = this;
+
             IsMultiplayer = WorldLoad.LoadType == WorldLoad.LoadTypes.Remote;
 
             if (IsMultiplayer)
             {
-                if (!CreateClient())
-                    return;
-
-                UnityEngine.Debug.Log("Remote world on address " + EndPoint.ToString());
+                StartCoroutine(CreateClient());
             }
             else
             {
-                StartCoroutine(CreateServer());
+                StartCoroutine(CreateServerAndClient());
             }
         }
 
@@ -53,41 +57,35 @@ namespace Larnix.Client
         }
 
         // Server creation
-        private IEnumerator CreateServer()
+        private IEnumerator CreateServerAndClient()
         {
             AsyncOperation serverCreation = SceneManager.LoadSceneAsync("Server", LoadSceneMode.Additive);
-            while(!serverCreation.isDone)
-                yield return null;
+            yield return new WaitUntil(() => serverCreation.isDone);
 
-            // Here server is already created and WorldLoad.ServerAddress has been set
-
-            if (!CreateClient())
-                yield break;
+            StartCoroutine(CreateClient());
         }
 
-        private bool CreateClient()
+        private IEnumerator CreateClient()
         {
-            EndPoint = Socket.Resolver.ResolveString(WorldLoad.ServerAddress);
-            if(EndPoint == null)
+            Address = WorldLoad.Address;
+            Authcode = WorldLoad.Authcode;
+            Nickname = WorldLoad.Nickname;
+            Password = WorldLoad.Password;
+
+            Task<Socket.Frontend.Client> connecting = Socket.Frontend.Client.CreateClientAsync(Address, Authcode, Nickname, Password);
+            yield return new WaitUntil(() => connecting.IsCompleted);
+
+            if (connecting.Result != null)
             {
+                LarnixClient = connecting.Result;
+                Receiver = new Receiver(LarnixClient);
+                UnityEngine.Debug.Log($"{(IsMultiplayer ? "Remote" : "Local")} world on address {Address}");
+            }
+            else
+            {
+                UnityEngine.Debug.LogWarning("Failed creating client! Returning to menu...");
                 BackToMenu();
-                return false;
             }
-
-            if(WorldLoad.RsaPublicKey != null)
-            {
-                RSAParameters rsaParameters = new RSAParameters
-                {
-                    Modulus = WorldLoad.RsaPublicKey[0..256],
-                    Exponent = WorldLoad.RsaPublicKey[256..264],
-                };
-
-                MyRSA = RSA.Create();
-                MyRSA.ImportParameters(rsaParameters);
-            }
-
-            LarnixClient = new Socket.Client(EndPoint, WorldLoad.Nickname, WorldLoad.Password, WorldLoad.ServerSecret, WorldLoad.ChallengeID, MyRSA);
-            return true;
         }
 
         public void Send(Packet packet, bool safemode = true)
@@ -95,7 +93,7 @@ namespace Larnix.Client
             if (LarnixClient != null && delayedPackets.Count == 0)
                 LarnixClient.Send(packet, safemode);
             else
-                delayedPackets.Enqueue(new PacketAndOwner(safemode ? "SAFE" : "FAST", packet));
+                delayedPackets.Enqueue((packet, safemode));
         }
 
         private void EarlyUpdate() // Executes BEFORE default Update() time
@@ -104,91 +102,11 @@ namespace Larnix.Client
             {
                 while (delayedPackets.Count > 0)
                 {
-                    PacketAndOwner pack = delayedPackets.Dequeue();
-                    LarnixClient.Send(pack.Packet, pack.Nickname == "SAFE");
+                    var pack = delayedPackets.Dequeue();
+                    LarnixClient.Send(pack.packet, pack.safemode);
                 }
 
-                Queue<Packet> packets = LarnixClient.ClientTickAndReceive(Time.deltaTime);
-                foreach (Packet packet in packets)
-                {
-                    if((Name)packet.ID == Name.PlayerInitialize)
-                    {
-                        PlayerInitialize msg = new PlayerInitialize(packet);
-                        if (msg.HasProblems) continue;
-
-                        References.MainPlayer.LoadPlayerData(msg);
-                        MyUID = msg.MyUid;
-
-                        References.Loading.StartWaitingFrom(msg.LastFixedFrame);
-                    }
-
-                    if((Name)packet.ID == Name.EntityBroadcast)
-                    {
-                        EntityBroadcast msg = new EntityBroadcast(packet);
-                        if (msg.HasProblems) continue;
-
-                        References.EntityProjections.InterpretEntityBroadcast(msg);
-                    }
-
-                    if ((Name)packet.ID == Name.NearbyEntities)
-                    {
-                        NearbyEntities msg = new NearbyEntities(packet);
-                        if (msg.HasProblems) continue;
-
-                        References.EntityProjections.ChangeNearbyUIDs(msg);
-                    }
-
-                    if ((Name)packet.ID == Name.CodeInfo)
-                    {
-                        CodeInfo msg = new CodeInfo(packet);
-                        if (msg.HasProblems) continue;
-
-                        switch((CodeInfo.Info)msg.Code)
-                        {
-                            case CodeInfo.Info.YouDie: References.MainPlayer.SetDead(); break;
-                            default: break;
-                        }
-                    }
-
-                    if((Name)packet.ID == Name.ChunkInfo)
-                    {
-                        ChunkInfo msg = new ChunkInfo(packet);
-                        if (msg.HasProblems) continue;
-
-                        if(msg.Blocks != null) // activation packet
-                        {
-                            References.GridManager.AddChunk(msg.Chunkpos, msg.Blocks);
-                        }
-                        else // removal packet
-                        {
-                            References.GridManager.RemoveChunk(msg.Chunkpos);
-                        }
-                    }
-
-                    if((Name)packet.ID == Name.BlockUpdate)
-                    {
-                        BlockUpdate msg = new BlockUpdate(packet);
-                        if (msg.HasProblems) continue;
-
-                        var list = msg.BlockUpdates;
-                        foreach(var element in list)
-                        {
-                            References.GridManager.UpdateBlock(element.block, element.data);
-                        }
-                    }
-
-                    if((Name)packet.ID == Name.RetBlockChange)
-                    {
-                        RetBlockChange msg = new RetBlockChange(packet);
-                        if (msg.HasProblems) continue;
-
-                        References.GridManager.UpdateBlock(
-                            msg.BlockPosition,
-                            msg.CurrentBlock,
-                            msg.Operation
-                            ); // unlock and update block
-                    }
-                }
+                LarnixClient.ClientTick(Time.deltaTime);
 
                 if (LarnixClient.IsDead())
                 {
@@ -239,11 +157,7 @@ namespace Larnix.Client
         private void OnDestroy()
         {
             LarnixClient?.Dispose();
-            MyRSA?.Dispose();
-
-            WorldLoad.RsaPublicKey = null;
             WorldLoad.ScreenLoad = IsMultiplayer ? "Multiplayer" : "Singleplayer";
-
             EarlyUpdateInjector.ClearEarlyUpdate();
         }
     }

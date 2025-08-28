@@ -16,7 +16,7 @@ namespace Larnix.Menu.Forms
 
         public override void EnterForm(params string[] args)
         {
-            IF_Nickname.text = "";
+            IF_Nickname.text = Settings.Settings.Instance.GetValue("$last-nickname-SGP");
             IF_WorldName.text = "";
             IF_Seed.text = Common.GetSecureLong().ToString();
 
@@ -65,7 +65,7 @@ namespace Larnix.Menu.Forms
             }
 
             WorldSelect.SaveMetadataSGP(worldName, new MetadataSGP(Version.Current, nickname));
-            WorldLoad.StartLocal(worldName, nickname);
+            WorldSelect.PlayWorldByName(worldName);
         }
     }
 }

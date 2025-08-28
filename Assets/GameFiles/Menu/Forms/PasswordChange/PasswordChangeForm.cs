@@ -1,17 +1,16 @@
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 using Larnix.Menu.Worlds;
-using Larnix.Server.Data;
+using Larnix.Socket.Data;
 using System;
 using Larnix.Socket.Commands;
 using Larnix.Forms;
 using System.Threading.Tasks;
 using Larnix.Socket;
 using System.Linq;
+using Larnix.Socket.Frontend;
 
 namespace Larnix.Menu.Forms
 {
@@ -96,6 +95,7 @@ namespace Larnix.Menu.Forms
             {
                 TX_ErrorText.text = "Changing password...";
                 ChangeState("WAITING");
+                
                 StartCoroutine(ChangePassword(address, nickname, oldPassword, newPassword));
             }
             else if (ActionState == "RESULT")
@@ -109,25 +109,16 @@ namespace Larnix.Menu.Forms
 
         private IEnumerator ChangePassword(string address, string nickname, string oldPassword, string newPassword)
         {
-            byte[] public_key = thinker.serverInfo.PublicKeyModulus.Concat(thinker.serverInfo.PublicKeyExponent).ToArray();
-            long serverSecret = KeyObtainer.GetSecretFromAuthCode(thinker.serverData.AuthCodeRSA);
-            long challengeID = thinker.loginInfo.ChallengeID;
+            string authcode = thinker.serverData.AuthCodeRSA;
 
-            Task<bool?> changeTask = new Task<bool?>(() =>
-            {
-                A_LoginTry loginTry = Resolver.tryLogin(address, public_key, nickname, oldPassword, serverSecret, challengeID, false, newPassword);
-                return loginTry == null ? null : loginTry.Code == 1;
-            });
-            changeTask.Start();
-            while (!changeTask.IsCompleted)
-                yield return null;
+            Task<bool?> changeTask = Resolver.TryChangePasswordAsync(address, authcode, nickname, oldPassword, newPassword);
+            yield return new WaitUntil(() => changeTask.IsCompleted);
 
             Result = changeTask.Result;
 
             if (Result == true)
             {
                 TX_ErrorText.text = "Password changed.";
-                thinker.loginInfo.ChallengeID++;
                 thinker.SubmitUserOnlyData(nickname, newPassword);
             }
             else if (Result == false)

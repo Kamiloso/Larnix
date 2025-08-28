@@ -23,7 +23,7 @@ namespace Larnix.Menu.Forms
             nickname = args[1];
             OF_ServerAddress.text = "???";
             OF_Authcode.text = "???";
-            OF_RelayAddress.text = "@germany";
+            OF_RelayAddress.text = Settings.Settings.Instance.GetValue("P2P_Server");
             BT_Submit.interactable = false;
 
             TX_ErrorText.text = "Starting the server...";
@@ -39,7 +39,7 @@ namespace Larnix.Menu.Forms
         protected override void RealSubmit()
         {
             string worldName = IF_WorldName.text;
-            WorldLoad.StartLocal(worldName, nickname);
+            WorldSelect.PlayWorldByName(worldName);
         }
     }
 }

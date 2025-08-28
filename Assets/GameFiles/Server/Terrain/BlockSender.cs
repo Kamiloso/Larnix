@@ -6,7 +6,7 @@ using Larnix.Blocks;
 using Larnix.Socket;
 using Larnix.Socket.Commands;
 using System;
-using Unity.VisualScripting;
+using Larnix.Socket.Channel;
 
 namespace Larnix.Server.Terrain
 {

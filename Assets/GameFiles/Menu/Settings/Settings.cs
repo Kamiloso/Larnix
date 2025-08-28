@@ -6,6 +6,7 @@ using UnityEngine;
 using Larnix.Files;
 using System.Text;
 using System;
+using System.Linq;
 
 namespace Larnix.Menu.Settings
 {
@@ -17,7 +18,8 @@ namespace Larnix.Menu.Settings
         private Dictionary<string, string> options = null;
         private static Dictionary<string, string> defaultOptions = new()
         {
-            { "P2P_Server", "relay.se3.page" }
+            { "P2P_Server", "relay.se3.page" },
+            { "$last-nickname-SGP", "" }
         };
 
         private void Awake()
@@ -71,6 +73,15 @@ namespace Larnix.Menu.Settings
         public void ResetValue(string key, bool save)
         {
             SetValue(key, null, save);
+        }
+
+        public void ResetSettings(bool save)
+        {
+            foreach (string key in options.Keys.ToList())
+            {
+                if (!string.IsNullOrEmpty(key) && key[0] == '$')
+                    options.Remove(key);
+            }
         }
 
         public void ResetData(bool save)

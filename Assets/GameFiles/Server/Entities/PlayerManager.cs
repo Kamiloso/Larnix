@@ -5,6 +5,7 @@ using Larnix.Socket.Commands;
 using System.Linq;
 using Larnix.Socket;
 using Larnix.Entities;
+using Larnix.Socket.Channel;
 
 namespace Larnix.Server.Entities
 {
