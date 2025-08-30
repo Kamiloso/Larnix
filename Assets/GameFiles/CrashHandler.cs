@@ -70,7 +70,7 @@ namespace Larnix
             }
             catch
             {
-                UnityEngine.Debug.LogError("An error occurred while saving / openning file crash.log. Is it even possible?");
+                Larnix.Debug.LogError("An error occurred while saving / openning file crash.log. Is it even possible?");
             }
         }
     }

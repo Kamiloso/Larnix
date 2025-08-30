@@ -1,13 +1,14 @@
-using Larnix.Socket.Commands;
+using QuickNet.Commands;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Larnix.Network;
 
 namespace Larnix.Client
 {
     public class Receiver
     {
-        public Receiver(Socket.Frontend.Client client)
+        public Receiver(QuickNet.Frontend.QuickClient client)
         {
             client.Subscribe<PlayerInitialize>(_PlayerInitialize);
             client.Subscribe<EntityBroadcast>(_EntityBroadcast);

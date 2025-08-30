@@ -2,21 +2,15 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System;
-using Larnix.Socket;
-using Larnix.Socket.Commands;
+using QuickNet;
 using Larnix.Server.Data;
-using System.Security.Cryptography;
 using Larnix.Files;
-using System.Net;
-using System.Threading.Tasks;
-using Larnix.Server.Entities;
 using Larnix.Entities;
-using Larnix.Blocks;
-using Larnix.Server.Terrain;
 using Larnix.Menu.Worlds;
-using Larnix.Socket.Data;
+using QuickNet.Processing;
 using System.IO;
-using Larnix.Socket.Channel;
+using QuickNet.Channel;
+using QuickNet.Data;
 
 namespace Larnix.Server
 {
@@ -24,7 +18,7 @@ namespace Larnix.Server
     {
         private Locker Locker = null;
         private Receiver Receiver = null;
-        public Socket.Backend.Server LarnixServer = null;
+        public QuickNet.Backend.QuickServer LarnixServer = null;
         public MetadataSGP? Mdata = null;
         public Config ServerConfig = null;
         public Database Database = null;
@@ -72,13 +66,13 @@ namespace Larnix.Server
             References.Generator = new Worldgen.Generator(Database.GetSeed(WorldLoad.SeedSuggestion));
 
             // SERVER --> 4
-            LarnixServer = new Socket.Backend.Server(
+            LarnixServer = new QuickNet.Backend.QuickServer(
                 IsHost ? ServerConfig.Port : (ushort)0,
                 ServerConfig.MaxPlayers,
                 !IsHost,
                 Path.Combine(WorldDir, "Socket"),
                 Version.Current.ID,
-                Common.IsGoodUserText(ServerConfig.Motd) ? ServerConfig.Motd : "Wrong motd format :(",
+                Validation.IsGoodUserText(ServerConfig.Motd) ? ServerConfig.Motd : "Wrong motd format :(",
                 Mdata?.nickname ?? "Player"
             );
             if (!IsLocal) LarnixServer.ReserveNickname("Player");
@@ -94,45 +88,46 @@ namespace Larnix.Server
         {
             // title set
             Console.SetTitle("Larnix Server " + Version.Current);
-            Console.LogRaw(new string('-', 60) + "\n");
+            Larnix.Debug.LogRawConsole(new string('-', 60) + "\n");
 
             // force change default password
             if (!IsLocal && Mdata?.nickname != "Player")
             {
                 string sgpNickname = Mdata?.nickname;
 
-                Console.LogRaw("This world was previously in use by " + sgpNickname + ".\n");
-                Console.LogRaw("Choose a password for this player to start the server.\n");
+                Larnix.Debug.LogRawConsole("This world was previously in use by " + sgpNickname + ".\n");
+                Larnix.Debug.LogRawConsole("Choose a password for this player to start the server.\n");
 
                 password_ask:
                 {
-                    Console.LogRaw("> ");
+                    Larnix.Debug.LogRawConsole("> ");
+                    Larnix.Debug.FlushLogs(!IsLocal);
                     string input = Console.GetInputSync();
-                    if (Common.IsGoodPassword(input))
+                    if (Validation.IsGoodPassword(input))
                     {
-                        Database.ChangePassword(sgpNickname, Hasher.HashPassword(input));
+                        LarnixServer.UserManager.ChangePassword(sgpNickname, Hasher.HashPassword(input));
                         Mdata = new MetadataSGP(Version.Current, "Player");
                         WorldSelect.SaveMetadataSGP(WorldLoad.WorldDirectory, (MetadataSGP)Mdata, true);
                     }
                     else
                     {
-                        Console.LogRaw("Password should be 7-32 characters and not use: NULL (0x00).\n");
+                        Larnix.Debug.LogRawConsole("Password should be 7-32 characters and not end with NULL (0x00).\n");
                         goto password_ask;
                     }
                 }
 
-                Console.LogRaw("Password changed.\n");
-                Console.LogRaw(new string('-', 60) + "\n");
+                Larnix.Debug.LogRawConsole("Password changed.\n");
+                Larnix.Debug.LogRawConsole(new string('-', 60) + "\n");
             }
 
             // socket information
-            UnityEngine.Debug.Log("Socket created on port " + LarnixServer.Port);
-            UnityEngine.Debug.Log("Authcode: " + LarnixServer.Authcode);
-            Console.LogRaw(new string('-', 60) + "\n");
+            Larnix.Debug.LogNoDate("Socket created on port " + LarnixServer.Port);
+            Larnix.Debug.LogNoDate("Authcode: " + LarnixServer.Authcode);
+            Larnix.Debug.LogRawConsole(new string('-', 60) + "\n");
 
             // additional initialization
             if (!IsLocal) Console.StartInputThread();
-            Console.LogSuccess("Server is ready!");
+            Larnix.Debug.LogSuccess("Server is ready!");
         }
 
         public uint GetFixedFrame()
@@ -168,6 +163,11 @@ namespace Larnix.Server
             }
 
             Commands.ExecuteFrame();
+        }
+
+        private void Update()
+        {
+            Larnix.Debug.FlushLogs(!IsLocal);
         }
 
         private void LateUpdate()
@@ -245,8 +245,7 @@ namespace Larnix.Server
             Locker?.Dispose();
 
             EarlyUpdateInjector.ClearEarlyUpdate();
-
-            UnityEngine.Debug.Log("Server close");
+            Larnix.Debug.Log("Server close");
         }
     }
 }

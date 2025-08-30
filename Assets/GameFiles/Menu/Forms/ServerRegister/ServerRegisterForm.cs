@@ -1,14 +1,10 @@
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 using Larnix.Menu.Worlds;
-using Larnix.Server.Data;
-using System;
-using Larnix.Socket.Commands;
 using Larnix.Forms;
+using QuickNet.Data;
 
 namespace Larnix.Menu.Forms
 {
@@ -54,10 +50,10 @@ namespace Larnix.Menu.Forms
             string password = IF_Password.text;
             string confirm = IF_Confirm.text;
 
-            if (!Common.IsGoodNickname(nickname))
+            if (!Validation.IsGoodNickname(nickname))
                 return ErrorCode.NICKNAME_FORMAT;
 
-            if (!Common.IsGoodPassword(password))
+            if (!Validation.IsGoodPassword(password))
                 return ErrorCode.PASSWORD_FORMAT;
 
             if (swapper.State == 1)

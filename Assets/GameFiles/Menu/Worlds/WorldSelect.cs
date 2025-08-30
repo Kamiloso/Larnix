@@ -8,8 +8,7 @@ using System.Linq;
 using UnityEngine.UI;
 using TMPro;
 using Larnix.Menu.Forms;
-using Larnix.Files;
-using Larnix.Menu.Settings;
+using QuickNet;
 
 namespace Larnix.Menu.Worlds
 {

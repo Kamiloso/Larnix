@@ -1,16 +1,17 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Larnix.Socket.Commands;
+using QuickNet.Commands;
 using Larnix.Blocks;
 using Larnix.Server.Entities;
 using Larnix.Server.Terrain;
+using Larnix.Network;
 
 namespace Larnix.Server
 {
     public class Receiver
     {
-        public Receiver(Socket.Backend.Server server)
+        public Receiver(QuickNet.Backend.QuickServer server)
         {
             server.Subscribe<AllowConnection>(_AllowConnection);
             server.Subscribe<Stop>(_Stop);
@@ -25,7 +26,7 @@ namespace Larnix.Server
             References.PlayerManager.JoinPlayer(owner);
 
             // Info to console
-            Console.Log(owner + " joined the game.");
+            Larnix.Debug.Log(owner + " joined the game.");
         }
 
         private void _Stop(Stop msg, string owner)
@@ -34,7 +35,7 @@ namespace Larnix.Server
             References.PlayerManager.DisconnectPlayer(owner);
 
             // Info to console
-            Console.Log(owner + " disconnected.");
+            Larnix.Debug.Log(owner + " disconnected.");
         }
 
         private void _PlayerUpdate(PlayerUpdate msg, string owner)

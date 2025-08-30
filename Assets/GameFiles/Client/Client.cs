@@ -2,19 +2,15 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using System.Net;
-using Larnix.Socket.Commands;
-using System.Security.Cryptography;
-using Larnix.Socket.Data;
-using Larnix.Socket.Channel;
-using Larnix.Socket.Frontend;
+using Larnix.Network;
+using QuickNet.Channel;
 using System.Threading.Tasks;
 
 namespace Larnix.Client
 {
     public class Client : MonoBehaviour
     {
-        private Socket.Frontend.Client LarnixClient = null;
+        public QuickNet.Frontend.QuickClient LarnixClient = null;
         private Queue<(Packet packet, bool safemode)> delayedPackets = new();
         private Receiver Receiver = null;
 
@@ -72,18 +68,18 @@ namespace Larnix.Client
             Nickname = WorldLoad.Nickname;
             Password = WorldLoad.Password;
 
-            Task<Socket.Frontend.Client> connecting = Socket.Frontend.Client.CreateClientAsync(Address, Authcode, Nickname, Password);
+            Task<QuickNet.Frontend.QuickClient> connecting = QuickNet.Frontend.QuickClient.CreateClientAsync(Address, Authcode, Nickname, Password);
             yield return new WaitUntil(() => connecting.IsCompleted);
 
             if (connecting.Result != null)
             {
                 LarnixClient = connecting.Result;
                 Receiver = new Receiver(LarnixClient);
-                UnityEngine.Debug.Log($"{(IsMultiplayer ? "Remote" : "Local")} world on address {Address}");
+                Larnix.Debug.Log($"{(IsMultiplayer ? "Remote" : "Local")} world on address {Address}");
             }
             else
             {
-                UnityEngine.Debug.LogWarning("Failed creating client! Returning to menu...");
+                Larnix.Debug.LogWarning("Failed creating client! Returning to menu...");
                 BackToMenu();
             }
         }
@@ -139,6 +135,10 @@ namespace Larnix.Client
             {
                 BackToMenu();
             }
+
+            // Flush logs
+
+            Larnix.Debug.FlushLogs(false);
         }
 
         public void BackToMenu()

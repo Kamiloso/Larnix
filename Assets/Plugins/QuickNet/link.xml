@@ -1,0 +1,5 @@
+<linker>
+	<assembly fullname="QuickNet">
+		<namespace fullname="QuickNet.Commands" preserve="all"/>
+	</assembly>
+</linker>

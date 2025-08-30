@@ -35,7 +35,7 @@ namespace Larnix.Menu.Forms
             ErrorCode.WORLD_EXISTS => "World with such name already exists.",
             ErrorCode.NICKNAME_FORMAT => "Nickname should be 3-16 characters and only use: letters, digits, _ or -.",
             ErrorCode.NICKNAME_IS_PLAYER => "Nickname \"Player\" is reserved.",
-            ErrorCode.PASSWORD_FORMAT => "Password should be 7-32 characters and not use: NULL (0x00).",
+            ErrorCode.PASSWORD_FORMAT => "Password should be 7-32 characters and not end with NULL (0x00).",
             ErrorCode.ADDRESS_EXISTS => "This address already exists in the server list.",
             ErrorCode.AUTHCODE_FORMAT => "It is not a correct authcode.",
             ErrorCode.ADDRESS_EMPTY => "Server address cannot be empty.",

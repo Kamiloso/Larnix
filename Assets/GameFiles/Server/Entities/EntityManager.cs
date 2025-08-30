@@ -3,11 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Entities;
 using System.Linq;
-using Larnix.Socket;
-using Larnix.Socket.Commands;
+using Larnix.Network;
 using System.Diagnostics;
 using Larnix.Server.Terrain;
-using Larnix.Socket.Channel;
+using QuickNet.Channel;
 
 namespace Larnix.Server.Entities
 {

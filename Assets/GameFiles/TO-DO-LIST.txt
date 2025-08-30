@@ -1,6 +1,5 @@
 === Larnix TO-DO-LIST ===
 
-- Finish world menu
 - Server into threaded class
 - World host system
 - Help relay server
@@ -32,3 +31,4 @@
 - Login requires telling server secret and challengeID (increments with every login for player)
 - Endianess consistency
 - Parallel hashing limiting to 6 global and 4 per client per minute
+- Finish world menu

@@ -39,7 +39,7 @@ namespace Larnix.Server.Worldgen
                 }
                 else
                 {
-                    UnityEngine.Debug.LogError($"Biome '{biomeName}' is not defined in the BiomeList enum!");
+                    Larnix.Debug.LogError($"Biome '{biomeName}' is not defined in the BiomeList enum!");
                 }
             }
 

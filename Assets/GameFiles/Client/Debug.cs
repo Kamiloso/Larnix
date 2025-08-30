@@ -20,6 +20,7 @@ namespace Larnix.Client
 
         private int FixedFrame = 0;
         private float? LastFPS = null;
+        private float LastPing = 0f;
         private List<float> FrameTimes = new();
 
         private void Awake()
@@ -62,12 +63,20 @@ namespace Larnix.Client
                 FrameTimes.Clear();
             }
 
+            // Ping calculate
+
+            if (LastPing == 0f || FixedFrame % 25 == 0)
+            {
+                LastPing = (float)(Math.Round((References.Client.LarnixClient?.GetPing() ?? 0f) * 10f) / 10f);
+            }
+
             // Coordinates text update (temporary)
 
             Vector2 playerPos = References.MainPlayer.GetPosition();
 
             string debugText =
                 $"FPS: {LastFPS}\n" +
+                $"Ping: {LastPing} ms\n" +
                 $"X: {playerPos.x}\n" +
                 $"Y: {playerPos.y}\n";
 

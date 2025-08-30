@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
-using Larnix.Files;
+using QuickNet;
 
 namespace Larnix.Server.Data
 {
@@ -41,7 +41,7 @@ namespace Larnix.Server.Data
             }
             catch
             {
-                UnityEngine.Debug.LogWarning("File " + Path.Combine(path, "config.json") + " was broken! Generating new...");
+                Larnix.Debug.LogWarning("File " + Path.Combine(path, "config.json") + " was broken! Generating new...");
             }
             
             Config newConfig = new Config();

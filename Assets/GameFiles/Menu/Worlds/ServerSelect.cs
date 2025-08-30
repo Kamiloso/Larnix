@@ -8,8 +8,7 @@ using System.Linq;
 using UnityEngine.UI;
 using TMPro;
 using Unity.VisualScripting;
-using Larnix.Files;
-using Larnix.Socket.Data;
+using QuickNet;
 using Larnix.Menu.Forms;
 
 namespace Larnix.Menu.Worlds
@@ -299,7 +298,7 @@ namespace Larnix.Menu.Worlds
                 string data = FileManager.Read(path, "info.txt");
                 if (data == null) continue;
 
-                string[] arg = data.Split('\n');
+                string[] arg = data.Split('\n').Select(s => Decode(s)).ToArray();
                 if (arg.Length < 4) continue;
 
                 if (!returns.ContainsKey(arg[0]))
@@ -316,7 +315,7 @@ namespace Larnix.Menu.Worlds
                 else
                 {
                     Directory.Delete(path, true);
-                    UnityEngine.Debug.LogWarning("Detected and removed saved server name conflict. Address: " + arg[0]);
+                    Larnix.Debug.LogWarning("Detected and removed saved server name conflict. Address: " + arg[0]);
                 }
             }
 
@@ -327,13 +326,19 @@ namespace Larnix.Menu.Worlds
         {
             string data = string.Join("\n", new string[]
             {
-                serverData.Address,
-                serverData.AuthCodeRSA,
-                serverData.Nickname,
-                serverData.Password,
+                Encode(serverData.Address),
+                Encode(serverData.AuthCodeRSA),
+                Encode(serverData.Nickname),
+                Encode(serverData.Password),
             });
             FileManager.Write(Path.Combine(MultiplayerPath, serverData.FolderName), "info.txt", data);
         }
+
+        private static string Encode(string s) =>
+            Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(s));
+
+        private static string Decode(string s) =>
+            System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(s));
 
         public bool ContainsAddress(string address)
         {

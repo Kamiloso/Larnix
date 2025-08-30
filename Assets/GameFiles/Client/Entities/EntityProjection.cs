@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Entities;
-using Larnix.Socket.Commands;
+using QuickNet.Commands;
 using Larnix.Entities.Client;
 using Unity.Collections;
 

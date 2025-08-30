@@ -1,13 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 using Larnix.Menu.Worlds;
-using Larnix.Server.Data;
-using System;
-using Larnix.Socket.Commands;
+using QuickNet.Data;
 
 namespace Larnix.Menu.Forms
 {
@@ -41,10 +37,10 @@ namespace Larnix.Menu.Forms
             string nickname = IF_Nickname.text;
             string password = IF_Password.text;
 
-            if (!Common.IsGoodNickname(nickname))
+            if (!Validation.IsGoodNickname(nickname))
                 return ErrorCode.NICKNAME_FORMAT;
 
-            if (!Common.IsGoodPassword(password))
+            if (!Validation.IsGoodPassword(password))
                 return ErrorCode.PASSWORD_FORMAT;
 
             return ErrorCode.SUCCESS;

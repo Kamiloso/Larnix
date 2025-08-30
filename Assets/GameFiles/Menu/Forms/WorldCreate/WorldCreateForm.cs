@@ -5,6 +5,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using Larnix.Menu.Worlds;
+using QuickNet.Data;
 
 namespace Larnix.Menu.Forms
 {
@@ -30,7 +31,7 @@ namespace Larnix.Menu.Forms
             if (IF_Nickname.text == "Player")
                 return ErrorCode.NICKNAME_IS_PLAYER;
 
-            if (!Common.IsGoodNickname(IF_Nickname.text))
+            if (!Validation.IsGoodNickname(IF_Nickname.text))
                 return ErrorCode.NICKNAME_FORMAT;
 
             if (!Common.IsValidWorldName(IF_WorldName.text))

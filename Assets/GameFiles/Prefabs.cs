@@ -15,7 +15,7 @@ namespace Larnix
             GameObject prefab = GetPrefab("EntityPrefabs/" + entityID.ToString(), mode);
             if (prefab == null)
             {
-                UnityEngine.Debug.LogWarning("Couldn't find '" + entityID + "' entity prefab!");
+                Larnix.Debug.LogWarning("Couldn't find '" + entityID + "' entity prefab!");
                 prefab = GetPrefab("EntityPrefabs/None", mode);
             }
 

@@ -1,5 +1,0 @@
-<linker>
-	<assembly fullname="Assembly-CSharp">
-		<namespace fullname="Larnix.Socket.Commands" preserve="all"/>
-	</assembly>
-</linker>

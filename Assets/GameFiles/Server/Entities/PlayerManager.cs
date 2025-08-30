@@ -1,11 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Larnix.Socket.Commands;
+using QuickNet.Commands;
 using System.Linq;
-using Larnix.Socket;
+using QuickNet;
 using Larnix.Entities;
-using Larnix.Socket.Channel;
+using QuickNet.Channel;
+using Larnix.Network;
 
 namespace Larnix.Server.Entities
 {
@@ -32,7 +33,7 @@ namespace Larnix.Server.Entities
 
         public void JoinPlayer(string nickname)
         {
-            ulong uid = (ulong)References.Server.Database.GetUserID(nickname);
+            ulong uid = (ulong)References.Server.LarnixServer.UserManager.GetUserID(nickname);
             PlayerUID[nickname] = uid;
             NearbyUIDs[nickname] = new();
             ClientChunks[nickname] = new();

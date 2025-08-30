@@ -49,7 +49,7 @@ namespace Larnix.Blocks
                 string warning = $"Class {className} cannot be loaded! Loading base class instead...";
                 if (!WarningsDone.Contains(warning))
                 {
-                    UnityEngine.Debug.LogWarning(warning);
+                    Larnix.Debug.LogWarning(warning);
                     WarningsDone.Add(warning);
                 }
             }

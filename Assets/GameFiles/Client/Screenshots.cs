@@ -32,7 +32,7 @@ namespace Larnix.Client
         {
             if (camera == null || !cameraReady)
             {
-                UnityEngine.Debug.Log("Screenshot failied.");
+                Larnix.Debug.Log("Screenshot failied.");
                 return false;
             }
 
@@ -72,19 +72,19 @@ namespace Larnix.Client
             Object.Destroy(rt);
             Object.Destroy(tex);
 
-            UnityEngine.Debug.Log($"Screenshot saved to: {path}");
+            Larnix.Debug.Log($"Screenshot saved to: {path}");
             return true;
         }
 
         public void CaptureTitleImage()
         {
-            UnityEngine.Debug.Log("Capturing title image...");
+            Larnix.Debug.Log("Capturing title image...");
             ScreenshotSave(ScreenshotCamera, Path.Combine(WorldLoad.WorldDirectory, "last_image.png"), 16f / 9f);
         }
 
         public void RemoveTitleImage()
         {
-            UnityEngine.Debug.Log("Removing title image...");
+            Larnix.Debug.Log("Removing title image...");
             string file = Path.Combine(WorldLoad.WorldDirectory, "last_image.png");
             if(File.Exists(file))
                 File.Delete(file);

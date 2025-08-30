@@ -19,27 +19,6 @@ namespace Larnix
             "LPT1","LPT2","LPT3","LPT4","LPT5","LPT6","LPT7","LPT8","LPT9"
         };
 
-        public static bool IsGoodNickname(string nickname) =>
-            nickname != null &&
-            !nickname.Contains('\0') &&
-            nickname.Length is >= 3 and <= 16 &&
-            nickname.All(c => char.IsLetterOrDigit(c) || c == '-' || c == '_');
-
-        public static bool IsGoodPassword(string password) =>
-            password != null &&
-            !password.Contains('\0') &&
-            password.Length is >= 7 and <= 32;
-
-        public static bool IsGoodMessage(string message) =>
-            message != null &&
-            !message.Contains('\0') &&
-            message.Length <= 256;
-
-        public static bool IsGoodUserText(string message) =>
-            message != null &&
-            !message.Contains('\0') &&
-            message.Length <= 128;
-
         public static bool IsValidWorldName(string worldName) =>
         worldName != null &&
             !worldName.Contains('\0') &&
@@ -47,28 +26,6 @@ namespace Larnix
             worldName.All(c => char.IsLetterOrDigit(c) || c == '-' || c == '_' || c == ' ') &&
             worldName == worldName.Trim() &&
             !reservedFolders.Contains(worldName.ToUpperInvariant());
-
-        public static byte[] StringToFixedBinary(string str, int stringSize)
-        {
-            int bytesSize = sizeof(char) * stringSize;
-            byte[] bytes = Encoding.Unicode.GetBytes(str);
-
-            if (bytes.Length > bytesSize)
-                return bytes[0..bytesSize];
-            else
-                return bytes.Concat(new byte[bytesSize - bytes.Length]).ToArray();
-        }
-
-        public static string FixedBinaryToString(byte[] bytes)
-        {
-            if (bytes == null || bytes.Length == 0)
-                return string.Empty;
-
-            if (bytes.Length % 2 != 0)
-                throw new ArgumentException("Invalid byte array length for UTF-16 string.");
-
-            return Encoding.Unicode.GetString(bytes).TrimEnd('\0');
-        }
 
         public static int ManhattanDistance(Vector2Int v1, Vector2Int v2)
         {
@@ -111,21 +68,6 @@ namespace Larnix
             var buffer = new byte[8];
             RandomNumberGenerator.Fill(buffer);
             return BitConverter.ToInt64(buffer, 0);
-        }
-
-        public static string InsertDashes(string input, int n)
-        {
-            if (string.IsNullOrEmpty(input) || n <= 0)
-                return input;
-
-            StringBuilder sb = new StringBuilder(input.Length + input.Length / n);
-            for (int i = 0; i < input.Length; i++)
-            {
-                if (i > 0 && i % n == 0)
-                    sb.Append('-');
-                sb.Append(input[i]);
-            }
-            return sb.ToString();
         }
 
         public static long GetSeedFromString(string input)

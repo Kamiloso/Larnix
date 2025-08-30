@@ -32,7 +32,7 @@ namespace Larnix.Server.Worldgen
         public static ValueProvider CreatePerlin(Perlin perlin, double min, double max, int dim)
         {
             if (dim >= 3)
-                UnityEngine.Debug.LogWarning("You cannot have a 3 or higher dimensional noise provider! Third axis must be used to remove zeros.");
+                Larnix.Debug.LogWarning("You cannot have a 3 or higher dimensional noise provider! Third axis must be used to remove zeros.");
 
             ValueProvider provider = new ValueProvider(ProviderType.Perlin);
             provider.Value = (x, y, z) => (perlin.GetValue(

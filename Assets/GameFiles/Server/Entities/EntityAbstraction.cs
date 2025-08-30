@@ -10,7 +10,7 @@ namespace Larnix.Server.Entities
         // ==== Public Static Factory Methods ====
         public EntityAbstraction(string nickname) // Create player abstraction
         {
-            ulong uid = (ulong)References.Server.Database.GetUserID(nickname);
+            ulong uid = (ulong)References.Server.LarnixServer.UserManager.GetUserID(nickname);
             EntityData entityData = References.EntityDataManager.TryFindEntityData(uid);
 
             if (entityData == null)

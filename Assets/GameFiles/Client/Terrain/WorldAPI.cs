@@ -3,10 +3,10 @@ using Larnix.Modules.Blocks;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Larnix.Socket.Commands;
+using Larnix.Network;
 using System;
-using Larnix.Socket;
-using Larnix.Socket.Channel;
+using QuickNet;
+using QuickNet.Channel;
 
 namespace Larnix.Client.Terrain
 {

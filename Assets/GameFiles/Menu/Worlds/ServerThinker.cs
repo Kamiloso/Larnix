@@ -1,12 +1,12 @@
-using Larnix.Socket.Commands;
+using QuickNet.Commands;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
-using Larnix.Socket;
+using QuickNet;
 using System.Linq;
-using Larnix.Socket.Data;
-using Larnix.Socket.Frontend;
+using QuickNet.Processing;
+using QuickNet.Frontend;
 
 namespace Larnix.Menu.Worlds
 {
@@ -150,24 +150,33 @@ namespace Larnix.Menu.Worlds
 
             bool knowsUserData = nickname != "" && password != "";
 
-            Task<A_ServerInfo> downloading = Resolver.DownloadServerInfoAsync(address, authcode, knowsUserData ? nickname : "Player");
+            var downloading = Resolver.DownloadServerInfoAsync(address, authcode, knowsUserData ? nickname : "Player");
             yield return new WaitUntil(() => downloading.IsCompleted);
 
-            if (downloading.Result != null) // fail
+            if (downloading.Result.info == null)
             {
-                serverInfo = downloading.Result;
+                if (downloading.Result.publicKeyProblems) // public key problems fail
+                {
+                    serverInfo = null;
+                    State = ThinkerState.WrongPublicKey;
+                    yield break;
+                }
+                else // classic fail
+                {
+                    serverInfo = null;
+                    State = ThinkerState.Failed;
+                    yield break;
+                }
+            }
+            else // success
+            {
+                serverInfo = downloading.Result.info;
                 State = Version.Current.CompatibleWith(new Version(serverInfo.GameVersion)) ? ThinkerState.Ready : ThinkerState.Incompatible;
 
                 if (knowsUserData && State != ThinkerState.Incompatible)
                 {
                     Login(false);
                 }
-                yield break;
-            }
-            else // success
-            {
-                serverInfo = null;
-                State = ThinkerState.Failed;
                 yield break;
             }
         }

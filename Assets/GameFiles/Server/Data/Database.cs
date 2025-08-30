@@ -4,12 +4,9 @@ using UnityEngine;
 using Microsoft.Data.Sqlite;
 using System.IO;
 using System;
-using Larnix.Socket.Commands;
-using Larnix.Files;
 using Larnix.Entities;
-using Larnix.Server.Terrain;
 using Larnix.Blocks;
-using System.Security.Cryptography;
+using QuickNet;
 
 namespace Larnix.Server.Data
 {
@@ -34,13 +31,6 @@ namespace Larnix.Server.Data
             using (var cmd = CreateCommand())
             {
                 cmd.CommandText = @"
-                CREATE TABLE IF NOT EXISTS users(
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    username TEXT NOT NULL UNIQUE,
-                    password_hash TEXT NOT NULL,
-                    password_index INTEGER NOT NULL DEFAULT 1
-                );
-
                 CREATE TABLE IF NOT EXISTS entities(
                     uid INTEGER PRIMARY KEY,
                     type INTEGER,
@@ -67,112 +57,6 @@ namespace Larnix.Server.Data
                 );";
                 cmd.ExecuteNonQuery();
             }
-        }
-
-        public bool UserExists(string username)
-        {
-            return GetPasswordIndex(username) != 0;
-        }
-
-        public void AddUser(string username, string password_hash, byte password_index = 1)
-        {
-            using(var cmd = CreateCommand())
-            {
-                cmd.CommandText = @"
-                    INSERT INTO users
-                    (username, password_hash, password_index) VALUES
-                    ($username, $password_hash, $password_index);";
-                cmd.Parameters.AddWithValue("$username", username);
-                cmd.Parameters.AddWithValue("$password_hash", password_hash);
-                cmd.Parameters.AddWithValue("$password_index", password_index);
-                cmd.ExecuteNonQuery();
-            }
-        }
-
-        public void DeleteUser(string username)
-        {
-            using(var cmd = CreateCommand())
-            {
-                cmd.CommandText = "DELETE FROM users WHERE username = $username;";
-                cmd.Parameters.AddWithValue("$username", username);
-                cmd.ExecuteNonQuery();
-            }
-        }
-
-        public void ChangePassword(string username, string new_password_hash)
-        {
-            using (var cmd = CreateCommand())
-            {
-                cmd.CommandText = @"
-                    UPDATE users
-                    SET password_hash = $new_password_hash
-                    WHERE username = $username;";
-
-                cmd.Parameters.AddWithValue("$new_password_hash", new_password_hash);
-                cmd.Parameters.AddWithValue("$username", username);
-                cmd.ExecuteNonQuery();
-            }
-        }
-
-        public string GetPasswordHash(string username)
-        {
-            using (var cmd = CreateCommand())
-            {
-                cmd.CommandText = "SELECT password_hash FROM users WHERE username = $username;";
-                cmd.Parameters.AddWithValue("$username", username);
-
-                using (var reader = cmd.ExecuteReader())
-                {
-                    if (reader.Read())
-                        return (string)reader["password_hash"];
-                }
-            }
-            return null;
-        }
-
-        public long GetPasswordIndex(string username) // 0 -> user doesn't exist
-        {
-            using (var cmd = CreateCommand())
-            {
-                cmd.CommandText = "SELECT password_index FROM users WHERE username = $username;";
-                cmd.Parameters.AddWithValue("$username", username);
-
-                using (var reader = cmd.ExecuteReader())
-                {
-                    if (reader.Read())
-                    {
-                        long password_index = reader.GetInt64(0);
-                        return password_index;
-                    }
-                }
-            }
-            return 0;
-        }
-
-        public void IncrementPasswordIndex(string username)
-        {
-            using (var cmd = CreateCommand())
-            {
-                cmd.CommandText = "UPDATE users SET password_index = password_index + 1 WHERE username = $username;";
-                cmd.Parameters.AddWithValue("$username", username);
-                cmd.ExecuteNonQuery();
-            }
-        }
-
-        public long GetUserID(string username)
-        {
-            using (var cmd = CreateCommand())
-            {
-                cmd.CommandText = "SELECT id FROM users WHERE username = $username;";
-                cmd.Parameters.AddWithValue("$username", username);
-
-                using (var reader = cmd.ExecuteReader())
-                {
-                    if (reader.Read())
-                        return reader.GetInt64(0);
-                }
-            }
-            throw new Exception("User doesn't exist in the database!");
         }
 
         public long GetMinUID()
@@ -423,15 +307,15 @@ namespace Larnix.Server.Data
 
         public void Dispose()
         {
-            if(connection != null)
+            if (transaction != null)
+            {
+                RollbackTransaction();
+            }
+            if (connection != null)
             {
                 connection.Close();
                 connection.Dispose();
                 connection = null;
-            }
-            if (transaction != null)
-            {
-                RollbackTransaction();
             }
         }
     }

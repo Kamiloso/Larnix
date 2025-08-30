@@ -1,16 +1,11 @@
 using System.Collections;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using Larnix.Menu.Worlds;
-using Larnix.Socket.Data;
-using System;
-using Larnix.Socket.Commands;
 using Larnix.Forms;
 using System.Threading.Tasks;
-using Larnix.Socket;
-using System.Linq;
-using Larnix.Socket.Frontend;
+using QuickNet.Frontend;
+using QuickNet.Data;
 
 namespace Larnix.Menu.Forms
 {
@@ -62,10 +57,10 @@ namespace Larnix.Menu.Forms
             string newPassword = IF_Password.text;
             string confirm = IF_Confirm.text;
 
-            if (!Common.IsGoodNickname(nickname))
+            if (!Validation.IsGoodNickname(nickname))
                 return ErrorCode.NICKNAME_FORMAT;
 
-            if (!Common.IsGoodPassword(newPassword))
+            if (!Validation.IsGoodPassword(newPassword))
                 return ErrorCode.PASSWORD_FORMAT;
 
             if (oldPassword == newPassword)

@@ -1,9 +1,7 @@
 using UnityEditor;
 using UnityEngine.SceneManagement;
-using System;
-using System.Security.Cryptography;
+using QuickNet.Backend;
 using System.IO;
-using UnityEngine;
 using Larnix.Menu.Worlds;
 
 namespace Larnix
@@ -59,7 +57,7 @@ namespace Larnix
             Address = null; // server will set
             Authcode = null; // server will set
             Nickname = nickname;
-            Password = "SGP_PASSWORD";
+            Password = QuickServer.LoopbackOnlyPassword;
 
             // Client will load the server on awake
             SceneManager.LoadScene("Client");

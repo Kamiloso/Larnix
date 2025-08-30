@@ -1,4 +1,4 @@
-using Larnix.Socket;
+using QuickNet;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -6,7 +6,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Threading;
 using UnityEditor;
-using Larnix.Socket.Commands;
+using QuickNet.Commands;
 using System.Linq;
 using System;
 using Larnix.Menu.Worlds;
@@ -29,7 +29,7 @@ namespace Larnix.Menu
             Application.runInBackground = true;
             References.Menu = this;
 
-            UnityEngine.Debug.Log("Menu loaded");
+            Larnix.Debug.Log("Menu loaded");
         }
 
         private void Start()
@@ -50,6 +50,8 @@ namespace Larnix.Menu
             {
                 GoBack();
             }
+
+            Larnix.Debug.FlushLogs(false);
         }
 
         public void SetScreen(string newScreen)

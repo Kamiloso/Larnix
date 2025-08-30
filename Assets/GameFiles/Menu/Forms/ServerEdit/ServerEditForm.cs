@@ -4,7 +4,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using Larnix.Menu.Worlds;
-using Larnix.Socket.Data;
+using QuickNet.Processing;
 using System;
 
 namespace Larnix.Menu.Forms

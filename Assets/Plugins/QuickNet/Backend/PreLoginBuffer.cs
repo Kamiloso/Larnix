@@ -1,0 +1,33 @@
+using System.Collections;
+using System.Collections.Generic;
+using System.Net;
+using System.Threading.Tasks;
+using QuickNet.Commands;
+
+namespace QuickNet.Backend
+{
+    public class PreLoginBuffer
+    {
+        public readonly AllowConnection AllowConnection;
+
+        public readonly EndPoint EndPoint;
+        private readonly List<byte[]> Buffer = new List<byte[]>(MaxPackets);
+        public const int MaxPackets = 32;
+
+        public PreLoginBuffer(AllowConnection allowConnection)
+        {
+            AllowConnection = allowConnection;
+        }
+
+        public void AddPacket(byte[] bytes)
+        {
+            if(Buffer.Count < MaxPackets)
+                Buffer.Add(bytes);
+        }
+
+        public List<byte[]> GetBuffer()
+        {
+            return Buffer;
+        }
+    }
+}
