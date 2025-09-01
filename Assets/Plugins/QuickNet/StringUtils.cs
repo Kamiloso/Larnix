@@ -8,9 +8,9 @@ using System.Text;
 
 namespace QuickNet
 {
-    public static class StringUtils
+    internal static class StringUtils
     {
-        public static byte[] StringToFixedBinary(string str, int stringSize)
+        internal static byte[] StringToFixedBinary(string str, int stringSize)
         {
             int bytesSize = sizeof(char) * stringSize;
             byte[] bytes = new byte[bytesSize];
@@ -25,7 +25,7 @@ namespace QuickNet
             return bytes;
         }
 
-        public static string FixedBinaryToString(ReadOnlySpan<byte> span)
+        internal static string FixedBinaryToString(ReadOnlySpan<byte> span)
         {
             return Encoding.Unicode.GetString(span).TrimEnd('\0');
         }
@@ -33,9 +33,15 @@ namespace QuickNet
 
     #region StringN structs
 
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public unsafe struct String32 : IIgnoresEndianness
+    public interface IStringStruct : IIgnoresEndianness
     {
+        public int BinarySize { get; }
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public unsafe struct String32 : IStringStruct
+    {
+        public int BinarySize => BYTE_SIZE;
         const int BYTE_SIZE = 32;
         const int STR_SIZE = BYTE_SIZE / 2;
         fixed byte buffer[BYTE_SIZE];
@@ -53,8 +59,9 @@ namespace QuickNet
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public unsafe struct String64 : IIgnoresEndianness
+    public unsafe struct String64 : IStringStruct
     {
+        public int BinarySize => BYTE_SIZE;
         const int BYTE_SIZE = 64;
         const int STR_SIZE = BYTE_SIZE / 2;
         fixed byte buffer[BYTE_SIZE];
@@ -72,8 +79,9 @@ namespace QuickNet
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public unsafe struct String128 : IIgnoresEndianness
+    public unsafe struct String128 : IStringStruct
     {
+        public int BinarySize => BYTE_SIZE;
         const int BYTE_SIZE = 128;
         const int STR_SIZE = BYTE_SIZE / 2;
         fixed byte buffer[BYTE_SIZE];
@@ -91,8 +99,9 @@ namespace QuickNet
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public unsafe struct String256 : IIgnoresEndianness
+    public unsafe struct String256 : IStringStruct
     {
+        public int BinarySize => BYTE_SIZE;
         const int BYTE_SIZE = 256;
         const int STR_SIZE = BYTE_SIZE / 2;
         fixed byte buffer[BYTE_SIZE];
@@ -110,8 +119,9 @@ namespace QuickNet
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public unsafe struct String512 : IIgnoresEndianness
+    public unsafe struct String512 : IStringStruct
     {
+        public int BinarySize => BYTE_SIZE;
         const int BYTE_SIZE = 512;
         const int STR_SIZE = BYTE_SIZE / 2;
         fixed byte buffer[BYTE_SIZE];
@@ -129,8 +139,9 @@ namespace QuickNet
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public unsafe struct String1024 : IIgnoresEndianness
+    public unsafe struct String1024 : IStringStruct
     {
+        public int BinarySize => BYTE_SIZE;
         const int BYTE_SIZE = 1024;
         const int STR_SIZE = BYTE_SIZE / 2;
         fixed byte buffer[BYTE_SIZE];

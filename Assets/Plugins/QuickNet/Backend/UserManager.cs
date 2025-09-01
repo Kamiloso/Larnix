@@ -6,44 +6,6 @@ using System.IO;
 
 namespace QuickNet.Backend
 {
-    internal class UserData
-    {
-        internal const int SIZE = 8 + 32 + 256 + 8;
-
-        internal long UserID;
-        internal String32 Username; // 16 chars
-        internal String256 PasswordHash; // 128 chars
-        internal long ChallengeID;
-
-        internal UserData(string username, string passwordHash)
-        {
-            Username = username;
-            PasswordHash = passwordHash;
-            ChallengeID = 1;
-        }
-
-        internal UserData(byte[] bytes, int offset = 0)
-        {
-            if (bytes == null || bytes.Length - offset < SIZE)
-                throw new ArgumentException("Cannot deserialize UserData! Too small array.");
-
-            UserID = EndianUnsafe.FromBytes<long>(bytes, 0 + offset);
-            Username = EndianUnsafe.FromBytes<String32>(bytes, 8 + offset);
-            PasswordHash = EndianUnsafe.FromBytes<String256>(bytes, 40 + offset);
-            ChallengeID = EndianUnsafe.FromBytes<long>(bytes, 296 + offset);
-        }
-
-        internal byte[] GetBytes()
-        {
-            return ArrayUtils.MegaConcat(
-                EndianUnsafe.GetBytes(UserID),
-                EndianUnsafe.GetBytes(Username),
-                EndianUnsafe.GetBytes(PasswordHash),
-                EndianUnsafe.GetBytes(ChallengeID)
-                );
-        }
-    }
-
     public class UserManager
     {
         private readonly QuickServer Server;
@@ -64,17 +26,10 @@ namespace QuickNet.Backend
             }
             else // generate pepper
             {
-                Pepper = GetSecureLong();
+                Pepper = Processing.KeyObtainer.GetSecureLong();
                 pepperBytes = EndianUnsafe.GetBytes(Pepper);
                 FileManager.WriteBinary(DataPath, "pepper.bin", pepperBytes);
             }
-        }
-
-        private static long GetSecureLong()
-        {
-            byte[] randBuffer = new byte[8];
-            RandomNumberGenerator.Fill(randBuffer);
-            return BitConverter.ToInt64(randBuffer, 0);
         }
 
         // ===== ACCOUNT MANAGEMENT =====
@@ -119,9 +74,9 @@ namespace QuickNet.Backend
                 {
                     do
                     {
-                        userData.UserID = (GetSecureLong() & 0x7F_FF_FF_FF_FF_FF_00_00) | (ushort)hashID;
+                        userData.UserID = (Processing.KeyObtainer.GetSecureLong() & 0x7F_FF_FF_FF_FF_FF_00_00) | (ushort)hashID;
                     }
-                    while (reservedIDs.Contains(userData.UserID));
+                    while (reservedIDs.Contains(userData.UserID) || userData.UserID == 0);
 
                     writer.Write(userData.GetBytes());
                     inserted = true;
@@ -203,7 +158,7 @@ namespace QuickNet.Backend
             }
         }
 
-        internal string GetPasswordHash(string username)
+        public string GetPasswordHash(string username)
         {
             UserData user = ReadUserData(username) ?? throw new KeyNotFoundException($"Username {username} not found!");
             return user.PasswordHash;

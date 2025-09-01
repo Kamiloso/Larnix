@@ -7,45 +7,23 @@ namespace QuickNet
 {
     public class InternetID
     {
-        private static int MaskIPv4;
-        private static int MaskIPv6;
-        private static bool MasksInitialized = false;
+        private readonly IPAddress Address;
+        private readonly int Subnet;
+        private readonly bool IsIPv4;
 
-        public readonly IPAddress Address;
-        public readonly bool IsIPv6;
-
-        public static void InitializeMasks(int maskIPv4 = 32, int maskIPv6 = 56)
+        public InternetID(IPAddress address, int subnet)
         {
-            MaskIPv4 = maskIPv4;
-            MaskIPv6 = maskIPv6;
-            MasksInitialized = true;
-        }
-
-        public InternetID(IPAddress address)
-        {
-            if (!MasksInitialized)
-                throw new System.InvalidOperationException("You must initialize IP masks using static InternetID.InitializeMasks(int, int) method.");
-
             Address = address;
-
-            if (address.AddressFamily == AddressFamily.InterNetwork)
-                IsIPv6 = false;
-
-            else if (address.AddressFamily == AddressFamily.InterNetworkV6)
-                IsIPv6 = true;
-
-            else throw new ArgumentException("Unsupported address type! Only IPv4 and IPv6 are accepted.");
+            Subnet = subnet;
+            IsIPv4 = address.AddressFamily == AddressFamily.InterNetwork;
         }
 
         public static bool operator ==(InternetID left, InternetID right)
         {
-            if(ReferenceEquals(left, right))
+            if(left is null && right is null)
                 return true;
 
-            if(left is null  || right is null)
-                return false;
-
-            return left.Equals(right);
+            return left?.Equals(right) ?? false;
         }
 
         public static bool operator !=(InternetID left, InternetID right)
@@ -55,20 +33,18 @@ namespace QuickNet
 
         public override bool Equals(object obj)
         {
-            if (!(obj is InternetID))
-                return false;
+            if (obj is InternetID other && IsIPv4 == other.IsIPv4)
+            {
+                int mask = Math.Min(Subnet, other.Subnet);
 
-            InternetID other = (InternetID)obj;
-
-            if (IsIPv6 != other.IsIPv6)
-                return false;
-
-            return MasksCompare(Address, other.Address, IsIPv6 ? MaskIPv6 : MaskIPv4);
+                return MasksCompare(Address, other.Address, mask);
+            }
+            return false;
         }
 
         public override int GetHashCode()
         {
-            byte[] bytes = MaskBytes(Address.GetAddressBytes(), IsIPv6 ? MaskIPv6 : MaskIPv4);
+            byte[] bytes = MaskBytes(Address.GetAddressBytes(), Subnet);
 
             unchecked
             {

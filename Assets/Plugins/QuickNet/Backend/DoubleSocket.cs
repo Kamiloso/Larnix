@@ -6,13 +6,13 @@ using System.Net.Sockets;
 
 namespace QuickNet.Backend
 {
-    public class DoubleSocket : IDisposable
+    internal class DoubleSocket : IDisposable
     {
-        public readonly ushort Port;
-        public UdpClient UdpClientV4;
-        public UdpClient UdpClientV6;
+        internal readonly ushort Port;
+        internal UdpClient UdpClientV4;
+        internal UdpClient UdpClientV6;
 
-        public DoubleSocket(ushort port, bool isLoopback)
+        internal DoubleSocket(ushort port, bool isLoopback)
         {
             if (port == 0)
             {
@@ -76,12 +76,12 @@ namespace QuickNet.Backend
             return true;
         }
 
-        public bool DataAvailable()
+        internal bool DataAvailable()
         {
             return UdpClientV4.Available > 0 || UdpClientV6.Available > 0;
         }
 
-        public byte[] Receive(ref IPEndPoint remoteEP)
+        internal byte[] Receive(ref IPEndPoint remoteEP)
         {
             if (UdpClientV4.Available > 0)
                 return UdpClientV4.Receive(ref remoteEP);
@@ -92,7 +92,7 @@ namespace QuickNet.Backend
             return null;
         }
 
-        public void Send(byte[] bytes, IPEndPoint endPoint)
+        internal void Send(byte[] bytes, IPEndPoint endPoint)
         {
             bool IsIPv4Client = endPoint.AddressFamily == AddressFamily.InterNetwork;
             (IsIPv4Client ? UdpClientV4 : UdpClientV6).SendAsync(bytes, bytes.Length, endPoint);

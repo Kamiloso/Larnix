@@ -39,9 +39,9 @@ namespace QuickNet.Channel.Cmds
         protected override bool IsValid()
         {
             return Bytes?.Length == SIZE &&
-                Validation.IsGoodUserText(UserText1) &&
-                Validation.IsGoodUserText(UserText2) &&
-                Validation.IsGoodUserText(UserText3);
+                Validation.IsGoodText<String256>(UserText1) &&
+                Validation.IsGoodText<String256>(UserText2) &&
+                Validation.IsGoodText<String256>(UserText3);
         }
 
         private static object locker = new();

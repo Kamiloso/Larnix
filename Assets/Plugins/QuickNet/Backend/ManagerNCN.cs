@@ -6,6 +6,7 @@ using System.Net;
 using System.Threading.Tasks;
 using QuickNet.Channel;
 using QuickNet.Channel.Cmds;
+using System.Net.Sockets;
 
 namespace QuickNet.Backend
 {
@@ -151,7 +152,12 @@ namespace QuickNet.Backend
                 yield break;
             }
 
-            InternetID internetID = new InternetID(remoteEP.Address);
+            InternetID internetID = new InternetID(
+                remoteEP.Address,
+                remoteEP.AddressFamily == AddressFamily.InterNetwork ?
+                    Server.MaskIPv4 : Server.MaskIPv6
+                );
+
             if (!LoginAmount.ContainsKey(internetID))
                 LoginAmount[internetID] = 0;
 

@@ -5,26 +5,26 @@ using QuickNet.Channel.Cmds;
 
 namespace QuickNet.Backend
 {
-    public class PreLoginBuffer
+    internal class PreLoginBuffer
     {
-        public readonly AllowConnection AllowConnection;
+        internal readonly AllowConnection AllowConnection;
 
-        public readonly EndPoint EndPoint;
+        internal readonly EndPoint EndPoint;
         private readonly List<byte[]> Buffer = new List<byte[]>(MaxPackets);
-        public const int MaxPackets = 32;
+        internal const int MaxPackets = 32;
 
-        public PreLoginBuffer(AllowConnection allowConnection)
+        internal PreLoginBuffer(AllowConnection allowConnection)
         {
             AllowConnection = allowConnection;
         }
 
-        public void AddPacket(byte[] bytes)
+        internal void AddPacket(byte[] bytes)
         {
             if(Buffer.Count < MaxPackets)
                 Buffer.Add(bytes);
         }
 
-        public List<byte[]> GetBuffer()
+        internal List<byte[]> GetBuffer()
         {
             return Buffer;
         }

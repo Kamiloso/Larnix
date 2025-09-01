@@ -7,6 +7,7 @@ using System.Security.Cryptography;
 using QuickNet.Processing;
 using QuickNet.Channel;
 using QuickNet.Channel.Cmds;
+using System.Threading.Tasks;
 using System;
 
 namespace QuickNet.Backend
@@ -19,37 +20,27 @@ namespace QuickNet.Backend
         public readonly ushort MaxClients;
         public readonly bool IsLoopback;
         public readonly string DataPath;
-        public readonly long Secret;
-        public readonly string Authcode;
         public readonly uint GameVersion;
         public readonly string UserText1;
         public readonly string UserText2;
         public readonly string UserText3;
 
-        private readonly DoubleSocket DoubleSocket;
-        private readonly ManagerNCN FastMessages;
+        public readonly long Secret;
+        public readonly string Authcode;
+
+        private bool InitializedMasks = false;
+        internal int MaskIPv4 = 32;
+        internal int MaskIPv6 = 56;
+
         public readonly UserManager UserManager;
         public readonly RSA KeyRSA;
-        public readonly HashSet<string> ReservedNicknames = new();
 
-        //private readonly string[] nicknames;
-        //private readonly Connection[] _connections;
+        private readonly DoubleSocket DoubleSocket;
+        private readonly ManagerNCN FastMessages;
+        internal readonly HashSet<string> ReservedNicknames = new();
 
         private readonly Dictionary<string, Connection> connections = new();
         private readonly Dictionary<IPEndPoint, Connection> connectionsByEndPoint = new();
-
-        private void RememberConnection(string nickname, Connection conn)
-        {
-            connections.Add(nickname, conn);
-            connectionsByEndPoint.Add(conn.EndPoint, conn);
-        }
-
-        private void ForgetConnection(string nickname)
-        {
-            IPEndPoint endPoint = connections[nickname].EndPoint;
-            connections.Remove(nickname);
-            connectionsByEndPoint.Remove(endPoint);
-        }
 
         private readonly Dictionary<IPEndPoint, PreLoginBuffer> PreLoginBuffers = new();
         private readonly Dictionary<CmdID, Action<Packet, string>> Subscriptions = new();
@@ -67,7 +58,9 @@ namespace QuickNet.Backend
             string userText3 = ""
             )
         {
-            if (!Validation.IsGoodUserText(userText1) || !Validation.IsGoodUserText(userText2) || !Validation.IsGoodUserText(userText3))
+            if (!Validation.IsGoodText<String256>(userText1) ||
+                !Validation.IsGoodText<String256>(userText2) ||
+                !Validation.IsGoodText<String256>(userText3))
                 throw new ArgumentException("Wrong UserText format! Cannot be larger than 128 characters or end with NULL (0x00).");
 
             // managed objects
@@ -89,9 +82,33 @@ namespace QuickNet.Backend
             UserText3 = userText3;
         }
 
+        public void ConfigureMasks(int maskIPv4, int maskIPv6)
+        {
+            if (InitializedMasks)
+                throw new InvalidOperationException("Masks were already initialized! " +
+                    "This method should be called from directly after QuickServer constructor.");
+
+            InitializedMasks = true;
+            MaskIPv4 = maskIPv4;
+            MaskIPv6 = maskIPv6;
+        }
+
         public void ReserveNickname(string nickname)
         {
             ReservedNicknames.Add(nickname);
+        }
+
+        private void RememberConnection(string nickname, Connection conn)
+        {
+            connections.Add(nickname, conn);
+            connectionsByEndPoint.Add(conn.EndPoint, conn);
+        }
+
+        private void ForgetConnection(string nickname)
+        {
+            IPEndPoint endPoint = connections[nickname].EndPoint;
+            connections.Remove(nickname);
+            connectionsByEndPoint.Remove(endPoint);
         }
 
         private bool CanAcceptSYN(IPEndPoint endPoint, string nickname)
@@ -103,7 +120,7 @@ namespace QuickNet.Backend
                 kvp.Key == nickname || kvp.Value.EndPoint.Equals(endPoint));
         }
 
-        public void LoginAccept(IPEndPoint remoteEP)
+        internal void LoginAccept(IPEndPoint remoteEP)
         {
             if (!PreLoginBuffers.ContainsKey(remoteEP))
                 throw new InvalidOperationException("Couldn't find login request to accept.");
@@ -133,7 +150,7 @@ namespace QuickNet.Backend
             }
         }
 
-        public void LoginDeny(IPEndPoint remoteEP)
+        internal void LoginDeny(IPEndPoint remoteEP)
         {
             if (!PreLoginBuffers.ContainsKey(remoteEP))
                 throw new InvalidOperationException("Couldn't find login request to deny.");
@@ -143,6 +160,9 @@ namespace QuickNet.Backend
 
         public void ServerTick(float deltaTime)
         {
+            // Block initializing masks
+            InitializedMasks = true;
+
             // Tick database
             FastMessages.Tick(deltaTime);
 
@@ -170,7 +190,10 @@ namespace QuickNet.Backend
                 QuickPacket header = new QuickPacket();
                 if (header.TryDeserialize(bytes, true))
                 {
-                    InternetID internetID = new InternetID(remoteEP.Address);
+                    InternetID internetID = new InternetID(
+                        remoteEP.Address,
+                        remoteEP.AddressFamily == AddressFamily.InterNetwork ? MaskIPv4 : MaskIPv6
+                        );
                     uint conCount = recentConCount.ContainsKey(internetID) ? recentConCount[internetID] : 0;
 
                     // Limit packets with specific flags
@@ -361,7 +384,7 @@ namespace QuickNet.Backend
             }
         }
 
-        public void SendNCN(IPEndPoint endPoint, uint ncnID, Packet packet)
+        internal void SendNCN(IPEndPoint endPoint, uint ncnID, Packet packet)
         {
             QuickPacket safeAnswer = new QuickPacket(
                 ncnID,
@@ -402,16 +425,22 @@ namespace QuickNet.Backend
             KeyRSA?.Dispose();
         }
 
+        // === THREAD SAFE SHUFFLER ===
+
+        private static readonly Random _rng = new();
+        private static readonly object _locker = new();
         private static void Shuffle(string[] array)
         {
-            Random rng = new();
-            int n = array.Length;
-            while (n > 1)
+            lock (_locker)
             {
-                int k = rng.Next(n--);
-                string temp = array[n];
-                array[n] = array[k];
-                array[k] = temp;
+                int n = array.Length;
+                while (n > 1)
+                {
+                    int k = _rng.Next(n--);
+                    string temp = array[n];
+                    array[n] = array[k];
+                    array[k] = temp;
+                }
             }
         }
     }

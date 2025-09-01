@@ -1,22 +1,21 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 
 namespace QuickNet.Processing
 {
-    public static class Encryption
+    internal static class Encryption
     {
-        public class Settings
+        internal class Settings
         {
-            public enum Type : byte { AES, RSA };
-            public Type type { get; set; }
-            public byte[] key { get; set; }
-            public RSA rsa { get; set; }
+            internal enum Type : byte { AES, RSA };
+            internal Type type { get; set; }
+            internal byte[] key { get; set; }
+            internal RSA rsa { get; set; }
 
-            public Settings(Type _type, byte[] _key)
+            internal Settings(Type _type, byte[] _key)
             {
                 type = _type;
                 key = _key;
@@ -29,7 +28,7 @@ namespace QuickNet.Processing
                 else throw new Exception("Wrong constructor was used to create Encryption.Settings class.");
             }
 
-            public Settings(Type _type, RSA _rsa)
+            internal Settings(Type _type, RSA _rsa)
             {
                 type = _type;
                 rsa = _rsa;
@@ -38,7 +37,7 @@ namespace QuickNet.Processing
                     throw new Exception("Wrong constructor was used to create Encryption.Settings class.");
             }
 
-            public byte[] Encrypt(byte[] bytes)
+            internal byte[] Encrypt(byte[] bytes)
             {
                 switch(type)
                 {
@@ -48,7 +47,7 @@ namespace QuickNet.Processing
                 }
             }
 
-            public byte[] Decrypt(byte[] bytes)
+            internal byte[] Decrypt(byte[] bytes)
             {
                 switch (type)
                 {
@@ -59,7 +58,7 @@ namespace QuickNet.Processing
             }
         }
 
-        static byte[] EncryptAES(byte[] bytes, byte[] key)
+        internal static byte[] EncryptAES(byte[] bytes, byte[] key)
         {
             if (key.Length != 16)
                 throw new System.Exception("AES key length must be 16 bytes.");
@@ -89,7 +88,7 @@ namespace QuickNet.Processing
             return iv.Concat(encrypted).ToArray();
         }
 
-        static byte[] DecryptAES(byte[] bytes, byte[] key)
+        internal static byte[] DecryptAES(byte[] bytes, byte[] key)
         {
             if (key == null || key.Length != 16)
                 throw new Exception("AES key length must be 16 bytes.");
@@ -115,31 +114,31 @@ namespace QuickNet.Processing
                 cs.CopyTo(resultStream);
                 return resultStream.ToArray();
             }
-            catch (Exception)
+            catch
             {
                 return new byte[0];
             }
         }
 
-        static byte[] EncryptRSA(byte[] data, RSA rsa)
+        internal static byte[] EncryptRSA(byte[] data, RSA rsa)
         {
             try
             {
                 return rsa.Encrypt(data, RSAEncryptionPadding.OaepSHA1);
             }
-            catch (Exception)
+            catch
             {
                 return new byte[0];
             }
         }
 
-        static byte[] DecryptRSA(byte[] data, RSA rsa)
+        internal static byte[] DecryptRSA(byte[] data, RSA rsa)
         {
             try
             {
                 return rsa.Decrypt(data, RSAEncryptionPadding.OaepSHA1);
             }
-            catch (Exception)
+            catch
             {
                 return new byte[0];
             }

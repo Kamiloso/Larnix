@@ -6,7 +6,7 @@ using QuickNet.Processing;
 
 namespace QuickNet.Channel
 {
-    public enum PacketFlag : byte
+    internal enum PacketFlag : byte
     {
         SYN = 1 << 0, // start connection (client -> server)
         FIN = 1 << 1, // end connection
@@ -15,21 +15,21 @@ namespace QuickNet.Channel
         NCN = 1 << 4, // no connection
     }
 
-    public class QuickPacket
+    internal class QuickPacket
     {
         // ==== DATA SEGMENT ====
 
-        public const int HEADER_SIZE = (2 + 2) + 4 + 4 + 1;
-        public const ushort PROTOCOL_VERSION = 2;
-        public Encryption.Settings Encrypt = null;
+        internal const int HEADER_SIZE = (2 + 2) + 4 + 4 + 1;
+        internal const ushort PROTOCOL_VERSION = 2;
+        internal Encryption.Settings Encrypt = null;
 
-        public uint SeqNum { get; private set; } = 0;
-        public uint AckNum { get; private set; } = 0;
-        public byte Flags { get; private set; } = 0;
-        public Packet Packet { get; private set; } = null;
+        internal uint SeqNum { get; private set; } = 0;
+        internal uint AckNum { get; private set; } = 0;
+        internal byte Flags { get; private set; } = 0;
+        internal Packet Packet { get; private set; } = null;
 
-        public QuickPacket() { }
-        public QuickPacket(uint seqNum, uint ackNum, byte flags, Packet payload)
+        internal QuickPacket() { }
+        internal QuickPacket(uint seqNum, uint ackNum, byte flags, Packet payload)
         {
             SeqNum = seqNum;
             AckNum = ackNum;
@@ -37,12 +37,12 @@ namespace QuickNet.Channel
             Packet = payload;
         }
 
-        public bool HasFlag(PacketFlag flag)
+        internal bool HasFlag(PacketFlag flag)
         {
             return (Flags & (byte)flag) != 0;
         }
 
-        public byte[] Serialize()
+        internal byte[] Serialize()
         {
             byte[] bytes = ArrayUtils.MegaConcat(
                 EndianUnsafe.GetBytes(PROTOCOL_VERSION),
@@ -58,7 +58,7 @@ namespace QuickNet.Channel
             return ArrayUtils.MegaConcat(checksumBytes, bytes);
         }
 
-        public bool TryDeserialize(byte[] bytes, bool ignorePayload = false)
+        internal bool TryDeserialize(byte[] bytes, bool ignorePayload = false)
         {
             if (bytes.Length < HEADER_SIZE)
                 return false;
@@ -100,17 +100,17 @@ namespace QuickNet.Channel
 
         // ==== RETRANSMISSION SEGMENT ====
 
-        public float TimeToRetransmission { get; private set; } = float.MaxValue;
-        public uint TransmissionCount { get; private set; } = 0;
+        internal float TimeToRetransmission { get; private set; } = float.MaxValue;
+        internal uint TransmissionCount { get; private set; } = 0;
 
-        public void ReduceTime(float time)
+        internal void ReduceTime(float time)
         {
             TimeToRetransmission -= time;
             if (TimeToRetransmission < 0f)
                 TimeToRetransmission = 0f;
         }
 
-        public void Transmited(float retryTime)
+        internal void Transmited(float retryTime)
         {
             TimeToRetransmission = retryTime;
             TransmissionCount++;

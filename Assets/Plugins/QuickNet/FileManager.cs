@@ -7,6 +7,7 @@ namespace QuickNet
     {
         public static string Read(string path, string filename)
         {
+            FilenameCheck(filename);
             EnsureDirectory(path);
 
             string file = Path.Combine(path, filename);
@@ -34,6 +35,7 @@ namespace QuickNet
 
         public static void Write(string path, string filename, string text)
         {
+            FilenameCheck(filename);
             EnsureDirectory(path);
 
             string file = Path.Combine(path, filename);
@@ -58,6 +60,7 @@ namespace QuickNet
 
         public static byte[] ReadBinary(string path, string filename)
         {
+            FilenameCheck(filename);
             EnsureDirectory(path);
 
             string file = Path.Combine(path, filename);
@@ -85,6 +88,7 @@ namespace QuickNet
 
         public static void WriteBinary(string path, string filename, byte[] bytes)
         {
+            FilenameCheck(filename);
             EnsureDirectory(path);
 
             string file = Path.Combine(path, filename);
@@ -120,13 +124,19 @@ namespace QuickNet
                 File.Delete(_file);
 
             if (File.Exists(file))
-                File.Delete(_file);
+                File.Delete(file);
         }
 
         public static void EnsureDirectory(string path)
         {
             if (!Directory.Exists(path))
                 Directory.CreateDirectory(path);
+        }
+
+        private static void FilenameCheck(string filename)
+        {
+            if (string.IsNullOrEmpty(filename)) throw new System.NullReferenceException();
+            if (filename.StartsWith('_')) throw new System.ArgumentException("Filename cannot start with '_'!");
         }
     }
 }

@@ -110,7 +110,7 @@ namespace Larnix.Server
             foreach (string nickname in References.PlayerManager.PlayerUID.Keys)
             {
                 sb.Append($" | {nickname} from {References.Server.LarnixServer.GetClientEndPoint(nickname)}" +
-                          $" is {References.PlayerManager.GetPlayerState(nickname).ToString().ToUpper()} \n");
+                          $" is {References.PlayerManager.GetPlayerState(nickname).ToString().ToUpper()}\n");
             }
 
             sb.Append("\n");

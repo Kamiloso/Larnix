@@ -19,14 +19,12 @@ namespace QuickNet
             !password.EndsWith('\0') &&
             password.Length is >= 7 and <= 32;
 
-        public static bool IsGoodMessage(string message) =>
-            message != null &&
-            !message.EndsWith('\0') &&
-            message.Length <= 256;
+        public static bool IsGoodAuthcode(string authcode) =>
+            Processing.Authcode.IsGoodAuthcode(authcode);
 
-        public static bool IsGoodUserText(string message) =>
+        public static bool IsGoodText<T>(string message) where T : IStringStruct, new() =>
             message != null &&
             !message.EndsWith('\0') &&
-            message.Length <= 128;
+            message.Length <= new T().BinarySize / 2;
     }
 }

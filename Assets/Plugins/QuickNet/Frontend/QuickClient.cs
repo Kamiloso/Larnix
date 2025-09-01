@@ -40,6 +40,11 @@ namespace QuickNet.Frontend
             });
         }
 
+        public static QuickClient CreateClientSync(string address, string authcode, string nickname, string password)
+        {
+            return CreateClientAsync(address, authcode, nickname, password).Result;
+        }
+
         private QuickClient(IPEndPoint endPoint, EntryTicket ticket, string authcode, string nickname, string password)
         {
             EndPoint = endPoint;

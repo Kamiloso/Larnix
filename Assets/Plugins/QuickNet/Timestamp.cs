@@ -8,7 +8,7 @@ namespace QuickNet
 {
     public static class Timestamp
     {
-        public const long Window = 6_000; // miliseconds
+        private const long Window = 6_000; // miliseconds
         private static Dictionary<EndPoint, long> TimestampDifferences = new();
         private static object locker = new();
 
@@ -17,10 +17,10 @@ namespace QuickNet
             return ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeMilliseconds();
         }
 
-        public static bool InTimestamp(long timestamp)
+        public static bool InTimestamp(long timestamp, long window = Window)
         {
             long localTimestamp = GetTimestamp();
-            return timestamp >= localTimestamp - Window && timestamp <= localTimestamp;
+            return timestamp >= localTimestamp - window && timestamp <= localTimestamp;
         }
 
         internal static void SetServerTimestamp(IPEndPoint endPoint, long timestamp)

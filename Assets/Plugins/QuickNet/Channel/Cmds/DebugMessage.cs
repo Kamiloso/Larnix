@@ -19,7 +19,7 @@ namespace QuickNet.Channel.Cmds
         protected override bool IsValid()
         {
             return Bytes?.Length == SIZE &&
-                Validation.IsGoodMessage(Message);
+                Validation.IsGoodText<String512>(Message);
         }
     }
 }

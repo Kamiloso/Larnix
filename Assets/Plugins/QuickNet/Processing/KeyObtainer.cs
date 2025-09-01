@@ -12,12 +12,12 @@ using System.Linq;
 
 namespace QuickNet.Processing
 {
-    public static class KeyObtainer
+    internal static class KeyObtainer
     {
         private const string filename = "rsa_keypair.pem";
         private const string secretfile = "server_secret.txt";
 
-        public static RSA ObtainKeyRSA(string path)
+        internal static RSA ObtainKeyRSA(string path)
         {
             AsymmetricCipherKeyPair keyPair = null;
             string data = null;
@@ -41,7 +41,7 @@ namespace QuickNet.Processing
             return BouncyToRSA(keyPair);
         }
 
-        public static long ObtainSecret(string path)
+        internal static long ObtainSecret(string path)
         {
             string data = FileManager.Read(path, secretfile);
             if (data != null)
@@ -55,7 +55,7 @@ namespace QuickNet.Processing
             return secret;
         }
 
-        public static byte[] KeyToPublicBytes(RSA rsa)
+        internal static byte[] KeyToPublicBytes(RSA rsa)
         {
             if (rsa == null)
                 return null;
@@ -76,7 +76,7 @@ namespace QuickNet.Processing
             return modulus.Concat(exponent).ToArray();
         }
 
-        public static RSA PublicBytesToKey(byte[] publicBytes)
+        internal static RSA PublicBytesToKey(byte[] publicBytes)
         {
             try
             {
@@ -145,7 +145,7 @@ namespace QuickNet.Processing
             return rsa;
         }
 
-        public static long GetSecureLong()
+        internal static long GetSecureLong()
         {
             var buffer = new byte[8];
             RandomNumberGenerator.Fill(buffer);

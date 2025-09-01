@@ -10,6 +10,7 @@ using Larnix.Menu.Worlds;
 using QuickNet.Processing;
 using System.IO;
 using QuickNet.Channel;
+using QuickNet.Backend;
 
 namespace Larnix.Server
 {
@@ -17,7 +18,7 @@ namespace Larnix.Server
     {
         private Locker Locker = null;
         private Receiver Receiver = null;
-        public QuickNet.Backend.QuickServer LarnixServer = null;
+        public QuickServer LarnixServer = null;
         public MetadataSGP? Mdata = null;
         public Config ServerConfig = null;
         public Database Database = null;
@@ -53,10 +54,6 @@ namespace Larnix.Server
 
             // CONFIG --> 2
             ServerConfig = Config.Obtain(WorldDir);
-            InternetID.InitializeMasks(
-                ServerConfig.ClientIdentityPrefixSizeIPv4,
-                ServerConfig.ClientIdentityPrefixSizeIPv6
-                );
 
             // DATABASE --> 3
             Database = new Database(WorldDir, "database.sqlite");
@@ -65,16 +62,23 @@ namespace Larnix.Server
             References.Generator = new Worldgen.Generator(Database.GetSeed(WorldLoad.SeedSuggestion));
 
             // SERVER --> 4
-            LarnixServer = new QuickNet.Backend.QuickServer(
+            LarnixServer = new QuickServer(
                 IsHost ? ServerConfig.Port : (ushort)0,
                 ServerConfig.MaxPlayers,
                 !IsHost,
                 Path.Combine(WorldDir, "Socket"),
                 Version.Current.ID,
-                Validation.IsGoodUserText(ServerConfig.Motd) ? ServerConfig.Motd : "Wrong motd format :(",
+                Validation.IsGoodText<String256>(ServerConfig.Motd) ? ServerConfig.Motd : "Wrong motd format :(",
                 Mdata?.nickname ?? "Player"
             );
-            if (!IsLocal) LarnixServer.ReserveNickname("Player");
+
+            LarnixServer.ConfigureMasks(
+                ServerConfig.ClientIdentityPrefixSizeIPv4,
+                ServerConfig.ClientIdentityPrefixSizeIPv6
+                );
+
+            if (!IsLocal)
+                LarnixServer.ReserveNickname("Player");
 
             Receiver = new Receiver(LarnixServer);
 

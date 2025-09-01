@@ -5,21 +5,21 @@ using System.Text;
 
 namespace QuickNet.Processing
 {
-    public static class Authcode
+    internal static class Authcode
     {
-        const string Base64 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz#&";
+        internal const string Base64 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz#&";
         private const int VERIFY_PART_LENGTH = 12;
         private const int SECRET_PART_LENGTH = 11; // must be at least 11 to fit one long
         private const int TOTAL_LENGTH = VERIFY_PART_LENGTH + SECRET_PART_LENGTH + 1 /* +checksum */;
         private const int SEGMENT_SIZE = 6;
 
-        public static string ProduceAuthCodeRSA(byte[] key, long secret)
+        internal static string ProduceAuthCodeRSA(byte[] key, long secret)
         {
             string raw = ProduceRawAuthCodeRSA(key, secret);
             return InsertDashes(raw, SEGMENT_SIZE);
         }
 
-        private static string ProduceRawAuthCodeRSA(byte[] key, long secret)
+        internal static string ProduceRawAuthCodeRSA(byte[] key, long secret)
         {
             const int ITERATIONS = 50_000;
             byte[] hash = key;
@@ -55,7 +55,7 @@ namespace QuickNet.Processing
             return sb.ToString();
         }
 
-        public static bool IsGoodAuthcode(string authCodeRSA)
+        internal static bool IsGoodAuthcode(string authCodeRSA)
         {
             if (authCodeRSA == null)
                 return false;
@@ -82,7 +82,7 @@ namespace QuickNet.Processing
             return Base64[checksum % 64] == code[TOTAL_LENGTH - 1];
         }
 
-        public static bool VerifyPublicKey(byte[] key, string authCodeRSA)
+        internal static bool VerifyPublicKey(byte[] key, string authCodeRSA)
         {
             string code1 = authCodeRSA.Replace("-", "").Substring(0, VERIFY_PART_LENGTH);
             string code2 = ProduceRawAuthCodeRSA(key, 0).Substring(0, VERIFY_PART_LENGTH);
@@ -90,7 +90,7 @@ namespace QuickNet.Processing
             return code1 == code2;
         }
 
-        public static long GetSecretFromAuthCode(string authCodeRSA)
+        internal static long GetSecretFromAuthCode(string authCodeRSA)
         {
             string code1 = authCodeRSA.Replace("-", "").Substring(VERIFY_PART_LENGTH, SECRET_PART_LENGTH);
 

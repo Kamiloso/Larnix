@@ -6,22 +6,22 @@ namespace QuickNet.Channel
 {
     public class Packet
     {
-        public const int HEADER_SIZE = 2 + 1 + 4;
+        internal const int HEADER_SIZE = 2 + 1 + 4;
 
-        public CmdID ID = 0;
-        public byte Code = 0;
-        public uint ControlSequence = 0; // 0 by default, change if needed
-        public byte[] Bytes = null;
+        internal CmdID ID = 0;
+        internal byte Code = 0;
+        internal uint ControlSequence = 0; // 0 by default, change if needed
+        internal byte[] Bytes = null;
 
-        public Packet() { }
-        public Packet(CmdID id, byte code, byte[] bytes)
+        internal Packet() { }
+        internal Packet(CmdID id, byte code, byte[] bytes)
         {
             ID = id;
             Code = code;
             Bytes = bytes ?? new byte[0];
         }
 
-        public byte[] Serialize(Encryption.Settings encryption = null)
+        internal byte[] Serialize(Encryption.Settings encryption = null)
         {
             byte[] bytes = ArrayUtils.MegaConcat(
                 EndianUnsafe.GetBytes(ID),
@@ -33,7 +33,7 @@ namespace QuickNet.Channel
             return encryption?.Encrypt(bytes) ?? bytes;
         }
 
-        public bool TryDeserialize(byte[] bytes, Encryption.Settings decryption = null)
+        internal bool TryDeserialize(byte[] bytes, Encryption.Settings decryption = null)
         {
             if(decryption != null)
                 bytes = decryption.Decrypt(bytes);
