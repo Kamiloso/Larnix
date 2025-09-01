@@ -34,7 +34,7 @@ namespace QuickNet
     #region StringN structs
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public unsafe struct String32
+    public unsafe struct String32 : IIgnoresEndianness
     {
         const int BYTE_SIZE = 32;
         const int STR_SIZE = BYTE_SIZE / 2;
@@ -53,7 +53,7 @@ namespace QuickNet
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public unsafe struct String64
+    public unsafe struct String64 : IIgnoresEndianness
     {
         const int BYTE_SIZE = 64;
         const int STR_SIZE = BYTE_SIZE / 2;
@@ -72,7 +72,7 @@ namespace QuickNet
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public unsafe struct String128
+    public unsafe struct String128 : IIgnoresEndianness
     {
         const int BYTE_SIZE = 128;
         const int STR_SIZE = BYTE_SIZE / 2;
@@ -91,7 +91,7 @@ namespace QuickNet
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public unsafe struct String256
+    public unsafe struct String256 : IIgnoresEndianness
     {
         const int BYTE_SIZE = 256;
         const int STR_SIZE = BYTE_SIZE / 2;
@@ -110,7 +110,7 @@ namespace QuickNet
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public unsafe struct String512
+    public unsafe struct String512 : IIgnoresEndianness
     {
         const int BYTE_SIZE = 512;
         const int STR_SIZE = BYTE_SIZE / 2;
@@ -129,7 +129,7 @@ namespace QuickNet
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public unsafe struct String1024
+    public unsafe struct String1024 : IIgnoresEndianness
     {
         const int BYTE_SIZE = 1024;
         const int STR_SIZE = BYTE_SIZE / 2;

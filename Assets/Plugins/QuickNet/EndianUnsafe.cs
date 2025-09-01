@@ -16,7 +16,7 @@ namespace QuickNet
                 *(T*)b = value;
             }
 
-            if (BitConverter.IsLittleEndian != LittleEndian)
+            if (BitConverter.IsLittleEndian != LittleEndian && !typeof(IIgnoresEndianness).IsAssignableFrom(typeof(T)))
                 Array.Reverse(bytes);
 
             return bytes;
@@ -31,13 +31,51 @@ namespace QuickNet
             Span<byte> tmp = stackalloc byte[size];
             bytes.AsSpan(startIndex, size).CopyTo(tmp);
 
-            if (BitConverter.IsLittleEndian != LittleEndian)
+            if (BitConverter.IsLittleEndian != LittleEndian && !typeof(IIgnoresEndianness).IsAssignableFrom(typeof(T)))
                 tmp.Reverse();
 
             fixed (byte* b = tmp)
             {
                 return *(T*)b;
             }
+        }
+
+        public static byte[] ArrayGetBytes<T>(T[] values) where T : unmanaged
+        {
+            if (values == null)
+                throw new ArgumentNullException(nameof(values));
+
+            int size = sizeof(T);
+            byte[] result = new byte[size * values.Length];
+
+            for (int i = 0; i < values.Length; i++)
+            {
+                byte[] elementBytes = GetBytes(values[i]);
+                Buffer.BlockCopy(elementBytes, 0, result, i * size, size);
+            }
+
+            return result;
+        }
+
+        public static T[] ArrayFromBytes<T>(byte[] bytes, int count, int startIndex = 0) where T : unmanaged
+        {
+            if (bytes == null)
+                throw new ArgumentNullException(nameof(bytes));
+
+            int size = sizeof(T);
+            int needed = count * size;
+
+            if (bytes.Length < startIndex + needed)
+                throw new ArgumentException($"Array too short to read {count} elements of type {typeof(T).Name}");
+
+            T[] result = new T[count];
+
+            for (int i = 0; i < count; i++)
+            {
+                result[i] = FromBytes<T>(bytes, startIndex + i * size);
+            }
+
+            return result;
         }
     }
 }

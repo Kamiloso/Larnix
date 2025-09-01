@@ -1,8 +1,7 @@
-using QuickNet.Commands;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
-using Larnix.Network;
+using Larnix.Packets;
+using QuickNet.Channel.Cmds;
 
 namespace Larnix.Client
 {
@@ -38,7 +37,7 @@ namespace Larnix.Client
 
         private void _CodeInfo(CodeInfo msg)
         {
-            switch ((CodeInfo.Info)msg.Code)
+            switch (msg.Code)
             {
                 case CodeInfo.Info.YouDie: References.MainPlayer.SetDead(); break;
                 default: break;
@@ -59,9 +58,10 @@ namespace Larnix.Client
 
         private void _BlockUpdate(BlockUpdate msg)
         {
-            foreach (var element in msg.BlockUpdates)
+            BlockUpdate.Record[] records = msg.BlockUpdates;
+            foreach (var rec in records)
             {
-                References.GridManager.UpdateBlock(element.block, element.data);
+                References.GridManager.UpdateBlock(rec.POS, rec.Block);
             }
         }
 

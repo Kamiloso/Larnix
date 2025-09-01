@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Entities;
 using System.Linq;
-using Larnix.Network;
+using Larnix.Packets;
 using System.Diagnostics;
 using Larnix.Server.Terrain;
 using QuickNet.Channel;
@@ -168,17 +168,8 @@ namespace Larnix.Server.Entities
                                 fragmentFixed[uid] = fixedIndex;
                         }
 
-                        EntityBroadcast entityBroadcast = new EntityBroadcast(
-                            FixedCounter,
-                            fragmentEntities,
-                            fragmentFixed
-                            );
-                        if (!entityBroadcast.HasProblems)
-                        {
-                            Packet packet = entityBroadcast.GetPacket();
-                            References.Server.Send(nickname, packet, false); // unsafe mode (over raw UDP)
-                        }
-                        else throw new System.Exception("Couldn't construct EntityBroadcast message!");
+                        Packet packet = new EntityBroadcast(FixedCounter, fragmentEntities, fragmentFixed);
+                        References.Server.Send(nickname, packet, false); // unsafe mode (over raw UDP)
                     }
                 }
 
@@ -194,15 +185,12 @@ namespace Larnix.Server.Entities
             EntityControllers.Add(playerController.uID, playerController);
 
             // Construct and send PlayerInitialize
-            PlayerInitialize answer = new PlayerInitialize(
+            Packet packet = new PlayerInitialize(
                 playerController.EntityData.Position,
                 playerController.uID,
                 LastSentFixedCounter
             );
-            if (!answer.HasProblems)
-            {
-                References.Server.Send(nickname, answer.GetPacket());
-            }
+            References.Server.Send(nickname, packet);
         }
 
         public EntityAbstraction GetPlayerController(string nickname)
@@ -259,11 +247,8 @@ namespace Larnix.Server.Entities
                     {
                         PlayerControllers.Remove(nickname);
 
-                        CodeInfo codeInfo = new CodeInfo((byte)CodeInfo.Info.YouDie);
-                        if(!codeInfo.HasProblems)
-                        {
-                            References.Server.Send(nickname, codeInfo.GetPacket());
-                        }
+                        CodeInfo packet = new CodeInfo(CodeInfo.Info.YouDie);
+                        References.Server.Send(nickname, packet);
 
                         break;
                     }

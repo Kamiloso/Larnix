@@ -2,9 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Entities;
-using QuickNet.Commands;
 using Larnix.Entities.Client;
-using Unity.Collections;
 
 namespace Larnix.Client.Entities
 {

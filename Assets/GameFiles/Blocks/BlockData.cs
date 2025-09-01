@@ -5,17 +5,21 @@ namespace Larnix.Blocks
 {
     public class BlockData
     {
-        public SingleBlockData Front = new();
-        public SingleBlockData Back = new();
+        public SingleBlockData Front = null;
+        public SingleBlockData Back = null;
 
-        public BlockData() { }
+        public BlockData()
+        {
+            Front = new();
+            Back = new();
+        }
         public BlockData(SingleBlockData front, SingleBlockData back)
         {
-            Front = front;
-            Back = back;
+            Front = front ?? new();
+            Back = back ?? new();
         }
 
-        public BlockData ShallowCopy()
+        public BlockData DeepCopy()
         {
             return new BlockData
             (
@@ -34,7 +38,7 @@ namespace Larnix.Blocks
             );
         }
 
-        public byte[] SerializeBaseData()
+        public byte[] Serialize()
         {
             return ArrayUtils.MegaConcat(
                 EndianUnsafe.GetBytes(Front.ID),
@@ -43,14 +47,23 @@ namespace Larnix.Blocks
                 );
         }
 
-        public void DeserializeBaseData(byte[] bytes)
+        public static BlockData Deserialize(byte[] bytes, int offset = 0)
         {
-            Front.ID = EndianUnsafe.FromBytes<BlockID>(bytes, 0);
-            Back.ID = EndianUnsafe.FromBytes<BlockID>(bytes, 2);
+            byte variants = bytes[4 + offset];
 
-            byte variants = bytes[4];
-            Front.Variant = (byte)(variants / 16);
-            Back.Variant = (byte)(variants % 16);
+            return new BlockData
+            (
+                new SingleBlockData
+                {
+                    ID = EndianUnsafe.FromBytes<BlockID>(bytes, 0 + offset),
+                    Variant = (byte)(variants / 16),
+                },
+                new SingleBlockData
+                {
+                    ID = EndianUnsafe.FromBytes<BlockID>(bytes, 2 + offset),
+                    Variant = (byte)(variants % 16),
+                }
+            );
         }
     }
 }

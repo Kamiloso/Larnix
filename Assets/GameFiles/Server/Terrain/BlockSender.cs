@@ -4,9 +4,10 @@ using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Blocks;
 using QuickNet;
-using Larnix.Network;
+using Larnix.Packets;
 using System;
 using QuickNet.Channel;
+using System.Linq;
 
 namespace Larnix.Server.Terrain
 {
@@ -60,20 +61,16 @@ namespace Larnix.Server.Terrain
             foreach (string nickname in References.PlayerManager.PlayerUID.Keys)
             {
                 Queue<(Vector2Int block, BlockData data)> changes = IndividualUpdates[nickname];
-
-                BlockUpdate blockUpdate = new BlockUpdate(new List<(Vector2Int block, BlockData data)>());
-
-                while (changes.Count > 0)
+                BlockUpdate.Record[] records = changes.Select(ch => new BlockUpdate.Record
                 {
-                    var element = changes.Dequeue();
-                    blockUpdate.BlockUpdates.Add(element);
+                    POS = ch.block,
+                    Block = ch.data,
+                }).ToArray();
 
-                    if (blockUpdate.BlockUpdates.Count == BlockUpdate.MAX_RECORDS || changes.Count == 0)
-                    {
-                        Packet packet = blockUpdate.GetPacket();
-                        References.Server.Send(nickname, packet);
-                        blockUpdate.BlockUpdates.Clear();
-                    }
+                List<BlockUpdate> packets = BlockUpdate.CreateList(records);
+                foreach (Packet packet in packets)
+                {
+                    References.Server.Send(nickname, packet);
                 }
             }
         }
@@ -102,13 +99,8 @@ namespace Larnix.Server.Terrain
                 {
                     BlockData currentBlock = new BlockData(blockFront.BlockData, blockBack.BlockData);
 
-                    RetBlockChange retBlockChange = new RetBlockChange(POS, operation, currentBlock, (byte)(front ? 1 : 0), (byte)(success ? 1 : 0));
-                    if (!retBlockChange.HasProblems)
-                    {
-                        Packet packet = retBlockChange.GetPacket();
-                        References.Server.Send(nickname, packet);
-                    }
-                    else throw new Exception("Failied constructing command RetBlockChange!");
+                    Packet packet = new RetBlockChange(POS, operation, currentBlock, front, success);
+                    References.Server.Send(nickname, packet);
                 }
             }
         }

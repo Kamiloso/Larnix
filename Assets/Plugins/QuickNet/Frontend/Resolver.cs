@@ -4,8 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Security.Cryptography;
-using QuickNet.Commands;
 using QuickNet.Channel;
+using QuickNet.Channel.Cmds;
 using System.Threading.Tasks;
 using QuickNet.Processing;
 
@@ -125,34 +125,36 @@ namespace QuickNet.Frontend
                 return info;
             }
 
-            P_ServerInfo prompt = new P_ServerInfo(nickname);
-            if (prompt.HasProblems)
+            Packet prompt;
+            try
+            {
+                prompt = new P_ServerInfo(nickname);
+            }
+            catch (Exception ex)
+            {
+                QuickNet.Debug.LogError(ex.Message);
                 return null;
+            }
 
-            Prompter prompter = _WaitForPrompter(new Prompter(address, prompt.GetPacket()));
-            prompter.Clean();
+            Prompter prompter = _WaitForPrompter(new Prompter(address, prompt));
 
             if (prompter.State == Prompter.PrompterState.Ready)
             {
-                Packet packet = prompter.AnswerPacket;
-                if (packet == null || packet.ID != CmdID.A_ServerInfo)
-                    return null;
-
-                A_ServerInfo answer = new A_ServerInfo(packet);
-                if (answer.HasProblems)
-                    return null;
-
-                if (!Authcode.VerifyPublicKey(answer.PublicKey, authcode))
+                if (Payload.TryConstructPayload<A_ServerInfo>(prompter.AnswerPacket, out var answer))
                 {
-                    keyProblems = true;
-                    return null; // drop unsafe servers (remove this line and welcome scammers)
-                }
+                    if (!Authcode.VerifyPublicKey(answer.PublicKey, authcode))
+                    {
+                        keyProblems = true;
+                        return null; // drop unsafe servers (remove this line and welcome scammers)
+                    }
 
-                Timestamp.SetServerTimestamp(prompter.GetEndPoint(), answer.Timestamp);
-                Cacher.AddInfo(address, authcode, nickname, answer);
-                return answer;
+                    Timestamp.SetServerTimestamp(prompter.GetEndPoint(), answer.Timestamp);
+                    Cacher.AddInfo(address, authcode, nickname, answer);
+                    return answer;
+                }
             }
-            else return null;
+
+            return null;
         }
 
         private static A_LoginTry _TryLoginWrap(string address, string authcode, string nickname, string password, bool isRegistration, string optionalNewPassword = null)
@@ -169,36 +171,25 @@ namespace QuickNet.Frontend
             if (isRegistration && challengeID != 0)
                 return null; // registration must have challengeID == 0
 
+            using RSA rsa = KeyObtainer.PublicBytesToKey(publicKey);
             long timestamp = Timestamp.GetServerTimestamp(ResolveStringSync(address));
 
-            P_LoginTry prompt = new P_LoginTry(nickname, password, serverSecret, challengeID, timestamp);
-            if (optionalNewPassword != null) prompt.SetNewPassword(optionalNewPassword);
-            if (prompt.HasProblems)
-                return null; // problems with P_LoginTry
-
-            using RSA rsa = KeyObtainer.PublicBytesToKey(publicKey);
-
-            Prompter prompter = _WaitForPrompter(new Prompter(address, prompt.GetPacket(), rsa));
-            prompter.Clean();
+            Prompter prompter = _WaitForPrompter(new Prompter(address, new P_LoginTry(
+                nickname, password, serverSecret, challengeID, timestamp, optionalNewPassword),
+                rsa));
 
             if (prompter.State == Prompter.PrompterState.Ready)
             {
-                Packet packet = prompter.AnswerPacket;
-                if (packet == null || packet.ID != CmdID.A_LoginTry)
-                    return null;
-
-                A_LoginTry answer = new A_LoginTry(packet);
-                if (answer.HasProblems)
-                    return null;
-
-                if (answer.Code == 1)
+                if (Payload.TryConstructPayload<A_LoginTry>(prompter.AnswerPacket, out var answer))
                 {
-                    Cacher.IncrementChallengeIDs(address, authcode, nickname, isRegistration ? 2 : 1);
-                }
+                    if (answer.Success)
+                        Cacher.IncrementChallengeIDs(address, authcode, nickname, isRegistration ? 2 : 1);
 
-                return answer;
+                    return answer;
+                }
             }
-            else return null;
+            
+            return null;
         }
 
         private static Prompter _WaitForPrompter(Prompter prompter)
@@ -211,6 +202,8 @@ namespace QuickNet.Frontend
                 System.Threading.Thread.Sleep(100);
                 prompter.Tick(0.1f);
             }
+
+            prompter.Clean();
             return prompter;
         }
     }

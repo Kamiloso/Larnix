@@ -3,12 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Net;
-using QuickNet.Commands;
 using System.Security.Cryptography;
 using QuickNet.Processing;
-using System;
 using QuickNet.Channel;
-using QuickNet.Data;
+using QuickNet.Channel.Cmds;
+using System;
 
 namespace QuickNet.Backend
 {
@@ -33,8 +32,24 @@ namespace QuickNet.Backend
         public readonly RSA KeyRSA;
         public readonly HashSet<string> ReservedNicknames = new();
 
-        private readonly string[] nicknames;
-        private readonly Connection[] connections;
+        //private readonly string[] nicknames;
+        //private readonly Connection[] _connections;
+
+        private readonly Dictionary<string, Connection> connections = new();
+        private readonly Dictionary<IPEndPoint, Connection> connectionsByEndPoint = new();
+
+        private void RememberConnection(string nickname, Connection conn)
+        {
+            connections.Add(nickname, conn);
+            connectionsByEndPoint.Add(conn.EndPoint, conn);
+        }
+
+        private void ForgetConnection(string nickname)
+        {
+            IPEndPoint endPoint = connections[nickname].EndPoint;
+            connections.Remove(nickname);
+            connectionsByEndPoint.Remove(endPoint);
+        }
 
         private readonly Dictionary<IPEndPoint, PreLoginBuffer> PreLoginBuffers = new();
         private readonly Dictionary<CmdID, Action<Packet, string>> Subscriptions = new();
@@ -54,10 +69,6 @@ namespace QuickNet.Backend
         {
             if (!Validation.IsGoodUserText(userText1) || !Validation.IsGoodUserText(userText2) || !Validation.IsGoodUserText(userText3))
                 throw new ArgumentException("Wrong UserText format! Cannot be larger than 128 characters or end with NULL (0x00).");
-
-            // connection slots
-            nicknames = new string[maxClients];
-            connections = new Connection[maxClients];
 
             // managed objects
             DoubleSocket = new DoubleSocket(port, isLoopback);
@@ -83,23 +94,13 @@ namespace QuickNet.Backend
             ReservedNicknames.Add(nickname);
         }
 
-        private int FindFreeUserSlot(IPEndPoint endPoint)
+        private bool CanAcceptSYN(IPEndPoint endPoint, string nickname)
         {
-            foreach(Connection conn in connections)
-            {
-                if (conn != null && conn.EndPoint.Equals(endPoint))
-                    return -1; // collision
-            }
+            if (connections.Count >= MaxClients)
+                return false;
 
-            for (int i = 0; i < MaxClients; i++)
-            {
-                Connection conn = connections[i];
-
-                if (conn == null)
-                    return i; // found
-            }
-
-            return -1; // no free slot
+            return !connections.Any(kvp =>
+                kvp.Key == nickname || kvp.Value.EndPoint.Equals(endPoint));
         }
 
         public void LoginAccept(IPEndPoint remoteEP)
@@ -109,9 +110,9 @@ namespace QuickNet.Backend
 
             PreLoginBuffer preLoginBuffer = PreLoginBuffers[remoteEP];
             AllowConnection allowConnection = preLoginBuffer.AllowConnection;
+            string nickname = allowConnection.Nickname;
 
-            int freeSpace = FindFreeUserSlot(remoteEP);
-            if (freeSpace == -1 || nicknames.Contains(allowConnection.Nickname))
+            if (!CanAcceptSYN(remoteEP, nickname))
             {
                 LoginDeny(remoteEP);
                 return;
@@ -121,17 +122,15 @@ namespace QuickNet.Backend
             Connection connection = new Connection(
                 IsIPv4Client ? DoubleSocket.UdpClientV4 : DoubleSocket.UdpClientV6, remoteEP, allowConnection.KeyAES);
 
+            RememberConnection(nickname, connection);
+            PreLoginBuffers.Remove(remoteEP);
+
             bool hasSyn = true;
             foreach (byte[] bytes in preLoginBuffer.GetBuffer())
             {
                 connection.PushFromWeb(bytes, hasSyn);
                 hasSyn = false;
             }
-
-            connections[freeSpace] = connection;
-            nicknames[freeSpace] = allowConnection.Nickname;
-
-            PreLoginBuffers.Remove(remoteEP);
         }
 
         public void LoginDeny(IPEndPoint remoteEP)
@@ -168,16 +167,16 @@ namespace QuickNet.Backend
                 if (bytes == null)
                     continue;
 
-                SafePacket header = new SafePacket();
+                QuickPacket header = new QuickPacket();
                 if (header.TryDeserialize(bytes, true))
                 {
                     InternetID internetID = new InternetID(remoteEP.Address);
                     uint conCount = recentConCount.ContainsKey(internetID) ? recentConCount[internetID] : 0;
 
                     // Limit packets with specific flags
-                    if (header.HasFlag(SafePacket.PacketFlag.SYN) ||
-                        header.HasFlag(SafePacket.PacketFlag.RSA) ||
-                        header.HasFlag(SafePacket.PacketFlag.NCN))
+                    if (header.HasFlag(PacketFlag.SYN) ||
+                        header.HasFlag(PacketFlag.RSA) ||
+                        header.HasFlag(PacketFlag.NCN))
                     {
                         if (conCount < MAX_CON) recentConCount[internetID] = ++conCount;
                         else continue;
@@ -186,86 +185,72 @@ namespace QuickNet.Backend
                         else continue;
                     }
 
-                    if (header.HasFlag(SafePacket.PacketFlag.RSA)) // encrypted with RSA
+                    if (header.HasFlag(PacketFlag.RSA)) // encrypted with RSA
                     {
                         if (KeyRSA != null)
                         {
                             // Deserialize with decryption and serialize without encryption
-                            SafePacket middlePacket = new SafePacket();
+                            QuickPacket middlePacket = new QuickPacket();
                             middlePacket.Encrypt = new Encryption.Settings(Encryption.Settings.Type.RSA, KeyRSA);
                             if (!middlePacket.TryDeserialize(bytes))
                                 continue;
+
                             middlePacket.Encrypt = null;
                             bytes = middlePacket.Serialize();
                         }
                         else continue;
                     }
 
-                    if(header.HasFlag(SafePacket.PacketFlag.NCN)) // fast question, fast answer
+                    if(header.HasFlag(PacketFlag.NCN)) // fast question, fast answer
                     {
                         // Check packet type and answer properly
-                        SafePacket ncnPacket = new SafePacket();
+                        QuickPacket ncnPacket = new QuickPacket();
                         if (!ncnPacket.TryDeserialize(bytes))
                             continue;
 
-                        FastMessages.ProcessNCN(remoteEP, ncnPacket.SeqNum, ncnPacket.Payload);
+                        FastMessages.ProcessNCN(remoteEP, ncnPacket.SeqNum, ncnPacket.Packet);
                     }
                     else
                     {
-                        if (header.HasFlag(SafePacket.PacketFlag.SYN)) // start connection
+                        if (header.HasFlag(PacketFlag.SYN)) // start connection
                         {
-                            if (FindFreeUserSlot(remoteEP) == -1)
-                                continue;
-
-                            SafePacket safeSynPacket = new SafePacket();
+                            QuickPacket safeSynPacket = new QuickPacket();
                             if (!safeSynPacket.TryDeserialize(bytes))
                                 continue;
 
-                            Packet synPacket = safeSynPacket.Payload;
-                            if (synPacket == null)
-                                continue;
-
-                            if (synPacket.ID != CmdID.AllowConnection)
-                                continue;
-
-                            Commands.AllowConnection allowConnection = new Commands.AllowConnection(synPacket);
-                            if (allowConnection.HasProblems)
-                                continue;
-
-                            string nickname = allowConnection.Nickname;
-                            string password = allowConnection.Password;
-                            byte[] keyAES = allowConnection.KeyAES;
-                            long serverSecret = allowConnection.ServerSecret;
-                            long challengeID = allowConnection.ChallengeID;
-                            long timestamp = allowConnection.Timestamp;
-
-                            if (nicknames.Contains(nickname))
-                                continue;
-
-                            if (!PreLoginBuffers.ContainsKey(remoteEP))
+                            if (Payload.TryConstructPayload<AllowConnection>(safeSynPacket.Packet, out var allowcon))
                             {
-                                PreLoginBuffer preLoginBuffer = new PreLoginBuffer(allowConnection);
-                                preLoginBuffer.AddPacket(bytes);
-                                PreLoginBuffers.Add(remoteEP, preLoginBuffer);
+                                string nickname = allowcon.Nickname;
+                                string password = allowcon.Password;
+                                long serverSecret = allowcon.ServerSecret;
+                                long challengeID = allowcon.ChallengeID;
+                                long timestamp = allowcon.Timestamp;
 
-                                FastMessages.TryLogin(remoteEP, nickname, password, serverSecret, challengeID, timestamp);
+                                if (!CanAcceptSYN(remoteEP, nickname))
+                                    continue;
+
+                                if (!PreLoginBuffers.ContainsKey(remoteEP))
+                                {
+                                    PreLoginBuffer preLoginBuffer = new PreLoginBuffer(allowcon);
+                                    preLoginBuffer.AddPacket(bytes);
+                                    PreLoginBuffers.Add(remoteEP, preLoginBuffer);
+
+                                    FastMessages.TryLogin(remoteEP, nickname, password, serverSecret, challengeID, timestamp);
+                                }
                             }
+                            else continue;
                         }
                         else // receive connection packet
                         {
-                            if(PreLoginBuffers.ContainsKey(remoteEP))
+                            if(PreLoginBuffers.TryGetValue(remoteEP, out var preBuffer))
                             {
-                                PreLoginBuffers[remoteEP].AddPacket(bytes);
+                                preBuffer.AddPacket(bytes);
                             }
                             else
                             {
-                                foreach (Connection conn in connections)
+                                if (connectionsByEndPoint.TryGetValue(remoteEP, out var conn))
                                 {
-                                    if (conn != null && conn.EndPoint.Equals(remoteEP))
-                                    {
-                                        conn.PushFromWeb(bytes);
-                                        break;
-                                    }
+                                    conn.PushFromWeb(bytes);
                                 }
                             }
                         }
@@ -274,43 +259,37 @@ namespace QuickNet.Backend
             }
 
             // Tick every connection
-            foreach (Connection connection in connections)
+            foreach (var conn in connections.Values)
             {
-                if (connection != null)
-                    connection.Tick(deltaTime);
+                conn.Tick(deltaTime);
             }
 
-            // Receive packets, randomize client order
-            Queue<(Packet, string)> packetList = new();
-            int[] clientIDs = Enumerable.Range(0, MaxClients).ToArray();
-            Shuffle(clientIDs);
-            foreach (int clientID in clientIDs)
-            {
-                Connection conn = connections[clientID];
-                string nickname = nicknames[clientID];
+            // Randomize client order
+            string[] nicknames = connections.Keys.ToArray();
+            Shuffle(nicknames);
 
-                if (conn != null)
-                {
-                    Queue<Packet> packets = conn.Receive();
-                    while (packets.Count > 0)
-                        packetList.Enqueue((packets.Dequeue(), nickname));
-                }
+            // Receive packets
+            Queue<(Packet, string)> packetList = new();
+            foreach (string nickname in nicknames)
+            {
+                Connection conn = connections[nickname];
+                Queue<Packet> packets = conn.Receive();
+                while (packets.Count > 0)
+                    packetList.Enqueue((packets.Dequeue(), nickname));
             }
 
             // Remove dead connections
-            for (int i = 0; i < MaxClients; i++)
+            foreach (string nickname in connections.Keys.ToList())
             {
-                Connection conn = connections[i];
-                if (conn != null && conn.IsDead)
+                Connection conn = connections[nickname];
+                if (conn.IsDead)
                 {
                     // add finishing message
-                    Commands.Stop cmdStop = new Commands.Stop();
-                    Packet packet = cmdStop.GetPacket();
-                    packetList.Enqueue((packet, nicknames[i]));
+                    Packet packet = new Stop(0);
+                    packetList.Enqueue((packet, nickname));
 
                     // reset player slots
-                    connections[i] = null;
-                    nicknames[i] = null;
+                    ForgetConnection(nickname);
                 }
             }
 
@@ -330,54 +309,64 @@ namespace QuickNet.Backend
                 Packet packet = element.Item1;
                 string owner = element.Item2;
 
-                if (Subscriptions.TryGetValue(packet.ID, out var Execute))
+                if (packet != null && Subscriptions.TryGetValue(packet.ID, out var Execute))
                 {
                     Execute(packet, owner);
                 }
             }
         }
 
-        public void Subscribe<T>(Action<T, string> InterpretPacket) where T : BaseCommand
+        public void Subscribe<T>(Action<T, string> InterpretPacket) where T : Payload, new()
         {
-            CmdID ID = BaseCommand.GetCommandID(typeof(T));
+            CmdID ID = Payload.CmdID<T>();
             Subscriptions[ID] = (Packet packet, string owner) =>
             {
-                T command = BaseCommand.CreateGeneric<T>(packet);
-                if (command != null && !command.HasProblems)
+                if(Payload.TryConstructPayload<T>(packet, out var message))
                 {
-                    InterpretPacket(command, owner);
+                    InterpretPacket(message, owner);
                 }
             };
         }
 
         public void Send(string nickname, Packet packet, bool safemode = true)
         {
-            for (int i = 0; i < MaxClients; i++)
+            if (connections.TryGetValue(nickname, out var conn))
             {
-                Connection connection = connections[i];
-                if (nicknames[i] == nickname)
-                {
-                    connection.Send(packet, safemode);
-                    break;
-                }
+                conn.Send(packet, safemode);
             }
         }
 
         public void Broadcast(Packet packet, bool safemode = true)
         {
-            foreach (var connection in connections)
+            foreach (var conn in connections.Values.ToList())
             {
-                if (connection != null)
-                    connection.Send(packet, safemode);
+                conn.Send(packet, safemode);
+            }
+        }
+
+        public void FinishConnection(string nickname)
+        {
+            if (connections.TryGetValue(nickname, out var conn))
+            {
+                conn.FinishConnection();
+                ForgetConnection(nickname);
+            }
+        }
+
+        public void FinishAllConnections()
+        {
+            foreach (string nickname in connections.Keys.ToList())
+            {
+                FinishConnection(nickname);
             }
         }
 
         public void SendNCN(IPEndPoint endPoint, uint ncnID, Packet packet)
         {
-            SafePacket safeAnswer = new SafePacket(
+            QuickPacket safeAnswer = new QuickPacket(
                 ncnID,
                 0,
-                (byte)SafePacket.PacketFlag.NCN,
+                (byte)PacketFlag.NCN,
                 packet
                 );
 
@@ -387,51 +376,21 @@ namespace QuickNet.Backend
 
         public IPEndPoint GetClientEndPoint(string nickname)
         {
-            for (int i = 0; i < MaxClients; i++)
-            {
-                Connection connection = connections[i];
-                if (nicknames[i] == nickname)
-                    return connection.EndPoint;
-            }
+            if (connections.TryGetValue(nickname, out var conn))
+                return conn.EndPoint;
             return null;
         }
 
         public ushort CountPlayers()
         {
-            return (ushort)nicknames.Count(n => n != null);
-        }
-
-        public void FinishConnection(string nickname)
-        {
-            for (int i = 0; i < MaxClients; i++)
-            {
-                Connection connection = connections[i];
-                if (nicknames[i] == nickname)
-                {
-                    connection.FinishConnection();
-                    break;
-                }
-            }
-        }
-
-        public void FinishAllConnections()
-        {
-            foreach(Connection connection in connections)
-            {
-                if (connection != null)
-                    connection.FinishConnection();
-            }
+            return (ushort)connections.Count;
         }
 
         public float GetPing(string nickname)
         {
-            for (int i = 0; i < MaxClients; i++)
+            if (connections.TryGetValue(nickname, out var conn))
             {
-                Connection connection = connections[i];
-                if (nicknames[i] == nickname)
-                {
-                    return connection.AvgRTT * 1000f; // ms
-                }
+                return conn.AvgRTT * 1000f; // ms
             }
             return 0.0f;
         }
@@ -443,14 +402,14 @@ namespace QuickNet.Backend
             KeyRSA?.Dispose();
         }
 
-        private static void Shuffle(int[] array)
+        private static void Shuffle(string[] array)
         {
-            System.Random rng = new System.Random();
+            Random rng = new();
             int n = array.Length;
             while (n > 1)
             {
                 int k = rng.Next(n--);
-                int temp = array[n];
+                string temp = array[n];
                 array[n] = array[k];
                 array[k] = temp;
             }

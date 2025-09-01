@@ -24,7 +24,7 @@ namespace Larnix.Entities
             };
         }
 
-        public byte[] SerializeTransform()
+        public byte[] Serialize()
         {
             return ArrayUtils.MegaConcat(
                 EndianUnsafe.GetBytes(ID),
@@ -34,15 +34,18 @@ namespace Larnix.Entities
                 );
         }
 
-        public void DeserializeTransform(byte[] bytes)
+        public static EntityData Deserialize(byte[] bytes, int offset = 0)
         {
-            ID = EndianUnsafe.FromBytes<EntityID>(bytes, 0);
-            Position = new Vector2(
-                EndianUnsafe.FromBytes<float>(bytes, 2),
-                EndianUnsafe.FromBytes<float>(bytes, 6)
-                );
-            Rotation = EndianUnsafe.FromBytes<float>(bytes, 10);
-            NBT = null;
+            return new EntityData
+            {
+                ID = EndianUnsafe.FromBytes<EntityID>(bytes, 0 + offset),
+                Position = new Vector2(
+                    EndianUnsafe.FromBytes<float>(bytes, 2 + offset),
+                    EndianUnsafe.FromBytes<float>(bytes, 6 + offset)
+                ),
+                Rotation = EndianUnsafe.FromBytes<float>(bytes, 10 + offset),
+                NBT = null,
+            };
         }
     }
 }

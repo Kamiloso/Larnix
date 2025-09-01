@@ -4,7 +4,7 @@ using UnityEngine;
 using Larnix.Entities;
 using System.Linq;
 using System.Diagnostics;
-using Larnix.Network;
+using Larnix.Packets;
 
 namespace Larnix.Client.Entities
 {
@@ -37,8 +37,8 @@ namespace Larnix.Client.Entities
 
         public void ChangeNearbyUIDs(NearbyEntities msg)
         {
-            List<ulong> add = msg.AddEntities;
-            List<ulong> remove = msg.RemoveEntities;
+            ulong[] add = msg.AddEntities;
+            ulong[] remove = msg.RemoveEntities;
 
             foreach(ulong uid in add)
                 NearbyUIDs.Add(uid);
@@ -138,6 +138,7 @@ namespace Larnix.Client.Entities
         public bool EverythingLoaded(uint atFrame)
         {
             const uint MIN_DELAY = 1; // should be 1, not 0
+            const uint SUSPICIOUS_DELAY = 25;
             const uint CRITICAL_DELAY = 200; // 4 seconds at 50 TPS
 
             if (NearbyFrameFixed == null)
@@ -148,8 +149,11 @@ namespace Larnix.Client.Entities
             if (overtime < MIN_DELAY)
                 return false; // no information yet
 
-            else if (overtime >= MIN_DELAY && overtime < CRITICAL_DELAY)
-                return Projections.Count == NearbyUIDs.Count;
+            else if (overtime >= MIN_DELAY && overtime < SUSPICIOUS_DELAY)
+                return Projections.Count == NearbyUIDs.Count; // everything loaded
+
+            else if (overtime >= SUSPICIOUS_DELAY && overtime < CRITICAL_DELAY)
+                return Projections.Count >= 0.9f * NearbyUIDs.Count; // vast majority loaded
 
             else if (overtime >= CRITICAL_DELAY)
                 return true; // waiting for too long, preventing deadlock

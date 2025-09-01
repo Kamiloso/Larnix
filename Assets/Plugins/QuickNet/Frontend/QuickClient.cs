@@ -4,9 +4,9 @@ using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System;
-using QuickNet.Commands;
 using QuickNet.Processing;
 using QuickNet.Channel;
+using QuickNet.Channel.Cmds;
 using System.Threading.Tasks;
 
 namespace QuickNet.Frontend
@@ -59,11 +59,8 @@ namespace QuickNet.Frontend
                 Timestamp.GetTimestamp() :
                 Timestamp.GetServerTimestamp(EndPoint);
 
-            AllowConnection allowConnection = new AllowConnection(nickname, password, keyAES, serverSecret, challengeID, timestamp);
-            if (allowConnection.HasProblems)
-                throw new Exception("Couldn't construct AllowConnection command.");
-
-            Connection = new Connection(UdpClient, EndPoint, keyAES, allowConnection.GetPacket(), KeyRSA);
+            Packet synPacket = new AllowConnection(nickname, password, keyAES, serverSecret, challengeID, timestamp);
+            Connection = new Connection(UdpClient, EndPoint, keyAES, synPacket, KeyRSA);
         }
 
         public static UdpClient CreateConfiguredClientObject(IPEndPoint endPoint)
@@ -129,22 +126,21 @@ namespace QuickNet.Frontend
             while (received.Count > 0)
             {
                 Packet packet = received.Dequeue();
-                if (Subscriptions.TryGetValue(packet.ID, out var Execute))
+                if (packet != null && Subscriptions.TryGetValue(packet.ID, out var Execute))
                 {
                     Execute(packet);
                 }
             }
         }
 
-        public void Subscribe<T>(Action<T> InterpretPacket) where T : BaseCommand
+        public void Subscribe<T>(Action<T> InterpretPacket) where T : Payload, new()
         {
-            CmdID ID = BaseCommand.GetCommandID(typeof(T));
+            CmdID ID = Payload.CmdID<T>();
             Subscriptions[ID] = (Packet packet) =>
             {
-                T command = BaseCommand.CreateGeneric<T>(packet);
-                if (command != null && !command.HasProblems)
+                if (Payload.TryConstructPayload<T>(packet, out var message))
                 {
-                    InterpretPacket(command);
+                    InterpretPacket(message);
                 }
             };
         }

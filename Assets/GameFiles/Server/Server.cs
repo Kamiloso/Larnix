@@ -10,7 +10,6 @@ using Larnix.Menu.Worlds;
 using QuickNet.Processing;
 using System.IO;
 using QuickNet.Channel;
-using QuickNet.Data;
 
 namespace Larnix.Server
 {

@@ -3,6 +3,6 @@
 		<namespace fullname="Larnix.Modules.Blocks" preserve="all"/>
 		<namespace fullname="Larnix.Modules.Entities" preserve="all"/>
 		<namespace fullname="Larnix.Modules.Biomes" preserve="all"/>
-		<namespace fullname="Larnix.Network" preserve="all"/>
+		<namespace fullname="Larnix.Packets" preserve="all"/>
 	</assembly>
 </linker>

@@ -1,6 +1,8 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using static Unity.Collections.AllocatorManager;
 
 namespace Larnix.Blocks
 {
@@ -51,6 +53,37 @@ namespace Larnix.Blocks
         public static bool InChunk(Vector2Int chunkpos, Vector2Int POS)
         {
             return (POS.x >> 4) == chunkpos.x && (POS.y >> 4) == chunkpos.y;
+        }
+
+        public static BlockData[,] DeserializeChunk(byte[] bytes, int offset = 0)
+        {
+            if (bytes == null) throw new ArgumentNullException(nameof(bytes));
+            if (bytes.Length - offset < 1280) throw new ArgumentException("Cannot convert bytes to chunk!");
+
+            BlockData[,] blocks = new BlockData[16, 16];
+            for (int x = 0; x < 16; x++)
+                for (int y = 0; y < 16; y++)
+                {
+                    blocks[x, y] = BlockData.Deserialize(bytes, offset + (16 * x + y) * 5);
+                }
+
+            return blocks;
+        }
+
+        public static byte[] SerializeChunk(BlockData[,] blocks)
+        {
+            if (blocks == null) throw new ArgumentNullException(nameof(blocks));
+            if (blocks.GetLength(0) != 16 || blocks.GetLength(1) != 16) throw new ArgumentException("Blocks array must be 16 x 16.");
+
+            byte[] bytes = new byte[1280];
+            for (int x = 0; x < 16; x++)
+                for (int y = 0; y < 16; y++)
+                {
+                    byte[] arr = blocks[x, y]?.Serialize() ?? throw new NullReferenceException("Array elements cannot be null!");
+                    Buffer.BlockCopy(arr, 0, bytes, (16 * x + y) * 5, 5);
+                }
+
+            return bytes;
         }
     }
 }

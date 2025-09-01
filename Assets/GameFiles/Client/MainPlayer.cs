@@ -2,10 +2,10 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using Larnix.Network;
+using Larnix.Packets;
 using Larnix.Client.Entities;
 using Larnix.Entities;
-using System;
+using QuickNet.Channel;
 using Larnix.Physics;
 
 namespace Larnix.Client
@@ -83,15 +83,8 @@ namespace Larnix.Client
 
             if(LastSentFixedCounter != FixedCounter)
             {
-                PlayerUpdate playerUpdate = new PlayerUpdate(
-                    transform.position,
-                    Rotation,
-                    FixedCounter
-                    );
-                if (!playerUpdate.HasProblems)
-                {
-                    References.Client.Send(playerUpdate.GetPacket(), false); // fast mode (over raw udp)
-                }
+                Packet packet = new PlayerUpdate(transform.position, Rotation, FixedCounter);
+                References.Client.Send(packet, false); // fast mode (over raw udp)
 
                 LastSentFixedCounter = FixedCounter;
             }

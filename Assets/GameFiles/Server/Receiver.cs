@@ -1,11 +1,11 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using QuickNet.Commands;
+using QuickNet.Channel.Cmds;
 using Larnix.Blocks;
 using Larnix.Server.Entities;
 using Larnix.Server.Terrain;
-using Larnix.Network;
+using Larnix.Packets;
 
 namespace Larnix.Server
 {
@@ -51,7 +51,7 @@ namespace Larnix.Server
 
         private void _CodeInfo(CodeInfo msg, string owner)
         {
-            CodeInfo.Info code = (CodeInfo.Info)msg.Code;
+            CodeInfo.Info code = msg.Code;
 
             if (code == CodeInfo.Info.RespawnMe)
             {
@@ -64,7 +64,7 @@ namespace Larnix.Server
         {
             Vector2Int POS = msg.BlockPosition;
             Vector2Int chunk = ChunkMethods.CoordsToChunk(POS);
-            bool front = msg.Front == 1;
+            bool front = msg.Front;
             byte code = msg.Code;
 
             if (code == 0) // place item

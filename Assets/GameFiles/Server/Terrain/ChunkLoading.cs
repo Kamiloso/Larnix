@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using Larnix.Blocks;
-using Larnix.Network;
+using Larnix.Packets;
 using Larnix.Server.Entities;
 using QuickNet.Channel;
 
@@ -140,25 +140,15 @@ namespace Larnix.Server.Terrain
                     foreach (var chunk in added)
                     {
                         Chunks[chunk].Instance.MoveChunkIntoArray(PreAllocatedChunkArray);
-                        ChunkInfo chunkInfo = new ChunkInfo(chunk, PreAllocatedChunkArray);
-                        if (!chunkInfo.HasProblems)
-                        {
-                            Packet packet = chunkInfo.GetPacket();
-                            References.Server.Send(nickname, packet);
-                        }
-                        else throw new Exception("Couldn't construct ChunkInfo command! [SEND]");
+                        Packet packet = new ChunkInfo(chunk, PreAllocatedChunkArray);
+                        References.Server.Send(nickname, packet);
                     }
 
                     // send removed
                     foreach (var chunk in removed)
                     {
-                        ChunkInfo chunkInfo = new ChunkInfo(chunk, null);
-                        if(!chunkInfo.HasProblems)
-                        {
-                            Packet packet = chunkInfo.GetPacket();
-                            References.Server.Send(nickname, packet);
-                        }
-                        else throw new Exception("Couldn't construct ChunkInfo command! [FORGET]");
+                        Packet packet = new ChunkInfo(chunk, null);
+                        References.Server.Send(nickname, packet);
                     }
 
                     References.PlayerManager.ClientChunks[nickname] = chunksNearby;

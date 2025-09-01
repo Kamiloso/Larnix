@@ -1,13 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
-using QuickNet.Commands;
 using QuickNet.Processing;
 
 namespace QuickNet.Channel
 {
     public class Packet
     {
-        public const int MIN_SIZE = 1 * sizeof(CmdID) + 1 * sizeof(byte) + 1 * sizeof(uint);
+        public const int HEADER_SIZE = 2 + 1 + 4;
 
         public CmdID ID = 0;
         public byte Code = 0;
@@ -19,7 +18,7 @@ namespace QuickNet.Channel
         {
             ID = id;
             Code = code;
-            Bytes = bytes;
+            Bytes = bytes ?? new byte[0];
         }
 
         public byte[] Serialize(Encryption.Settings encryption = null)
@@ -39,13 +38,13 @@ namespace QuickNet.Channel
             if(decryption != null)
                 bytes = decryption.Decrypt(bytes);
 
-            if (bytes.Length < MIN_SIZE)
+            if (bytes.Length < HEADER_SIZE)
                 return false;
 
-            ID = (CmdID)bytes[0];
-            Code = bytes[1];
-            ControlSequence = EndianUnsafe.FromBytes<uint>(bytes, 2);
-            Bytes = bytes[MIN_SIZE..bytes.Length];
+            ID = EndianUnsafe.FromBytes<CmdID>(bytes, 0);
+            Code = bytes[2];
+            ControlSequence = EndianUnsafe.FromBytes<uint>(bytes, 3);
+            Bytes = bytes[HEADER_SIZE..bytes.Length];
 
             return true;
         }

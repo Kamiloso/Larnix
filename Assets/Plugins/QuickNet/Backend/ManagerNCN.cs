@@ -1,4 +1,3 @@
-using QuickNet.Commands;
 using QuickNet.Processing;
 using System;
 using System.Collections;
@@ -6,6 +5,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 using QuickNet.Channel;
+using QuickNet.Channel.Cmds;
 
 namespace QuickNet.Backend
 {
@@ -63,18 +63,12 @@ namespace QuickNet.Backend
 
         internal void ProcessNCN(IPEndPoint remoteEP, uint ncnID, Packet packet)
         {
-            if (packet == null)
-                return;
-
-            if (packet.ID == CmdID.P_ServerInfo)
+            if (Payload.TryConstructPayload<P_ServerInfo>(packet, out var infoask))
             {
-                P_ServerInfo prompt = new P_ServerInfo(packet);
-                if (prompt.HasProblems) return;
-
-                string checkNickname = prompt.Nickname;
+                string checkNickname = infoask.Nickname;
                 byte[] publicKey = KeyObtainer.KeyToPublicBytes(Server.KeyRSA);
 
-                A_ServerInfo answer = new A_ServerInfo(
+                Server.SendNCN(remoteEP, ncnID, new A_ServerInfo(
                     publicKey,
                     Server.CountPlayers(),
                     Server.MaxClients,
@@ -84,46 +78,39 @@ namespace QuickNet.Backend
                     Server.UserText1,
                     Server.UserText2,
                     Server.UserText3
-                    );
-                if (answer.HasProblems)
-                    throw new Exception("Error making server info answer.");
-
-                Server.SendNCN(remoteEP, ncnID, answer.GetPacket());
+                    ));
             }
 
-            else if (packet.ID == CmdID.P_LoginTry)
+            else if (Payload.TryConstructPayload<P_LoginTry>(packet, out var logtry))
             {
-                P_LoginTry prompt = new P_LoginTry(packet);
-                if (prompt.HasProblems) return;
-
-                Action<byte> AnswerLoginTry = (byte b) =>
+                Action<bool> AnswerLoginTry = (bool success) =>
                 {
-                    A_LoginTry answer = new A_LoginTry(b);
-                    if (!answer.HasProblems)
-                    {
-                        Server.SendNCN(remoteEP, ncnID, answer.GetPacket());
-                    }
+                    Server.SendNCN(remoteEP, ncnID, new A_LoginTry(success));
                 };
 
+                string nickname = logtry.Nickname;
+                string password = logtry.Password;
+                string newPassword = logtry.NewPassword;
+
                 StartCoroutine(
-                    LoginCoroutine(remoteEP, prompt.Nickname, prompt.Password,
-                    prompt.ServerSecret, prompt.ChallengeID, prompt.Timestamp, prompt.Password != prompt.NewPassword,
+                    LoginCoroutine(remoteEP, nickname, password,
+                    logtry.ServerSecret, logtry.ChallengeID, logtry.Timestamp, password != newPassword,
                     ExecuteSuccess: () =>
                     {
-                        Server.UserManager.IncrementChallengeID(prompt.Nickname);
+                        Server.UserManager.IncrementChallengeID(logtry.Nickname);
 
-                        if (prompt.Password == prompt.NewPassword) // normal login try
+                        if (password == newPassword) // normal login try
                         {
-                            AnswerLoginTry(1);
+                            AnswerLoginTry(true);
                         }
                         else // change password mode
                         {
-                            StartCoroutine(ChangePasswordCoroutine(prompt.Nickname, prompt.NewPassword, () => AnswerLoginTry(1)));
+                            StartCoroutine(ChangePasswordCoroutine(nickname, newPassword, () => AnswerLoginTry(true)));
                         }
                     },
                     ExecuteFailed: () =>
                     {
-                        AnswerLoginTry(0);
+                        AnswerLoginTry(false);
                     }
                     ));
             }

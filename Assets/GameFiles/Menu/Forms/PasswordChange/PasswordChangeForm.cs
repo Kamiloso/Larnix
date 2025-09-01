@@ -5,7 +5,7 @@ using Larnix.Menu.Worlds;
 using Larnix.Forms;
 using System.Threading.Tasks;
 using QuickNet.Frontend;
-using QuickNet.Data;
+using QuickNet;
 
 namespace Larnix.Menu.Forms
 {

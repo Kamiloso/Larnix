@@ -160,10 +160,10 @@ namespace Larnix.Client.Terrain
             Vector2Int chunk = ChunkMethods.CoordsToChunk(POS);
             Vector2Int pos = ChunkMethods.LocalBlockCoords(POS);
 
-            BlockData blockdata = oldblock.ShallowCopy();
-
-            if (front) blockdata.Front = block;
-            else blockdata.Back = block;
+            BlockData blockdata = new BlockData(
+                front ? block : oldblock.Front.ShallowCopy(),
+                front ? oldblock.Back.ShallowCopy() : block
+                );
 
             ChangeBlockData(POS, blockdata);
             long operation = LockBlock(POS);
@@ -179,10 +179,10 @@ namespace Larnix.Client.Terrain
             Vector2Int chunk = ChunkMethods.CoordsToChunk(POS);
             Vector2Int pos = ChunkMethods.LocalBlockCoords(POS);
 
-            BlockData blockdata = oldblock.ShallowCopy();
-
-            if (front) blockdata.Front = new SingleBlockData { };
-            else blockdata.Back = new SingleBlockData { };
+            BlockData blockdata = new BlockData(
+                front ? new SingleBlockData { } : oldblock.Front.ShallowCopy(),
+                front ? oldblock.Back.ShallowCopy() : new SingleBlockData { }
+                );
 
             ChangeBlockData(POS, blockdata);
             long operation = LockBlock(POS);

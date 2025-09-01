@@ -42,15 +42,15 @@ namespace QuickNet.Frontend
             udpClient = QuickClient.CreateConfiguredClientObject(endPoint);
             PromptID = (uint)(int)KeyObtainer.GetSecureLong();
 
-            SafePacket.PacketFlag flags = SafePacket.PacketFlag.NCN;
+            PacketFlag flags = PacketFlag.NCN;
             Encryption.Settings encrypt = null;
             if(publicKeyRSA != null)
             {
-                flags |= SafePacket.PacketFlag.RSA;
+                flags |= PacketFlag.RSA;
                 encrypt = new Encryption.Settings(Encryption.Settings.Type.RSA, publicKeyRSA);
             }
 
-            SafePacket safePacket = new SafePacket(
+            QuickPacket safePacket = new QuickPacket(
                 seqNum: PromptID, // SeqNum - Prompt ID in this context
                 ackNum: 0,
                 flags: (byte)flags,
@@ -103,13 +103,13 @@ namespace QuickNet.Frontend
 
                 if (endPoint.Equals(remoteEP))
                 {
-                    SafePacket safePacket = new SafePacket();
+                    QuickPacket safePacket = new QuickPacket();
                     if(safePacket.TryDeserialize(bytes))
                     {
-                        if(safePacket.SeqNum == PromptID && safePacket.HasFlag(SafePacket.PacketFlag.NCN))
+                        if(safePacket.SeqNum == PromptID && safePacket.HasFlag(PacketFlag.NCN))
                         {
                             State = PrompterState.Ready;
-                            AnswerPacket = safePacket.Payload;
+                            AnswerPacket = safePacket.Packet;
                             return;
                         }
                     }

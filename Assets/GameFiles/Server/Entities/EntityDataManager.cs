@@ -3,10 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Entities;
-using QuickNet.Commands;
-using QuickNet;
-using System.Linq;
-using Larnix.Server.Terrain;
 using Larnix.Blocks;
 
 namespace Larnix.Server.Entities

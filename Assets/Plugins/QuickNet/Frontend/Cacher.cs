@@ -1,9 +1,8 @@
-using QuickNet.Commands;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography;
+using QuickNet.Channel.Cmds;
 
 namespace QuickNet.Frontend
 {

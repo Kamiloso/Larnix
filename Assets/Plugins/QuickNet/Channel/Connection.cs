@@ -5,9 +5,8 @@ using System.Net.Sockets;
 using System.Net;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
-using QuickNet.Commands;
 using QuickNet.Processing;
-using QuickNet;
+using QuickNet.Channel.Cmds;
 
 namespace QuickNet.Channel
 {
@@ -39,8 +38,8 @@ namespace QuickNet.Channel
         private System.Random Rand = new();
         private const float DebugDropChance = 0.0f;
 
-        private List<SafePacket> sendingPackets = new List<SafePacket>();
-        private List<SafePacket> receivedPackets = new List<SafePacket>();
+        private List<QuickPacket> sendingPackets = new List<QuickPacket>();
+        private List<QuickPacket> receivedPackets = new List<QuickPacket>();
         private Queue<Packet> downloadablePackets = new Queue<Packet>();
 
         private readonly List<Task> pendingSendingTasks = new List<Task>();
@@ -72,15 +71,15 @@ namespace QuickNet.Channel
             if (synPacket != null) // CLIENT, use RSA public key
             {
                 // Send SYN packet
-                SafePacket.PacketFlag flags = SafePacket.PacketFlag.SYN;
+                PacketFlag flags = PacketFlag.SYN;
                 Encryption.Settings encrypt = null;
                 if(keyPublicRSA != null)
                 {
-                    flags |= SafePacket.PacketFlag.RSA;
+                    flags |= PacketFlag.RSA;
                     encrypt = new Encryption.Settings(Encryption.Settings.Type.RSA, keyPublicRSA);
                 }
 
-                SafePacket safePacket = new SafePacket(
+                QuickPacket safePacket = new QuickPacket(
                     ++SeqNum,
                     GetNum,
                     (byte)flags,
@@ -102,7 +101,7 @@ namespace QuickNet.Channel
                 bool foundNextPacket = false;
                 for (int i = 0; i < receivedPackets.Count; i++)
                 {
-                    SafePacket safePacket = receivedPackets[i];
+                    QuickPacket safePacket = receivedPackets[i];
                     if (safePacket.SeqNum == GetNum + 1)
                     {
                         foundNextPacket = true;
@@ -135,7 +134,7 @@ namespace QuickNet.Channel
             _RetransmittedNow.Clear();
             for (int i = 0; i < sendingPackets.Count; i++)
             {
-                SafePacket safePacket = sendingPackets[i];
+                QuickPacket safePacket = sendingPackets[i];
                 safePacket.ReduceTime(deltaTime);
                 if (safePacket.TimeToRetransmission == 0f)
                 {
@@ -183,7 +182,7 @@ namespace QuickNet.Channel
             if(currentSafeCycleTime > SafeCycleTime)
             {
                 // Send safe packets to ensure that the other side is constantly alive
-                Send(new Packet(CmdID.None, 0, null), true);
+                Send(new None(0), true);
                 currentSafeCycleTime = 0f;
             }
         }
@@ -195,21 +194,11 @@ namespace QuickNet.Channel
             if (safemode)
             {
                 packet.ControlSequence = ++LastSendSequence;
-                SendSafePacket(new SafePacket(
-                    ++SeqNum,
-                    GetNum,
-                    0,
-                    packet
-                    ));
+                SendSafePacket(new QuickPacket(++SeqNum, GetNum, 0, packet));
             }
             else
             {
-                Transmit(new SafePacket(
-                    0,
-                    GetNum,
-                    (byte)SafePacket.PacketFlag.FAS,
-                    packet
-                    ));
+                Transmit(new QuickPacket(0, GetNum, (byte)PacketFlag.FAS, packet));
             }
         }
 
@@ -230,14 +219,14 @@ namespace QuickNet.Channel
             if (receivedPackets.Count >= MaxStayingPackets ||
                downloadablePackets.Count >= MaxStayingPackets) return;
 
-            SafePacket safePacket = new SafePacket();
+            QuickPacket safePacket = new QuickPacket();
             if (!hasSYN)
                 safePacket.Encrypt = new Encryption.Settings(Encryption.Settings.Type.AES, KeyAES);
 
             if (!safePacket.TryDeserialize(bytes))
                 return;
 
-            if (!safePacket.HasFlag(SafePacket.PacketFlag.FAS)) // safe mode
+            if (!safePacket.HasFlag(PacketFlag.FAS)) // safe mode
             {
                 if (safePacket.SeqNum <= GetNum)
                     return;
@@ -273,7 +262,7 @@ namespace QuickNet.Channel
             }
 
             // end connection
-            if (safePacket.HasFlag(SafePacket.PacketFlag.FIN))
+            if (safePacket.HasFlag(PacketFlag.FIN))
                 IsDead = true;
         }
 
@@ -284,10 +273,10 @@ namespace QuickNet.Channel
             // Send 3 FIN flags (to ensure they arrive).
             // If they don't, protocol will automatically disconnect after a few seconds.
 
-            SafePacket safePacket = new SafePacket(
+            QuickPacket safePacket = new QuickPacket(
                 0,
                 GetNum,
-                (byte)SafePacket.PacketFlag.FAS | (byte)SafePacket.PacketFlag.FIN,
+                (byte)PacketFlag.FAS | (byte)PacketFlag.FIN,
                 null
                 );
 
@@ -306,20 +295,20 @@ namespace QuickNet.Channel
             pendingSendingTasks.RemoveAll(t => t.IsCompleted);
         }
 
-        private void SendSafePacket(SafePacket safePacket)
+        private void SendSafePacket(QuickPacket safePacket)
         {
             Transmit(safePacket);
             PingRTT(safePacket.SeqNum);
             sendingPackets.Add(safePacket);
         }
 
-        private void Transmit(SafePacket safePacket)
+        private void Transmit(QuickPacket safePacket)
         {
-            if (!safePacket.HasFlag(SafePacket.PacketFlag.SYN))
+            if (!safePacket.HasFlag(PacketFlag.SYN))
                 safePacket.Encrypt = new Encryption.Settings(Encryption.Settings.Type.AES, KeyAES);
             else
             {
-                if (safePacket.HasFlag(SafePacket.PacketFlag.RSA))
+                if (safePacket.HasFlag(PacketFlag.RSA))
                     Debug.Log("Transmiting RSA-encrypted SYN.");
                 else if (IPAddress.IsLoopback(EndPoint.Address))
                     Debug.LogWarning("Transmiting unencrypted SYN to localhost.");
@@ -328,7 +317,7 @@ namespace QuickNet.Channel
             }
 
             // Retransmission time reset
-            if (!safePacket.HasFlag(SafePacket.PacketFlag.FAS))
+            if (!safePacket.HasFlag(PacketFlag.FAS))
                 safePacket.Transmited(AvgRTT + OffsetRTT);
 
             // Drop simulate
@@ -347,27 +336,27 @@ namespace QuickNet.Channel
             }
         }
 
-        private bool ReadyPacketTryEnqueue(SafePacket safePacket, bool is_safe)
+        private bool ReadyPacketTryEnqueue(QuickPacket safePacket, bool is_safe)
         {
             // No payload, no problem
-            if (safePacket.Payload == null)
+            if (safePacket.Packet == null)
                 return false;
 
             // AllowConnection packets only with SYN flag allowed
-            if (safePacket.Payload.ID == CmdID.AllowConnection &&
-                !safePacket.HasFlag(SafePacket.PacketFlag.SYN))
+            if (safePacket.Packet.ID == Payload.CmdID<AllowConnection>() &&
+                !safePacket.HasFlag(PacketFlag.SYN))
                 return false;
 
             // Stop packets generate on server side, they cannot be sent through network
-            if (safePacket.Payload.ID == CmdID.Stop)
+            if (safePacket.Packet.ID == Payload.CmdID<Stop>())
                 return false;
 
             // Control order and throw exception if something wrong
-            if(safePacket.Payload.ControlSequence != 0 && (!is_safe || safePacket.Payload.ControlSequence != ++LastReceiveSequence))
+            if(safePacket.Packet.ControlSequence != 0 && (!is_safe || safePacket.Packet.ControlSequence != ++LastReceiveSequence))
                 throw new System.Exception("WRONG_PACKET_ORDER");
 
-            // Enqueue and RTTs manage if everything ok
-            downloadablePackets.Enqueue(safePacket.Payload);
+            // Enqueue if everything ok
+            downloadablePackets.Enqueue(safePacket.Packet);
             return true;
         }
 

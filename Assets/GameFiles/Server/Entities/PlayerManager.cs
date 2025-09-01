@@ -1,12 +1,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using QuickNet.Commands;
 using System.Linq;
-using QuickNet;
 using Larnix.Entities;
 using QuickNet.Channel;
-using Larnix.Network;
+using Larnix.Packets;
 
 namespace Larnix.Server.Entities
 {
@@ -94,32 +92,23 @@ namespace Larnix.Server.Entities
             HashSet<ulong> removed = new HashSet<ulong>(oldUIDs);
             removed.ExceptWith(newUIDs);
 
-            List<ulong> addedList = added.ToList();
-            List<ulong> removedList = removed.ToList();
+            ulong[] addedList = added.ToArray();
+            ulong[] removedList = removed.ToArray();
 
-            bool sentAlready = false;
-            const int MAX_RECORDS = NearbyEntities.MAX_RECORDS;
-            for (int pos = 0; true; pos += MAX_RECORDS)
+            List<NearbyEntities> packets = NearbyEntities.CreateList(fixedFrame, addedList, removedList);
+            if (packets.Count > 0)
             {
-                int sizeAdd = System.Math.Clamp(addedList.Count - pos, 0, MAX_RECORDS);
-                int sizeRem = System.Math.Clamp(removedList.Count - pos, 0, MAX_RECORDS);
-
-                if (sizeAdd == 0 && sizeRem == 0) // no data
-                    if (sentAlready || !sendAtLeastOne) // no need to send empty packet
-                        break;
-
-                NearbyEntities nearbyEntities = new NearbyEntities(
-                    fixedFrame,
-                    sizeAdd != 0 ? addedList.GetRange(pos, sizeAdd).ToList() : new(),
-                    sizeRem != 0 ? removedList.GetRange(pos, sizeRem).ToList() : new()
-                    );
-                if (!nearbyEntities.HasProblems)
+                foreach(Packet packet in packets)
                 {
-                    Packet packet = nearbyEntities.GetPacket();
                     References.Server.Send(nickname, packet);
-                    sentAlready = true;
                 }
-                else throw new System.Exception("Couldn't construct NearbyEntities packet!");
+            }
+            else
+            {
+                if (sendAtLeastOne)
+                {
+                    References.Server.Send(nickname, new NearbyEntities(fixedFrame, null, null));
+                }
             }
 
             NearbyUIDs[nickname] = newUIDs;

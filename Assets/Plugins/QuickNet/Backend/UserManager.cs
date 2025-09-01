@@ -8,24 +8,24 @@ namespace QuickNet.Backend
 {
     internal class UserData
     {
-        internal const int SIZE = 2 * sizeof(long) + 32 + 256;
+        internal const int SIZE = 8 + 32 + 256 + 8;
 
         internal long UserID;
         internal String32 Username; // 16 chars
         internal String256 PasswordHash; // 128 chars
         internal long ChallengeID;
 
-        internal UserData(string username, string passwordHash, long challengeID = 1)
+        internal UserData(string username, string passwordHash)
         {
             Username = username;
             PasswordHash = passwordHash;
-            ChallengeID = challengeID;
+            ChallengeID = 1;
         }
 
         internal UserData(byte[] bytes, int offset = 0)
         {
             if (bytes == null || bytes.Length - offset < SIZE)
-                throw new ArgumentException("Size of bytes must be " + SIZE);
+                throw new ArgumentException("Cannot deserialize UserData! Too small array.");
 
             UserID = EndianUnsafe.FromBytes<long>(bytes, 0 + offset);
             Username = EndianUnsafe.FromBytes<String32>(bytes, 8 + offset);
@@ -191,8 +191,16 @@ namespace QuickNet.Backend
 
         public void ChangePassword(string username, string hashedPassword)
         {
-            UserData user = ReadUserData(username) ?? new UserData(username, hashedPassword, 1);
-            SaveUserData(user);
+            UserData user = ReadUserData(username);
+            if (user != null)
+            {
+                user.PasswordHash = hashedPassword;
+                SaveUserData(user);
+            }
+            else
+            {
+                AddUser(username, hashedPassword);
+            }
         }
 
         internal string GetPasswordHash(string username)

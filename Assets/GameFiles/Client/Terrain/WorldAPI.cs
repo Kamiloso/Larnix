@@ -3,7 +3,7 @@ using Larnix.Modules.Blocks;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Larnix.Network;
+using Larnix.Packets;
 using System;
 using QuickNet;
 using QuickNet.Channel;
@@ -66,13 +66,8 @@ namespace Larnix.Client.Terrain
 
         private static void SendBlockChange(Vector2Int POS, SingleBlockData item, SingleBlockData tool, bool front, long operation, byte code)
         {
-            BlockChange blockChange = new BlockChange(POS, item, tool, (byte)(front ? 1 : 0), operation, code);
-            if (!blockChange.HasProblems)
-            {
-                Packet packet = blockChange.GetPacket();
-                References.Client.Send(packet);
-            }
-            else throw new Exception("Couldn't construct BlockChange packet!");
+            Packet packet = new BlockChange(POS, item, tool, operation, front, code);
+            References.Client.Send(packet);
         }
     }
 }

@@ -85,18 +85,15 @@ namespace Larnix.Server.Terrain
         private BlockData[,] BytesToChunk(byte[] bytes)
         {
             if (bytes == null || bytes.Length != 5 * 16 * 16)
-                throw new System.ArgumentException("Wrong bytes size!");
+                throw new ArgumentException("Wrong bytes size!");
 
             BlockData[,] returns = new BlockData[16, 16];
 
             for (int x = 0; x < 16; x++)
                 for (int y = 0; y < 16; y++)
                 {
-                    int ind_s = 5 * (x * 16 + y);
-                    int ind_e = ind_s + 5;
-
-                    BlockData block = new BlockData();
-                    block.DeserializeBaseData(bytes[ind_s..ind_e]);
+                    int ind = 5 * (x * 16 + y);
+                    BlockData block = BlockData.Deserialize(bytes, ind);
                     returns[x, y] = block;
                 }
 
@@ -106,7 +103,7 @@ namespace Larnix.Server.Terrain
         private byte[] ChunkToBytes(BlockData[,] Chunk)
         {
             if (Chunk.GetLength(0) != 16 || Chunk.GetLength(1) != 16)
-                throw new System.ArgumentException("Wrong array size!");
+                throw new ArgumentException("Wrong array size!");
 
             byte[] bytes = new byte[5 * 16 * 16];
 
@@ -119,7 +116,7 @@ namespace Larnix.Server.Terrain
                     if (block == null || block.Front == null || block.Back == null)
                         throw new System.ArgumentException("Chunk array cannot have null places!");
 
-                    Buffer.BlockCopy(block.SerializeBaseData(), 0, bytes, ind_s, 5);
+                    Buffer.BlockCopy(block.Serialize(), 0, bytes, ind_s, 5);
                 }
 
             return bytes;

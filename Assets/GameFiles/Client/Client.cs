@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using Larnix.Network;
+using Larnix.Packets;
 using QuickNet.Channel;
 using System.Threading.Tasks;
 
@@ -122,11 +122,9 @@ namespace Larnix.Client
             {
                 if(!References.MainPlayer.gameObject.activeInHierarchy)
                 {
-                    CodeInfo codeInfo = new CodeInfo((byte)CodeInfo.Info.RespawnMe);
-                    if (codeInfo.HasProblems)
-                        throw new System.Exception("Wrong respawn ask packet!");
-                    
-                    Send(codeInfo.GetPacket());
+                    Packet packet = new CodeInfo(CodeInfo.Info.RespawnMe);
+                    Send(packet);
+
                     References.Loading.StartLoading("Respawning...");
                 }
             }
