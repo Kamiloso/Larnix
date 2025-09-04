@@ -2,67 +2,163 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System;
 using UnityEngine;
-using QuickNet;
-using UnityEngine.UI;
+using System.Linq;
+using System.Threading;
+using System.Diagnostics;
+using System.Text;
+using System.IO;
 
 namespace Larnix
 {
     public static class Debug
     {
-        private static readonly ConcurrentQueue<(Action<string> action, string msg)> actionQueue = new();
-        private static volatile bool _useConsole = false;
+        private static readonly ConcurrentQueue<Action> actionQueue = new();
         private static object _locker = new();
 
-        public static void Log(string msg) => actionQueue.Enqueue((str =>
-        {
-            if (_useConsole) Server.Console.Log(str);
-            else UnityEngine.Debug.Log(str);
-        }, msg));
+        private static Thread MainThread = null;
 
-        public static void LogSuccess(string msg) => actionQueue.Enqueue((str =>
+        private enum LogType
         {
-            if (_useConsole) Server.Console.LogSuccess(str);
-            else UnityEngine.Debug.Log(str);
-        }, msg));
+            Log, Success, Warning,
+            Error, RawConsole, NoDate
+        }
 
-        public static void LogWarning(string msg) => actionQueue.Enqueue((str =>
+        private static void _Log(string msg, LogType logType)
         {
-            if (_useConsole) Server.Console.LogWarning(str);
-            else UnityEngine.Debug.LogWarning(str);
-        }, msg));
+            if (Application.isEditor)
+            {
+                switch (logType)
+                {
+                    case LogType.Log:
+                    case LogType.Success:
+                    case LogType.NoDate:
+                        UnityEngine.Debug.Log(msg);
+                        break;
 
-        public static void LogError(string msg) => actionQueue.Enqueue((str =>
+                    case LogType.Warning: UnityEngine.Debug.LogWarning(msg); break;
+                    case LogType.Error: UnityEngine.Debug.LogError(msg); break;
+                    case LogType.RawConsole: break;
+                }
+            }
+            else
+            {
+                switch (logType)
+                {
+                    case LogType.Log: Server.Console.Log(msg); break;
+                    case LogType.Success: Server.Console.LogSuccess(msg); break;
+                    case LogType.Warning: Server.Console.LogWarning(msg); break;
+                    case LogType.Error: Server.Console.LogError(msg); break;
+                    case LogType.RawConsole: Server.Console.LogRaw(msg); break;
+                    case LogType.NoDate: Server.Console.LogRaw(msg + "\n"); break;
+                }
+            }
+        }
+
+        private static void _LogOrEnqueue(string msg, LogType logType)
         {
-            if (_useConsole) Server.Console.LogError(str);
-            else UnityEngine.Debug.LogError(str);
-        }, msg));
+            if (logType == LogType.Warning || logType == LogType.Error)
+                msg += "\n" + GetFormattedStackTrace(2);
 
-        public static void LogRawConsole(string msg) => actionQueue.Enqueue((str =>
+            if (Thread.CurrentThread == MainThread)
+            {
+                // From main thread - stack trace official
+                _Log(msg, logType);
+            }
+            else
+            {
+                // From weird thread - stack trace custom
+                actionQueue.Enqueue(() => _Log(msg, logType));
+            }
+        }
+
+        public static void Log(string msg)
         {
-            if (_useConsole) Server.Console.LogRaw(str);
-        }, msg));
+            _LogOrEnqueue(msg, LogType.Log);
+        }
 
-        public static void LogNoDate(string msg) => actionQueue.Enqueue((str =>
+        public static void LogSuccess(string msg)
         {
-            if (_useConsole) Server.Console.LogRaw(str + "\n");
-            else UnityEngine.Debug.Log(str);
-        }, msg));
+            _LogOrEnqueue(msg, LogType.Success);
+        }
 
-        public static void FlushLogs(bool useConsole)
+        public static void LogWarning(string msg)
+        {
+            _LogOrEnqueue(msg, LogType.Warning);
+        }
+
+        public static void LogError(string msg)
+        {
+            _LogOrEnqueue(msg, LogType.Error);
+        }
+
+        public static void LogRawConsole(string msg)
+        {
+            _LogOrEnqueue(msg, LogType.RawConsole);
+        }
+
+        public static void LogNoDate(string msg)
+        {
+            _LogOrEnqueue(msg, LogType.NoDate);
+        }
+
+        public static void FlushLogs()
         {
             lock (_locker)
             {
-                _useConsole = useConsole;
-                while (actionQueue.TryDequeue(out var tuple))
+                while (actionQueue.TryDequeue(out var action))
                 {
-                    tuple.action(tuple.msg);
+                    action();
                 }
             }
+        }
+
+        public static string GetFormattedStackTrace(int skipFrames = 0)
+        {
+            var trace = new StackTrace(skipFrames + 1, true);
+            var frames = trace.GetFrames();
+            if (frames == null || frames.Length == 0)
+                return "<no stack trace>";
+
+            var sb = new StringBuilder();
+            int index = 0;
+            foreach (var frame in frames)
+            {
+                var method = frame.GetMethod();
+                if (method == null) continue;
+
+                var declaringType = method.DeclaringType;
+                string typeName = declaringType != null ? declaringType.FullName : "<global>";
+                string methodName = method.Name;
+
+                var fileName = frame.GetFileName();
+                int line = frame.GetFileLineNumber();
+
+                // header
+                sb.Append("[").Append(index++).Append("] ")
+                  .Append(typeName).Append('.').Append(methodName);
+
+                // file + line
+                if (!string.IsNullOrEmpty(fileName))
+                {
+                    sb.Append(" at ")
+                      .Append(Path.GetFileName(fileName))
+                      .Append(':').Append(line > 0 ? line : 0)
+                      .AppendLine();
+                }
+                else
+                {
+                    sb.Append("    at <no file info>").AppendLine();
+                }
+            }
+
+            return sb.ToString();
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Init()
         {
+            MainThread = Thread.CurrentThread;
+            Core.Debug.InitLogs(Log, LogWarning, LogError);
             QuickNet.Debug.InitLogs(Log, LogWarning, LogError);
         }
     }

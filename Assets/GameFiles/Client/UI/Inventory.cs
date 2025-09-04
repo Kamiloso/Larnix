@@ -17,7 +17,7 @@ namespace Larnix.Client.UI
         private const int MIN_SELECTABLE = 0;
         private const int MAX_SELECTABLE = 9;
 
-        public static readonly SingleBlockData StaticAirBlock = new SingleBlockData { };
+        public static readonly BlockData1 StaticAirBlock = new BlockData1 { };
 
         private void Awake()
         {
@@ -59,7 +59,7 @@ namespace Larnix.Client.UI
             References.TileSelector.FromInventoryUpdate();
         }
 
-        public SingleBlockData GetHoldingItem()
+        public BlockData1 GetHoldingItem()
         {
             Item item = GetItemInSlot(SelectedSlot);
             return item.Count != 0 ? item.Block : StaticAirBlock;
@@ -83,7 +83,7 @@ namespace Larnix.Client.UI
 
             return new Item
             {
-                Block = new SingleBlockData { ID = blockID, Variant = variant },
+                Block = new BlockData1 { ID = blockID, Variant = variant },
                 Count = blockID == BlockID.Air ? 0 : 1
             };
         }

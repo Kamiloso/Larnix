@@ -5,6 +5,7 @@ using System.Net;
 using System.Security.Cryptography;
 using QuickNet.Processing;
 using QuickNet.Channel;
+using System;
 
 namespace QuickNet.Frontend
 {
@@ -17,7 +18,7 @@ namespace QuickNet.Frontend
         private IPEndPoint endPoint = null;
         private uint PromptID = 0;
 
-        private const float MAX_WAITING_TIME = 2f; // seconds
+        private const float MAX_WAITING_TIME = 3f; // seconds
         private float waitingTime = 0f;
 
         public enum PrompterState : byte
@@ -43,11 +44,11 @@ namespace QuickNet.Frontend
             PromptID = (uint)(int)KeyObtainer.GetSecureLong();
 
             PacketFlag flags = PacketFlag.NCN;
-            Encryption.Settings encrypt = null;
+            Func<byte[], byte[]> encrypt = null;
             if(publicKeyRSA != null)
             {
                 flags |= PacketFlag.RSA;
-                encrypt = new Encryption.Settings(Encryption.Settings.Type.RSA, publicKeyRSA);
+                encrypt = bytes => Encryption.EncryptRSA(bytes, publicKeyRSA);
             }
 
             QuickPacket safePacket = new QuickPacket(
@@ -56,7 +57,7 @@ namespace QuickNet.Frontend
                 flags: (byte)flags,
                 payload: prompt
                 );
-            safePacket.Encrypt = encrypt;
+            safePacket.Encryption = encrypt;
 
             byte[] bytes = safePacket.Serialize();
             udpClient.SendAsync(bytes, bytes.Length, endPoint);

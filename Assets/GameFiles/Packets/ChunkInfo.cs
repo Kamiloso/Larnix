@@ -15,10 +15,10 @@ namespace Larnix.Packets
         public Vector2Int Chunkpos => new Vector2Int(
             EndianUnsafe.FromBytes<int>(Bytes, 0),  // 4B
             EndianUnsafe.FromBytes<int>(Bytes, 4)); // 4B
-        public BlockData[,] Blocks => (Bytes.Length != ALT_SIZE ? ChunkMethods.DeserializeChunk(Bytes, 8) : null); // 1280B or 0B
+        public BlockData2[,] Blocks => (Bytes.Length != ALT_SIZE ? ChunkMethods.DeserializeChunk(Bytes, 8) : null); // 1280B or 0B
 
         public ChunkInfo() { }
-        public ChunkInfo(Vector2Int chunkpos, BlockData[,] blocks, byte code = 0)
+        public ChunkInfo(Vector2Int chunkpos, BlockData2[,] blocks, byte code = 0)
         {
             InitializePayload(ArrayUtils.MegaConcat(
                 EndianUnsafe.GetBytes(chunkpos.x),

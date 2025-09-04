@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using Larnix.Language;
 
 namespace Larnix.Client.UI
 {
@@ -51,7 +50,7 @@ namespace Larnix.Client.UI
             if(item.Count != 0)
             {
                 Image.sprite = Tiles.GetSprite(item.Block, true);
-                Title.text = TextDisplayTime > 0f ? TextGetter.GetBlockName(item.Block) : string.Empty;
+                Title.text = TextDisplayTime > 0f ? Translations.GetBlockName(item.Block) : string.Empty;
             }
             else
             {

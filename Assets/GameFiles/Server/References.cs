@@ -3,9 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Server.Terrain;
 using Larnix.Server.Entities;
-using Larnix.Server.Worldgen;
+using Larnix.Worldgen;
 using Larnix.Physics;
-using Larnix.Client;
 
 namespace Larnix.Server
 {
@@ -20,6 +19,8 @@ namespace Larnix.Server
         public static BlockDataManager BlockDataManager;
         public static BlockSender BlockSender;
         public static PhysicsManager PhysicsManager;
+
+        // Client Behaviours
         public static Client.Debug Debug;
 
         // Normal Classes

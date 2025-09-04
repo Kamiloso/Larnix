@@ -13,7 +13,9 @@ namespace Larnix.Server.Terrain
 {
     public class BlockSender : MonoBehaviour
     {
-        private readonly Queue<(Vector2Int block, BlockData data)> BlockUpdates = new();
+        private static WorldAPI WorldAPI => References.ChunkLoading.WorldAPI;
+
+        private readonly Queue<(Vector2Int block, BlockData2 data)> BlockUpdates = new();
         private readonly Queue<(string owner, long operation, Vector2Int POS, bool front, bool success)> BlockChanges = new();
 
         private void Awake()
@@ -21,7 +23,7 @@ namespace Larnix.Server.Terrain
             References.BlockSender = this;
         }
 
-        public void AddBlockUpdate((Vector2Int, BlockData) element)
+        public void AddBlockUpdate((Vector2Int, BlockData2) element)
         {
             BlockUpdates.Enqueue(element);
         }
@@ -39,7 +41,7 @@ namespace Larnix.Server.Terrain
 
         private void SendBlockUpdate()
         {
-            Dictionary<string, Queue<(Vector2Int block, BlockData data)>> IndividualUpdates = new();
+            Dictionary<string, Queue<(Vector2Int block, BlockData2 data)>> IndividualUpdates = new();
 
             foreach (string nickname in References.PlayerManager.PlayerUID.Keys)
             {
@@ -60,7 +62,7 @@ namespace Larnix.Server.Terrain
 
             foreach (string nickname in References.PlayerManager.PlayerUID.Keys)
             {
-                Queue<(Vector2Int block, BlockData data)> changes = IndividualUpdates[nickname];
+                Queue<(Vector2Int block, BlockData2 data)> changes = IndividualUpdates[nickname];
                 BlockUpdate.Record[] records = changes.Select(ch => new BlockUpdate.Record
                 {
                     POS = ch.block,
@@ -97,7 +99,7 @@ namespace Larnix.Server.Terrain
                     blockFront != null && blockBack != null
                     )
                 {
-                    BlockData currentBlock = new BlockData(blockFront.BlockData, blockBack.BlockData);
+                    BlockData2 currentBlock = new BlockData2(blockFront.BlockData, blockBack.BlockData);
 
                     Packet packet = new RetBlockChange(POS, operation, currentBlock, front, success);
                     References.Server.Send(nickname, packet);

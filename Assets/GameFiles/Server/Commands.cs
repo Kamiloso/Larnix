@@ -12,6 +12,8 @@ namespace Larnix.Server
 {
     public static class Commands
     {
+        private static WorldAPI WorldAPI => References.ChunkLoading.WorldAPI;
+
         public enum CommandResultType
         {
             Raw,
@@ -184,7 +186,7 @@ namespace Larnix.Server
                 if (Enum.TryParse(blockname, ignoreCase: true, out BlockID blockID) &&
                     Enum.IsDefined(typeof(BlockID), blockID))
                 {
-                    var result = WorldAPI.UpdateBlock(new Vector2Int(x, y), front, new SingleBlockData
+                    var result = WorldAPI.ReplaceBlock(new Vector2Int(x, y), front, new BlockData1
                     {
                         ID = blockID,
                         Variant = variant

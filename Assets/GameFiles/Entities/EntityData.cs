@@ -13,7 +13,7 @@ namespace Larnix.Entities
         public float Rotation = 0f;
         public string NBT = "{}";
 
-        public EntityData ShallowCopy()
+        public EntityData DeepCopy()
         {
             return new EntityData
             {

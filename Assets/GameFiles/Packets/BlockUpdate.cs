@@ -13,7 +13,7 @@ namespace Larnix.Packets
         public class Record
         {
             public Vector2Int POS;
-            public BlockData Block;
+            public BlockData2 Block;
 
             public byte[] Serialize()
             {
@@ -32,13 +32,13 @@ namespace Larnix.Packets
                         EndianUnsafe.FromBytes<int>(bytes, 0 + offset),
                         EndianUnsafe.FromBytes<int>(bytes, 4 + offset)),
 
-                    Block = BlockData.Deserialize(bytes, 8 + offset)
+                    Block = BlockData2.Deserialize(bytes, 8 + offset)
                 };
             }
         }
 
         private const int ENTRY_SIZE = 13;
-        private const int MAX_RECORDS = 1;//05;
+        private const int MAX_RECORDS = 105;
 
         public Record[] BlockUpdates => GetRecords(); // n * 13B
 

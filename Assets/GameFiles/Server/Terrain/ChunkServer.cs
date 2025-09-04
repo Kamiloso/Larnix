@@ -5,18 +5,19 @@ using Larnix.Blocks;
 using System;
 using System.Linq;
 using Larnix.Physics;
-using Larnix.Modules.Blocks;
 
 namespace Larnix.Server.Terrain
 {
     public class ChunkServer : IDisposable
     {
+        private WorldAPI WorldAPI => References.ChunkLoading.WorldAPI;
+
         public Vector2Int Chunkpos { get; private set; }
         private readonly BlockServer[,] BlocksFront = new BlockServer[16, 16];
         private readonly BlockServer[,] BlocksBack = new BlockServer[16, 16];
         private readonly Dictionary<Vector2Int, StaticCollider> StaticColliders = new();
 
-        private readonly BlockData[,] ActiveChunkReference;
+        private readonly BlockData2[,] ActiveChunkReference;
 
         public ChunkServer(Vector2Int chunkpos)
         {
@@ -68,7 +69,7 @@ namespace Larnix.Server.Terrain
         /// BlockArray must be an initialized 16 x 16 array containing any existing BlockData objects.
         /// It is recommended to use a pre-allocated static array for performance.
         /// </summary>
-        public void MoveChunkIntoArray(BlockData[,] BlockArray)
+        public void MoveChunkIntoArray(BlockData2[,] BlockArray)
         {
             for (int x = 0; x < 16; x++)
                 for (int y = 0; y < 16; y++)
@@ -83,14 +84,14 @@ namespace Larnix.Server.Terrain
             return isFront ? BlocksFront[pos.x, pos.y] : BlocksBack[pos.x, pos.y];
         }
 
-        public BlockServer UpdateBlock(Vector2Int pos, bool isFront, SingleBlockData block)
+        public BlockServer UpdateBlock(Vector2Int pos, bool isFront, BlockData1 block)
         {
             BlockServer ret = null;
 
             // Change blocks
 
-            SingleBlockData oldDataBack = ActiveChunkReference[pos.x, pos.y].Back;
-            SingleBlockData oldDataFront = ActiveChunkReference[pos.x, pos.y].Front;
+            BlockData1 oldDataBack = ActiveChunkReference[pos.x, pos.y].Back;
+            BlockData1 oldDataFront = ActiveChunkReference[pos.x, pos.y].Front;
 
             if (isFront)
             {
@@ -107,48 +108,55 @@ namespace Larnix.Server.Terrain
 
             RefreshCollider(pos);
 
-            SingleBlockData newDataBack = ActiveChunkReference[pos.x, pos.y].Back;
-            SingleBlockData newDataFront = ActiveChunkReference[pos.x, pos.y].Front;
+            BlockData1 newDataBack = ActiveChunkReference[pos.x, pos.y].Back;
+            BlockData1 newDataFront = ActiveChunkReference[pos.x, pos.y].Front;
 
             // Push send update
 
             if (
-                !SingleBlockData.BaseEquals(oldDataBack, newDataBack) ||
-                !SingleBlockData.BaseEquals(oldDataFront, newDataFront)
+                !BlockData1.BaseEquals(oldDataBack, newDataBack) ||
+                !BlockData1.BaseEquals(oldDataFront, newDataFront)
                 )
             {
                 References.BlockSender.AddBlockUpdate((
                     ChunkMethods.GlobalBlockCoords(Chunkpos, pos),
-                    new BlockData(newDataFront, newDataBack)
+                    new BlockData2(newDataFront, newDataBack)
                     ));
             }
-
-            // Return
 
             return ret;
         }
 
-        private static void UpdateBlockInArray(ref BlockServer block, SingleBlockData data)
+        private void UpdateBlockInArray(ref BlockServer block, BlockData1 data)
         {
-            if (block.BlockData.ID == data.ID)
+            if (BlockData1.BaseEquals(block.BlockData, data))
             {
+                // the same block, only NBT has changed
                 block.BlockData = data;
             }
             else
             {
-                block = BlockFactory.ConstructBlockObject(block.Position, data, block.IsFront);
+                // different block, construct new object (reset all optional metadata)
+                block = ConstructAndBindBlockObject(block.Position, data, block.IsFront);
             }
         }
 
-        private void CreateBlock(Vector2Int pos, BlockData blockData)
+        private void CreateBlock(Vector2Int pos, BlockData2 blockData)
         {
-            BlockServer frontBlock = BlockFactory.ConstructBlockObject(ChunkMethods.GlobalBlockCoords(Chunkpos, pos), blockData.Front, true);
+            BlockServer frontBlock = ConstructAndBindBlockObject(ChunkMethods.GlobalBlockCoords(Chunkpos, pos), blockData.Front, true);
             BlocksFront[pos.x, pos.y] = frontBlock;
 
-            BlockServer backBlock = BlockFactory.ConstructBlockObject(ChunkMethods.GlobalBlockCoords(Chunkpos, pos), blockData.Back, false);
+            BlockServer backBlock = ConstructAndBindBlockObject(ChunkMethods.GlobalBlockCoords(Chunkpos, pos), blockData.Back, false);
             BlocksBack[pos.x, pos.y] = backBlock;
 
             RefreshCollider(pos);
+        }
+
+        private BlockServer ConstructAndBindBlockObject(Vector2Int POS, BlockData1 block, bool front)
+        {
+            BlockServer blockServer = BlockFactory.ConstructBlockObject(POS, block, front);
+            blockServer.InitializeWorldAPI(WorldAPI);
+            return blockServer;
         }
 
         private void RefreshCollider(Vector2Int pos)
@@ -163,7 +171,7 @@ namespace Larnix.Server.Terrain
             IHasCollider iface = blockServer as IHasCollider;
             if(iface != null)
             {
-                StaticCollider staticCollider = iface.STATIC_CreateStaticCollider(blockServer.BlockData.Variant);
+                StaticCollider staticCollider = StaticCollider.Create(iface);
                 staticCollider.MakeOffset(ChunkMethods.GlobalBlockCoords(Chunkpos, pos));
                 StaticColliders[pos] = staticCollider;
                 References.PhysicsManager.AddCollider(staticCollider);

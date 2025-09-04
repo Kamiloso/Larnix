@@ -58,7 +58,7 @@ namespace Larnix.Server.Entities
                     playerController.Activate();
 
                 // Load data to player controller
-                EntityData entityData = playerController.EntityData.ShallowCopy();
+                EntityData entityData = playerController.EntityData.DeepCopy();
                 entityData.Position = msg.Position;
                 entityData.Rotation = msg.Rotation;
                 playerController.GetRealController().UpdateEntityData(entityData);

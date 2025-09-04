@@ -7,6 +7,7 @@ using Larnix.Packets;
 using System.Diagnostics;
 using Larnix.Server.Terrain;
 using QuickNet.Channel;
+using System;
 
 namespace Larnix.Server.Entities
 {
@@ -28,7 +29,6 @@ namespace Larnix.Server.Entities
         public void FromFixedUpdate() // FIX-2
         {
             // Fixed counter increment
-
             FixedCounter++;
 
             // Execute entity behaviours
@@ -42,7 +42,6 @@ namespace Larnix.Server.Entities
                 }
 
             // Kill entities when needed
-
             foreach (ulong uid in EntityControllers.Keys.ToList())
                 if (EntityControllers[uid].IsActive)
                 {
@@ -51,14 +50,12 @@ namespace Larnix.Server.Entities
                 }
 
             // Debug info
-
             EntityCount = EntityControllers.Count;
         }
 
         public void FromEarlyUpdate() // 2
         {
             // Unload entities
-
             foreach(ulong uid in EntityControllers.Keys.ToList())
             {
                 EntityAbstraction controller = EntityControllers[uid];
@@ -70,7 +67,6 @@ namespace Larnix.Server.Entities
             }
 
             // Activate entities
-
             const double MAX_ACTIVATING_MS = 3.0f;
             Stopwatch timer = Stopwatch.StartNew();
 
@@ -91,7 +87,7 @@ namespace Larnix.Server.Entities
             timer.Stop();
         }
 
-        public void SendEntityBroadcast()
+        public void SendEntityBroadcast() // It works, better don't touch it
         {
             if(FixedCounter != LastSentFixedCounter)
             {
@@ -149,7 +145,7 @@ namespace Larnix.Server.Entities
                     List<ulong> sendUIDs = EntityList.Keys.ToList();
                     for (int pos = 0; true; pos += MAX_RECORDS)
                     {
-                        int sizeEnt = System.Math.Clamp(sendUIDs.Count - pos, 0, MAX_RECORDS);
+                        int sizeEnt = Math.Clamp(sendUIDs.Count - pos, 0, MAX_RECORDS);
                         if (sizeEnt == 0) break;
 
                         HashSet<ulong> fragmentedUIDs = sendUIDs.GetRange(pos, sizeEnt).ToHashSet();
@@ -195,17 +191,20 @@ namespace Larnix.Server.Entities
 
         public EntityAbstraction GetPlayerController(string nickname)
         {
-            if(PlayerControllers.ContainsKey(nickname))
-                return PlayerControllers[nickname];
-            return null;
+            PlayerControllers.TryGetValue(nickname, out var value);
+            return value;
         }
 
         public void UnloadPlayerController(string nickname)
         {
-            EntityAbstraction playerController = PlayerControllers[nickname];
-            PlayerControllers.Remove(nickname);
-            EntityControllers.Remove(playerController.uID);
-            playerController.UnloadEntityInstant();
+            if (PlayerControllers.TryGetValue(nickname, out var value))
+            {
+                EntityAbstraction playerController = value;
+                PlayerControllers.Remove(nickname);
+                EntityControllers.Remove(playerController.uID);
+                playerController.UnloadEntityInstant();
+            }
+            else throw new InvalidOperationException($"Controller of player {nickname} is not loaded!");
         }
 
         public List<EntityAbstraction> GetAllPlayerControllers()
@@ -232,6 +231,11 @@ namespace Larnix.Server.Entities
                 EntityAbstraction entityController = new(kvp.Value, kvp.Key);
                 EntityControllers.Add(entityController.uID, entityController);
             }
+        }
+
+        public bool IsEntityLoaded(ulong uid)
+        {
+            return EntityControllers.ContainsKey(uid);
         }
 
         public void KillEntity(ulong uid)
@@ -262,11 +266,11 @@ namespace Larnix.Server.Entities
         private void UnloadEntity(ulong uid)
         {
             if (!EntityControllers.ContainsKey(uid))
-                throw new System.InvalidOperationException("Entity with ID " + uid + " is not loaded!");
+                throw new InvalidOperationException("Entity with ID " + uid + " is not loaded!");
 
             EntityAbstraction entityController = EntityControllers[uid];
             if (entityController.EntityData.ID == EntityID.Player)
-                throw new System.InvalidOperationException("Cannot unload player this way!");
+                throw new InvalidOperationException("Cannot unload player this way!");
 
             EntityControllers[uid].UnloadEntityInstant();
             EntityControllers.Remove(uid);

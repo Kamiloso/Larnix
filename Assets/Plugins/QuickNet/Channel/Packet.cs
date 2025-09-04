@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using QuickNet.Processing;
@@ -21,7 +22,7 @@ namespace QuickNet.Channel
             Bytes = bytes ?? new byte[0];
         }
 
-        internal byte[] Serialize(Encryption.Settings encryption = null)
+        internal byte[] Serialize(Func<byte[], byte[]> encryption)
         {
             byte[] bytes = ArrayUtils.MegaConcat(
                 EndianUnsafe.GetBytes(ID),
@@ -30,13 +31,14 @@ namespace QuickNet.Channel
                 Bytes ?? new byte[0]
                 );
 
-            return encryption?.Encrypt(bytes) ?? bytes;
+            return encryption == null ?
+                bytes : encryption(bytes);
         }
 
-        internal bool TryDeserialize(byte[] bytes, Encryption.Settings decryption = null)
+        internal bool TryDeserialize(byte[] bytes, Func<byte[], byte[]> decryption)
         {
             if(decryption != null)
-                bytes = decryption.Decrypt(bytes);
+                bytes = decryption(bytes);
 
             if (bytes.Length < HEADER_SIZE)
                 return false;

@@ -7,6 +7,7 @@ using Larnix.Blocks;
 using Larnix.Packets;
 using Larnix.Server.Entities;
 using QuickNet.Channel;
+using Larnix.Core;
 
 namespace Larnix.Server.Terrain
 {
@@ -16,9 +17,10 @@ namespace Larnix.Server.Terrain
         public const float UNLOADING_TIME = 4f; // seconds
         public const float PLAYER_SENDING_PERIOD = 0.15f; // seconds
 
+        public WorldAPI WorldAPI { get; private set; } = null;
         private readonly Dictionary<Vector2Int, ChunkContainer> Chunks = new();
 
-        private static readonly BlockData[,] PreAllocatedChunkArray = new BlockData[16, 16];
+        private readonly BlockData2[,] PreAllocatedChunkArray = new BlockData2[16, 16];
 
         private class ChunkContainer
         {
@@ -37,12 +39,13 @@ namespace Larnix.Server.Terrain
         private void Awake()
         {
             References.ChunkLoading = this;
+            WorldAPI = new(this);
 
             if (PreAllocatedChunkArray[0, 0] == null) // pre-allocating chunk array
             {
                 for (int x = 0; x < 16; x++)
                     for (int y = 0; y < 16; y++)
-                        PreAllocatedChunkArray[x, y] = new BlockData();
+                        PreAllocatedChunkArray[x, y] = new BlockData2();
             }
         }
 

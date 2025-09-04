@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using Version = Larnix.Core.Version;
 
 namespace Larnix.Menu.Worlds
 {

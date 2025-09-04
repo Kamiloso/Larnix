@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Menu.Worlds;
 using TMPro;
+using Version = Larnix.Core.Version;
 
 namespace Larnix.Menu
 {
@@ -43,8 +44,6 @@ namespace Larnix.Menu
             {
                 GoBack();
             }
-
-            Larnix.Debug.FlushLogs(false);
         }
 
         public void SetScreen(string newScreen)

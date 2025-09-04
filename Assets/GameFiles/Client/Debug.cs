@@ -4,6 +4,7 @@ using TMPro;
 using UnityEngine;
 using System;
 using System.Linq;
+using UnityEngine.Profiling;
 
 namespace Larnix.Client
 {
@@ -70,6 +71,17 @@ namespace Larnix.Client
                 LastPing = (float)(Math.Round((References.Client.LarnixClient?.GetPing() ?? 0f) * 10f) / 10f);
             }
 
+            // Allocations
+
+            long used = Profiler.GetMonoUsedSizeLong();
+            long heap = Profiler.GetMonoHeapSizeLong();
+
+            float usedMB = used / (1024f * 1024f);
+            float heapMB = heap / (1024f * 1024f);
+            float percent = (heap > 0) ? (used / (float)heap) * 100f : 0f;
+
+            string allocations = $"{usedMB:F2} / {heapMB:F2} MB";
+
             // Coordinates text update (temporary)
 
             Vector2 playerPos = References.MainPlayer.GetPosition();
@@ -77,6 +89,7 @@ namespace Larnix.Client
             string debugText =
                 $"FPS: {LastFPS}\n" +
                 $"Ping: {LastPing} ms\n" +
+                $"Memory: {allocations}\n" +
                 $"X: {playerPos.x}\n" +
                 $"Y: {playerPos.y}\n";
 

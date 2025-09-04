@@ -1,18 +1,21 @@
 === Larnix TO-DO-LIST ===
 
-- Server into threaded class
-- World host system
-- Help relay server
+- Physics separate to Assembly
+- Enity system rework (block-like) to Assembly
+- Server into threaded class, hosting
+- QuickNet relay system
+- Resource packs
 
 - Better smooth
-- Client offset system
+- Physics rework to doubles
+- Client offset system + fix bug
 - NBT system: Internal / Visual
 - Inventory
 - Entity generation
 
 === KNOWN BUGS ===
 
-- Collisions work weirdly, sometimes allowing entities to go into colliders
+- Collisions work weirdly, sometimes allowing entities to go into colliders (only on far away coordinates for example 8000 tiles)
 
 <<< === Larnix DONE :) === >>>
 

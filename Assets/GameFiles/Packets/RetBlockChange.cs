@@ -15,12 +15,12 @@ namespace Larnix.Packets
             EndianUnsafe.FromBytes<int>(Bytes, 0),  // 4B
             EndianUnsafe.FromBytes<int>(Bytes, 4)); // 4B
         public long Operation => EndianUnsafe.FromBytes<long>(Bytes, 8); // 8B
-        public BlockData CurrentBlock => BlockData.Deserialize(Bytes, 16); // 5B
+        public BlockData2 CurrentBlock => BlockData2.Deserialize(Bytes, 16); // 5B
         public bool Front => (Bytes[21] & 0b01) != 0; // flag
         public bool Success => (Bytes[21] & 0b10) != 0; // flag
 
         public RetBlockChange() { }
-        public RetBlockChange(Vector2Int blockPosition, long operation, BlockData currentBlock, bool front, bool success, byte code = 0)
+        public RetBlockChange(Vector2Int blockPosition, long operation, BlockData2 currentBlock, bool front, bool success, byte code = 0)
         {
             InitializePayload(ArrayUtils.MegaConcat(
                 EndianUnsafe.GetBytes(blockPosition.x),

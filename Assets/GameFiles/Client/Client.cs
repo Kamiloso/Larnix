@@ -101,7 +101,7 @@ namespace Larnix.Client
                     var pack = delayedPackets.Dequeue();
                     LarnixClient.Send(pack.packet, pack.safemode);
                 }
-
+                
                 LarnixClient.ClientTick(Time.deltaTime);
 
                 if (LarnixClient.IsDead())
@@ -120,7 +120,7 @@ namespace Larnix.Client
 
             if (Input.GetKeyDown(KeyCode.R)) // temporary respawn using R
             {
-                if(!References.MainPlayer.gameObject.activeInHierarchy)
+                if (!References.MainPlayer.gameObject.activeInHierarchy)
                 {
                     Packet packet = new CodeInfo(CodeInfo.Info.RespawnMe);
                     Send(packet);
@@ -133,10 +133,6 @@ namespace Larnix.Client
             {
                 BackToMenu();
             }
-
-            // Flush logs
-
-            Larnix.Debug.FlushLogs(false);
         }
 
         public void BackToMenu()

@@ -1,0 +1,5 @@
+<linker>
+	<assembly fullname="Larnix.Worldgen">
+		<namespace fullname="Larnix.Worldgen.Biomes" preserve="all"/>
+	</assembly>
+</linker>

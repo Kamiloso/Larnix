@@ -1,4 +1,5 @@
 using Larnix;
+using Larnix.Blocks;
 using Larnix.Physics;
 using System;
 using System.Collections;
@@ -22,6 +23,14 @@ namespace Larnix.Physics
         public void MakeOffset(Vector2 POS)
         {
             Center += POS;
+        }
+
+        public static StaticCollider Create(IHasCollider iface)
+        {
+            return new StaticCollider(
+                new Vector2(iface.COLLIDER_OFFSET_X(), iface.COLLIDER_OFFSET_Y()),
+                new Vector2(iface.COLLIDER_WIDTH(), iface.COLLIDER_HEIGHT())
+                );
         }
     }
 }

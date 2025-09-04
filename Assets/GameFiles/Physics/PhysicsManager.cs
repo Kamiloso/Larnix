@@ -69,7 +69,7 @@ namespace Larnix.Physics
                 for (int i = 0; i < list.Count; i++)
                 {
                     StaticCollider statCollider = list[i];
-                    if(statCollider == null) continue; // removing inside list is expensive, so I'm nulling elements instead
+                    if(statCollider == null) continue; // removing inside list is expansive, so I'm nulling elements instead
 
                     PhysicsReport report = CalculateCollision(
                         startCenter: dynCollider.OldCenter ?? dynCollider.Center,

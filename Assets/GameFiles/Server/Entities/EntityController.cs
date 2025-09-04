@@ -38,14 +38,14 @@ namespace Larnix.Server.Entities
 
         public void ApplyTransform()
         {
-            EntityData entityData = EntityData.ShallowCopy();
+            EntityData entityData = EntityData.DeepCopy();
             entityData.Position = transform.position;
             UpdateEntityData(entityData);
         }
 
         public void UpdateRotation(float rotation)
         {
-            EntityData entityData = EntityData.ShallowCopy();
+            EntityData entityData = EntityData.DeepCopy();
             entityData.Rotation = rotation;
             UpdateEntityData(entityData);
         }

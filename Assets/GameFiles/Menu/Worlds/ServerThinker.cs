@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using QuickNet.Frontend;
 using QuickNet.Channel.Cmds;
+using Version = Larnix.Core.Version;
 
 namespace Larnix.Menu.Worlds
 {

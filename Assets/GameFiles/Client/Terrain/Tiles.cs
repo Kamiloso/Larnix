@@ -12,7 +12,7 @@ namespace Larnix.Client.Terrain
         private static readonly Dictionary<string, Tile> TileCache = new();
         private const int MAX_CACHE = 512;
 
-        public static Tile GetTile(SingleBlockData block, bool isFront)
+        public static Tile GetTile(BlockData1 block, bool isFront)
         {
             string string_id = TileStringID(block, isFront);
             
@@ -28,17 +28,17 @@ namespace Larnix.Client.Terrain
             return tile;
         }
 
-        public static Sprite GetSprite(SingleBlockData item, bool isFront)
+        public static Sprite GetSprite(BlockData1 item, bool isFront)
         {
             return GetTile(item, isFront).sprite;
         }
 
-        private static string TileStringID(SingleBlockData block, bool isFront)
+        private static string TileStringID(BlockData1 block, bool isFront)
         {
             return block.ID + ":" + block.Variant + ":" + isFront;
         }
 
-        private static Tile ConstructTile(SingleBlockData block, bool isFront)
+        private static Tile ConstructTile(BlockData1 block, bool isFront)
         {
             Texture2D texture = Resources.Load<Texture2D>("BlockTextures/" + block.ID.ToString() + "-" + block.Variant);
             if (texture != null)

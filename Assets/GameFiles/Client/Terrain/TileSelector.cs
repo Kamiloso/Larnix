@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 using System;
-using Larnix.Modules.Blocks;
 using System.Linq;
 
 namespace Larnix.Client.Terrain
@@ -87,12 +86,12 @@ namespace Larnix.Client.Terrain
             bool hold_2 = Input.GetMouseButton(2);
             bool shift = Input.GetKey(KeyCode.LeftShift);
 
-            SingleBlockData item = References.Inventory.GetHoldingItem();
+            BlockData1 item = References.Inventory.GetHoldingItem();
             bool is_tool = BlockFactory.HasInterface<ITool>(item.ID);
 
             Action HideSelector = () =>
             {
-                Tile tile = Tiles.GetTile(new SingleBlockData { }, true);
+                Tile tile = Tiles.GetTile(new BlockData1 { }, true);
                 Selector.sprite = tile.sprite;
             };
 

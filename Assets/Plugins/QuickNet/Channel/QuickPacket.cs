@@ -21,12 +21,14 @@ namespace QuickNet.Channel
 
         internal const int HEADER_SIZE = (2 + 2) + 4 + 4 + 1;
         internal const ushort PROTOCOL_VERSION = 2;
-        internal Encryption.Settings Encrypt = null;
 
         internal uint SeqNum { get; private set; } = 0;
         internal uint AckNum { get; private set; } = 0;
         internal byte Flags { get; private set; } = 0;
         internal Packet Packet { get; private set; } = null;
+
+        // encryption or decryption
+        internal Func<byte[], byte[]> Encryption = null;
 
         internal QuickPacket() { }
         internal QuickPacket(uint seqNum, uint ackNum, byte flags, Packet payload)
@@ -49,7 +51,7 @@ namespace QuickNet.Channel
                 EndianUnsafe.GetBytes(SeqNum),
                 EndianUnsafe.GetBytes(AckNum),
                 EndianUnsafe.GetBytes(Flags),
-                Packet?.Serialize(Encrypt) ?? new byte[0]
+                Packet?.Serialize(Encryption) ?? new byte[0]
                 );
 
             ushort checksum = BytesSum(bytes);
@@ -83,7 +85,7 @@ namespace QuickNet.Channel
             {
                 Packet = new Packet();
                 byte[] payload_bytes = bytes[HEADER_SIZE..];
-                if (!Packet.TryDeserialize(payload_bytes, Encrypt))
+                if (!Packet.TryDeserialize(payload_bytes, Encryption))
                     Packet = null;
             }
 

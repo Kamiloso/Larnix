@@ -28,6 +28,8 @@ namespace QuickNet.Backend
         public readonly long Secret;
         public readonly string Authcode;
 
+        public bool CanReceive { get; set; } = true;
+
         private bool InitializedMasks = false;
         internal int MaskIPv4 = 32;
         internal int MaskIPv6 = 56;
@@ -184,8 +186,8 @@ namespace QuickNet.Backend
                         throw;
                 }
 
-                if (bytes == null)
-                    continue;
+                if (bytes == null) continue;
+                if (!CanReceive) continue;
 
                 QuickPacket header = new QuickPacket();
                 if (header.TryDeserialize(bytes, true))
@@ -214,11 +216,11 @@ namespace QuickNet.Backend
                         {
                             // Deserialize with decryption and serialize without encryption
                             QuickPacket middlePacket = new QuickPacket();
-                            middlePacket.Encrypt = new Encryption.Settings(Encryption.Settings.Type.RSA, KeyRSA);
+                            middlePacket.Encryption = bytes => Encryption.DecryptRSA(bytes, KeyRSA);
                             if (!middlePacket.TryDeserialize(bytes))
                                 continue;
 
-                            middlePacket.Encrypt = null;
+                            middlePacket.Encryption = null;
                             bytes = middlePacket.Serialize();
                         }
                         else continue;

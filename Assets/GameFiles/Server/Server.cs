@@ -11,6 +11,7 @@ using QuickNet.Processing;
 using System.IO;
 using QuickNet.Channel;
 using QuickNet.Backend;
+using Version = Larnix.Core.Version;
 
 namespace Larnix.Server
 {
@@ -104,7 +105,7 @@ namespace Larnix.Server
                 password_ask:
                 {
                     Larnix.Debug.LogRawConsole("> ");
-                    Larnix.Debug.FlushLogs(!IsLocal);
+                    Larnix.Debug.FlushLogs(); // allowed temporarily
                     string input = Console.GetInputSync();
                     if (Validation.IsGoodPassword(input))
                     {
@@ -166,11 +167,6 @@ namespace Larnix.Server
             }
 
             Commands.ExecuteFrame();
-        }
-
-        private void Update()
-        {
-            Larnix.Debug.FlushLogs(!IsLocal);
         }
 
         private void LateUpdate()

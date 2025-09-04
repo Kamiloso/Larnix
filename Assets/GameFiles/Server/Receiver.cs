@@ -11,6 +11,8 @@ namespace Larnix.Server
 {
     public class Receiver
     {
+        private WorldAPI WorldAPI => References.ChunkLoading.WorldAPI;
+
         public Receiver(QuickNet.Backend.QuickServer server)
         {
             server.Subscribe<AllowConnection>(_AllowConnection);
@@ -71,13 +73,13 @@ namespace Larnix.Server
             {
                 bool has_item = true;
                 bool in_chunk = References.PlayerManager.PlayerHasChunk(owner, chunk);
-                bool can_place = WorldAPI.CanPlaceBlock(POS, msg.Item, front);
+                bool can_place = WorldAPI.CanPlaceBlock(POS, front, msg.Item);
 
                 bool success = has_item && in_chunk && can_place;
 
                 if (success)
                 {
-                    WorldAPI.PlaceBlockWithEffects(POS, msg.Item, front);
+                    WorldAPI.PlaceBlockWithEffects(POS, front, msg.Item);
                 }
 
                 References.BlockSender.AddRetBlockChange(owner, msg.Operation, POS, front, success);
@@ -87,13 +89,13 @@ namespace Larnix.Server
             {
                 bool has_tool = true;
                 bool in_chunk = References.PlayerManager.PlayerHasChunk(owner, chunk);
-                bool can_break = WorldAPI.CanBreakBlock(POS, msg.Item, msg.Tool, front);
+                bool can_break = WorldAPI.CanBreakBlock(POS, front, msg.Item, msg.Tool);
 
                 bool success = has_tool && in_chunk && can_break;
 
                 if (success)
                 {
-                    WorldAPI.BreakBlockWithEffects(POS, msg.Tool, front);
+                    WorldAPI.BreakBlockWithEffects(POS, front, msg.Tool);
                 }
 
                 References.BlockSender.AddRetBlockChange(owner, msg.Operation, POS, front, success);

@@ -5,7 +5,6 @@ using UnityEngine.Tilemaps;
 using Larnix.Blocks;
 using System.Linq;
 using System;
-using Larnix.Modules.Blocks;
 using Larnix.Physics;
 
 namespace Larnix.Client.Terrain
@@ -14,7 +13,7 @@ namespace Larnix.Client.Terrain
     {
         [SerializeField] ChunkedTilemap ChunkedTilemap;
 
-        private readonly Dictionary<Vector2Int, BlockData[,]> Chunks = new();
+        private readonly Dictionary<Vector2Int, BlockData2[,]> Chunks = new();
         private readonly HashSet<Vector2Int> DirtyChunks = new();
         private readonly HashSet<Vector2Int> VisibleChunks = new();
 
@@ -51,7 +50,7 @@ namespace Larnix.Client.Terrain
             RedrawGrid();
         }
 
-        public void AddChunk(Vector2Int chunk, BlockData[,] BlockArray, bool instantLoad = false)
+        public void AddChunk(Vector2Int chunk, BlockData2[,] BlockArray, bool instantLoad = false)
         {
             Chunks[chunk] = BlockArray;
             UpdateChunkColliders(chunk);
@@ -73,7 +72,7 @@ namespace Larnix.Client.Terrain
             UnlockChunk(chunk);
         }
 
-        public void UpdateBlock(Vector2Int POS, BlockData data, long? unlock = null)
+        public void UpdateBlock(Vector2Int POS, BlockData2 data, long? unlock = null)
         {
             Vector2Int chunk = ChunkMethods.CoordsToChunk(POS);
             Vector2Int pos = ChunkMethods.LocalBlockCoords(POS);
@@ -118,7 +117,7 @@ namespace Larnix.Client.Terrain
 
         private int ChunkDistance(Vector2Int chunk)
         {
-            return Common.ManhattanDistance(
+            return Core.Common.ManhattanDistance(
                 ChunkMethods.CoordsToChunk(!isMenu ? References.MainPlayer.GetPosition() : new Vector2(0f, 0f)),
                 chunk
                 );
@@ -141,7 +140,7 @@ namespace Larnix.Client.Terrain
         /// <summary>
         /// Warning: Can be null if can't find a block!
         /// </summary>
-        public BlockData BlockDataAtPOS(Vector2Int POS)
+        public BlockData2 BlockDataAtPOS(Vector2Int POS)
         {
             Vector2Int chunk = ChunkMethods.CoordsToChunk(POS);
             if (!Chunks.ContainsKey(chunk))
@@ -151,18 +150,18 @@ namespace Larnix.Client.Terrain
             return Chunks[chunk][pos.x, pos.y];
         }
 
-        public long PlaceBlockClient(Vector2Int POS, SingleBlockData block, bool front)
+        public long PlaceBlockClient(Vector2Int POS, BlockData1 block, bool front)
         {
-            BlockData oldblock = BlockDataAtPOS(POS);
+            BlockData2 oldblock = BlockDataAtPOS(POS);
             if (oldblock == null)
                 throw new InvalidOperationException($"Cannot place block at {POS}");
 
             Vector2Int chunk = ChunkMethods.CoordsToChunk(POS);
             Vector2Int pos = ChunkMethods.LocalBlockCoords(POS);
 
-            BlockData blockdata = new BlockData(
-                front ? block : oldblock.Front.ShallowCopy(),
-                front ? oldblock.Back.ShallowCopy() : block
+            BlockData2 blockdata = new BlockData2(
+                front ? block : oldblock.Front.DeepCopy(),
+                front ? oldblock.Back.DeepCopy() : block
                 );
 
             ChangeBlockData(POS, blockdata);
@@ -172,16 +171,16 @@ namespace Larnix.Client.Terrain
 
         public long BreakBlockClient(Vector2Int POS, bool front)
         {
-            BlockData oldblock = BlockDataAtPOS(POS);
+            BlockData2 oldblock = BlockDataAtPOS(POS);
             if (oldblock == null)
                 throw new InvalidOperationException($"Cannot break block at {POS}");
 
             Vector2Int chunk = ChunkMethods.CoordsToChunk(POS);
             Vector2Int pos = ChunkMethods.LocalBlockCoords(POS);
 
-            BlockData blockdata = new BlockData(
-                front ? new SingleBlockData { } : oldblock.Front.ShallowCopy(),
-                front ? oldblock.Back.ShallowCopy() : new SingleBlockData { }
+            BlockData2 blockdata = new BlockData2(
+                front ? new BlockData1 { } : oldblock.Front.DeepCopy(),
+                front ? oldblock.Back.DeepCopy() : new BlockData1 { }
                 );
 
             ChangeBlockData(POS, blockdata);
@@ -189,7 +188,7 @@ namespace Larnix.Client.Terrain
             return operation;
         }
 
-        private void ChangeBlockData(Vector2Int POS, BlockData block)
+        private void ChangeBlockData(Vector2Int POS, BlockData2 block)
         {
             Vector2Int chunk = ChunkMethods.CoordsToChunk(POS);
             Vector2Int pos = ChunkMethods.LocalBlockCoords(POS);
@@ -199,7 +198,7 @@ namespace Larnix.Client.Terrain
             UpdateBlockCollider(POS, block);
         }
 
-        private void RedrawTileChecked(Vector2Int chunk, Vector2Int pos, BlockData block)
+        private void RedrawTileChecked(Vector2Int chunk, Vector2Int pos, BlockData2 block)
         {
             if(VisibleChunks.Contains(chunk))
                 ChunkedTilemap.RedrawExistingTile(chunk, pos, block);
@@ -207,7 +206,7 @@ namespace Larnix.Client.Terrain
 
         private void UpdateChunkColliders(Vector2Int chunk)
         {
-            if (!Chunks.TryGetValue(chunk, out BlockData[,] chunkBlocks))
+            if (!Chunks.TryGetValue(chunk, out BlockData2[,] chunkBlocks))
                 chunkBlocks = null;
 
             for (int x = 0; x < 16; x++)
@@ -220,7 +219,7 @@ namespace Larnix.Client.Terrain
             if(!isMenu) References.PhysicsManager.SetChunkActive(chunk, chunkBlocks != null);
         }
 
-        private void UpdateBlockCollider(Vector2Int POS, BlockData block)
+        private void UpdateBlockCollider(Vector2Int POS, BlockData2 block)
         {
             if (BlockColliders.TryGetValue(POS, out var statCollider))
             {
@@ -233,7 +232,7 @@ namespace Larnix.Client.Terrain
                 IHasCollider iface = BlockFactory.GetSlaveInstance<IHasCollider>(block.Front.ID);
                 if (iface != null)
                 {
-                    StaticCollider statCol = iface.STATIC_CreateStaticCollider(block.Front.Variant);
+                    StaticCollider statCol = StaticCollider.Create(iface);
                     statCol.MakeOffset(POS);
 
                     if(!isMenu) References.PhysicsManager.AddCollider(statCol);
@@ -249,7 +248,7 @@ namespace Larnix.Client.Terrain
 
         private long LockBlock(Vector2Int POS)
         {
-            System.Random Rand = Common.Rand();
+            System.Random Rand = Core.Common.Rand();
             long operation = ((long)Rand.Next(int.MinValue, int.MaxValue) << 32) | (uint)Rand.Next(int.MinValue, int.MaxValue);
             LockedBlocks.Add(new BlockLock
             {

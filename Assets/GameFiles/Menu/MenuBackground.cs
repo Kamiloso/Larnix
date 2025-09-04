@@ -1,9 +1,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Larnix.Server.Worldgen;
+using Larnix.Worldgen;
 using Larnix.Client.Terrain;
 using Larnix.Blocks;
+using Larnix.Core;
 
 namespace Larnix.Menu
 {

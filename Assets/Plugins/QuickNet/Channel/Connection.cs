@@ -7,6 +7,7 @@ using System.Security.Cryptography;
 using System.Threading.Tasks;
 using QuickNet.Processing;
 using QuickNet.Channel.Cmds;
+using System;
 
 namespace QuickNet.Channel
 {
@@ -16,6 +17,7 @@ namespace QuickNet.Channel
         public IPEndPoint EndPoint { get; private set; } = null;
 
         private byte[] KeyAES = null;
+        private RSA KeyRSA = null;
 
         private uint SeqNum = 0; // last sent message ID
         private uint AckNum = 0; // last acknowledged message ID
@@ -60,11 +62,8 @@ namespace QuickNet.Channel
         {
             Udp = udp;
             EndPoint = endPoint;
-
-            if (keyAES != null && keyAES.Length == 16)
-                KeyAES = keyAES;
-            else
-                throw new System.Exception("Wrong AES key format.");
+            KeyRSA = keyPublicRSA;
+            KeyAES = keyAES?.Length == 16 ? keyAES : throw new System.ArgumentException("Wrong keyAES format!");
 
             IsClient = synPacket != null;
 
@@ -72,12 +71,8 @@ namespace QuickNet.Channel
             {
                 // Send SYN packet
                 PacketFlag flags = PacketFlag.SYN;
-                Encryption.Settings encrypt = null;
                 if(keyPublicRSA != null)
-                {
-                    flags |= PacketFlag.RSA;
-                    encrypt = new Encryption.Settings(Encryption.Settings.Type.RSA, keyPublicRSA);
-                }
+                    flags |= PacketFlag.RSA; // guarantees encryption
 
                 QuickPacket safePacket = new QuickPacket(
                     ++SeqNum,
@@ -85,7 +80,6 @@ namespace QuickNet.Channel
                     (byte)flags,
                     synPacket
                     );
-                safePacket.Encrypt = encrypt;
 
                 SendSafePacket(safePacket);
             }
@@ -221,7 +215,7 @@ namespace QuickNet.Channel
 
             QuickPacket safePacket = new QuickPacket();
             if (!hasSYN)
-                safePacket.Encrypt = new Encryption.Settings(Encryption.Settings.Type.AES, KeyAES);
+                safePacket.Encryption = bytes => Encryption.DecryptAES(bytes, KeyAES);
 
             if (!safePacket.TryDeserialize(bytes))
                 return;
@@ -305,15 +299,23 @@ namespace QuickNet.Channel
         private void Transmit(QuickPacket safePacket)
         {
             if (!safePacket.HasFlag(PacketFlag.SYN))
-                safePacket.Encrypt = new Encryption.Settings(Encryption.Settings.Type.AES, KeyAES);
+            {
+                safePacket.Encryption = bytes => Encryption.EncryptAES(bytes, KeyAES);
+            }
             else
             {
                 if (safePacket.HasFlag(PacketFlag.RSA))
+                {
+                    safePacket.Encryption = bytes => Encryption.EncryptRSA(bytes, KeyRSA);
                     Debug.Log("Transmiting RSA-encrypted SYN.");
-                else if (IPAddress.IsLoopback(EndPoint.Address))
-                    Debug.LogWarning("Transmiting unencrypted SYN to localhost.");
+                }
                 else
-                    Debug.LogWarning("Transmiting unencrypted SYN!");
+                {
+                    if (IPAddress.IsLoopback(EndPoint.Address))
+                        Debug.LogWarning("Transmiting unencrypted SYN to localhost.");
+                    else
+                        Debug.LogWarning("Transmiting unencrypted SYN!");
+                }
             }
 
             // Retransmission time reset

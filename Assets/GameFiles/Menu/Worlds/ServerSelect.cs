@@ -10,6 +10,7 @@ using TMPro;
 using Unity.VisualScripting;
 using QuickNet;
 using Larnix.Menu.Forms;
+using Version = Larnix.Core.Version;
 
 namespace Larnix.Menu.Worlds
 {

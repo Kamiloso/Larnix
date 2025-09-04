@@ -8,56 +8,6 @@ namespace QuickNet.Processing
 {
     internal static class Encryption
     {
-        internal class Settings
-        {
-            internal enum Type : byte { AES, RSA };
-            internal Type type { get; set; }
-            internal byte[] key { get; set; }
-            internal RSA rsa { get; set; }
-
-            internal Settings(Type _type, byte[] _key)
-            {
-                type = _type;
-                key = _key;
-
-                if (type == Type.AES)
-                {
-                    if (key.Length != 16)
-                        throw new Exception("AES key must have length 16.");
-                }
-                else throw new Exception("Wrong constructor was used to create Encryption.Settings class.");
-            }
-
-            internal Settings(Type _type, RSA _rsa)
-            {
-                type = _type;
-                rsa = _rsa;
-
-                if (type != Type.RSA)
-                    throw new Exception("Wrong constructor was used to create Encryption.Settings class.");
-            }
-
-            internal byte[] Encrypt(byte[] bytes)
-            {
-                switch(type)
-                {
-                    case Type.AES: return EncryptAES(bytes, key);
-                    case Type.RSA: return EncryptRSA(bytes, rsa);
-                    default: throw new Exception("Not implemented encryption.");
-                }
-            }
-
-            internal byte[] Decrypt(byte[] bytes)
-            {
-                switch (type)
-                {
-                    case Type.AES: return DecryptAES(bytes, key);
-                    case Type.RSA: return DecryptRSA(bytes, rsa);
-                    default: throw new Exception("Not implemented decryption.");
-                }
-            }
-        }
-
         internal static byte[] EncryptAES(byte[] bytes, byte[] key)
         {
             if (key.Length != 16)

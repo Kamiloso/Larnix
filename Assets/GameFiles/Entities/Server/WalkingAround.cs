@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Server.Entities;
 using Larnix.Physics;
+using Larnix.Core;
 
 namespace Larnix.Entities.Server
 {

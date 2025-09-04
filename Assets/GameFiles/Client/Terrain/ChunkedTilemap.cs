@@ -13,7 +13,7 @@ namespace Larnix.Client.Terrain
 
         private readonly Dictionary<Vector2Int, (Tilemap Front, Tilemap Back)> TileChunks = new();
 
-        public void RedrawChunk(Vector2Int chunk, BlockData[,] blocks)
+        public void RedrawChunk(Vector2Int chunk, BlockData2[,] blocks)
         {
             PrepareChunk(chunk, blocks != null);
 
@@ -32,7 +32,7 @@ namespace Larnix.Client.Terrain
                 }
         }
 
-        public void RedrawExistingTile(Vector2Int chunk, Vector2Int pos, BlockData block)
+        public void RedrawExistingTile(Vector2Int chunk, Vector2Int pos, BlockData2 block)
         {
             Tilemap Front = TileChunks[chunk].Front;
             Tilemap Back = TileChunks[chunk].Back;
