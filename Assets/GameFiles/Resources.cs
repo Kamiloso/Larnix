@@ -7,7 +7,7 @@ using System;
 
 namespace Larnix
 {
-    public static class Prefabs
+    public static class Resources
     {
         public enum Mode { Default, Server, Client }
         public static GameObject CreateEntity(EntityID entityID, Mode mode)
@@ -34,7 +34,7 @@ namespace Larnix
                 if(PrefabCache.Count >= MAX_CACHE)
                     PrefabCache.Clear();
 
-                prefab = Resources.Load<GameObject>(path);
+                prefab = UnityEngine.Resources.Load<GameObject>(path);
                 PrefabCache[path] = prefab;
             }
 

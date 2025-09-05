@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System;
-using UnityEngine.UIElements;
 
 namespace Larnix.Physics
 {
@@ -50,10 +49,10 @@ namespace Larnix.Physics
         public void Enable()
         {
             if (gameObject.scene.name == "Client")
-                physicsManager = Client.References.PhysicsManager;
+                physicsManager = Client.Ref.PhysicsManager;
 
             if (gameObject.scene.name == "Server")
-                physicsManager = Server.References.PhysicsManager;
+                physicsManager = Server.Ref.PhysicsManager;
 
             OldCenter = null;
             Center = (Vector2)transform.position;

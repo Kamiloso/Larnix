@@ -8,8 +8,9 @@ using Larnix.Physics;
 
 namespace Larnix.Client
 {
-    public static class References // CLIENT GLOBAL REFERENCES (set in Awake())
+    public static class Ref // CLIENT GLOBAL REFERENCES (set in Awake())
     {
+        // Mono Behaviours
         public static Client Client;
         public static MainPlayer MainPlayer;
         public static EntityProjections EntityProjections;
@@ -18,8 +19,10 @@ namespace Larnix.Client
         public static GridManager GridManager;
         public static TileSelector TileSelector;
         public static Inventory Inventory;
-        public static PhysicsManager PhysicsManager;
         public static Screenshots Screenshots;
         public static Debug Debug;
+
+        // Normal Classes
+        public static PhysicsManager PhysicsManager;
     }
 }

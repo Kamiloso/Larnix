@@ -13,7 +13,7 @@ namespace Larnix.Server.Terrain
             Chunks = chunkLoading;
         }
 
-        public uint FramesSinceServerStart() => References.Server.GetFixedFrame();
+        public uint FramesSinceServerStart() => Ref.Server.GetFixedFrame();
 
         public BlockServer GetBlock(Vector2Int POS, bool isFront)
         {

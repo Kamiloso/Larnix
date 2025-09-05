@@ -12,7 +12,7 @@ namespace Larnix.Server
 {
     public static class Commands
     {
-        private static WorldAPI WorldAPI => References.ChunkLoading.WorldAPI;
+        private static WorldAPI WorldAPI => Ref.ChunkLoading.WorldAPI;
 
         public enum CommandResultType
         {
@@ -98,7 +98,7 @@ namespace Larnix.Server
 
         private static (CommandResultType, string) Stop()
         {
-            References.Server.CloseServer();
+            Ref.Server.CloseServer();
             return (CommandResultType.Ignore, string.Empty);
         }
 
@@ -106,13 +106,13 @@ namespace Larnix.Server
         {
             StringBuilder sb = new();
             sb.Append("\n");
-            sb.Append($" | ------ PLAYER LIST [{References.Server.LarnixServer.CountPlayers()} / {References.Server.LarnixServer.MaxClients} ] ------\n");
+            sb.Append($" | ------ PLAYER LIST [{Ref.QuickServer.CountPlayers()} / {Ref.QuickServer.MaxClients} ] ------\n");
             sb.Append(" |\n");
 
-            foreach (string nickname in References.PlayerManager.PlayerUID.Keys)
+            foreach (string nickname in Ref.PlayerManager.PlayerUID.Keys)
             {
-                sb.Append($" | {nickname} from {References.Server.LarnixServer.GetClientEndPoint(nickname)}" +
-                          $" is {References.PlayerManager.GetPlayerState(nickname).ToString().ToUpper()}\n");
+                sb.Append($" | {nickname} from {Ref.QuickServer.GetClientEndPoint(nickname)}" +
+                          $" is {Ref.PlayerManager.GetPlayerState(nickname).ToString().ToUpper()}\n");
             }
 
             sb.Append("\n");
@@ -122,9 +122,9 @@ namespace Larnix.Server
 
         private static (CommandResultType, string) Kick(string nickname)
         {
-            if (References.PlayerManager.GetPlayerState(nickname) != PlayerManager.PlayerState.None)
+            if (Ref.PlayerManager.GetPlayerState(nickname) != PlayerManager.PlayerState.None)
             {
-                References.Server.Kick(nickname);
+                Ref.QuickServer.FinishConnection(nickname);
                 return (CommandResultType.Success, "Player " + nickname + " has been kicked.");
             }
             else
@@ -135,10 +135,10 @@ namespace Larnix.Server
 
         private static (CommandResultType, string) Kill(string nickname)
         {
-            if (References.PlayerManager.GetPlayerState(nickname) == PlayerManager.PlayerState.Alive)
+            if (Ref.PlayerManager.GetPlayerState(nickname) == PlayerManager.PlayerState.Alive)
             {
-                ulong uid = References.PlayerManager.PlayerUID[nickname];
-                References.EntityManager.KillEntity(uid);
+                ulong uid = Ref.PlayerManager.PlayerUID[nickname];
+                Ref.EntityManager.KillEntity(uid);
                 return (CommandResultType.Success, "Player " + nickname + " has been killed.");
             }
             else
@@ -155,7 +155,7 @@ namespace Larnix.Server
             {
                 if (float.TryParse(xs, out float x) && float.TryParse(ys, out float y))
                 {
-                    References.EntityManager.SummonEntity(new EntityData
+                    Ref.EntityManager.SummonEntity(new EntityData
                     {
                         ID = entityID,
                         Position = new Vector2(x, y)
@@ -205,7 +205,7 @@ namespace Larnix.Server
 
         private static (CommandResultType, string) Seed()
         {
-            long seed = References.Generator.Seed;
+            long seed = Ref.Generator.Seed;
             return (CommandResultType.Log, "Seed: " + seed);
         }
     }

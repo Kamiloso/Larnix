@@ -26,12 +26,12 @@ namespace Larnix.Server.Entities
 
         private void Awake()
         {
-            References.PlayerManager = this;
+            Ref.PlayerManager = this;
         }
 
         public void JoinPlayer(string nickname)
         {
-            ulong uid = (ulong)References.Server.LarnixServer.UserManager.GetUserID(nickname);
+            ulong uid = (ulong)Ref.QuickServer.UserManager.GetUserID(nickname);
             PlayerUID[nickname] = uid;
             NearbyUIDs[nickname] = new();
             ClientChunks[nickname] = new();
@@ -41,7 +41,7 @@ namespace Larnix.Server.Entities
 
         public void CreatePlayerInstance(string nickname)
         {
-            References.EntityManager.CreatePlayerController(nickname);
+            Ref.EntityManager.CreatePlayerController(nickname);
             
             // Set to PlayerState.Inactive
             if(RecentPlayerUpdates.ContainsKey(nickname))
@@ -50,7 +50,7 @@ namespace Larnix.Server.Entities
 
         public void UpdatePlayerDataIfHasController(string nickname, PlayerUpdate msg)
         {
-            EntityAbstraction playerController = References.EntityManager.GetPlayerController(nickname);
+            EntityAbstraction playerController = Ref.EntityManager.GetPlayerController(nickname);
             if (playerController != null) // Player is either PlayerState.Inactive or PlayerState.Alive
             {
                 // Activate controller if not active
@@ -70,8 +70,8 @@ namespace Larnix.Server.Entities
 
         public void DisconnectPlayer(string nickname)
         {
-            if(References.EntityManager.GetPlayerController(nickname) != null)
-                References.EntityManager.UnloadPlayerController(nickname);
+            if(Ref.EntityManager.GetPlayerController(nickname) != null)
+                Ref.EntityManager.UnloadPlayerController(nickname);
 
             PlayerUID.Remove(nickname);
 
@@ -100,14 +100,14 @@ namespace Larnix.Server.Entities
             {
                 foreach(Packet packet in packets)
                 {
-                    References.Server.Send(nickname, packet);
+                    Ref.QuickServer.Send(nickname, packet);
                 }
             }
             else
             {
                 if (sendAtLeastOne)
                 {
-                    References.Server.Send(nickname, new NearbyEntities(fixedFrame, null, null));
+                    Ref.QuickServer.Send(nickname, new NearbyEntities(fixedFrame, null, null));
                 }
             }
 
@@ -127,7 +127,7 @@ namespace Larnix.Server.Entities
             if (!RecentPlayerUpdates.ContainsKey(nickname))
                 return PlayerState.Inactive;
 
-            if (References.EntityManager.GetPlayerController(nickname) != null)
+            if (Ref.EntityManager.GetPlayerController(nickname) != null)
                 return PlayerState.Alive;
 
             return PlayerState.Dead;
@@ -152,7 +152,7 @@ namespace Larnix.Server.Entities
             {
                 case PlayerState.Inactive:
                 case PlayerState.Alive:
-                    return References.EntityManager.GetPlayerController(nickname).EntityData.Position;
+                    return Ref.EntityManager.GetPlayerController(nickname).EntityData.Position;
 
                 case PlayerState.Dead:
                     return RecentPlayerUpdates[nickname].Position;

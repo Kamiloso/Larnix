@@ -28,7 +28,7 @@ namespace Larnix.Client.UI
 
         private void LateUpdate()
         {
-            bool slotActive = SlotID == References.Inventory.SelectedSlot;
+            bool slotActive = SlotID == Ref.Inventory.SelectedSlot;
             if (Selected.activeSelf)
             {
                 if(!slotActive)
@@ -46,7 +46,7 @@ namespace Larnix.Client.UI
                 }
             }
 
-            Item item = References.Inventory.GetItemInSlot(SlotID);
+            Item item = Ref.Inventory.GetItemInSlot(SlotID);
             if(item.Count != 0)
             {
                 Image.sprite = Tiles.GetSprite(item.Block, true);

@@ -18,9 +18,9 @@ namespace Larnix.Server.Entities
 
         public static EntityController CreateRealEntityController(ulong uid, EntityData entityData, string nickname = null)
         {
-            GameObject gobj = Prefabs.CreateEntity(entityData.ID, Prefabs.Mode.Server);
+            GameObject gobj = Resources.CreateEntity(entityData.ID, Resources.Mode.Server);
             gobj.name = entityData.ID.ToString() + (nickname == null ? "" : $" ({nickname})") + " [" + uid + "]";
-            gobj.transform.SetParent(References.EntityDataManager.transform, false);
+            gobj.transform.SetParent(Ref.EntityDataManager.transform, false);
             EntityController controller = gobj.GetComponent<EntityController>();
 
             controller.uID = uid;
@@ -33,7 +33,7 @@ namespace Larnix.Server.Entities
         {
             EntityData = entityData;
             transform.position = entityData.Position;
-            References.EntityDataManager.SetEntityData(uID, entityData);
+            Ref.EntityDataManager.SetEntityData(uID, entityData);
         }
 
         public void ApplyTransform()

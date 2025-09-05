@@ -19,7 +19,6 @@ namespace Larnix.Server
     {
         private Locker Locker = null;
         private Receiver Receiver = null;
-        public QuickServer LarnixServer = null;
         public MetadataSGP? Mdata = null;
         public Config ServerConfig = null;
         public Database Database = null;
@@ -41,7 +40,9 @@ namespace Larnix.Server
             IsHost = WorldLoad.IsHost;
 
             EarlyUpdateInjector.InjectEarlyUpdate(this.EarlyUpdate);
-            References.Server = this;
+
+            Ref.Server = this;
+            Ref.PhysicsManager = new Physics.PhysicsManager();
 
             // world metadata
             Mdata = WorldSelect.ReadMetadataSGP(WorldLoad.WorldDirectory, true);
@@ -60,10 +61,10 @@ namespace Larnix.Server
             Database = new Database(WorldDir, "database.sqlite");
 
             // Generator (3.5)
-            References.Generator = new Worldgen.Generator(Database.GetSeed(WorldLoad.SeedSuggestion));
+            Ref.Generator = new Worldgen.Generator(Database.GetSeed(WorldLoad.SeedSuggestion));
 
             // SERVER --> 4
-            LarnixServer = new QuickServer(
+            Ref.QuickServer = new QuickServer(
                 IsHost ? ServerConfig.Port : (ushort)0,
                 ServerConfig.MaxPlayers,
                 !IsHost,
@@ -73,19 +74,19 @@ namespace Larnix.Server
                 Mdata?.nickname ?? "Player"
             );
 
-            LarnixServer.ConfigureMasks(
+            Ref.QuickServer.ConfigureMasks(
                 ServerConfig.ClientIdentityPrefixSizeIPv4,
                 ServerConfig.ClientIdentityPrefixSizeIPv6
                 );
 
             if (!IsLocal)
-                LarnixServer.ReserveNickname("Player");
+                Ref.QuickServer.ReserveNickname("Player");
 
-            Receiver = new Receiver(LarnixServer);
+            Receiver = new Receiver(Ref.QuickServer);
 
             // Configure for client
-            WorldLoad.Address = "localhost:" + LarnixServer.Port;
-            WorldLoad.Authcode = LarnixServer.Authcode;
+            WorldLoad.Address = "localhost:" + Ref.QuickServer.Port;
+            WorldLoad.Authcode = Ref.QuickServer.Authcode;
         }
 
         private void Start()
@@ -109,7 +110,7 @@ namespace Larnix.Server
                     string input = Console.GetInputSync();
                     if (Validation.IsGoodPassword(input))
                     {
-                        LarnixServer.UserManager.ChangePassword(sgpNickname, Hasher.HashPassword(input));
+                        Ref.QuickServer.UserManager.ChangePassword(sgpNickname, Hasher.HashPassword(input));
                         Mdata = new MetadataSGP(Version.Current, "Player");
                         WorldSelect.SaveMetadataSGP(WorldLoad.WorldDirectory, (MetadataSGP)Mdata, true);
                     }
@@ -125,8 +126,8 @@ namespace Larnix.Server
             }
 
             // socket information
-            Larnix.Debug.LogNoDate("Socket created on port " + LarnixServer.Port);
-            Larnix.Debug.LogNoDate("Authcode: " + LarnixServer.Authcode);
+            Larnix.Debug.LogNoDate("Socket created on port " + Ref.QuickServer.Port);
+            Larnix.Debug.LogNoDate("Authcode: " + Ref.QuickServer.Authcode);
             Larnix.Debug.LogRawConsole(new string('-', 60) + "\n");
 
             // additional initialization
@@ -143,25 +144,25 @@ namespace Larnix.Server
         {
             FixedFrame++;
 
-            References.ChunkLoading.FromFixedUpdate(); // FIX-1
-            References.EntityManager.FromFixedUpdate(); // FIX-2
+            Ref.ChunkLoading.FromFixedUpdate(); // FIX-1
+            Ref.EntityManager.FromFixedUpdate(); // FIX-2
         }
 
         private void EarlyUpdate() // Executes BEFORE default Update() time
         {
-            LarnixServer.ServerTick(Time.deltaTime);
+            Ref.QuickServer.ServerTick(Time.deltaTime);
 
-            References.ChunkLoading.FromEarlyUpdate(); // 1
-            References.EntityManager.FromEarlyUpdate(); // 2
+            Ref.ChunkLoading.FromEarlyUpdate(); // 1
+            Ref.EntityManager.FromEarlyUpdate(); // 2
 
-            if (IsLocal && Client.References.Debug.SpawnWildpigsWithZ) // WILDPIG TEST SPAWNING
+            if (IsLocal && Client.Ref.Debug.SpawnWildpigsWithZ) // WILDPIG TEST SPAWNING
             {
                 if (Input.GetKeyDown(KeyCode.Z))
                 {
-                    References.EntityManager.SummonEntity(new EntityData
+                    Ref.EntityManager.SummonEntity(new EntityData
                     {
                         ID = EntityID.Wildpig,
-                        Position = References.EntityManager.GetPlayerController(Mdata?.nickname).EntityData.Position,
+                        Position = Ref.EntityManager.GetPlayerController(Mdata?.nickname).EntityData.Position,
                     });
                 }
             }
@@ -171,13 +172,13 @@ namespace Larnix.Server
 
         private void LateUpdate()
         {
-            References.BlockSender.BroadcastInfo(); // must be in LateUpdate()
+            Ref.BlockSender.BroadcastInfo(); // must be in LateUpdate()
 
             broadcastCycleTimer += Time.deltaTime;
             if(ServerConfig.EntityBroadcastPeriod > 0f && broadcastCycleTimer > ServerConfig.EntityBroadcastPeriod)
             {
                 broadcastCycleTimer %= ServerConfig.EntityBroadcastPeriod;
-                References.EntityManager.SendEntityBroadcast(); // must be in LateUpdate()
+                Ref.EntityManager.SendEntityBroadcast(); // must be in LateUpdate()
             }
 
             saveCycleTimer += Time.deltaTime;
@@ -188,25 +189,11 @@ namespace Larnix.Server
             }
         }
 
-        public void Send(string nickname, Packet packet, bool safemode = true)
-        {
-            LarnixServer.Send(nickname, packet, safemode);
-        }
-
-        public void Broadcast(Packet packet, bool safemode = true)
-        {
-            LarnixServer.Broadcast(packet, safemode);
-        }
-
-        public void Kick(string nickname)
-        {
-            LarnixServer.FinishConnection(nickname);
-        }
-
         public void CloseServer()
         {
+            // when the main player is kicked he will return to menu and the local server will close
             if (!IsLocal) Application.Quit();
-            else Kick(Mdata?.nickname); // when the main player is kicked he will return to menu and the local server will close
+            else Ref.QuickServer.FinishConnection(Mdata?.nickname);
         }
 
         public void SaveAllNow()
@@ -214,8 +201,8 @@ namespace Larnix.Server
             Database.BeginTransaction();
             try
             {
-                References.EntityDataManager.FlushIntoDatabase();
-                References.BlockDataManager.FlushIntoDatabase();
+                Ref.EntityDataManager.FlushIntoDatabase();
+                Ref.BlockDataManager.FlushIntoDatabase();
                 Database.CommitTransaction();
             }
             catch
@@ -232,7 +219,7 @@ namespace Larnix.Server
             SaveAllNow();
 
             // 4 --> SERVER
-            LarnixServer?.Dispose();
+            Ref.QuickServer?.Dispose();
 
             // 3 ---> DATABASE
             Database?.Dispose();

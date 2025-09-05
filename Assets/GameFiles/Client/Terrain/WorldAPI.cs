@@ -13,8 +13,8 @@ namespace Larnix.Client.Terrain
     {
         public static bool CanBePlaced(Vector2Int POS, BlockData1 item, bool front)
         {
-            BlockData2 blockData = References.GridManager.BlockDataAtPOS(POS);
-            bool isLocked = References.GridManager.IsBlockLocked(POS);
+            BlockData2 blockData = Ref.GridManager.BlockDataAtPOS(POS);
+            bool isLocked = Ref.GridManager.IsBlockLocked(POS);
 
             if (blockData != null && !isLocked)
             {
@@ -32,8 +32,8 @@ namespace Larnix.Client.Terrain
 
         public static bool CanBeBroken(Vector2Int POS, BlockData1 tool, bool front)
         {
-            BlockData2 blockData = References.GridManager.BlockDataAtPOS(POS);
-            bool isLocked = References.GridManager.IsBlockLocked(POS);
+            BlockData2 blockData = Ref.GridManager.BlockDataAtPOS(POS);
+            bool isLocked = Ref.GridManager.IsBlockLocked(POS);
 
             if (blockData != null && !isLocked)
             {
@@ -51,22 +51,22 @@ namespace Larnix.Client.Terrain
 
         public static void PlaceBlock(Vector2Int POS, BlockData1 item, bool front)
         {
-            long operation = References.GridManager.PlaceBlockClient(POS, item, front);
+            long operation = Ref.GridManager.PlaceBlockClient(POS, item, front);
             SendBlockChange(POS, item, new(), front, operation, 0);
         }
 
         public static void BreakBlock(Vector2Int POS, BlockData1 tool, bool front)
         {
-            BlockData2 _oldblock = References.GridManager.BlockDataAtPOS(POS);
+            BlockData2 _oldblock = Ref.GridManager.BlockDataAtPOS(POS);
             BlockData1 oldblock = front ? _oldblock.Front : _oldblock.Back;
-            long operation = References.GridManager.BreakBlockClient(POS, front);
+            long operation = Ref.GridManager.BreakBlockClient(POS, front);
             SendBlockChange(POS, oldblock, tool, front, operation, 1);
         }
 
         private static void SendBlockChange(Vector2Int POS, BlockData1 item, BlockData1 tool, bool front, long operation, byte code)
         {
             Packet packet = new BlockChange(POS, item, tool, operation, front, code);
-            References.Client.Send(packet);
+            Ref.Client.Send(packet);
         }
     }
 }

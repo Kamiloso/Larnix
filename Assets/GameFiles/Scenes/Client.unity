@@ -331,6 +331,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6b3a8f676ce3cec49a1a05b8497a273c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  IsMultiplayer: 0
+  MyUID: 0
 --- !u!1 &336025968
 GameObject:
   m_ObjectHideFlags: 0
@@ -903,7 +905,6 @@ Transform:
   m_Children:
   - {fileID: 301008702}
   - {fileID: 699687009}
-  - {fileID: 978660080}
   - {fileID: 31173428}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -926,51 +927,6 @@ MonoBehaviour:
   NoiseDisplay: 1
   SpectatorMode: 0
   DebugF3: {fileID: 1592990795}
---- !u!1 &978660079
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 978660080}
-  - component: {fileID: 978660081}
-  m_Layer: 0
-  m_Name: Physics
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &978660080
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 978660079}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 968907755}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &978660081
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 978660079}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d0180c28654e0834892a05fe813bad49, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  TotalColliders: 0
 --- !u!1 &1038397504
 GameObject:
   m_ObjectHideFlags: 0

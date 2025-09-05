@@ -28,7 +28,7 @@ namespace Larnix.Client.Terrain
 
         private void Awake()
         {
-            References.TileSelector = this;
+            Ref.TileSelector = this;
         }
 
         private void OnApplicationFocus(bool hasFocus)
@@ -47,7 +47,7 @@ namespace Larnix.Client.Terrain
             Vector2 mouse_pos = Input.mousePosition;
             Vector2 cursor_pos = Camera.ScreenToWorldPoint(mouse_pos);
             Vector2? old_cursor_pos = old_mouse_pos != null ? Camera.ScreenToWorldPoint((Vector2)old_mouse_pos) : null;
-            Vector2 player_pos = References.MainPlayer.GetPosition();
+            Vector2 player_pos = Ref.MainPlayer.GetPosition();
 
             bool pointsRight = cursor_pos.x >= player_pos.x;
 
@@ -55,7 +55,7 @@ namespace Larnix.Client.Terrain
                 GetCellsIntersectedByLine((Vector2)old_cursor_pos, cursor_pos) :
                 new List<Vector2Int> { ChunkMethods.CoordsToBlock(cursor_pos) };
 
-            if (!References.Debug.SpectatorMode)
+            if (!Ref.Debug.SpectatorMode)
                 grids.RemoveAll(grid => Vector2.Distance(grid, player_pos) > INTERACTION_RANGE);
 
             if (active && isGameFocused && grids.Count > 0) // ENABLED CURSOR
@@ -86,7 +86,7 @@ namespace Larnix.Client.Terrain
             bool hold_2 = Input.GetMouseButton(2);
             bool shift = Input.GetKey(KeyCode.LeftShift);
 
-            BlockData1 item = References.Inventory.GetHoldingItem();
+            BlockData1 item = Ref.Inventory.GetHoldingItem();
             bool is_tool = BlockFactory.HasInterface<ITool>(item.ID);
 
             Action HideSelector = () =>

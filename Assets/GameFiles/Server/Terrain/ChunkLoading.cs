@@ -38,7 +38,7 @@ namespace Larnix.Server.Terrain
 
         private void Awake()
         {
-            References.ChunkLoading = this;
+            Ref.ChunkLoading = this;
             WorldAPI = new(this);
 
             if (PreAllocatedChunkArray[0, 0] == null) // pre-allocating chunk array
@@ -125,12 +125,12 @@ namespace Larnix.Server.Terrain
             {
                 // Updating player chunk data
 
-                foreach (string nickname in References.PlayerManager.PlayerUID.Keys)
+                foreach (string nickname in Ref.PlayerManager.PlayerUID.Keys)
                 {
-                    Vector2Int chunkpos = ChunkMethods.CoordsToChunk(References.PlayerManager.GetPlayerRenderingPosition(nickname));
-                    var player_state = References.PlayerManager.GetPlayerState(nickname);
+                    Vector2Int chunkpos = ChunkMethods.CoordsToChunk(Ref.PlayerManager.GetPlayerRenderingPosition(nickname));
+                    var player_state = Ref.PlayerManager.GetPlayerState(nickname);
 
-                    HashSet<Vector2Int> chunksMemory = References.PlayerManager.ClientChunks[nickname];
+                    HashSet<Vector2Int> chunksMemory = Ref.PlayerManager.ClientChunks[nickname];
                     HashSet<Vector2Int> chunksNearby = GetNearbyChunks(chunkpos, LOADING_DISTANCE).Where(c => ChunkState(c) == LoadState.Active).ToHashSet();
 
                     HashSet<Vector2Int> added = new(chunksNearby);
@@ -144,17 +144,17 @@ namespace Larnix.Server.Terrain
                     {
                         Chunks[chunk].Instance.MoveChunkIntoArray(PreAllocatedChunkArray);
                         Packet packet = new ChunkInfo(chunk, PreAllocatedChunkArray);
-                        References.Server.Send(nickname, packet);
+                        Ref.QuickServer.Send(nickname, packet);
                     }
 
                     // send removed
                     foreach (var chunk in removed)
                     {
                         Packet packet = new ChunkInfo(chunk, null);
-                        References.Server.Send(nickname, packet);
+                        Ref.QuickServer.Send(nickname, packet);
                     }
 
-                    References.PlayerManager.ClientChunks[nickname] = chunksNearby;
+                    Ref.PlayerManager.ClientChunks[nickname] = chunksNearby;
                 }
 
                 yield return new WaitForSeconds(PLAYER_SENDING_PERIOD);
@@ -218,7 +218,7 @@ namespace Larnix.Server.Terrain
                         UnloadTime = UNLOADING_TIME,
                         Instance = null
                     };
-                    References.EntityManager.LoadEntitiesByChunk(chunk); // passive load (without instance)
+                    Ref.EntityManager.LoadEntitiesByChunk(chunk); // passive load (without instance)
                     break;
 
                 case LoadState.Loading:
@@ -277,11 +277,11 @@ namespace Larnix.Server.Terrain
             {
                 int dist_min = int.MaxValue;
 
-                foreach(string nickname in References.PlayerManager.PlayerUID.Keys)
+                foreach(string nickname in Ref.PlayerManager.PlayerUID.Keys)
                 {
                     int dist = Common.ManhattanDistance(
                         chunk,
-                        ChunkMethods.CoordsToChunk(References.PlayerManager.GetPlayerRenderingPosition(nickname))
+                        ChunkMethods.CoordsToChunk(Ref.PlayerManager.GetPlayerRenderingPosition(nickname))
                         );
 
                     if (dist < dist_min)
@@ -300,8 +300,8 @@ namespace Larnix.Server.Terrain
             HashSet<Vector2Int> targetLoads = new();
 
             List<Vector2> positions = new();
-            foreach (string nickname in References.PlayerManager.PlayerUID.Keys)
-                positions.Add(References.PlayerManager.GetPlayerRenderingPosition(nickname));
+            foreach (string nickname in Ref.PlayerManager.PlayerUID.Keys)
+                positions.Add(Ref.PlayerManager.GetPlayerRenderingPosition(nickname));
 
             foreach (Vector2Int center in GetCenterChunks(positions))
             {

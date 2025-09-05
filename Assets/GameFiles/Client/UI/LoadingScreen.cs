@@ -21,7 +21,7 @@ namespace Larnix.Client.UI
 
         private void Awake()
         {
-            References.LoadingScreen = this;
+            Ref.LoadingScreen = this;
         }
 
         private void Start()

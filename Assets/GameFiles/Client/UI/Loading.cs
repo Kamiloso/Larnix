@@ -13,7 +13,7 @@ namespace Larnix.Client.UI
 
         private void Awake()
         {
-            References.Loading = this;
+            Ref.Loading = this;
         }
 
         private void Update()
@@ -27,7 +27,7 @@ namespace Larnix.Client.UI
 
         public void StartLoading(string info)
         {
-            References.LoadingScreen.Enable(info);
+            Ref.LoadingScreen.Enable(info);
         }
 
         public void StartWaitingFrom(uint fixFrame)
@@ -39,18 +39,18 @@ namespace Larnix.Client.UI
         private void EndLoading()
         {
             waiting = false;
-            References.LoadingScreen.Disable();
-            References.MainPlayer.SetAlive();
+            Ref.LoadingScreen.Disable();
+            Ref.MainPlayer.SetAlive();
         }
 
         private bool ReadyEntities()
         {
-            return References.EntityProjections.EverythingLoaded(FixFrame);
+            return Ref.EntityProjections.EverythingLoaded(FixFrame);
         }
 
         private bool ReadyChunks()
         {
-            return References.GridManager.LoadedAroundPlayer();
+            return Ref.GridManager.LoadedAroundPlayer();
         }
     }
 }

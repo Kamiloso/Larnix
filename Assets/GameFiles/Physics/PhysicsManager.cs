@@ -1,28 +1,15 @@
 using Larnix.Blocks;
 using System.Collections;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Linq;
-using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace Larnix.Physics
 {
-    public class PhysicsManager : MonoBehaviour
+    public class PhysicsManager
     {
         private readonly SpatialDictionary<StaticCollider> StaticColliders = new(3f);
         private readonly HashSet<Vector2Int> ActiveChunks = new();
         public int TotalColliders = 0;
-
-        private void Awake()
-        {
-            if (gameObject.scene.name == "Client")
-                Client.References.PhysicsManager = this;
-
-            if (gameObject.scene.name == "Server")
-                Server.References.PhysicsManager = this;
-        }
 
         public void SetChunkActive(Vector2Int chunk, bool active)
         {

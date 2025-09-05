@@ -33,7 +33,8 @@ namespace Larnix.Client
 
             EarlyUpdateInjector.InjectEarlyUpdate(this.EarlyUpdate);
 
-            References.Client = this;
+            Ref.Client = this;
+            Ref.PhysicsManager = new Physics.PhysicsManager();
 
             IsMultiplayer = WorldLoad.LoadType == WorldLoad.LoadTypes.Remote;
 
@@ -49,7 +50,7 @@ namespace Larnix.Client
 
         private void Start()
         {
-            References.Loading.StartLoading("Connecting...");
+            Ref.Loading.StartLoading("Connecting...");
         }
 
         // Server creation
@@ -111,7 +112,7 @@ namespace Larnix.Client
                 }
             }
 
-            References.EntityProjections.AfterBroadcasts();
+            Ref.EntityProjections.AfterBroadcasts();
         }
 
         private void Update()
@@ -120,12 +121,12 @@ namespace Larnix.Client
 
             if (Input.GetKeyDown(KeyCode.R)) // temporary respawn using R
             {
-                if (!References.MainPlayer.gameObject.activeInHierarchy)
+                if (!Ref.MainPlayer.gameObject.activeInHierarchy)
                 {
                     Packet packet = new CodeInfo(CodeInfo.Info.RespawnMe);
                     Send(packet);
 
-                    References.Loading.StartLoading("Respawning...");
+                    Ref.Loading.StartLoading("Respawning...");
                 }
             }
 
@@ -141,8 +142,8 @@ namespace Larnix.Client
 
             if (WorldLoad.LoadType != WorldLoad.LoadTypes.None && !IsMultiplayer)
             {
-                if (References.MainPlayer.IsAlive)
-                    References.Screenshots.CaptureTitleImage();
+                if (Ref.MainPlayer.IsAlive)
+                    Ref.Screenshots.CaptureTitleImage();
                 //else
                 //    References.Screenshots.RemoveTitleImage();
             }

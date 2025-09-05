@@ -13,14 +13,14 @@ namespace Larnix.Server.Terrain
 {
     public class BlockSender : MonoBehaviour
     {
-        private static WorldAPI WorldAPI => References.ChunkLoading.WorldAPI;
+        private static WorldAPI WorldAPI => Ref.ChunkLoading.WorldAPI;
 
         private readonly Queue<(Vector2Int block, BlockData2 data)> BlockUpdates = new();
         private readonly Queue<(string owner, long operation, Vector2Int POS, bool front, bool success)> BlockChanges = new();
 
         private void Awake()
         {
-            References.BlockSender = this;
+            Ref.BlockSender = this;
         }
 
         public void AddBlockUpdate((Vector2Int, BlockData2) element)
@@ -43,7 +43,7 @@ namespace Larnix.Server.Terrain
         {
             Dictionary<string, Queue<(Vector2Int block, BlockData2 data)>> IndividualUpdates = new();
 
-            foreach (string nickname in References.PlayerManager.PlayerUID.Keys)
+            foreach (string nickname in Ref.PlayerManager.PlayerUID.Keys)
             {
                 IndividualUpdates[nickname] = new();
             }
@@ -53,14 +53,14 @@ namespace Larnix.Server.Terrain
                 var element = BlockUpdates.Dequeue();
                 Vector2Int chunk = ChunkMethods.CoordsToChunk(element.block);
 
-                foreach (string nickname in References.PlayerManager.PlayerUID.Keys)
+                foreach (string nickname in Ref.PlayerManager.PlayerUID.Keys)
                 {
-                    if (References.PlayerManager.ClientChunks[nickname].Contains(chunk))
+                    if (Ref.PlayerManager.ClientChunks[nickname].Contains(chunk))
                         IndividualUpdates[nickname].Enqueue(element);
                 }
             }
 
-            foreach (string nickname in References.PlayerManager.PlayerUID.Keys)
+            foreach (string nickname in Ref.PlayerManager.PlayerUID.Keys)
             {
                 Queue<(Vector2Int block, BlockData2 data)> changes = IndividualUpdates[nickname];
                 BlockUpdate.Record[] records = changes.Select(ch => new BlockUpdate.Record
@@ -72,7 +72,7 @@ namespace Larnix.Server.Terrain
                 List<BlockUpdate> packets = BlockUpdate.CreateList(records);
                 foreach (Packet packet in packets)
                 {
-                    References.Server.Send(nickname, packet);
+                    Ref.QuickServer.Send(nickname, packet);
                 }
             }
         }
@@ -94,15 +94,15 @@ namespace Larnix.Server.Terrain
                 BlockServer blockBack = WorldAPI.GetBlock(POS, false);
 
                 if (
-                    References.PlayerManager.GetPlayerState(nickname) != Entities.PlayerManager.PlayerState.None &&
-                    References.PlayerManager.PlayerHasChunk(nickname, chunk) &&
+                    Ref.PlayerManager.GetPlayerState(nickname) != Entities.PlayerManager.PlayerState.None &&
+                    Ref.PlayerManager.PlayerHasChunk(nickname, chunk) &&
                     blockFront != null && blockBack != null
                     )
                 {
                     BlockData2 currentBlock = new BlockData2(blockFront.BlockData, blockBack.BlockData);
 
                     Packet packet = new RetBlockChange(POS, operation, currentBlock, front, success);
-                    References.Server.Send(nickname, packet);
+                    Ref.QuickServer.Send(nickname, packet);
                 }
             }
         }

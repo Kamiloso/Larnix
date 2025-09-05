@@ -32,7 +32,7 @@ namespace Larnix.Client.Entities
 
         private void Awake()
         {
-            References.EntityProjections = this;
+            Ref.EntityProjections = this;
         }
 
         public void ChangeNearbyUIDs(NearbyEntities msg)
@@ -52,7 +52,7 @@ namespace Larnix.Client.Entities
 
         public void InterpretEntityBroadcast(EntityBroadcast msg)
         {
-            if (References.Client.MyUID == 0) return; // drop, too early to display
+            if (Ref.Client.MyUID == 0) return; // drop, too early to display
 
             if (StartedFixed == null)
                 StartedFixed = msg.PacketFixedIndex;
@@ -68,7 +68,7 @@ namespace Larnix.Client.Entities
                 ulong uid = kvp.Key;
                 EntityData entity = kvp.Value;
 
-                if (uid == References.Client.MyUID || !NearbyUIDs.Contains(uid))
+                if (uid == Ref.Client.MyUID || !NearbyUIDs.Contains(uid))
                     continue;
 
                 double time_fixed = (double)(RelativeFixedFrame * Time.fixedDeltaTime);
@@ -163,7 +163,7 @@ namespace Larnix.Client.Entities
 
         private EntityProjection CreateProjection(ulong uid, EntityData entityData, double time)
         {
-            GameObject gobj = Prefabs.CreateEntity(entityData.ID, Prefabs.Mode.Client);
+            GameObject gobj = Resources.CreateEntity(entityData.ID, Resources.Mode.Client);
             gobj.transform.SetParent(transform, false);
             gobj.transform.name = entityData.ID.ToString() + " [" + uid + "]";
             EntityProjection projection = gobj.GetComponent<EntityProjection>();

@@ -21,7 +21,7 @@ namespace Larnix.Client.UI
 
         private void Awake()
         {
-            References.Inventory = this;
+            Ref.Inventory = this;
         }
 
         private void Update()
@@ -56,7 +56,7 @@ namespace Larnix.Client.UI
                 VariantsInSlots[SelectedSlot] += (byte)deltaVariant;
             }
 
-            References.TileSelector.FromInventoryUpdate();
+            Ref.TileSelector.FromInventoryUpdate();
         }
 
         public BlockData1 GetHoldingItem()

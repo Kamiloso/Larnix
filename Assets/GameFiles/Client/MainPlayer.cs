@@ -34,7 +34,7 @@ namespace Larnix.Client
 
         private void Awake()
         {
-            References.MainPlayer = this;
+            Ref.MainPlayer = this;
             transform.parent.gameObject.SetActive(false);
         }
 
@@ -42,7 +42,7 @@ namespace Larnix.Client
         {
             FixedCounter++;
 
-            if (!References.Debug.SpectatorMode)
+            if (!Ref.Debug.SpectatorMode)
             {
                 DynamicCollider.PhysicsUpdate(new InputData
                 {
@@ -84,7 +84,7 @@ namespace Larnix.Client
             if(LastSentFixedCounter != FixedCounter)
             {
                 Packet packet = new PlayerUpdate(transform.position, Rotation, FixedCounter);
-                References.Client.Send(packet, false); // fast mode (over raw udp)
+                Ref.Client.Send(packet, false); // fast mode (over raw udp)
 
                 LastSentFixedCounter = FixedCounter;
             }
@@ -109,7 +109,7 @@ namespace Larnix.Client
             
             Vector2 plr = EntityProjection.transform.position;
             Camera.transform.position = new Vector3(plr.x, plr.y, Camera.transform.position.z) + (Vector3)CameraDeltaPosition;
-            Camera.orthographicSize = CameraZoom + (References.Debug.SpectatorMode ? 10f : 0f);
+            Camera.orthographicSize = CameraZoom + (Ref.Debug.SpectatorMode ? 10f : 0f);
         }
 
         private void RotationUpdate()
@@ -149,7 +149,7 @@ namespace Larnix.Client
                 throw new System.InvalidOperationException("Player is already alive!");
 
             transform.parent.gameObject.SetActive(true);
-            References.TileSelector.Enable();
+            Ref.TileSelector.Enable();
 
             DynamicCollider.Enable();
 
@@ -163,7 +163,7 @@ namespace Larnix.Client
                 throw new System.InvalidOperationException("Player is already dead!");
 
             transform.parent.gameObject.SetActive(false);
-            References.TileSelector.Disable();
+            Ref.TileSelector.Disable();
 
             DynamicCollider.Disable();
 

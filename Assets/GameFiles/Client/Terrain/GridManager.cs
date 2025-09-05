@@ -34,7 +34,7 @@ namespace Larnix.Client.Terrain
         private void Awake()
         {
             isMenu = gameObject.scene.name == "Menu";
-            if(!isMenu) References.GridManager = this;
+            if(!isMenu) Ref.GridManager = this;
         }
 
         private void Update()
@@ -118,7 +118,7 @@ namespace Larnix.Client.Terrain
         private int ChunkDistance(Vector2Int chunk)
         {
             return Core.Common.ManhattanDistance(
-                ChunkMethods.CoordsToChunk(!isMenu ? References.MainPlayer.GetPosition() : new Vector2(0f, 0f)),
+                ChunkMethods.CoordsToChunk(!isMenu ? Ref.MainPlayer.GetPosition() : new Vector2(0f, 0f)),
                 chunk
                 );
         }
@@ -129,7 +129,7 @@ namespace Larnix.Client.Terrain
                 return false;
 
             HashSet<Vector2Int> nearbyChunks = Server.Terrain.ChunkLoading.GetNearbyChunks(
-                ChunkMethods.CoordsToChunk(References.MainPlayer.GetPosition()),
+                ChunkMethods.CoordsToChunk(Ref.MainPlayer.GetPosition()),
                 Server.Terrain.ChunkLoading.LOADING_DISTANCE
                 );
 
@@ -216,14 +216,14 @@ namespace Larnix.Client.Terrain
                     UpdateBlockCollider(POS, chunkBlocks != null ? chunkBlocks[x, y] : null);
                 }
 
-            if(!isMenu) References.PhysicsManager.SetChunkActive(chunk, chunkBlocks != null);
+            if(!isMenu) Ref.PhysicsManager.SetChunkActive(chunk, chunkBlocks != null);
         }
 
         private void UpdateBlockCollider(Vector2Int POS, BlockData2 block)
         {
             if (BlockColliders.TryGetValue(POS, out var statCollider))
             {
-                if(!isMenu) References.PhysicsManager.RemoveColliderByReference(statCollider);
+                if(!isMenu) Ref.PhysicsManager.RemoveColliderByReference(statCollider);
                 BlockColliders.Remove(POS);
             }
 
@@ -235,7 +235,7 @@ namespace Larnix.Client.Terrain
                     StaticCollider statCol = StaticCollider.Create(iface);
                     statCol.MakeOffset(POS);
 
-                    if(!isMenu) References.PhysicsManager.AddCollider(statCol);
+                    if(!isMenu) Ref.PhysicsManager.AddCollider(statCol);
                     BlockColliders.Add(POS, statCol);
                 }
             }

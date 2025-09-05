@@ -14,12 +14,12 @@ namespace Larnix.Server.Terrain
 
         private bool DebugUnlinkDatabase
         {
-            get => Client.References.Debug != null && Client.References.Debug.UnlinkTerrainData;
+            get => Client.Ref.Debug != null && Client.Ref.Debug.UnlinkTerrainData;
         }
 
         private void Awake()
         {
-            References.BlockDataManager = this;
+            Ref.BlockDataManager = this;
         }
 
         /// <summary>
@@ -37,7 +37,7 @@ namespace Larnix.Server.Terrain
             {
                 return ChunkCache[chunk];
             }
-            else if(!DebugUnlinkDatabase && References.Server.Database.TryGetChunk(chunk.x, chunk.y, out byte[] bytes)) // Get from database
+            else if(!DebugUnlinkDatabase && Ref.Server.Database.TryGetChunk(chunk.x, chunk.y, out byte[] bytes)) // Get from database
             {
                 //BlockData2[,] blocks = BytesToChunk(bytes);
                 BlockData2[,] blocks = ChunkMethods.DeserializeChunk(bytes);
@@ -46,7 +46,7 @@ namespace Larnix.Server.Terrain
             }
             else // Generate a new chunk
             {
-                BlockData2[,] blocks = References.Generator.GenerateChunk(chunk);
+                BlockData2[,] blocks = Ref.Generator.GenerateChunk(chunk);
                 ChunkCache[chunk] = blocks;
                 return blocks;
             }
@@ -73,7 +73,7 @@ namespace Larnix.Server.Terrain
                 // Flush data
 
                 byte[] bytes = ChunkMethods.SerializeChunk(data);
-                References.Server.Database.SetChunk(chunk.x, chunk.y, bytes);
+                Ref.Server.Database.SetChunk(chunk.x, chunk.y, bytes);
 
                 // Remove disabled chunks from cache
 

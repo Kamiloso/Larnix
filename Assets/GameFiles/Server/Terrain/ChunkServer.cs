@@ -10,7 +10,7 @@ namespace Larnix.Server.Terrain
 {
     public class ChunkServer : IDisposable
     {
-        private WorldAPI WorldAPI => References.ChunkLoading.WorldAPI;
+        private WorldAPI WorldAPI => Ref.ChunkLoading.WorldAPI;
 
         public Vector2Int Chunkpos { get; private set; }
         private readonly BlockServer[,] BlocksFront = new BlockServer[16, 16];
@@ -22,7 +22,7 @@ namespace Larnix.Server.Terrain
         public ChunkServer(Vector2Int chunkpos)
         {
             Chunkpos = chunkpos;
-            ActiveChunkReference = References.BlockDataManager.GetChunkReference(Chunkpos);
+            ActiveChunkReference = Ref.BlockDataManager.GetChunkReference(Chunkpos);
 
             for (int x = 0; x < 16; x++)
                 for (int y = 0; y < 16; y++)
@@ -30,7 +30,7 @@ namespace Larnix.Server.Terrain
                     CreateBlock(new Vector2Int(x, y), ActiveChunkReference[x, y]);
                 }
 
-            References.PhysicsManager.SetChunkActive(Chunkpos, true);
+            Ref.PhysicsManager.SetChunkActive(Chunkpos, true);
         }
 
         public void PreExecuteFrame() // 1.
@@ -118,7 +118,7 @@ namespace Larnix.Server.Terrain
                 !BlockData1.BaseEquals(oldDataFront, newDataFront)
                 )
             {
-                References.BlockSender.AddBlockUpdate((
+                Ref.BlockSender.AddBlockUpdate((
                     ChunkMethods.GlobalBlockCoords(Chunkpos, pos),
                     new BlockData2(newDataFront, newDataBack)
                     ));
@@ -163,7 +163,7 @@ namespace Larnix.Server.Terrain
         {
             if(StaticColliders.TryGetValue(pos, out var statCollider))
             {
-                References.PhysicsManager.RemoveColliderByReference(statCollider);
+                Ref.PhysicsManager.RemoveColliderByReference(statCollider);
                 StaticColliders.Remove(pos);
             }
 
@@ -174,7 +174,7 @@ namespace Larnix.Server.Terrain
                 StaticCollider staticCollider = StaticCollider.Create(iface);
                 staticCollider.MakeOffset(ChunkMethods.GlobalBlockCoords(Chunkpos, pos));
                 StaticColliders[pos] = staticCollider;
-                References.PhysicsManager.AddCollider(staticCollider);
+                Ref.PhysicsManager.AddCollider(staticCollider);
             }
         }
 
@@ -205,11 +205,11 @@ namespace Larnix.Server.Terrain
         {
             foreach(StaticCollider staticCollider in StaticColliders.Values)
             {
-                References.PhysicsManager.RemoveColliderByReference(staticCollider);
+                Ref.PhysicsManager.RemoveColliderByReference(staticCollider);
             }
 
-            References.PhysicsManager.SetChunkActive(Chunkpos, false);
-            References.BlockDataManager.DisableChunkReference(Chunkpos);
+            Ref.PhysicsManager.SetChunkActive(Chunkpos, false);
+            Ref.BlockDataManager.DisableChunkReference(Chunkpos);
         }
     }
 }

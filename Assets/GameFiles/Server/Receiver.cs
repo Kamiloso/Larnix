@@ -11,7 +11,7 @@ namespace Larnix.Server
 {
     public class Receiver
     {
-        private WorldAPI WorldAPI => References.ChunkLoading.WorldAPI;
+        private WorldAPI WorldAPI => Ref.ChunkLoading.WorldAPI;
 
         public Receiver(QuickNet.Backend.QuickServer server)
         {
@@ -25,7 +25,7 @@ namespace Larnix.Server
         private void _AllowConnection(AllowConnection msg, string owner)
         {
             // Create player connection
-            References.PlayerManager.JoinPlayer(owner);
+            Ref.PlayerManager.JoinPlayer(owner);
 
             // Info to console
             Larnix.Debug.Log(owner + " joined the game.");
@@ -34,7 +34,7 @@ namespace Larnix.Server
         private void _Stop(Stop msg, string owner)
         {
             // Remove player connection
-            References.PlayerManager.DisconnectPlayer(owner);
+            Ref.PlayerManager.DisconnectPlayer(owner);
 
             // Info to console
             Larnix.Debug.Log(owner + " disconnected.");
@@ -43,11 +43,11 @@ namespace Larnix.Server
         private void _PlayerUpdate(PlayerUpdate msg, string owner)
         {
             // check if most recent data (fast mode receiving - over raw udp)
-            Dictionary<string, PlayerUpdate> RecentPlayerUpdates = References.PlayerManager.RecentPlayerUpdates;
+            Dictionary<string, PlayerUpdate> RecentPlayerUpdates = Ref.PlayerManager.RecentPlayerUpdates;
             if (!RecentPlayerUpdates.ContainsKey(owner) || RecentPlayerUpdates[owner].FixedFrame < msg.FixedFrame)
             {
                 // Update player data
-                References.PlayerManager.UpdatePlayerDataIfHasController(owner, msg);
+                Ref.PlayerManager.UpdatePlayerDataIfHasController(owner, msg);
             }
         }
 
@@ -57,8 +57,8 @@ namespace Larnix.Server
 
             if (code == CodeInfo.Info.RespawnMe)
             {
-                if (References.PlayerManager.GetPlayerState(owner) == PlayerManager.PlayerState.Dead)
-                    References.PlayerManager.CreatePlayerInstance(owner);
+                if (Ref.PlayerManager.GetPlayerState(owner) == PlayerManager.PlayerState.Dead)
+                    Ref.PlayerManager.CreatePlayerInstance(owner);
             }
         }
 
@@ -72,7 +72,7 @@ namespace Larnix.Server
             if (code == 0) // place item
             {
                 bool has_item = true;
-                bool in_chunk = References.PlayerManager.PlayerHasChunk(owner, chunk);
+                bool in_chunk = Ref.PlayerManager.PlayerHasChunk(owner, chunk);
                 bool can_place = WorldAPI.CanPlaceBlock(POS, front, msg.Item);
 
                 bool success = has_item && in_chunk && can_place;
@@ -82,13 +82,13 @@ namespace Larnix.Server
                     WorldAPI.PlaceBlockWithEffects(POS, front, msg.Item);
                 }
 
-                References.BlockSender.AddRetBlockChange(owner, msg.Operation, POS, front, success);
+                Ref.BlockSender.AddRetBlockChange(owner, msg.Operation, POS, front, success);
             }
 
             else if (code == 1) // break using item
             {
                 bool has_tool = true;
-                bool in_chunk = References.PlayerManager.PlayerHasChunk(owner, chunk);
+                bool in_chunk = Ref.PlayerManager.PlayerHasChunk(owner, chunk);
                 bool can_break = WorldAPI.CanBreakBlock(POS, front, msg.Item, msg.Tool);
 
                 bool success = has_tool && in_chunk && can_break;
@@ -98,7 +98,7 @@ namespace Larnix.Server
                     WorldAPI.BreakBlockWithEffects(POS, front, msg.Tool);
                 }
 
-                References.BlockSender.AddRetBlockChange(owner, msg.Operation, POS, front, success);
+                Ref.BlockSender.AddRetBlockChange(owner, msg.Operation, POS, front, success);
             }
         }
     }

@@ -20,26 +20,26 @@ namespace Larnix.Client
 
         private void _PlayerInitialize(PlayerInitialize msg)
         {
-            References.MainPlayer.LoadPlayerData(msg);
-            References.Client.MyUID = msg.MyUid;
-            References.Loading.StartWaitingFrom(msg.LastFixedFrame);
+            Ref.MainPlayer.LoadPlayerData(msg);
+            Ref.Client.MyUID = msg.MyUid;
+            Ref.Loading.StartWaitingFrom(msg.LastFixedFrame);
         }
 
         private void _EntityBroadcast(EntityBroadcast msg)
         {
-            References.EntityProjections.InterpretEntityBroadcast(msg);
+            Ref.EntityProjections.InterpretEntityBroadcast(msg);
         }
 
         private void _NearbyEntities(NearbyEntities msg)
         {
-            References.EntityProjections.ChangeNearbyUIDs(msg);
+            Ref.EntityProjections.ChangeNearbyUIDs(msg);
         }
 
         private void _CodeInfo(CodeInfo msg)
         {
             switch (msg.Code)
             {
-                case CodeInfo.Info.YouDie: References.MainPlayer.SetDead(); break;
+                case CodeInfo.Info.YouDie: Ref.MainPlayer.SetDead(); break;
                 default: break;
             }
         }
@@ -48,11 +48,11 @@ namespace Larnix.Client
         {
             if (msg.Blocks != null) // activation packet
             {
-                References.GridManager.AddChunk(msg.Chunkpos, msg.Blocks);
+                Ref.GridManager.AddChunk(msg.Chunkpos, msg.Blocks);
             }
             else // removal packet
             {
-                References.GridManager.RemoveChunk(msg.Chunkpos);
+                Ref.GridManager.RemoveChunk(msg.Chunkpos);
             }
         }
 
@@ -61,13 +61,13 @@ namespace Larnix.Client
             BlockUpdate.Record[] records = msg.BlockUpdates;
             foreach (var rec in records)
             {
-                References.GridManager.UpdateBlock(rec.POS, rec.Block);
+                Ref.GridManager.UpdateBlock(rec.POS, rec.Block);
             }
         }
 
         private void _RetBlockChange(RetBlockChange msg)
         {
-            References.GridManager.UpdateBlock(
+            Ref.GridManager.UpdateBlock(
                 msg.BlockPosition,
                 msg.CurrentBlock,
                 msg.Operation

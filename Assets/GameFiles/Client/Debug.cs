@@ -26,14 +26,14 @@ namespace Larnix.Client
 
         private void Awake()
         {
-            References.Debug = this;
-            Server.References.Debug = this;
+            Ref.Debug = this;
+            Server.Ref.Debug = this;
         }
 
         private void OnDestroy()
         {
-            References.Debug = null;
-            Server.References.Debug = null;
+            Ref.Debug = null;
+            Server.Ref.Debug = null;
         }
 
         private void FixedUpdate()
@@ -68,7 +68,7 @@ namespace Larnix.Client
 
             if (LastPing == 0f || FixedFrame % 25 == 0)
             {
-                LastPing = (float)(Math.Round((References.Client.LarnixClient?.GetPing() ?? 0f) * 10f) / 10f);
+                LastPing = (float)(Math.Round((Ref.Client.LarnixClient?.GetPing() ?? 0f) * 10f) / 10f);
             }
 
             // Allocations
@@ -84,7 +84,7 @@ namespace Larnix.Client
 
             // Coordinates text update (temporary)
 
-            Vector2 playerPos = References.MainPlayer.GetPosition();
+            Vector2 playerPos = Ref.MainPlayer.GetPosition();
 
             string debugText =
                 $"FPS: {LastFPS}\n" +
@@ -95,12 +95,12 @@ namespace Larnix.Client
 
             if (NoiseDisplay)
             {
-                debugText += $"\n" + (References.Client.IsMultiplayer ?
+                debugText += $"\n" + (Ref.Client.IsMultiplayer ?
                     "Cannot access noise info on a remote server." :
-                    Server.References.Generator.GetNoiseInfo(Blocks.ChunkMethods.CoordsToBlock(References.MainPlayer.GetPosition())));
+                    Server.Ref.Generator.GetNoiseInfo(Blocks.ChunkMethods.CoordsToBlock(Ref.MainPlayer.GetPosition())));
             }
 
-            DebugF3.text = ShowDebugInfo && References.MainPlayer.IsAlive ? debugText : "";
+            DebugF3.text = ShowDebugInfo && Ref.MainPlayer.IsAlive ? debugText : "";
         }
     }
 }

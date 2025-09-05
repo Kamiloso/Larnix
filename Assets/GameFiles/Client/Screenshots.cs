@@ -14,7 +14,7 @@ namespace Larnix.Client
 
         private void Awake()
         {
-            References.Screenshots = this;
+            Ref.Screenshots = this;
         }
 
         private void Start()

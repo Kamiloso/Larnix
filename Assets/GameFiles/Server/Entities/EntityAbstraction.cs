@@ -10,8 +10,8 @@ namespace Larnix.Server.Entities
         // ==== Public Static Factory Methods ====
         public EntityAbstraction(string nickname) // Create player abstraction
         {
-            ulong uid = (ulong)References.Server.LarnixServer.UserManager.GetUserID(nickname);
-            EntityData entityData = References.EntityDataManager.TryFindEntityData(uid);
+            ulong uid = (ulong)Ref.QuickServer.UserManager.GetUserID(nickname);
+            EntityData entityData = Ref.EntityDataManager.TryFindEntityData(uid);
 
             if (entityData == null)
                 entityData = new EntityData // Create new player
@@ -37,7 +37,7 @@ namespace Larnix.Server.Entities
             delayed_EntityData = entityData;
             delayed_nickname = nickname;
 
-            References.EntityDataManager.SetEntityData(delayed_uID, delayed_EntityData);
+            Ref.EntityDataManager.SetEntityData(delayed_uID, delayed_EntityData);
         }
 
         // ==== Private Things ====
@@ -67,13 +67,13 @@ namespace Larnix.Server.Entities
 
         public void DeleteEntityInstant() // Execute only from after FromFixedUpdate()
         {
-            References.EntityDataManager.DeleteEntityData(uID);
+            Ref.EntityDataManager.DeleteEntityData(uID);
             if (IsActive) GameObject.Destroy(controller.gameObject);
         }
 
         public void UnloadEntityInstant() // Execute only from after FromFixedUpdate()
         {
-            References.EntityDataManager.UnloadEntityData(uID);
+            Ref.EntityDataManager.UnloadEntityData(uID);
             if (IsActive) GameObject.Destroy(controller.gameObject);
         }
 
@@ -97,7 +97,7 @@ namespace Larnix.Server.Entities
             }
             else
             {
-                privNextUID = (ulong)(References.Server.Database.GetMinUID() - 1);
+                privNextUID = (ulong)(Ref.Server.Database.GetMinUID() - 1);
                 return GetNextUID();
             }
         }

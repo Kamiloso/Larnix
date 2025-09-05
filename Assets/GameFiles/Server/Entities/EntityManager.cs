@@ -23,7 +23,7 @@ namespace Larnix.Server.Entities
 
         private void Awake()
         {
-            References.EntityManager = this;
+            Ref.EntityManager = this;
         }
 
         public void FromFixedUpdate() // FIX-2
@@ -61,7 +61,7 @@ namespace Larnix.Server.Entities
                 EntityAbstraction controller = EntityControllers[uid];
                 if (controller.IsActive && controller.EntityData.ID != EntityID.Player)
                 {
-                    if (References.ChunkLoading.IsEntityInZone(controller, ChunkLoading.LoadState.None))
+                    if (Ref.ChunkLoading.IsEntityInZone(controller, ChunkLoading.LoadState.None))
                         UnloadEntity(uid);
                 }
             }
@@ -75,7 +75,7 @@ namespace Larnix.Server.Entities
                 EntityAbstraction controller = EntityControllers[uid];
                 if (!controller.IsActive && controller.EntityData.ID != EntityID.Player)
                 {
-                    if(References.ChunkLoading.IsEntityInZone(controller, ChunkLoading.LoadState.Active))
+                    if(Ref.ChunkLoading.IsEntityInZone(controller, ChunkLoading.LoadState.Active))
                     {
                         if (timer.Elapsed.TotalMilliseconds < MAX_ACTIVATING_MS)
                             controller.Activate();
@@ -91,12 +91,12 @@ namespace Larnix.Server.Entities
         {
             if(FixedCounter != LastSentFixedCounter)
             {
-                Dictionary<ulong, uint> FixedFrames = References.PlayerManager.GetFixedFramesByUID();
-                List<string> connected_nicknames = References.PlayerManager.PlayerUID.Keys.ToList();
+                Dictionary<ulong, uint> FixedFrames = Ref.PlayerManager.GetFixedFramesByUID();
+                List<string> connected_nicknames = Ref.PlayerManager.PlayerUID.Keys.ToList();
 
                 foreach (string nickname in connected_nicknames)
                 {
-                    Vector2 playerPos = References.PlayerManager.GetPlayerRenderingPosition(nickname);
+                    Vector2 playerPos = Ref.PlayerManager.GetPlayerRenderingPosition(nickname);
 
                     Dictionary<ulong, EntityData> EntityList = new();
                     Dictionary<ulong, uint> PlayerFixedIndexes = new();
@@ -134,7 +134,7 @@ namespace Larnix.Server.Entities
                         }
                     }
 
-                    References.PlayerManager.UpdateNearbyUIDs(
+                    Ref.PlayerManager.UpdateNearbyUIDs(
                         nickname,
                         EntitiesWithInactive,
                         FixedCounter,
@@ -165,7 +165,7 @@ namespace Larnix.Server.Entities
                         }
 
                         Packet packet = new EntityBroadcast(FixedCounter, fragmentEntities, fragmentFixed);
-                        References.Server.Send(nickname, packet, false); // unsafe mode (over raw UDP)
+                        Ref.QuickServer.Send(nickname, packet, false); // unsafe mode (over raw UDP)
                     }
                 }
 
@@ -186,7 +186,7 @@ namespace Larnix.Server.Entities
                 playerController.uID,
                 LastSentFixedCounter
             );
-            References.Server.Send(nickname, packet);
+            Ref.QuickServer.Send(nickname, packet);
         }
 
         public EntityAbstraction GetPlayerController(string nickname)
@@ -225,7 +225,7 @@ namespace Larnix.Server.Entities
 
         public void LoadEntitiesByChunk(Vector2Int chunkCoords)
         {
-            Dictionary<ulong, EntityData> entities = References.EntityDataManager.GetUnloadedEntitiesByChunk(chunkCoords);
+            Dictionary<ulong, EntityData> entities = Ref.EntityDataManager.GetUnloadedEntitiesByChunk(chunkCoords);
             foreach (var kvp in entities)
             {
                 EntityAbstraction entityController = new(kvp.Value, kvp.Key);
@@ -252,7 +252,7 @@ namespace Larnix.Server.Entities
                         PlayerControllers.Remove(nickname);
 
                         CodeInfo packet = new CodeInfo(CodeInfo.Info.YouDie);
-                        References.Server.Send(nickname, packet);
+                        Ref.QuickServer.Send(nickname, packet);
 
                         break;
                     }

@@ -17,7 +17,7 @@ namespace Larnix.Server.Entities
 
         private void Awake()
         {
-            References.EntityDataManager = this;
+            Ref.EntityDataManager = this;
         }
 
         public EntityData TryFindEntityData(ulong uid)
@@ -31,12 +31,12 @@ namespace Larnix.Server.Entities
             if(EntityData.ContainsKey(uid))
                 return EntityData[uid];
 
-            return References.Server.Database.FindEntity(uid);
+            return Ref.Server.Database.FindEntity(uid);
         }
 
         public Dictionary<ulong, EntityData> GetUnloadedEntitiesByChunk(Vector2Int chunkCoords)
         {
-            Dictionary<ulong, EntityData> entityList = References.Server.Database.GetEntitiesByChunkNoPlayers(chunkCoords);
+            Dictionary<ulong, EntityData> entityList = Ref.Server.Database.GetEntitiesByChunkNoPlayers(chunkCoords);
 
             foreach(var vkp in EntityData)
             {
@@ -108,10 +108,10 @@ namespace Larnix.Server.Entities
 
         public void FlushIntoDatabase()
         {
-            References.Server.Database.DeleteEntities(GetKeyList(DeletedEntityData));
+            Ref.Server.Database.DeleteEntities(GetKeyList(DeletedEntityData));
             DeletedEntityData.Clear();
 
-            References.Server.Database.FlushEntities(MergeDictionaries(EntityData, UnloadedEntityData));
+            Ref.Server.Database.FlushEntities(MergeDictionaries(EntityData, UnloadedEntityData));
             UnloadedEntityData.Clear();
         }
 
