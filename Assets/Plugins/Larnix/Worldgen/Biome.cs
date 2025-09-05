@@ -21,7 +21,6 @@ namespace Larnix.Worldgen
                 t.IsClass &&
                 !t.IsAbstract &&
                 baseType.IsAssignableFrom(t) &&
-                t.Namespace == "Larnix.Worldgen.Biomes" &&
                 t.GetConstructor(Type.EmptyTypes) != null
             )
             .Select(t => (Biome)Activator.CreateInstance(t))

@@ -12,9 +12,9 @@ namespace Larnix.Core
 
         public static void InitLogs(Action<string> log, Action<string> logWarning, Action<string> logError)
         {
-            Log = log;
-            LogWarning = logWarning;
-            LogError = logError;
+            Log = log ?? throw new ArgumentNullException(nameof(log));
+            LogWarning = logWarning ?? throw new ArgumentNullException(nameof(logWarning));
+            LogError = logError ?? throw new ArgumentNullException(nameof(logError));
         }
     }
 }

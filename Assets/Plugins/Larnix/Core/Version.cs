@@ -8,7 +8,7 @@ namespace Larnix.Core
 {
     public struct Version
     {
-        public static readonly Version Current = new Version("0.0.8.1");
+        public static readonly Version Current = new Version("0.0.8.2");
         public readonly uint ID;
 
         public Version(uint id)
@@ -65,7 +65,7 @@ namespace Larnix.Core
                 (byte)((0x00_00_00_FF & ID) >> 0),
             };
 
-            while (segments.Count != 0 && segments[segments.Count - 1] == 0)
+            while (segments.Count > 2 && segments[segments.Count - 1] == 0)
                 segments.RemoveAt(segments.Count - 1);
 
             return string.Join(".", segments);
