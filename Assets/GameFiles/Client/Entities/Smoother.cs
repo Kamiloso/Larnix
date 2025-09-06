@@ -1,25 +1,26 @@
 using System.Collections.Generic;
 using UnityEngine;
+using System;
 
 namespace Larnix.Client.Entities
 {
     public class Smoother
     {
         private const int IncludeCount = 3;
-        private const float SmoothTime = 0.15f;
-        private const float MaxPositionDifference = 1.0f;
+        private const double SmoothTime = 0.15;
+        private const double MaxPositionDifference = 5.0;
 
         private readonly List<double> Times = new List<double>();
-        private readonly List<Vector2> Positions = new List<Vector2>();
+        private readonly List<Vec2> Positions = new List<Vec2>();
         private readonly List<float> Rotations = new List<float>();
 
-        private Vector2 LocalPosition;
+        private Vec2 LocalPosition;
         private float LocalRotation;
 
-        private Vector2 VelocityPosition = Vector2.zero;
+        private Vec2 VelocityPosition = Vec2.Zero;
         private float VelocityRotation = 0f;
 
-        public Smoother(double initialTime, Vector2 initialPosition, float initialRotation)
+        public Smoother(double initialTime, Vec2 initialPosition, float initialRotation)
         {
             LocalPosition = initialPosition;
             LocalRotation = initialRotation;
@@ -27,7 +28,7 @@ namespace Larnix.Client.Entities
             AddRecord(initialTime, initialPosition, initialRotation);
         }
 
-        public void AddRecord(double time, Vector2 position, float rotation)
+        public void AddRecord(double time, Vec2 position, float rotation)
         {
             if (Times.Count > 0 && time <= Times[Times.Count - 1])
                 ResetPredictor(); // something is wrong, ignore previous records
@@ -48,11 +49,11 @@ namespace Larnix.Client.Entities
                 double diffTime = Times[Times.Count - 1] - Times[0];
                 if (diffTime > 0f)
                 {
-                    Vector2 diffPos = Positions[Positions.Count - 1] - Positions[0];
+                    Vec2 diffPos = Positions[Positions.Count - 1] - Positions[0];
                     float diffRot = GetAngleDifference(Rotations[Rotations.Count - 1], Rotations[0]);
 
-                    VelocityPosition = diffPos / (float)diffTime;
-                    VelocityRotation = diffRot / (float)diffTime;
+                    VelocityPosition = diffPos / diffTime;
+                    VelocityRotation = (float)(diffRot / diffTime);
                 }
             }
         }
@@ -67,16 +68,16 @@ namespace Larnix.Client.Entities
             // Correction
             if(Times.Count >= 1)
             {
-                Vector2 targetPosition = Positions[Positions.Count - 1];
+                Vec2 targetPosition = Positions[Positions.Count - 1];
                 float targetRotation = Rotations[Rotations.Count - 1];
 
-                float FrameProportion = 1 - Mathf.Exp(-deltaTime / SmoothTime);
+                double FrameProportion = 1 - Math.Exp(-deltaTime / SmoothTime);
 
                 LocalPosition += (targetPosition - LocalPosition) * FrameProportion;
-                LocalRotation += GetAngleDifference(targetRotation, LocalRotation) * FrameProportion;
+                LocalRotation += GetAngleDifference(targetRotation, LocalRotation) * (float)FrameProportion;
                 LocalRotation = ReduceAngle(LocalRotation);
 
-                if (Vector2.Distance(LocalPosition, targetPosition) > MaxPositionDifference)
+                if ((LocalPosition - targetPosition).Magnitude > MaxPositionDifference)
                 {
                     LocalPosition = targetPosition;
                     ResetPredictor();
@@ -84,7 +85,7 @@ namespace Larnix.Client.Entities
             }
         }
 
-        public Vector2 GetSmoothedPosition() => LocalPosition;
+        public Vec2 GetSmoothedPosition() => LocalPosition;
         public float GetSmoothedRotation() => LocalRotation;
 
         private void ResetPredictor()
@@ -93,7 +94,7 @@ namespace Larnix.Client.Entities
             Positions.Clear();
             Rotations.Clear();
 
-            VelocityPosition = Vector2.zero;
+            VelocityPosition = Vec2.Zero;
             VelocityRotation = 0f;
         }
 

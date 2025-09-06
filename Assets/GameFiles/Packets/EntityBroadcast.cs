@@ -11,14 +11,14 @@ namespace Larnix.Packets
     public class EntityBroadcast : Payload
     {
         private const int HEADER_SIZE = 4 + 2 + 2;
-        private const int ENTRY_A_SIZE = 8 + 14; // entity transforms entry
+        private const int ENTRY_A_SIZE = 8 + 22; // entity transforms entry
         private const int ENTRY_B_SIZE = 8 + 4; // player fixed indexes entry
-        public const int MAX_RECORDS = 40;
+        public const int MAX_RECORDS = 32;
 
         public uint PacketFixedIndex => EndianUnsafe.FromBytes<uint>(Bytes, 0); // 4B
         public ushort EntityLength => EndianUnsafe.FromBytes<ushort>(Bytes, 4); // 2B
         public ushort PlayerFixedLength => EndianUnsafe.FromBytes<ushort>(Bytes, 6); // 2B
-        public Dictionary<ulong, EntityData> EntityTransforms => GetDictionaryA(Bytes, EntityLength, HEADER_SIZE); // n * 22B
+        public Dictionary<ulong, EntityData> EntityTransforms => GetDictionaryA(Bytes, EntityLength, HEADER_SIZE); // n * 30B
         public Dictionary<ulong, uint> PlayerFixedIndexes => GetDictionaryB(Bytes, PlayerFixedLength, HEADER_SIZE + EntityLength * ENTRY_A_SIZE); // n * 12B
 
         public EntityBroadcast() { }
@@ -74,7 +74,7 @@ namespace Larnix.Packets
                 byte[] valueBytes = vkp.Value.Serialize();
 
                 Buffer.BlockCopy(keyBytes, 0, buffer, 0 + i * ENTRY_A_SIZE, 8);
-                Buffer.BlockCopy(valueBytes, 0, buffer, 8 + i * ENTRY_A_SIZE, 14);
+                Buffer.BlockCopy(valueBytes, 0, buffer, 8 + i * ENTRY_A_SIZE, 22);
 
                 i++;
             }

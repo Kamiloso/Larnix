@@ -299,7 +299,7 @@ namespace Larnix.Server.Terrain
         {
             HashSet<Vector2Int> targetLoads = new();
 
-            List<Vector2> positions = new();
+            List<Vec2> positions = new();
             foreach (string nickname in Ref.PlayerManager.PlayerUID.Keys)
                 positions.Add(Ref.PlayerManager.GetPlayerRenderingPosition(nickname));
 
@@ -311,10 +311,10 @@ namespace Larnix.Server.Terrain
             return targetLoads;
         }
 
-        public static HashSet<Vector2Int> GetCenterChunks(List<Vector2> positions)
+        public static HashSet<Vector2Int> GetCenterChunks(List<Vec2> positions)
         {
             HashSet<Vector2Int> returns = new();
-            foreach(Vector2 pos in positions)
+            foreach(Vec2 pos in positions)
             {
                 returns.Add(ChunkMethods.CoordsToChunk(pos));
             }

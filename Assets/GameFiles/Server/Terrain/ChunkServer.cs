@@ -171,8 +171,7 @@ namespace Larnix.Server.Terrain
             IHasCollider iface = blockServer as IHasCollider;
             if(iface != null)
             {
-                StaticCollider staticCollider = StaticCollider.Create(iface);
-                staticCollider.MakeOffset(ChunkMethods.GlobalBlockCoords(Chunkpos, pos));
+                StaticCollider staticCollider = StaticCollider.Create(iface, ChunkMethods.GlobalBlockCoords(Chunkpos, pos));
                 StaticColliders[pos] = staticCollider;
                 Ref.PhysicsManager.AddCollider(staticCollider);
             }

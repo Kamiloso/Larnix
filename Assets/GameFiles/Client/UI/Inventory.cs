@@ -24,7 +24,7 @@ namespace Larnix.Client.UI
             Ref.Inventory = this;
         }
 
-        private void Update()
+        public void Update1()
         {
             if (!Input.GetKey(KeyCode.LeftControl))
             {
@@ -55,8 +55,6 @@ namespace Larnix.Client.UI
                 BlocksInSlots[SelectedSlot] = (BlockID)((int)BlocksInSlots[SelectedSlot] + deltaBlock);
                 VariantsInSlots[SelectedSlot] += (byte)deltaVariant;
             }
-
-            Ref.TileSelector.FromInventoryUpdate();
         }
 
         public BlockData1 GetHoldingItem()

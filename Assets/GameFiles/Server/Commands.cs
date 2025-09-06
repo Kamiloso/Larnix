@@ -153,12 +153,12 @@ namespace Larnix.Server
                 Enum.IsDefined(typeof(EntityID), entityID) &&
                 entityID != EntityID.Player)
             {
-                if (float.TryParse(xs, out float x) && float.TryParse(ys, out float y))
+                if (double.TryParse(xs, out double x) && double.TryParse(ys, out double y))
                 {
                     Ref.EntityManager.SummonEntity(new EntityData
                     {
                         ID = entityID,
-                        Position = new Vector2(x, y)
+                        Position = new Vec2(x, y)
                     });
                     return (CommandResultType.Success, $"Spawned {entityname} at position ({x}, {y}).");
                 }

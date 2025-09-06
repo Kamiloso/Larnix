@@ -82,7 +82,7 @@ namespace Larnix.Client.Entities
             // Update smooth & position
 
             Smoother.UpdateSmooth(Time.deltaTime);
-            transform.position = Smoother.GetSmoothedPosition();
+            transform.position = Ref.MainPlayer.ToUnityPos(Smoother.GetSmoothedPosition());
 
             // Animations
 

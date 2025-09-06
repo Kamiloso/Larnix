@@ -84,7 +84,7 @@ namespace Larnix.Client
 
             // Coordinates text update (temporary)
 
-            Vector2 playerPos = Ref.MainPlayer.GetPosition();
+            Vec2 playerPos = Ref.MainPlayer.Position;
 
             string debugText =
                 $"FPS: {LastFPS}\n" +
@@ -97,7 +97,7 @@ namespace Larnix.Client
             {
                 debugText += $"\n" + (Ref.Client.IsMultiplayer ?
                     "Cannot access noise info on a remote server." :
-                    Server.Ref.Generator.GetNoiseInfo(Blocks.ChunkMethods.CoordsToBlock(Ref.MainPlayer.GetPosition())));
+                    Server.Ref.Generator.GetNoiseInfo(Blocks.ChunkMethods.CoordsToBlock(Ref.MainPlayer.Position)));
             }
 
             DebugF3.text = ShowDebugInfo && Ref.MainPlayer.IsAlive ? debugText : "";

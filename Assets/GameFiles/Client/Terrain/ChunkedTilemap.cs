@@ -1,6 +1,7 @@
 using Larnix.Blocks;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
@@ -12,6 +13,14 @@ namespace Larnix.Client.Terrain
         [SerializeField] GameObject TilemapPrefabBack;
 
         private readonly Dictionary<Vector2Int, (Tilemap Front, Tilemap Back)> TileChunks = new();
+        private Vector2Int CurrentOrigin = new Vector2Int(0, 0);
+
+        private bool IsMenu;
+
+        private void Awake()
+        {
+            IsMenu = gameObject.scene.name == "Menu";
+        }
 
         public void RedrawChunk(Vector2Int chunk, BlockData2[,] blocks)
         {
@@ -54,7 +63,7 @@ namespace Larnix.Client.Terrain
 
         private void AddChunk(Vector2Int chunk)
         {
-            Vector2 realPos = ChunkMethods.GlobalBlockCoords(chunk, new Vector2Int(0, 0)) - new Vector2(0.5f, 0.5f);
+            Vector2 realPos = WorldPositionFromOrigin(chunk, CurrentOrigin);
 
             Transform trnFront = Instantiate(TilemapPrefabFront, realPos, Quaternion.identity).transform;
             Transform trnBack = Instantiate(TilemapPrefabBack, realPos, Quaternion.identity).transform;
@@ -80,6 +89,36 @@ namespace Larnix.Client.Terrain
                 Destroy(pair.Back.gameObject);
                 TileChunks.Remove(chunk);
             }
+        }
+
+        private void Update()
+        {
+            // Update chunk position to match the origin
+            if (!IsMenu)
+            {
+                Vector2Int newOrigin = Ref.MainPlayer.Position.ExtractSector();
+                if (CurrentOrigin != newOrigin)
+                {
+                    CurrentOrigin = newOrigin;
+                    foreach (var vkp in TileChunks)
+                    {
+                        Vector2Int chunk = vkp.Key;
+                        Tilemap frontmap = vkp.Value.Front;
+                        Tilemap backmap = vkp.Value.Back;
+
+                        Vector2 realPos = WorldPositionFromOrigin(chunk, CurrentOrigin);
+                        frontmap.transform.position = realPos;
+                        backmap.transform.position = realPos;
+                    }
+                }
+            }
+        }
+
+        private Vector2 WorldPositionFromOrigin(Vector2Int chunk, Vector2Int origin)
+        {
+            Vector2Int startBlock = ChunkMethods.GlobalBlockCoords(chunk, new Vector2Int(0, 0));
+            Vector2 subtract = IsMenu ? Vector2.zero : Vec2.ORIGIN_STEP / 2 * Vector2.one;
+            return (startBlock - Vec2.ORIGIN_STEP * CurrentOrigin) - subtract;
         }
     }
 }

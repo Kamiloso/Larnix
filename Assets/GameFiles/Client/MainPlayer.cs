@@ -12,25 +12,37 @@ namespace Larnix.Client
 {
     public class MainPlayer : MonoBehaviour
     {
+        // Serialized Unity fields
         [SerializeField] Camera Camera;
         [SerializeField] EntityProjection EntityProjection;
-        [SerializeField] Transform RaycastCenter; // simply player's head
-        [SerializeField] DynamicCollider DynamicCollider;
-        [SerializeField] Vector2 CameraDeltaPosition;
-        
+        [SerializeField] Transform RaycastCenter; // player's head
+
+        // Teleport with editor
+        [SerializeField] Vector2Int DebugTeleportPos;
+        [SerializeField] bool DebugTeleportSubmit;
+
+        // Collider settings
+        private DynamicCollider DynamicCollider;
+        private readonly Vec2 ColliderOffset = new Vec2(0.00, 0.375);
+        private readonly Vec2 ColliderSize = new Vec2(0.40, 1.75);
+        private readonly PhysicsProperties PhysicsProperties = new()
+        {
+            Gravity = 1.00,
+            HorizontalForce = 2.00,
+            HorizontalDrag = 2.00,
+            JumpSize = 25.00,
+            MaxVerticalVelocity = 45.00,
+            MaxHorizontalVelocity = 15.00,
+        };
+
+        // Player / Entity data
+        public bool IsAlive => transform.parent.gameObject.activeSelf;
+        public Vec2 Position { get; private set; }
+        public float Rotation { get; private set; }
+
+        // Counters
         private uint FixedCounter = 0;
         private uint LastSentFixedCounter = 0;
-
-        private float Rotation;
-
-        private const float StepSize = 0.1f;
-
-        private const float CameraDefaultZoom = 8.0f;
-        private const float CameraZoomMin = 5.5f;
-        private const float CameraZoomMax = 10.5f;
-        private const float CameraZoomStep = 0.5f;
-
-        private float CameraZoom = CameraDefaultZoom;
 
         private void Awake()
         {
@@ -42,9 +54,16 @@ namespace Larnix.Client
         {
             FixedCounter++;
 
-            if (!Ref.Debug.SpectatorMode)
+            OutputData odata;
+            if (DebugTeleportSubmit)
             {
-                DynamicCollider.PhysicsUpdate(new InputData
+                Vec2 tppos = new Vec2(DebugTeleportPos.x, DebugTeleportPos.y);
+                odata = DynamicCollider.NoPhysicsUpdate(tppos);
+                DebugTeleportSubmit = false;
+            }
+            else if (!Ref.Debug.SpectatorMode)
+            {
+                odata = DynamicCollider.PhysicsUpdate(new InputData
                 {
                     Left = Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A),
                     Right = Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D),
@@ -63,53 +82,32 @@ namespace Larnix.Client
 
                 bool turbo = Input.GetKey(KeyCode.Space);
 
-                Vector2 will = (turbo ? STRONG_WILL_SIZE : WILL_SIZE) * Time.fixedDeltaTime * (
-                    (right ? 1 : 0) * Vector2.right +
-                    (left ? 1 : 0) * Vector2.left +
-                    (up ? 1 : 0) * Vector2.up +
-                    (down ? 1 : 0) * Vector2.down
+                Vec2 will = (turbo ? STRONG_WILL_SIZE : WILL_SIZE) * Time.fixedDeltaTime * (
+                    (right ? 1 : 0) * new Vec2(1, 0) +
+                    (left ? 1 : 0) * new Vec2(-1, 0) +
+                    (up ? 1 : 0) * new Vec2(0, 1) +
+                    (down ? 1 : 0) * new Vec2(0, -1)
                 );
 
-                DynamicCollider.NoPhysicsUpdate((Vector2)transform.position + will);
+                odata = DynamicCollider.NoPhysicsUpdate(Position + will);
             }
+            Position = odata.Position;
 
             RotationUpdate();
             UpdateEntityObject(FixedCounter * Time.fixedDeltaTime);
         }
 
-        private void Update()
+        public void EarlyUpdate2()
         {
             // Send update to server
 
             if(LastSentFixedCounter != FixedCounter)
             {
-                Packet packet = new PlayerUpdate(transform.position, Rotation, FixedCounter);
+                Packet packet = new PlayerUpdate(Position, Rotation, FixedCounter);
                 Ref.Client.Send(packet, false); // fast mode (over raw udp)
 
                 LastSentFixedCounter = FixedCounter;
             }
-
-            // Ctrl + Scroll reaction
-
-            if (Input.GetKey(KeyCode.LeftControl))
-            {
-                float scroll = Input.GetAxis("Mouse ScrollWheel");
-
-                if (scroll > 0f && CameraZoom > CameraZoomMin)
-                    CameraZoom -= CameraZoomStep;
-
-                if (scroll < 0f && CameraZoom < CameraZoomMax)
-                    CameraZoom += CameraZoomStep;
-            }
-        }
-
-        private void LateUpdate()
-        {
-            // Camera update
-            
-            Vector2 plr = EntityProjection.transform.position;
-            Camera.transform.position = new Vector3(plr.x, plr.y, Camera.transform.position.z) + (Vector3)CameraDeltaPosition;
-            Camera.orthographicSize = CameraZoom + (Ref.Debug.SpectatorMode ? 10f : 0f);
         }
 
         private void RotationUpdate()
@@ -124,23 +122,24 @@ namespace Larnix.Client
 
         private void UpdateEntityObject(double time)
         {
+            transform.position = ToUnityPos(Position);
             EntityProjection.UpdateTransform(new EntityData
             {
                 ID = EntityID.Player,
-                Position = transform.position,
+                Position = Position,
                 Rotation = Rotation,
                 NBT = null
             }, time);
         }
 
-        public Vector2 GetPosition()
+        public Vector2 ClientPosition()
         {
             return transform.position;
         }
 
         public void LoadPlayerData(PlayerInitialize msg)
         {
-            transform.position = msg.Position;
+            Position = msg.Position;
         }
 
         public void SetAlive()
@@ -151,7 +150,8 @@ namespace Larnix.Client
             transform.parent.gameObject.SetActive(true);
             Ref.TileSelector.Enable();
 
-            DynamicCollider.Enable();
+            DynamicCollider = new DynamicCollider(Ref.PhysicsManager,
+                Position, ColliderOffset, ColliderSize, PhysicsProperties);
 
             RotationUpdate();
             UpdateEntityObject(0f);
@@ -165,14 +165,28 @@ namespace Larnix.Client
             transform.parent.gameObject.SetActive(false);
             Ref.TileSelector.Disable();
 
-            DynamicCollider.Disable();
+            DynamicCollider = null;
 
             EntityProjection.ResetSmoother();
         }
 
-        public bool IsAlive
+        // --- OFFSET SEGMENT ---
+
+        public Vec2 GetOriginOffset()
         {
-            get => transform.parent.gameObject.activeSelf;
+            return Position.ExtractOrigin();
+        }
+
+        public Vector2 ToUnityPos(Vec2 position)
+        {
+            Vec2 origin = GetOriginOffset();
+            return position.ExtractPosition(origin);
+        }
+
+        public Vec2 ToLarnixPos(Vector2 position)
+        {
+            Vec2 origin = GetOriginOffset();
+            return new Vec2(position, origin);
         }
     }
 }

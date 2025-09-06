@@ -144,7 +144,7 @@ namespace Larnix.Server.Entities
             return result;
         }
 
-        public Vector2 GetPlayerRenderingPosition(string nickname)
+        public Vec2 GetPlayerRenderingPosition(string nickname)
         {
             PlayerState state = GetPlayerState(nickname);
 

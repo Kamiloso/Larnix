@@ -112,13 +112,13 @@ namespace Larnix.Client
                 }
             }
 
-            Ref.EntityProjections.AfterBroadcasts();
+            Ref.EntityProjections.EarlyUpdate1();
+            Ref.MainPlayer.EarlyUpdate2();
         }
 
         private void Update()
         {
-            // Base input
-
+            // Debug input
             if (Input.GetKeyDown(KeyCode.R)) // temporary respawn using R
             {
                 if (!Ref.MainPlayer.gameObject.activeInHierarchy)
@@ -130,6 +130,11 @@ namespace Larnix.Client
                 }
             }
 
+            // Ordered updates
+            Ref.Inventory.Update1();
+            Ref.TileSelector.Update2();
+
+            // Escape input
             if (Input.GetKeyDown(KeyCode.Escape))
             {
                 BackToMenu();

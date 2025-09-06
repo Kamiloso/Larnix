@@ -9,7 +9,6 @@ namespace Larnix.Physics
     {
         private readonly SpatialDictionary<StaticCollider> StaticColliders = new(3f);
         private readonly HashSet<Vector2Int> ActiveChunks = new();
-        public int TotalColliders = 0;
 
         public void SetChunkActive(Vector2Int chunk, bool active)
         {
@@ -20,19 +19,17 @@ namespace Larnix.Physics
         public void AddCollider(StaticCollider collider)
         {
             StaticColliders.Add(collider.Center, collider);
-            TotalColliders++;
         }
 
         public void RemoveColliderByReference(StaticCollider collider)
         {
             StaticColliders.RemoveByReference(collider.Center, collider);
-            TotalColliders--;
         }
 
-        public PhysicsReport MoveCollider(DynamicCollider dynCollider)
+        public OutputData MoveCollider(DynamicCollider dynCollider)
         {
-            PhysicsReport totalReport = new PhysicsReport { Position = dynCollider.Center };
-            List<StaticCollider> list = StaticColliders.Get3x3SectorList(dynCollider.Center);
+            OutputData totalReport = new OutputData { Position = dynCollider.Center };
+            var list = StaticColliders.Get3x3SectorList(dynCollider.Center);
 
             Vector2Int middleChunk = ChunkMethods.CoordsToChunk(dynCollider.Center);
             for (int dx = -1; dx <= 1 ; dx++)
@@ -42,8 +39,8 @@ namespace Larnix.Physics
                     if(!ActiveChunks.Contains(chunk))
                     {
                         list.Add(new StaticCollider(
-                            ChunkMethods.GlobalBlockCoords(chunk, new Vector2Int(0, 0)) + new Vector2(7.5f, 7.5f),
-                            new Vector2(16.1f, 16.1f)
+                            ChunkMethods.ChunkCenter(chunk),
+                            new Vec2(16.01, 16.01)
                             ));
                     }
                 }
@@ -51,37 +48,38 @@ namespace Larnix.Physics
             while (true)
             {
                 int? lowestIndex = null;
-                (PhysicsReport report, Vector2 hitPosition, float hitTime)? lowestReportPlus = null;
+                (OutputData report, Vec2 hitPosition, double hitTime)? bestReport = null;
 
                 for (int i = 0; i < list.Count; i++)
                 {
                     StaticCollider statCollider = list[i];
-                    if(statCollider == null) continue; // removing inside list is expansive, so I'm nulling elements instead
+                    if (statCollider == null) continue;
 
-                    PhysicsReport report = CalculateCollision(
+                    OutputData report = CalculateCollision(
                         startCenter: dynCollider.OldCenter ?? dynCollider.Center,
                         endCenter: dynCollider.Center,
                         movingSize: dynCollider.Size,
                         staticCenter: statCollider.Center,
                         staticSize: statCollider.Size,
-                        out Vector2? hitPosition,
-                        out float? hitTime
+                        out Vec2? hitPosition,
+                        out double? hitTime
                     );
 
-                    if (hitTime != null && (hitTime < (lowestReportPlus?.hitTime ?? float.MaxValue)))
+                    if (hitTime != null && (hitTime < (bestReport?.hitTime ?? double.MaxValue)))
                     {
                         lowestIndex = i;
-                        lowestReportPlus = (report, hitPosition ?? Vector2.zero, hitTime ?? 0f);
+                        bestReport = (report, hitPosition ?? default, hitTime ?? default);
                     }
                 }
 
                 if (lowestIndex != null)
                 {
                     dynCollider.SetWill(
-                        lowestReportPlus?.hitPosition ?? Vector2.zero,
-                        lowestReportPlus?.report.Position ?? Vector2.zero
+                        bestReport?.hitPosition ?? Vec2.Zero,
+                        bestReport?.report.Position ?? Vec2.Zero
                     );
-                    totalReport.Merge(lowestReportPlus?.report ?? new());
+                    totalReport.Merge(bestReport?.report ?? default);
+                    list[(int)lowestIndex] = null; // removing inside list is expansive --> nulling elements instead
                 }
                 else break;
             }
@@ -89,23 +87,25 @@ namespace Larnix.Physics
             return totalReport;
         }
 
-        private static PhysicsReport CalculateCollision(
-            Vector2 startCenter,
-            Vector2 endCenter,
-            Vector2 movingSize,
-            Vector2 staticCenter,
-            Vector2 staticSize,
-            out Vector2? hitPosition,
-            out float? hitTime)
+        private enum Side { Left, Right, Top, Bottom }
+
+        private static OutputData CalculateCollision(
+            Vec2 startCenter,
+            Vec2 endCenter,
+            Vec2 movingSize,
+            Vec2 staticCenter,
+            Vec2 staticSize,
+            out Vec2? hitPosition,
+            out double? hitTime)
         {
             hitPosition = null;
             hitTime = null;
 
-            Vector2 moved = endCenter - startCenter;
-            Vector2 inflatedSize = movingSize + staticSize;
+            Vec2 moved = endCenter - startCenter;
+            Vec2 inflatedSize = movingSize + staticSize;
 
-            Vector2 minCorner = staticCenter - inflatedSize / 2;
-            Vector2 maxCorner = staticCenter + inflatedSize / 2;
+            Vec2 minCorner = staticCenter - inflatedSize / 2;
+            Vec2 maxCorner = staticCenter + inflatedSize / 2;
 
             if ( // start pos inside rect
                 startCenter.x >= minCorner.x && startCenter.x <= maxCorner.x &&
@@ -113,61 +113,64 @@ namespace Larnix.Physics
                 )
                 return new();
 
-            (Vector2 collisionPoint, Vector2 endPoint, float collisionTime, Side side)? bestCollision = null;
+            (Vec2 collisionPoint, Vec2 endPoint, double collisionTime, Side side)? bestCollision = null;
 
-            if (moved.x != 0f)
+            if (moved.x != 0.0)
             {
-                float tx_min = (minCorner.x - startCenter.x) / moved.x;
-                float tx_max = (maxCorner.x - startCenter.x) / moved.x;
+                double tx_min = (minCorner.x - startCenter.x) / moved.x;
+                double tx_max = (maxCorner.x - startCenter.x) / moved.x;
 
-                Vector2 point1 = new Vector2(minCorner.x, startCenter.y + tx_min * moved.y);
-                Vector2 point2 = new Vector2(maxCorner.x, startCenter.y + tx_max * moved.y);
+                Vec2 point1 = new Vec2(minCorner.x, startCenter.y + tx_min * moved.y);
+                Vec2 point2 = new Vec2(maxCorner.x, startCenter.y + tx_max * moved.y);
 
-                if (tx_min >= 0f && tx_min <= 1f && point1.y > minCorner.y && point1.y < maxCorner.y)
+                if (tx_min >= 0.0 && tx_min <= 1.0 && point1.y > minCorner.y && point1.y < maxCorner.y)
                 {
-                    if (tx_min < (bestCollision?.collisionTime ?? float.MaxValue))
-                        bestCollision = (point1, new Vector2(point1.x, endCenter.y), tx_min, Side.Left);
+                    if (tx_min < (bestCollision?.collisionTime ?? double.MaxValue))
+                        bestCollision = (point1, new Vec2(point1.x, endCenter.y), tx_min, Side.Left);
                 }
 
-                if (tx_max >= 0f && tx_max <= 1f && point2.y > minCorner.y && point2.y < maxCorner.y)
+                if (tx_max >= 0.0 && tx_max <= 1.0 && point2.y > minCorner.y && point2.y < maxCorner.y)
                 {
-                    if(tx_max < (bestCollision?.collisionTime ?? float.MaxValue))
-                        bestCollision = (point2, new Vector2(point2.x, endCenter.y), tx_max, Side.Right);
+                    if (tx_max < (bestCollision?.collisionTime ?? double.MaxValue))
+                        bestCollision = (point2, new Vec2(point2.x, endCenter.y), tx_max, Side.Right);
                 }
             }
 
             if (moved.y != 0f)
             {
-                float ty_min = (minCorner.y - startCenter.y) / moved.y;
-                float ty_max = (maxCorner.y - startCenter.y) / moved.y;
+                double ty_min = (minCorner.y - startCenter.y) / moved.y;
+                double ty_max = (maxCorner.y - startCenter.y) / moved.y;
 
-                Vector2 point1 = new Vector2(startCenter.x + ty_min * moved.x, minCorner.y);
-                Vector2 point2 = new Vector2(startCenter.x + ty_max * moved.x, maxCorner.y);
+                Vec2 point1 = new Vec2(startCenter.x + ty_min * moved.x, minCorner.y);
+                Vec2 point2 = new Vec2(startCenter.x + ty_max * moved.x, maxCorner.y);
 
-                if (ty_min >= 0f && ty_min <= 1f && point1.x > minCorner.x && point1.x < maxCorner.x)
+                if (ty_min >= 0.0 && ty_min <= 1.0 && point1.x > minCorner.x && point1.x < maxCorner.x)
                 {
-                    if(ty_min < (bestCollision?.collisionTime ?? float.MaxValue))
-                        bestCollision = (point1, new Vector2(endCenter.x, point1.y), ty_min, Side.Bottom);
+                    if (ty_min < (bestCollision?.collisionTime ?? double.MaxValue))
+                        bestCollision = (point1, new Vec2(endCenter.x, point1.y), ty_min, Side.Bottom);
                 }
 
-                if (ty_max >= 0f && ty_max <= 1f && point2.x > minCorner.x && point2.x < maxCorner.x)
+                if (ty_max >= 0.0 && ty_max <= 1.0 && point2.x > minCorner.x && point2.x < maxCorner.x)
                 {
-                    if(ty_max < (bestCollision?.collisionTime ?? float.MaxValue))
-                        bestCollision = (point2, new Vector2(endCenter.x, point2.y), ty_max, Side.Top);
+                    if (ty_max < (bestCollision?.collisionTime ?? double.MaxValue))
+                        bestCollision = (point2, new Vec2(endCenter.x, point2.y), ty_max, Side.Top);
                 }
             }
 
-            PhysicsReport report = new();
+            OutputData report = default;
             if (bestCollision != null)
             {
-                Vector2 endPoint = BitChangeVector(bestCollision?.endPoint ?? Vector2.zero, moved);
-                Vector2 colPoint = BitChangeVector(bestCollision?.collisionPoint ?? Vector2.zero, moved);
+                Vec2 endPoint = BitChangeVector(bestCollision?.endPoint ?? default, moved);
+                Vec2 colPoint = BitChangeVector(bestCollision?.collisionPoint ?? default, moved);
 
-                report.Position = endPoint;
-                report.OnGround = bestCollision?.side == Side.Top;
-                report.OnCeil = bestCollision?.side == Side.Bottom;
-                report.OnLeftWall = bestCollision?.side == Side.Right;
-                report.OnRightWall = bestCollision?.side == Side.Left;
+                report = new OutputData
+                {
+                    Position = endPoint,
+                    OnGround = bestCollision?.side == Side.Top,
+                    OnCeil = bestCollision?.side == Side.Bottom,
+                    OnLeftWall = bestCollision?.side == Side.Right,
+                    OnRightWall = bestCollision?.side == Side.Left,
+                };
 
                 hitPosition = colPoint;
                 hitTime = bestCollision?.collisionTime;
@@ -175,11 +178,11 @@ namespace Larnix.Physics
             return report;
         }
 
-        private static Vector2 BitChangeVector(Vector2 vect, Vector2 moved)
+        private static Vec2 BitChangeVector(Vec2 vect, Vec2 moved)
         {
-            return new Vector2(
-                moved.x > 0 ? FloatUtils.BitDecrement(vect.x, 1) : (moved.x < 0 ? FloatUtils.BitIncrement(vect.x, 1) : vect.x),
-                moved.y > 0 ? FloatUtils.BitDecrement(vect.y, 1) : (moved.y < 0 ? FloatUtils.BitIncrement(vect.y, 1) : vect.y)
+            return new Vec2(
+                moved.x > 0.0 ? DoubleUtils.BitDecrement(vect.x, 1) : (moved.x < 0.0 ? DoubleUtils.BitIncrement(vect.x, 1) : vect.x),
+                moved.y > 0.0 ? DoubleUtils.BitDecrement(vect.y, 1) : (moved.y < 0.0 ? DoubleUtils.BitIncrement(vect.y, 1) : vect.y)
                 );
         }
     }

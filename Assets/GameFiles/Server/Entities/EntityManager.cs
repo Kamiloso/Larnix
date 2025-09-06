@@ -96,7 +96,7 @@ namespace Larnix.Server.Entities
 
                 foreach (string nickname in connected_nicknames)
                 {
-                    Vector2 playerPos = Ref.PlayerManager.GetPlayerRenderingPosition(nickname);
+                    Vec2 playerPos = Ref.PlayerManager.GetPlayerRenderingPosition(nickname);
 
                     Dictionary<ulong, EntityData> EntityList = new();
                     Dictionary<ulong, uint> PlayerFixedIndexes = new();
@@ -107,11 +107,11 @@ namespace Larnix.Server.Entities
                     {
                         // -- checking entities to add --
                         EntityAbstraction entity = EntityControllers[uid];
-                        Vector2 entityPos = entity.EntityData.Position;
+                        Vec2 entityPos = entity.EntityData.Position;
                         bool isPlayer = entity.EntityData.ID == EntityID.Player;
 
                         const float MAX_DISTANCE = 50f;
-                        if (Vector2.Distance(playerPos, entityPos) < MAX_DISTANCE)
+                        if ((playerPos - entityPos).Magnitude < MAX_DISTANCE)
                         {
                             if(entity.IsActive)
                             {

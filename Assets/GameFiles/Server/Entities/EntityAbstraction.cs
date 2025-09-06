@@ -57,7 +57,7 @@ namespace Larnix.Server.Entities
             if (IsActive)
                 throw new System.InvalidOperationException("Entity abstraction is already active!");
 
-            controller = EntityController.CreateRealEntityController(delayed_uID, delayed_EntityData, delayed_nickname);
+            controller = new EntityController(delayed_uID, delayed_EntityData, delayed_nickname);
         }
 
         public EntityController GetRealController()
@@ -68,13 +68,11 @@ namespace Larnix.Server.Entities
         public void DeleteEntityInstant() // Execute only from after FromFixedUpdate()
         {
             Ref.EntityDataManager.DeleteEntityData(uID);
-            if (IsActive) GameObject.Destroy(controller.gameObject);
         }
 
         public void UnloadEntityInstant() // Execute only from after FromFixedUpdate()
         {
             Ref.EntityDataManager.UnloadEntityData(uID);
-            if (IsActive) GameObject.Destroy(controller.gameObject);
         }
 
         public void FromFixedUpdate()

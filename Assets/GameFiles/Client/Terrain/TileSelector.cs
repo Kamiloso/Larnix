@@ -36,7 +36,7 @@ namespace Larnix.Client.Terrain
             isGameFocused = hasFocus;
         }
 
-        public void FromInventoryUpdate()
+        public void Update2()
         {
             if(framesAlready < MIN_FRAMES)
             {
@@ -45,18 +45,19 @@ namespace Larnix.Client.Terrain
             }
 
             Vector2 mouse_pos = Input.mousePosition;
-            Vector2 cursor_pos = Camera.ScreenToWorldPoint(mouse_pos);
-            Vector2? old_cursor_pos = old_mouse_pos != null ? Camera.ScreenToWorldPoint((Vector2)old_mouse_pos) : null;
-            Vector2 player_pos = Ref.MainPlayer.GetPosition();
+            Vec2 cursor_pos = Ref.MainPlayer.ToLarnixPos(Camera.ScreenToWorldPoint(mouse_pos));
+            Vec2? old_cursor_pos = old_mouse_pos != null ?
+                Ref.MainPlayer.ToLarnixPos(Camera.ScreenToWorldPoint((Vector2)old_mouse_pos)) : null;
+            Vec2 player_pos = Ref.MainPlayer.Position;
 
             bool pointsRight = cursor_pos.x >= player_pos.x;
 
             List<Vector2Int> grids = old_cursor_pos != null ?
-                GetCellsIntersectedByLine((Vector2)old_cursor_pos, cursor_pos) :
+                GetCellsIntersectedByLine((Vec2)old_cursor_pos, cursor_pos) :
                 new List<Vector2Int> { ChunkMethods.CoordsToBlock(cursor_pos) };
 
             if (!Ref.Debug.SpectatorMode)
-                grids.RemoveAll(grid => Vector2.Distance(grid, player_pos) > INTERACTION_RANGE);
+                grids.RemoveAll(grid => (new Vec2(grid.x, grid.y) - player_pos).Magnitude > INTERACTION_RANGE);
 
             if (active && isGameFocused && grids.Count > 0) // ENABLED CURSOR
             {
@@ -65,7 +66,7 @@ namespace Larnix.Client.Terrain
 
                 foreach (Vector2Int grid in grids)
                 {
-                    Selector.transform.position = (Vector2)grid;
+                    Selector.transform.position = Ref.MainPlayer.ToUnityPos(new Vec2(grid.x, grid.y));
                     DoActionOn(grid, pointsRight);
                 }
 
@@ -141,54 +142,25 @@ namespace Larnix.Client.Terrain
             }
         }
 
-        public static List<Vector2Int> GetCellsIntersectedByLine(Vector2 start, Vector2 end)
+        public static List<Vector2Int> GetCellsIntersectedByLine(Vec2 start, Vec2 end)
         {
-            List<Vector2Int> cells = new List<Vector2Int>();
-            if (start == end)
+            double magnitude = (start - end).Magnitude;
+            if (magnitude > 256.0) return new();
+            if (magnitude == 0.0) return new() { ChunkMethods.CoordsToBlock(start) };
+
+            const int ACCURACY = 40;
+            int segments = (int)Math.Ceiling(ACCURACY * magnitude);
+            Vec2 difference = end - start;
+            Vec2 roadpart = difference / segments;
+
+            HashSet<Vector2Int> tiles = new();
+            for (int i = 0; i <= segments; i++)
             {
-                cells.Add(Vector2Int.RoundToInt(start));
-                return cells;
+                Vector2Int block = ChunkMethods.CoordsToBlock(start + i * roadpart);
+                tiles.Add(block);
             }
 
-            Vector2 dir = end - start;
-
-            Vector2Int cell = Vector2Int.RoundToInt(start);
-            Vector2Int cellEnd = Vector2Int.RoundToInt(end);
-
-            int stepX = dir.x > 0 ? 1 : (dir.x < 0 ? -1 : 0);
-            int stepY = dir.y > 0 ? 1 : (dir.y < 0 ? -1 : 0);
-
-            float tDeltaX = stepX != 0 ? Mathf.Abs(1f / dir.x) : float.PositiveInfinity;
-            float tDeltaY = stepY != 0 ? Mathf.Abs(1f / dir.y) : float.PositiveInfinity;
-
-            float nextGridLineX = cell.x + (stepX > 0 ? 0.5f : -0.5f);
-            float nextGridLineY = cell.y + (stepY > 0 ? 0.5f : -0.5f);
-
-            float tMaxX = stepX != 0
-                ? (nextGridLineX - start.x) / dir.x
-                : float.PositiveInfinity;
-            float tMaxY = stepY != 0
-                ? (nextGridLineY - start.y) / dir.y
-                : float.PositiveInfinity;
-
-            cells.Add(cell);
-
-            while (cell != cellEnd)
-            {
-                if (tMaxX < tMaxY)
-                {
-                    cell.x += stepX;
-                    tMaxX += tDeltaX;
-                }
-                else
-                {
-                    cell.y += stepY;
-                    tMaxY += tDeltaY;
-                }
-                cells.Add(cell);
-            }
-
-            return cells;
+            return tiles.ToList();
         }
 
         public void Enable()

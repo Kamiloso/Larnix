@@ -6,18 +6,15 @@ namespace Larnix.Blocks
 {
     public static class ChunkMethods
     {
-        public const int MIN_CHUNK = -32768;
-        public const int MAX_CHUNK = -MIN_CHUNK - 1;
+        public const int MIN_CHUNK = -(1 << 27) + 1;
+        public const int MAX_CHUNK = -(MIN_CHUNK + 1);
 
         public const int MIN_BLOCK = MIN_CHUNK * 16;
-        public const int MAX_BLOCK = -MIN_BLOCK - 1;
+        public const int MAX_BLOCK = -(MIN_BLOCK + 1);
 
-        public static Vector2Int CoordsToChunk(Vector2 floatPosition)
+        public static Vector2Int CoordsToChunk(Vec2 position)
         {
-            return new Vector2Int(
-                Mathf.FloorToInt((floatPosition.x + 0.5f) / 16),
-                Mathf.FloorToInt((floatPosition.y + 0.5f) / 16)
-                );
+            return CoordsToBlock(position, 16.0);
         }
 
         public static Vector2Int CoordsToChunk(Vector2Int intPosition)
@@ -28,12 +25,19 @@ namespace Larnix.Blocks
                 );
         }
 
-        public static Vector2Int CoordsToBlock(Vector2 floatPosition)
+        public static Vector2Int CoordsToBlock(Vec2 position, double blockSize = 1.0)
         {
-            return new Vector2Int(
-                Mathf.FloorToInt(floatPosition.x + 0.5f),
-                Mathf.FloorToInt(floatPosition.y + 0.5f)
+            try
+            {
+                return new Vector2Int(
+                    (int)Math.Floor((position.x + 0.5) / blockSize),
+                    (int)Math.Floor((position.y + 0.5) / blockSize)
                 );
+            }
+            catch (OverflowException)
+            {
+                return default;
+            }
         }
 
         public static Vector2Int GlobalBlockCoords(Vector2Int chunkpos, Vector2Int pos)
@@ -46,6 +50,11 @@ namespace Larnix.Blocks
             int x = POS.x & 0b1111;
             int y = POS.y & 0b1111;
             return new Vector2Int(x, y);
+        }
+
+        public static Vec2 ChunkCenter(Vector2Int chunkpos)
+        {
+            return new Vec2(chunkpos.x << 4, chunkpos.y << 4) + new Vec2(7.5, 7.5);
         }
 
         public static bool InChunk(Vector2Int chunkpos, Vector2Int POS)

@@ -84,7 +84,7 @@ namespace Larnix.Server.Data
                         EntityData entityData = new EntityData
                         {
                             ID = (EntityID)(long)reader["type"],
-                            Position = new Vector2((float)(double)reader["pos_x"], (float)(double)reader["pos_y"]),
+                            Position = new Vec2((double)reader["pos_x"], (double)reader["pos_y"]),
                             Rotation = (float)(double)reader["rotation"],
                             NBT = (string)reader["nbt"]
                         };
@@ -111,7 +111,7 @@ namespace Larnix.Server.Data
                         returns.Add((ulong)(long)reader["uid"], new EntityData
                         {
                             ID = (EntityID)(long)reader["type"],
-                            Position = new Vector2((float)(double)reader["pos_x"], (float)(double)reader["pos_y"]),
+                            Position = new Vec2((double)reader["pos_x"], (double)reader["pos_y"]),
                             Rotation = (float)(double)reader["rotation"],
                             NBT = reader["nbt"] as string
                         });

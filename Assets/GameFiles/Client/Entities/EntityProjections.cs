@@ -95,7 +95,7 @@ namespace Larnix.Client.Entities
             }
         }
 
-        public void AfterBroadcasts()
+        public void EarlyUpdate1()
         {
             // Remove no longer active projections
 
@@ -163,7 +163,7 @@ namespace Larnix.Client.Entities
 
         private EntityProjection CreateProjection(ulong uid, EntityData entityData, double time)
         {
-            GameObject gobj = Resources.CreateEntity(entityData.ID, Resources.Mode.Client);
+            GameObject gobj = Resources.CreateEntity(entityData.ID);
             gobj.transform.SetParent(transform, false);
             gobj.transform.name = entityData.ID.ToString() + " [" + uid + "]";
             EntityProjection projection = gobj.GetComponent<EntityProjection>();

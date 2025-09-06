@@ -13,157 +13,142 @@ namespace Larnix.Physics
         public bool Jump;
     }
 
-    public class DynamicCollider : MonoBehaviour
+    public struct OutputData
     {
-        [SerializeField] Vector2 SizeInit;
+        public Vec2 Position;
+        public bool OnGround;
+        public bool OnCeil;
+        public bool OnLeftWall;
+        public bool OnRightWall;
 
-        [SerializeField] float Gravity = 1.00f;
-        [SerializeField] float HorizontalForce = 2.00f;
-        [SerializeField] float HorizontalDrag = 2.00f;
-        [SerializeField] float JumpSize = 25f;
-        [SerializeField] float MaxVerticalVelocity = 45.00f;
-        [SerializeField] float MaxHorizontalVelocity = 15.00f;
-
-        private const float VELOCITY_EPSILON = 0.1f;
-
-        public Vector2? OldCenter { get; private set; }
-        public Vector2 Center { get; private set; }
-        public Vector2 Size { get; private set; }
-
-        private PhysicsManager physicsManager;
-        private Vector3 localPos;
-
-        public PhysicsReport physicsReport { get; private set; }
-        public Vector2 velocity { get; private set; }
-
-        private bool active = false;
-
-        private void Awake()
+        public void Merge(OutputData other)
         {
-            if (transform.parent == null)
-                throw new Exception("DynamicCollider must be a child of some GameObject. It can be offseted then relative to it.");
-
-            localPos = transform.localPosition;
+            Position = other.Position;
+            OnGround |= other.OnGround;
+            OnLeftWall |= other.OnLeftWall;
+            OnRightWall |= other.OnRightWall;
+            OnCeil |= other.OnCeil;
         }
+    }
 
-        public void Enable()
+    public struct PhysicsProperties
+    {
+        public double Gravity;
+        public double HorizontalForce;
+        public double HorizontalDrag;
+        public double JumpSize;
+        public double MaxVerticalVelocity;
+        public double MaxHorizontalVelocity;
+    }
+
+    public class DynamicCollider
+    {
+        private const double MaxTouchVel = 0.1f;
+
+        private readonly PhysicsManager Physics;
+        private readonly PhysicsProperties Properties;
+
+        internal Vec2? OldCenter;
+        internal Vec2 Center;
+        private readonly Vec2 Offset;
+        internal readonly Vec2 Size;
+
+        private Vec2 Velocity;
+        private OutputData Report;
+
+        public DynamicCollider(PhysicsManager physics, Vec2 center, Vec2 offset, Vec2 size, PhysicsProperties properties)
         {
-            if (gameObject.scene.name == "Client")
-                physicsManager = Client.Ref.PhysicsManager;
-
-            if (gameObject.scene.name == "Server")
-                physicsManager = Server.Ref.PhysicsManager;
+            Physics = physics;
+            Properties = properties;
 
             OldCenter = null;
-            Center = (Vector2)transform.position;
-            Size = SizeInit;
+            Center = center + offset;
+            Offset = offset;
+            Size = size;
 
-            physicsReport = new();
-            velocity = Vector2.zero;
-
-            active = true;
+            Velocity = Vec2.Zero;
+            Report = new OutputData { Position = Center };
         }
 
-        public void Disable()
-        {
-            OldCenter = null;
-            Center = Vector2.zero;
-            Size = Vector2.zero;
-
-            active = false;
-        }
-
-        public void PhysicsUpdate(InputData inputData)
+        public OutputData PhysicsUpdate(InputData inputData)
         {
             // Horizontal physics
 
             int wantSide = (inputData.Left ? -1 : 0) + (inputData.Right ? 1 : 0);
 
             if (wantSide != 0)
-                velocity += wantSide * new Vector2(HorizontalForce, 0f);
+                Velocity += wantSide * new Vec2(Properties.HorizontalForce, 0f);
             else
             {
-                int sgn1 = System.Math.Sign(velocity.x);
-                velocity -= sgn1 * new Vector2(HorizontalDrag, 0f);
-                int sgn2 = System.Math.Sign(velocity.x);
+                int sgn1 = Math.Sign(Velocity.x);
+                Velocity -= sgn1 * new Vec2(Properties.HorizontalDrag, 0f);
+                int sgn2 = Math.Sign(Velocity.x);
 
                 if (sgn1 != sgn2)
-                    velocity = new Vector2(0f, velocity.y);
+                    Velocity = new Vec2(0f, Velocity.y);
             }
 
             // Vertical physics
 
-            velocity -= new Vector2(0, Gravity);
+            Velocity -= new Vec2(0, Properties.Gravity);
 
-            if (physicsReport.OnGround)
+            if (Report.OnGround)
             {
                 if (inputData.Jump)
                 {
-                    velocity = new Vector2(velocity.x, JumpSize);
+                    Velocity = new Vec2(Velocity.x, Properties.JumpSize);
                 }
             }
 
             // Velocity clamp
 
-            if (Math.Abs(velocity.x) > MaxHorizontalVelocity)
-                velocity = new Vector2(Math.Sign(velocity.x) * MaxHorizontalVelocity, velocity.y);
+            if (Math.Abs(Velocity.x) > Properties.MaxHorizontalVelocity)
+                Velocity = new Vec2(Math.Sign(Velocity.x) * Properties.MaxHorizontalVelocity, Velocity.y);
 
-            if (Math.Abs(velocity.y) > MaxVerticalVelocity)
-                velocity = new Vector2(velocity.x, Math.Sign(velocity.y) * MaxVerticalVelocity);
+            if (Math.Abs(Velocity.y) > Properties.MaxVerticalVelocity)
+                Velocity = new Vec2(Velocity.x, Math.Sign(Velocity.y) * Properties.MaxVerticalVelocity);
 
             // Velocity wall reset
 
-            if (physicsReport.OnGround && velocity.y < -VELOCITY_EPSILON)
-                velocity = new Vector2(velocity.x, -VELOCITY_EPSILON);
+            if (Report.OnGround && Velocity.y < -MaxTouchVel)
+                Velocity = new Vec2(Velocity.x, -MaxTouchVel);
 
-            if (physicsReport.OnCeil && velocity.y > VELOCITY_EPSILON)
-                velocity = new Vector2(velocity.x, VELOCITY_EPSILON);
+            if (Report.OnCeil && Velocity.y > MaxTouchVel)
+                Velocity = new Vec2(Velocity.x, MaxTouchVel);
 
-            if (physicsReport.OnLeftWall && velocity.x < -VELOCITY_EPSILON)
-                velocity = new Vector2(-VELOCITY_EPSILON, velocity.y);
+            if (Report.OnLeftWall && Velocity.x < -MaxTouchVel)
+                Velocity = new Vec2(-MaxTouchVel, Velocity.y);
 
-            if (physicsReport.OnRightWall && velocity.x > VELOCITY_EPSILON)
-                velocity = new Vector2(VELOCITY_EPSILON, velocity.y);
+            if (Report.OnRightWall && Velocity.x > MaxTouchVel)
+                Velocity = new Vec2(MaxTouchVel, Velocity.y);
 
             // Generate report & update position
 
-            SetWill(Center, (Vector2)transform.position + velocity * Time.fixedDeltaTime);
-            physicsReport = physicsManager.MoveCollider(this);
-            UpdatePosition(physicsReport.Position ?? transform.position);
+            SetWill(Center, Center + Velocity * Time.fixedDeltaTime);
+            Report = Physics.MoveCollider(this);
+            return RemoveOffset(Report);
         }
 
-        public void NoPhysicsUpdate(Vector2 newPosition)
+        public OutputData NoPhysicsUpdate(Vec2 targetPos)
         {
-            Vector2 colliderPos = newPosition + (Vector2)localPos;
-            velocity = Vector2.zero;
+            Vec2 colliderPos = targetPos + Offset;
+            Velocity = Vec2.Zero;
 
             SetWill(Center, colliderPos);
-            physicsReport = new PhysicsReport { Position = colliderPos };
-            UpdatePosition(colliderPos);
+            Report = new OutputData { Position = colliderPos };
+            return RemoveOffset(Report);
         }
 
-        public void SetWill(Vector2 oldCenter, Vector2 newCenter)
+        internal void SetWill(Vec2 oldCenter, Vec2 newCenter)
         {
             OldCenter = oldCenter;
             Center = newCenter;
         }
 
-        private void UpdatePosition(Vector2 colliderPosTarget)
+        private OutputData RemoveOffset(OutputData odata)
         {
-            transform.parent.position = colliderPosTarget - (Vector2)localPos;
-            transform.position = colliderPosTarget;
-        }
-
-        private void OnDrawGizmos()
-        {
-            if (!Application.isPlaying || active)
-            {
-                Vector2 drawCenter = active ? Center : (Vector2)transform.position;
-                Vector2 drawSize = active ? Size : SizeInit;
-
-                Gizmos.color = Color.yellow;
-                Gizmos.DrawWireCube(drawCenter, drawSize);
-            }
+            odata.Position -= Offset;
+            return odata;
         }
     }
 }

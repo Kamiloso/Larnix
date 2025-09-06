@@ -118,7 +118,7 @@ namespace Larnix.Client.Terrain
         private int ChunkDistance(Vector2Int chunk)
         {
             return Core.Common.ManhattanDistance(
-                ChunkMethods.CoordsToChunk(!isMenu ? Ref.MainPlayer.GetPosition() : new Vector2(0f, 0f)),
+                ChunkMethods.CoordsToChunk(!isMenu ? Ref.MainPlayer.Position : new Vec2(0, 0)),
                 chunk
                 );
         }
@@ -129,7 +129,7 @@ namespace Larnix.Client.Terrain
                 return false;
 
             HashSet<Vector2Int> nearbyChunks = Server.Terrain.ChunkLoading.GetNearbyChunks(
-                ChunkMethods.CoordsToChunk(Ref.MainPlayer.GetPosition()),
+                ChunkMethods.CoordsToChunk(Ref.MainPlayer.Position),
                 Server.Terrain.ChunkLoading.LOADING_DISTANCE
                 );
 
@@ -232,9 +232,7 @@ namespace Larnix.Client.Terrain
                 IHasCollider iface = BlockFactory.GetSlaveInstance<IHasCollider>(block.Front.ID);
                 if (iface != null)
                 {
-                    StaticCollider statCol = StaticCollider.Create(iface);
-                    statCol.MakeOffset(POS);
-
+                    StaticCollider statCol = StaticCollider.Create(iface, POS);
                     if(!isMenu) Ref.PhysicsManager.AddCollider(statCol);
                     BlockColliders.Add(POS, statCol);
                 }
