@@ -72,6 +72,11 @@ namespace Larnix.Client.Terrain
             UnlockChunk(chunk);
         }
 
+        public bool ChunkLoaded(Vector2Int chunk)
+        {
+            return Chunks.Keys.Contains(chunk);
+        }
+
         public void UpdateBlock(Vector2Int POS, BlockData2 data, long? unlock = null)
         {
             Vector2Int chunk = ChunkMethods.CoordsToChunk(POS);

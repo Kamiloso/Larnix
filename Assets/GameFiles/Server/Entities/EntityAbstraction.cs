@@ -7,70 +7,69 @@ namespace Larnix.Server.Entities
 {
     public class EntityAbstraction
     {
-        // ==== Public Static Factory Methods ====
-        public EntityAbstraction(string nickname) // Create player abstraction
+        // Player constructor
+        public EntityAbstraction(string nickname)
         {
             ulong uid = (ulong)Ref.QuickServer.UserManager.GetUserID(nickname);
             EntityData entityData = Ref.EntityDataManager.TryFindEntityData(uid);
 
             if (entityData == null)
-                entityData = new EntityData // Create new player
+            {
+                entityData = new EntityData
                 {
                     ID = EntityID.Player
                 };
+            }
 
-            Init(uid, entityData, nickname);
+            Initialize(uid, entityData);
         }
 
-        public EntityAbstraction(EntityData entityData, ulong? uid = null) // Create entity abstraction
+        // Entity constructor
+        public EntityAbstraction(EntityData entityData, ulong? uid = null)
         {
             if (entityData.ID == EntityID.Player)
-                throw new System.ArgumentException("Cannot create player instance like entity!");
+                throw new System.ArgumentException("Cannot create player instance as a generic entity!");
 
-            ulong _uid = uid == null ? GetNextUID() : (ulong)uid;
-            Init(_uid, entityData);
+            ulong resolvedUid = uid ?? GetNextUID();
+            Initialize(resolvedUid, entityData);
         }
 
-        private void Init(ulong uid, EntityData entityData, string nickname = null)
+        private void Initialize(ulong uid, EntityData entityData)
         {
-            delayed_uID = uid;
-            delayed_EntityData = entityData;
-            delayed_nickname = nickname;
+            storedUID = uid;
+            storedEntityData = entityData;
 
-            Ref.EntityDataManager.SetEntityData(delayed_uID, delayed_EntityData);
+            // flushing data to EntityDataManager
+            Ref.EntityDataManager.SetEntityData(storedUID, storedEntityData);
         }
 
-        // ==== Private Things ====
-        private EntityController controller = null;
-        private ulong delayed_uID;
-        private EntityData delayed_EntityData;
-        private string delayed_nickname;
+        private EntityServer controller;
+        private ulong storedUID;
+        private EntityData storedEntityData;
 
-        // ==== Public Properties ====
-        public bool IsActive { get { return controller != null; } }
-        public ulong uID { get { return IsActive ? controller.uID : delayed_uID; } }
-        public EntityData EntityData { get { return IsActive ? controller.EntityData : delayed_EntityData; } }
+        public bool IsActive => controller != null;
+        public ulong uID => IsActive ? controller.uID : storedUID;
+        public EntityData EntityData => IsActive ? controller.EntityData : storedEntityData;
 
-        // ==== Public Methods ====
         public void Activate()
         {
             if (IsActive)
                 throw new System.InvalidOperationException("Entity abstraction is already active!");
 
-            controller = new EntityController(delayed_uID, delayed_EntityData, delayed_nickname);
+            controller = EntityFactory.ConstructEntityObject(storedUID, storedEntityData, Ref.PhysicsManager);
         }
 
-        public EntityController GetRealController()
+        public EntityServer GetRealController()
         {
-            return IsActive ? controller : null;
+            return controller;
         }
 
-        public void DeleteEntityInstant() // Execute only from after FromFixedUpdate()
+        public void DeleteEntityInstant()
         {
             Ref.EntityDataManager.DeleteEntityData(uID);
         }
 
-        public void UnloadEntityInstant() // Execute only from after FromFixedUpdate()
+        public void UnloadEntityInstant()
         {
             Ref.EntityDataManager.UnloadEntityData(uID);
         }
@@ -83,19 +82,18 @@ namespace Larnix.Server.Entities
             controller.FromFixedUpdate();
         }
 
-        // ==== Static Things ====
-        private static ulong? privNextUID = null;
+        private static ulong? nextUID = null;
         private static ulong GetNextUID()
         {
-            if (privNextUID != null)
+            if (nextUID != null)
             {
-                ulong nextUID = (ulong)privNextUID;
-                privNextUID--;
-                return nextUID;
+                ulong uid = nextUID.Value;
+                nextUID--;
+                return uid;
             }
             else
             {
-                privNextUID = (ulong)(Ref.Server.Database.GetMinUID() - 1);
+                nextUID = (ulong)(Ref.Server.Database.GetMinUID() - 1);
                 return GetNextUID();
             }
         }

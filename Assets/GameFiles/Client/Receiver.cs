@@ -16,6 +16,7 @@ namespace Larnix.Client
             client.Subscribe<ChunkInfo>(_ChunkInfo);
             client.Subscribe<BlockUpdate>(_BlockUpdate);
             client.Subscribe<RetBlockChange>(_RetBlockChange);
+            client.Subscribe<Teleport>(_Teleport);
         }
 
         private void _PlayerInitialize(PlayerInitialize msg)
@@ -72,6 +73,16 @@ namespace Larnix.Client
                 msg.CurrentBlock,
                 msg.Operation
             ); // unlock and update block
+        }
+
+        private void _Teleport(Teleport msg)
+        {
+            if (Ref.MainPlayer.IsAlive)
+            {
+                Vec2 targetPos = msg.TargetPosition;
+                Ref.MainPlayer.Teleport(targetPos);
+                Larnix.Debug.Log("Teleported");
+            }
         }
     }
 }

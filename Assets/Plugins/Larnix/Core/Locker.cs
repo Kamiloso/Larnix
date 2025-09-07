@@ -1,11 +1,9 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
 using System.IO;
 using QuickNet;
 
-namespace Larnix.Files
+namespace Larnix
 {
     public class Locker : IDisposable
     {

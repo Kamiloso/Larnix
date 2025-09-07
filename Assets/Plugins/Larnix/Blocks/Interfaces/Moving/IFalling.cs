@@ -6,7 +6,7 @@ namespace Larnix.Blocks
     {
         void Init()
         {
-            ThisBlock.FrameEventRandom += (sender, args) => Fall();
+            This.FrameEventRandom += (sender, args) => Fall();
         }
 
         int FALL_PERIOD();
@@ -16,12 +16,12 @@ namespace Larnix.Blocks
             if (WorldAPI.FramesSinceServerStart() % FALL_PERIOD() != 0)
                 return;
 
-            Vector2Int localpos = ThisBlock.Position;
+            Vector2Int localpos = This.Position;
             Vector2Int downpos = localpos - new Vector2Int(0, 1);
 
-            if (CanMove(localpos, downpos, ThisBlock.IsFront))
+            if (CanMove(localpos, downpos, This.IsFront))
             {
-                Move(localpos, downpos, ThisBlock.IsFront);
+                Move(localpos, downpos, This.IsFront);
             }
         }
     }

@@ -154,8 +154,7 @@ namespace Larnix.Server.Terrain
 
         private BlockServer ConstructAndBindBlockObject(Vector2Int POS, BlockData1 block, bool front)
         {
-            BlockServer blockServer = BlockFactory.ConstructBlockObject(POS, block, front);
-            blockServer.InitializeWorldAPI(WorldAPI);
+            BlockServer blockServer = BlockFactory.ConstructBlockObject(POS, block, front, WorldAPI);
             return blockServer;
         }
 

@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Entities;
-using Larnix.Entities.Client;
+using Larnix.Client.Entities.Body;
 using Larnix.Core;
 
 namespace Larnix.Client.Entities

@@ -7,6 +7,8 @@ using Larnix.Client.Entities;
 using Larnix.Entities;
 using QuickNet.Channel;
 using Larnix.Physics;
+using Larnix.Blocks;
+using IHasCollider = Larnix.Entities.IHasCollider;
 
 namespace Larnix.Client
 {
@@ -23,8 +25,8 @@ namespace Larnix.Client
 
         // Collider settings
         private DynamicCollider DynamicCollider;
-        private readonly Vec2 ColliderOffset = new Vec2(0.00, 0.375);
-        private readonly Vec2 ColliderSize = new Vec2(0.40, 1.75);
+        private readonly Vec2 ColliderOffset = EntityFactory.GetSlaveInstance<IHasCollider>(EntityID.Player).COLLIDER_OFFSET();
+        private readonly Vec2 ColliderSize = EntityFactory.GetSlaveInstance<IHasCollider>(EntityID.Player).COLLIDER_SIZE();
         private readonly PhysicsProperties PhysicsProperties = new()
         {
             Gravity = 1.00,
@@ -54,21 +56,28 @@ namespace Larnix.Client
         {
             FixedCounter++;
 
-            OutputData odata;
+            // Debug teleporting
             if (DebugTeleportSubmit)
             {
                 Vec2 tppos = new Vec2(DebugTeleportPos.x, DebugTeleportPos.y);
-                odata = DynamicCollider.NoPhysicsUpdate(tppos);
+                Teleport(tppos);
                 DebugTeleportSubmit = false;
             }
-            else if (!Ref.Debug.SpectatorMode)
+
+            // Movement
+            OutputData? odata = null;
+            if (!Ref.Debug.SpectatorMode)
             {
-                odata = DynamicCollider.PhysicsUpdate(new InputData
+                Vector2Int chunk = ChunkMethods.CoordsToChunk(Position);
+                if (Ref.GridManager.ChunkLoaded(chunk))
                 {
-                    Left = Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A),
-                    Right = Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D),
-                    Jump = Input.GetKey(KeyCode.Space) || Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W),
-                });
+                    odata = DynamicCollider.PhysicsUpdate(new InputData
+                    {
+                        Left = Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A),
+                        Right = Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D),
+                        Jump = Input.GetKey(KeyCode.Space) || Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W),
+                    });
+                }
             }
             else
             {
@@ -91,10 +100,16 @@ namespace Larnix.Client
 
                 odata = DynamicCollider.NoPhysicsUpdate(Position + will);
             }
-            Position = odata.Position;
+            Position = odata?.Position ?? Position;
 
             RotationUpdate();
             UpdateEntityObject(FixedCounter * Time.fixedDeltaTime);
+        }
+
+        public void Teleport(Vec2 position)
+        {
+            OutputData odata = DynamicCollider.NoPhysicsUpdate(position);
+            Position = odata.Position;
         }
 
         public void EarlyUpdate2()

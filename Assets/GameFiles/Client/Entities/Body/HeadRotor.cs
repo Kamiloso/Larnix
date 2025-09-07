@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Larnix.Entities.Client
+namespace Larnix.Client.Entities.Body
 {
     public class HeadRotor : MonoBehaviour
     {

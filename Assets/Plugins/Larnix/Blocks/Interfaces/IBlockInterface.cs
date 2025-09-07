@@ -6,7 +6,7 @@ namespace Larnix.Blocks
 {
     public interface IBlockInterface
     {
-        BlockServer ThisBlock => (BlockServer)this;
-        IWorldAPI WorldAPI => ThisBlock.WorldAPI;
+        BlockServer This => (BlockServer)this;
+        IWorldAPI WorldAPI => This.WorldAPI;
     }
 }

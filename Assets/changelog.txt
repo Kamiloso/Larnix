@@ -1,2 +1,0 @@
-- BlockData & SingleBlockData renamed to BlockData1 and BlockData2
-- Added CanReceive flag to QuickServer

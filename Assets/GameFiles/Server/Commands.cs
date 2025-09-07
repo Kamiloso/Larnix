@@ -1,12 +1,13 @@
+using System.Collections;
+using System.Collections.Generic;
 using Larnix.Blocks;
 using Larnix.Entities;
 using Larnix.Server.Entities;
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using Larnix.Server.Terrain;
 using UnityEngine;
 using System.Text;
+using Larnix.Packets;
 
 namespace Larnix.Server
 {
@@ -70,6 +71,7 @@ namespace Larnix.Server
                 "help" => Help(),
                 "stop" when len == 1 => Stop(),
                 "playerlist" when len == 1 => PlayerList(),
+                "tp" when len == 4 => Tp(arg[1], arg[2], arg[3]),
                 "kick" when len == 2 => Kick(arg[1]),
                 "kill" when len == 2 => Kill(arg[1]),
                 "spawn" when len == 4 => Spawn(arg[1], arg[2], arg[3]),
@@ -88,8 +90,9 @@ namespace Larnix.Server
                 " | help - Displays this documentation.\n" +
                 " | stop - Turns off the server.\n" +
                 " | playerlist - Shows all players on the server.\n" +
-                " | kick [nickname] - Kicks the player if online.\n" +
-                " | kill [nickname] - Kills the player if alive.\n" +
+                " | tp [nickname] [x] [y] - Teleports player to a given position.\n" +
+                " | kick [nickname] - Kicks player if online.\n" +
+                " | kill [nickname] - Kills player if alive.\n" +
                 " | spawn [entity] [x] [y] - Spawns entity at a given position.\n" +
                 " | place [front/back] [x] [y] [block] [?variant] - Places block at a given position.\n" +
                 " | seed - Displays the server seed.\n" +
@@ -118,6 +121,27 @@ namespace Larnix.Server
             sb.Append("\n");
 
             return (CommandResultType.Raw, sb.ToString());
+        }
+
+        private static (CommandResultType, string) Tp(string nickname, string xt, string yt)
+        {
+            if (Ref.PlayerManager.GetPlayerState(nickname) == PlayerManager.PlayerState.Alive)
+            {
+                if (double.TryParse(xt, out double x) && double.TryParse(yt, out double y))
+                {
+                    Vec2 targetPos = new Vec2(x, y);
+                    Vec2 normalOffset = new Vec2(0.00, 0.01);
+                    Vec2 fullTargetPos = targetPos + normalOffset;
+                    Ref.QuickServer.Send(nickname, new Teleport(fullTargetPos));
+                    ((Player)Ref.EntityManager.GetPlayerController(nickname).GetRealController()).AcceptTeleport(fullTargetPos);
+                    return (CommandResultType.Success, "Player " + nickname + " has been teleported to " + targetPos);
+                }
+                else return (CommandResultType.Error, "Cannot parse coordinates!");
+            }
+            else
+            {
+                return (CommandResultType.Error, "Player " + nickname + " is not alive!");
+            }
         }
 
         private static (CommandResultType, string) Kick(string nickname)

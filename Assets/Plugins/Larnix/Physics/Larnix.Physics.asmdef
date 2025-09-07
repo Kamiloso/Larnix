@@ -1,0 +1,17 @@
+{
+    "name": "Larnix.Physics",
+    "rootNamespace": "Larnix.Physics",
+    "references": [
+        "GUID:b9668968ef3fc7d40adac0aa4237498e",
+        "GUID:0c28fbad8b5c3054db7f3764ad782c12"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

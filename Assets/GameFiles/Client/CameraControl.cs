@@ -1,4 +1,5 @@
 using Larnix.Client.Entities;
+using Larnix.Entities;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -9,7 +10,6 @@ namespace Larnix.Client
     {
         [SerializeField] Camera MainCamera;
         [SerializeField] Transform FollowTransform;
-        [SerializeField] Vector2 Offset;
 
         private int ZoomSteps = DefaultZoomSteps;
 
@@ -37,9 +37,10 @@ namespace Larnix.Client
             }
 
             // Camera position
+            Vec2 offset = EntityFactory.GetSlaveInstance<IHasCollider>(EntityID.Player).COLLIDER_OFFSET();
             MainCamera.transform.position = new Vector3(
-                FollowTransform.position.x + Offset.x,
-                FollowTransform.position.y + Offset.y,
+                FollowTransform.position.x + (float)offset.x,
+                FollowTransform.position.y + (float)offset.y,
                 MainCamera.transform.position.z
             );
 

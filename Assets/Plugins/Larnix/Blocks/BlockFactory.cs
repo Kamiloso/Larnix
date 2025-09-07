@@ -14,8 +14,8 @@ namespace Larnix.Blocks
         private static Dictionary<BlockID, BlockInfo> BlockCache = new();
         private static object _locker = new();
 
-        const string Namespace = "Larnix.Blocks";
-        const string AsmName = "Larnix.Blocks";
+        private static readonly string Namespace = typeof(BlockServer).Namespace;
+        private static readonly string AsmName = typeof(BlockServer).Assembly.GetName().Name;
 
         private class BlockInfo
         {
@@ -80,10 +80,11 @@ namespace Larnix.Blocks
             }
         }
 
-        public static BlockServer ConstructBlockObject(Vector2Int POS, BlockData1 block, bool isFront)
+        public static BlockServer ConstructBlockObject(Vector2Int POS, BlockData1 block, bool isFront, IWorldAPI worldAPI)
         {
             BlockInfo info = GetBlockInfo(block.ID);
             BlockServer blockserv = info.Constructor(POS, block, isFront);
+            blockserv.InitializeWorldAPI(worldAPI);
             foreach (var init in info.Inits)
             {
                 init(blockserv);
