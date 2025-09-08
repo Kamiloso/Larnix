@@ -1,5 +1,5 @@
 <linker>
-	<assembly fullname="Assembly-CSharp">
+	<assembly fullname="Larnix.Server">
 		<namespace fullname="Larnix.Packets" preserve="all"/>
 	</assembly>
 </linker>

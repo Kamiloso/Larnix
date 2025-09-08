@@ -4,7 +4,6 @@ using QuickNet.Backend;
 using System.IO;
 using Larnix.Menu.Worlds;
 using Larnix.Server;
-using System.Threading;
 
 namespace Larnix
 {

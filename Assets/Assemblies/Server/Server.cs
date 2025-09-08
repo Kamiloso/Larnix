@@ -4,8 +4,7 @@ using UnityEngine;
 using System;
 using QuickNet;
 using Larnix.Server.Data;
-using Larnix.Entities;
-using Larnix.Menu.Worlds;
+using Larnix.Core;
 using QuickNet.Processing;
 using System.IO;
 using QuickNet.Backend;
@@ -16,7 +15,14 @@ using Version = Larnix.Core.Version;
 
 namespace Larnix.Server
 {
-    public class Server : IDisposable
+    public enum ServerType
+    {
+        Local, // pure singleplayer
+        Host, // singleplayer published for remote hosts
+        Remote, // multiplayer console server
+    }
+
+    public class Server
     {
         private readonly Locker Locker;
         private readonly Receiver Receiver;
@@ -33,11 +39,13 @@ namespace Larnix.Server
         private float broadcastCycleTimer = 0f;
 
         public const float FIXED_TIME = Core.Common.FIXED_TIME;
+        public readonly Action CloseServer;
 
-        public Server(ServerType type, string worldPath, long? seedSuggestion)
+        public Server(ServerType type, string worldPath, long? seedSuggestion, Action closeServer)
         {
             Type = type;
             WorldPath = worldPath;
+            CloseServer = closeServer;
 
             // scripts
             Ref.Server = this;
@@ -54,9 +62,9 @@ namespace Larnix.Server
             if (Locker != null)
             {
                 // world metadata
-                Mdata = WorldSelect.ReadMetadataSGP(WorldPath, true);
+                Mdata = MetadataSGP.ReadMetadataSGP(WorldPath, true);
                 Mdata = new MetadataSGP(Version.Current, Mdata?.nickname);
-                WorldSelect.SaveMetadataSGP(WorldPath, (MetadataSGP)Mdata, true);
+                MetadataSGP.SaveMetadataSGP(WorldPath, (MetadataSGP)Mdata, true);
 
                 // satelite classes
                 Ref.Config = Config.Obtain(WorldPath);
@@ -71,7 +79,7 @@ namespace Larnix.Server
                     Path.Combine(WorldPath, "Socket"),
                     Version.Current.ID,
                     Validation.IsGoodText<String256>(Ref.Config.Motd) ? Ref.Config.Motd : "Wrong motd format :(",
-                    Mdata?.nickname ?? "Player"
+                    Type == ServerType.Remote ? "Player" : (Mdata?.nickname ?? "Player")
                 );
 
                 Ref.QuickServer.ConfigureMasks(
@@ -86,50 +94,70 @@ namespace Larnix.Server
                 LocalAddress = "localhost:" + Ref.QuickServer.Port;
                 Authcode = Ref.QuickServer.Authcode;
 
-                // title set
-                Console.SetTitle("Larnix Server " + Version.Current);
-                Larnix.Debug.LogRawConsole(new string('-', 60) + "\n");
-
-                // force change default password
-                if (Type == ServerType.Remote && Mdata?.nickname != "Player")
+                // Configure console
+                if (Type == ServerType.Remote)
                 {
-                    string sgpNickname = Mdata?.nickname;
-
-                    Larnix.Debug.LogRawConsole("This world was previously in use by " + sgpNickname + ".\n");
-                    Larnix.Debug.LogRawConsole("Choose a password for this player to start the server.\n");
-
-                password_ask:
-                    {
-                        Larnix.Debug.LogRawConsole("> ");
-                        Larnix.Debug.FlushLogs(); // allowed temporarily
-                        string input = Console.GetInputSync();
-                        if (Validation.IsGoodPassword(input))
-                        {
-                            Ref.QuickServer.UserManager.ChangePassword(sgpNickname, Hasher.HashPassword(input));
-                            Mdata = new MetadataSGP(Version.Current, "Player");
-                            WorldSelect.SaveMetadataSGP(WorldPath, (MetadataSGP)Mdata, true);
-                        }
-                        else
-                        {
-                            Larnix.Debug.LogRawConsole("Password should be 7-32 characters and not end with NULL (0x00).\n");
-                            goto password_ask;
-                        }
-                    }
-
-                    Larnix.Debug.LogRawConsole("Password changed.\n");
-                    Larnix.Debug.LogRawConsole(new string('-', 60) + "\n");
+                    ConfigureConsole();
                 }
-
-                // socket information
-                Larnix.Debug.LogNoDate("Socket created on port " + Ref.QuickServer.Port);
-                Larnix.Debug.LogNoDate("Authcode: " + Ref.QuickServer.Authcode);
-                Larnix.Debug.LogRawConsole(new string('-', 60) + "\n");
-
-                // additional initialization
-                if (Type == ServerType.Remote) Console.StartInputThread();
-                Larnix.Debug.LogSuccess("Server is ready!");
             }
             else throw new Exception("Trying to access world that is already open.");
+        }
+
+        private void ConfigureConsole()
+        {
+            // title set
+            Console.SetTitle("Larnix Server " + Version.Current);
+            Core.Debug.LogRaw(new string('-', 60) + "\n");
+
+            // force change default password
+            if (Type == ServerType.Remote && Mdata?.nickname != "Player")
+            {
+                string sgpNickname = Mdata?.nickname;
+
+                Core.Debug.LogRaw("This world was previously in use by " + sgpNickname + ".\n");
+                Core.Debug.LogRaw("Choose a password for this player to start the server.\n");
+
+            password_ask:
+                {
+                    Core.Debug.LogRaw("> ");
+                    string input = Console.GetInputSync();
+                    if (Validation.IsGoodPassword(input))
+                    {
+                        Ref.QuickServer.UserManager.ChangePassword(sgpNickname, Hasher.HashPassword(input));
+                        Mdata = new MetadataSGP(Version.Current, "Player");
+                        MetadataSGP.SaveMetadataSGP(WorldPath, (MetadataSGP)Mdata, true);
+                    }
+                    else
+                    {
+                        Core.Debug.LogRaw("Password should be 7-32 characters and not end with NULL (0x00).\n");
+                        goto password_ask;
+                    }
+                }
+
+                Core.Debug.LogRaw("Password changed.\n");
+                Core.Debug.LogRaw(new string('-', 60) + "\n");
+            }
+
+            // socket information
+            string info1 = "Socket created on port " + Ref.QuickServer.Port;
+            string info2 = "Authcode: " + Ref.QuickServer.Authcode;
+            if (Type == ServerType.Remote)
+            {
+                Core.Debug.LogRaw(info1 + "\n");
+                Core.Debug.LogRaw(info2 + "\n");
+            }
+            else
+            {
+                Core.Debug.Log(info1);
+                Core.Debug.Log(info2);
+            }
+            Core.Debug.LogRaw(new string('-', 60) + "\n");
+
+            Core.Debug.LogSuccess("Server is ready!");
+
+            // input thread start
+            if (Type == ServerType.Remote)
+                Console.StartInputThread();
         }
 
         public void TickFixed()
@@ -163,11 +191,6 @@ namespace Larnix.Server
             }
         }
 
-        public void CloseServer()
-        {
-            ServerInstancer.Instance.StopFlag = true;
-        }
-
         private void SaveAllNow()
         {
             if (Ref.Database != null)
@@ -189,15 +212,15 @@ namespace Larnix.Server
             Ref.Config?.Save(WorldPath);
         }
 
-        public void Dispose()
+        public void Dispose(bool emergency)
         {
-            SaveAllNow();
+            if (!emergency) SaveAllNow();
 
             Ref.QuickServer?.Dispose();
             Ref.Database?.Dispose();
             Locker?.Dispose();
 
-            Larnix.Debug.Log("Server close");
+            Core.Debug.Log("Server closed");
         }
     }
 }

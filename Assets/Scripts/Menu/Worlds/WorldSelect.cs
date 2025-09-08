@@ -7,38 +7,14 @@ using System.IO;
 using UnityEngine.UI;
 using TMPro;
 using Larnix.Menu.Forms;
-using QuickNet;
+using Larnix.Core;
 using Version = Larnix.Core.Version;
 
 namespace Larnix.Menu.Worlds
 {
-    public struct MetadataSGP
-    {
-        public Version version;
-        public string nickname;
-
-        public MetadataSGP(Version version, string nickname)
-        {
-            this.version = version;
-            this.nickname = nickname;
-        }
-
-        public MetadataSGP(string text)
-        {
-            string[] arg = text.Split('\n');
-            version = new Version(uint.Parse(arg[0]));
-            nickname = arg[1];
-        }
-
-        public string GetString()
-        {
-            return version.ID + "\n" + nickname;
-        }
-    }
-
     public class WorldSelect : UniversalSelect
     {
-        public static string SavesPath { get => Path.Combine(Application.persistentDataPath, "Saves"); }
+        public static string SavesPath => Core.Common.SavesPath;
 
         [SerializeField] Image TitleImage;
         [SerializeField] TextMeshProUGUI DescriptionText;
@@ -68,7 +44,7 @@ namespace Larnix.Menu.Worlds
 
         public static void PlayWorldByName(string name, bool isHost, long? seedSuggestion = null)
         {
-            MetadataSGP mdata = ReadMetadataSGP(name);
+            MetadataSGP mdata = MetadataSGP.ReadMetadataSGP(name);
             WorldLoad.StartLocal(name, mdata.nickname, isHost, seedSuggestion);
 
             if(mdata.nickname != "Player")
@@ -77,7 +53,7 @@ namespace Larnix.Menu.Worlds
 
         public void HostWorld()
         {
-            MetadataSGP mdata = ReadMetadataSGP(SelectedWorld);
+            MetadataSGP mdata = MetadataSGP.ReadMetadataSGP(SelectedWorld);
             BaseForm.GetInstance<WorldHostForm>().EnterForm(SelectedWorld, mdata.nickname);
         }
 
@@ -111,7 +87,7 @@ namespace Larnix.Menu.Worlds
                 rt.GetComponent<WorldSegment>().Init(worldName, this);
                 ScrollView.BottomAddElement(rt);
 
-                MetadatasSGP[worldName] = ReadMetadataSGP(worldPath);
+                MetadatasSGP[worldName] = MetadataSGP.ReadMetadataSGP(worldPath);
             }
         }
 
@@ -174,29 +150,6 @@ namespace Larnix.Menu.Worlds
                 Vector2 pivot = new Vector2(0.5f, 0.5f);
                 Sprite blackSprite = Sprite.Create(blackTex, rect, pivot);
                 targetImage.sprite = blackSprite;
-            }
-        }
-
-        public static void SaveMetadataSGP(string worldName, MetadataSGP metadataSGP, bool fullPath = false)
-        {
-            string path = fullPath ? worldName : Path.Combine(SavesPath, worldName);
-            FileManager.Write(path, "metadata.txt", metadataSGP.GetString());
-        }
-
-        public static MetadataSGP ReadMetadataSGP(string worldName, bool fullPath = false)
-        {
-            string path = fullPath ? worldName : Path.Combine(SavesPath, worldName);
-            string contents = FileManager.Read(path, "metadata.txt");
-
-            try
-            {
-                return new MetadataSGP(contents);
-            }
-            catch
-            {
-                MetadataSGP mdata = new MetadataSGP(Version.Current, "Player");
-                SaveMetadataSGP(path, mdata);
-                return mdata;
             }
         }
     }

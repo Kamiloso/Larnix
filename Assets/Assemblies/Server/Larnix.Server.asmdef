@@ -1,0 +1,20 @@
+{
+    "name": "Larnix.Server",
+    "rootNamespace": "Larnix.Server",
+    "references": [
+        "GUID:b9668968ef3fc7d40adac0aa4237498e",
+        "GUID:9296d445484bbf741aad5477610d2921",
+        "GUID:0c28fbad8b5c3054db7f3764ad782c12",
+        "GUID:a99e1c276fb755d4eb5087762c3920ad",
+        "GUID:e47ec16989832dc49bbccde857433a2f"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -81,7 +81,7 @@ namespace Larnix.Client
             {
                 Vec2 targetPos = msg.TargetPosition;
                 Ref.MainPlayer.Teleport(targetPos);
-                Larnix.Debug.Log("Teleported");
+                Core.Debug.Log("Teleported");
             }
         }
     }

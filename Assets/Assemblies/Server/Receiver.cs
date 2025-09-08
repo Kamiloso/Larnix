@@ -28,7 +28,7 @@ namespace Larnix.Server
             Ref.PlayerManager.JoinPlayer(owner);
 
             // Info to console
-            Larnix.Debug.Log(owner + " joined the game.");
+            Core.Debug.Log(owner + " joined the game.");
         }
 
         private void _Stop(Stop msg, string owner)
@@ -37,7 +37,7 @@ namespace Larnix.Server
             Ref.PlayerManager.DisconnectPlayer(owner);
 
             // Info to console
-            Larnix.Debug.Log(owner + " disconnected.");
+            Core.Debug.Log(owner + " disconnected.");
         }
 
         private void _PlayerUpdate(PlayerUpdate msg, string owner)

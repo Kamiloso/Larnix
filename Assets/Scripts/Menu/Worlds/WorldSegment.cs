@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using Larnix.Core;
 using Version = Larnix.Core.Version;
 
 namespace Larnix.Menu.Worlds
@@ -45,7 +46,7 @@ namespace Larnix.Menu.Worlds
 
             if (MySelect is WorldSelect)
             {
-                MetadataSGP mdata = WorldSelect.ReadMetadataSGP(Name);
+                MetadataSGP mdata = MetadataSGP.ReadMetadataSGP(Name);
                 PlayButton.interactable = mdata.version <= Version.Current;
             }
 

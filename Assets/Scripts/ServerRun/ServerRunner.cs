@@ -9,13 +9,6 @@ using System.Runtime.ExceptionServices;
 
 namespace Larnix.Server
 {
-    public enum ServerType
-    {
-        Local, // pure singleplayer
-        Host, // singleplayer published for remote hosts
-        Remote, // multiplayer console server
-    }
-
     public class ServerInstancer : MonoBehaviour
     {
         private readonly bool THREADED = true;
@@ -40,7 +33,7 @@ namespace Larnix.Server
         {
             StopServerSync(); // ensure slot emptiness
 
-            _server = new Server(type, worldPath, seedSuggestion);
+            _server = new Server(type, worldPath, seedSuggestion, () => StopFlag = true);
             var tuple = (_server.LocalAddress, _server.Authcode);
 
             if (THREADED)
@@ -49,6 +42,7 @@ namespace Larnix.Server
                 {
                     const float PERIOD = Server.FIXED_TIME;
                     Stopwatch sw = Stopwatch.StartNew();
+                    bool crashed = false;
 
                     try
                     {
@@ -65,10 +59,15 @@ namespace Larnix.Server
                             }
                         }
                     }
+                    catch
+                    {
+                        crashed = true;
+                        throw;
+                    }
                     finally
                     {
                         sw.Stop();
-                        _server.Dispose();
+                        _server.Dispose(crashed);
                     }
                 });
             }
@@ -127,10 +126,9 @@ namespace Larnix.Server
                 }
                 else
                 {
-                    _server?.Dispose();
+                    _server?.Dispose(false);
+                    ResetServerSlot();
                 }
-
-                ResetServerSlot();
             }
         }
 

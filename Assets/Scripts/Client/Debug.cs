@@ -12,9 +12,6 @@ namespace Larnix.Client
     {
         [SerializeField] public bool ShowDebugInfo;
         [SerializeField] public bool AdvancedDebugKeys;
-        [SerializeField] public bool SpawnWildpigsWithZ;
-        [SerializeField] public bool UnlinkTerrainData;
-        [SerializeField] public bool NoiseDisplay;
         [SerializeField] public bool SpectatorMode;
 
         [SerializeField] TextMeshProUGUI DebugF3;
@@ -27,13 +24,11 @@ namespace Larnix.Client
         private void Awake()
         {
             Ref.Debug = this;
-            Server.Ref.Debug = this;
         }
 
         private void OnDestroy()
         {
             Ref.Debug = null;
-            Server.Ref.Debug = null;
         }
 
         private void FixedUpdate()

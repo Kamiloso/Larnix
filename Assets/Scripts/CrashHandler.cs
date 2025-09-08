@@ -70,7 +70,7 @@ namespace Larnix
             }
             catch
             {
-                Larnix.Debug.LogError("An error occurred while saving / openning file crash.log. Is it even possible?");
+                Core.Debug.LogError("An error occurred while saving / openning file crash.log. Is it even possible?");
             }
         }
     }

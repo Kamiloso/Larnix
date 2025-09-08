@@ -6,8 +6,9 @@
 
 - Better smooth
 - NBT system: Internal / Visual
+- Nicknames
 - Inventory
-- Health system
+- Health system, swords
 - Entity generation
 
 === KNOWN BUGS ===

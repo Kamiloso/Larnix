@@ -23,7 +23,7 @@ namespace Larnix.Menu
             Application.runInBackground = true;
             References.Menu = this;
 
-            Larnix.Debug.Log("Menu loaded");
+            Core.Debug.Log("Menu loaded");
         }
 
         private void Start()

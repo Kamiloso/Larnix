@@ -12,6 +12,7 @@ namespace Larnix.Core
 {
     public static class Common
     {
+        public static string SavesPath => Path.Combine(Application.persistentDataPath, "Saves");
         public const float FIXED_TIME = 0.02f;
 
         private static List<string> reservedFolders = new List<string>

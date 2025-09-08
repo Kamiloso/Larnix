@@ -20,7 +20,7 @@ namespace Larnix
         private enum LogType
         {
             Log, Success, Warning,
-            Error, RawConsole, NoDate
+            Error, RawConsole
         }
 
         private static void _Log(string msg, LogType logType)
@@ -31,13 +31,12 @@ namespace Larnix
                 {
                     case LogType.Log:
                     case LogType.Success:
-                    case LogType.NoDate:
+                    case LogType.RawConsole:
                         UnityEngine.Debug.Log(msg);
                         break;
 
                     case LogType.Warning: UnityEngine.Debug.LogWarning(msg); break;
                     case LogType.Error: UnityEngine.Debug.LogError(msg); break;
-                    case LogType.RawConsole: break;
                 }
             }
             else
@@ -49,7 +48,6 @@ namespace Larnix
                     case LogType.Warning: Server.Console.LogWarning(msg); break;
                     case LogType.Error: Server.Console.LogError(msg); break;
                     case LogType.RawConsole: Server.Console.LogRaw(msg); break;
-                    case LogType.NoDate: Server.Console.LogRaw(msg + "\n"); break;
                 }
             }
         }
@@ -94,11 +92,6 @@ namespace Larnix
         public static void LogRawConsole(string msg)
         {
             _LogOrEnqueue(msg, LogType.RawConsole);
-        }
-
-        public static void LogNoDate(string msg)
-        {
-            _LogOrEnqueue(msg, LogType.NoDate);
         }
 
         public static void FlushLogs()
@@ -158,7 +151,7 @@ namespace Larnix
         private static void Init()
         {
             MainThread = Thread.CurrentThread;
-            Core.Debug.InitLogs(Log, LogWarning, LogError);
+            Core.Debug.InitLogs(Log, LogWarning, LogError, LogSuccess, LogRawConsole);
             QuickNet.Debug.InitLogs(Log, LogWarning, LogError);
         }
     }

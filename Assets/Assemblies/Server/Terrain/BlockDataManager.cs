@@ -4,6 +4,7 @@ using UnityEngine;
 using Larnix.Blocks;
 using Unity.VisualScripting;
 using System;
+using System.Linq;
 
 namespace Larnix.Server.Terrain
 {
@@ -57,7 +58,7 @@ namespace Larnix.Server.Terrain
             if (DebugUnlinkDatabase)
                 return;
 
-            foreach(var vkp in ChunkCache.ToHashSet())
+            foreach(var vkp in ChunkCache.ToList())
             {
                 Vector2Int chunk = vkp.Key;
                 BlockData2[,] data = vkp.Value;

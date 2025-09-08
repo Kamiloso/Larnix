@@ -65,11 +65,11 @@ namespace Larnix.Client
             {
                 LarnixClient = connecting.Result;
                 Receiver = new Receiver(LarnixClient);
-                Larnix.Debug.Log($"{(IsMultiplayer ? "Remote" : "Local")} world on address {Address}");
+                Core.Debug.Log($"{(IsMultiplayer ? "Remote" : "Local")} world on address {Address}");
             }
             else
             {
-                Larnix.Debug.LogWarning("Failed creating client! Returning to menu...");
+                Core.Debug.LogWarning("Failed creating client! Returning to menu...");
                 BackToMenu();
             }
         }

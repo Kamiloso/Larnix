@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using Larnix.Server.Terrain;
 using Larnix.Server.Entities;
 using Larnix.Worldgen;
@@ -14,9 +13,6 @@ namespace Larnix.Server
     {
         // Mono Behaviours
         public static Server Server;
-
-        // Client Behaviours
-        public static Client.Debug Debug;
 
         // Normal Classes
         public static Generator Generator;
