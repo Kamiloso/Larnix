@@ -10,14 +10,14 @@ public class BuildAutomation
 
     private static string[] clientScenes = new string[]
     {
-        "Assets/GameFiles/Scenes/Menu.unity",
-        "Assets/GameFiles/Scenes/Client.unity",
-        "Assets/GameFiles/Scenes/Server.unity"
+        "Assets/Scenes/Menu.unity",
+        "Assets/Scenes/Client.unity",
+        "Assets/Scenes/Server.unity"
     };
 
     private static string[] serverScenes = new string[]
     {
-        "Assets/GameFiles/Scenes/Server.unity"
+        "Assets/Scenes/Server.unity"
     };
 
     private static List<string> successfulBuildFolders = new List<string>();

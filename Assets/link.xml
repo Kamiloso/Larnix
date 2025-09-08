@@ -1,8 +1,0 @@
-<linker>
-	<assembly fullname="Assembly-CSharp">
-		<namespace fullname="Larnix.Blocks" preserve="all"/>
-		<namespace fullname="Larnix.Modules.Entities" preserve="all"/>
-		<namespace fullname="Larnix.Modules.Biomes" preserve="all"/>
-		<namespace fullname="Larnix.Network.Commands" preserve="all"/>
-	</assembly>
-</linker>
