@@ -11,9 +11,9 @@ using Larnix.Packets;
 
 namespace Larnix.Server
 {
-    public static class Commands
+    public class Commands
     {
-        private static WorldAPI WorldAPI => Ref.ChunkLoading.WorldAPI;
+        private WorldAPI WorldAPI => Ref.ChunkLoading.WorldAPI;
 
         public enum CommandResultType
         {
@@ -25,7 +25,7 @@ namespace Larnix.Server
             Ignore
         }
 
-        public static void ExecuteFrame()
+        public void ExecuteFrame()
         {
             while (true)
             {
@@ -36,7 +36,7 @@ namespace Larnix.Server
             }
         }
 
-        public static void ExecuteAndInform(string command, string sender)
+        public void ExecuteAndInform(string command, string sender)
         {
             var (type, message) = Execute(command, sender);
 
@@ -58,7 +58,7 @@ namespace Larnix.Server
             }
         }
 
-        private static (CommandResultType, string) Execute(string command, string sender = null)
+        private (CommandResultType, string) Execute(string command, string sender = null)
         {
             string[] arg = command.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             int len = arg.Length;
@@ -81,7 +81,7 @@ namespace Larnix.Server
             };
         }
 
-        private static (CommandResultType, string) Help()
+        private (CommandResultType, string) Help()
         {
             return (CommandResultType.Raw,
                 "\n" +
@@ -99,13 +99,13 @@ namespace Larnix.Server
                 "\n");
         }
 
-        private static (CommandResultType, string) Stop()
+        private (CommandResultType, string) Stop()
         {
             Ref.Server.CloseServer();
             return (CommandResultType.Ignore, string.Empty);
         }
 
-        private static (CommandResultType, string) PlayerList()
+        private (CommandResultType, string) PlayerList()
         {
             StringBuilder sb = new();
             sb.Append("\n");
@@ -123,7 +123,7 @@ namespace Larnix.Server
             return (CommandResultType.Raw, sb.ToString());
         }
 
-        private static (CommandResultType, string) Tp(string nickname, string xt, string yt)
+        private (CommandResultType, string) Tp(string nickname, string xt, string yt)
         {
             if (Ref.PlayerManager.GetPlayerState(nickname) == PlayerManager.PlayerState.Alive)
             {
@@ -144,7 +144,7 @@ namespace Larnix.Server
             }
         }
 
-        private static (CommandResultType, string) Kick(string nickname)
+        private (CommandResultType, string) Kick(string nickname)
         {
             if (Ref.PlayerManager.GetPlayerState(nickname) != PlayerManager.PlayerState.None)
             {
@@ -157,7 +157,7 @@ namespace Larnix.Server
             }
         }
 
-        private static (CommandResultType, string) Kill(string nickname)
+        private (CommandResultType, string) Kill(string nickname)
         {
             if (Ref.PlayerManager.GetPlayerState(nickname) == PlayerManager.PlayerState.Alive)
             {
@@ -171,7 +171,7 @@ namespace Larnix.Server
             }
         }
 
-        private static (CommandResultType, string) Spawn(string entityname, string xs, string ys)
+        private (CommandResultType, string) Spawn(string entityname, string xs, string ys)
         {
             if (Enum.TryParse(entityname, ignoreCase: true, out EntityID entityID) &&
                 Enum.IsDefined(typeof(EntityID), entityID) &&
@@ -191,7 +191,7 @@ namespace Larnix.Server
             else return (CommandResultType.Error, $"Cannot spawn entity named \"{entityname}\"!");
         }
 
-        private static (CommandResultType, string) Place(string[] arg)
+        private (CommandResultType, string) Place(string[] arg)
         {
             bool front = arg[1] == "front";
             if (arg[1] != "front" && arg[1] != "back")
@@ -227,7 +227,7 @@ namespace Larnix.Server
             else return (CommandResultType.Error, "Cannot parse coordinates!");
         }
 
-        private static (CommandResultType, string) Seed()
+        private (CommandResultType, string) Seed()
         {
             long seed = Ref.Generator.Seed;
             return (CommandResultType.Log, "Seed: " + seed);

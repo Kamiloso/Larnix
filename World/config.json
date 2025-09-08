@@ -1,0 +1,10 @@
+{
+    "ConfigVersion": 3,
+    "MaxPlayers": 10,
+    "Port": 27682,
+    "Motd": "Welcome to Larnix server!",
+    "DataSavingPeriod": 15.0,
+    "EntityBroadcastPeriod": 0.03999999910593033,
+    "ClientIdentityPrefixSizeIPv4": 32,
+    "ClientIdentityPrefixSizeIPv6": 56
+}

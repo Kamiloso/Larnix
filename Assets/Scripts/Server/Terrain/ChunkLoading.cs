@@ -11,11 +11,10 @@ using Larnix.Core;
 
 namespace Larnix.Server.Terrain
 {
-    public class ChunkLoading : MonoBehaviour
+    public class ChunkLoading
     {
         public const int LOADING_DISTANCE = 2; // chunks
         public const float UNLOADING_TIME = 4f; // seconds
-        public const float PLAYER_SENDING_PERIOD = 0.15f; // seconds
 
         public WorldAPI WorldAPI { get; private set; } = null;
         private readonly Dictionary<Vector2Int, ChunkContainer> Chunks = new();
@@ -36,10 +35,10 @@ namespace Larnix.Server.Terrain
             Active
         }
 
-        private void Awake()
+        public ChunkLoading()
         {
             Ref.ChunkLoading = this;
-            WorldAPI = new(this);
+            WorldAPI = new WorldAPI();
 
             if (PreAllocatedChunkArray[0, 0] == null) // pre-allocating chunk array
             {
@@ -49,16 +48,11 @@ namespace Larnix.Server.Terrain
             }
         }
 
-        private void Start()
-        {
-            StartCoroutine(DataSendingCoroutine());
-        }
-
         public void FromFixedUpdate() // FIX-1
         {
             var activeChunks = Chunks.Where(kv => ChunkState(kv.Key) == LoadState.Active).ToList();
             var orderedChunks = activeChunks.OrderBy(kv => kv.Key.y).ThenBy(kv => kv.Key.x).ToList();
-            var shuffledChunks = activeChunks.OrderBy(_ => UnityEngine.Random.value).ToList();
+            var shuffledChunks = activeChunks.OrderBy(_ => Core.Common.Rand().NextDouble()).ToList();
 
             foreach (var kvp in activeChunks) // pre-frame configure
             {
@@ -76,6 +70,13 @@ namespace Larnix.Server.Terrain
             {
                 ChunkContainer container = kvp.Value;
                 container.Instance.ExecuteFrameSequential();
+            }
+
+            // Chunk changes broadcasting
+            const int BROADCAST_FIXED_PERIOD = 8;
+            if (Ref.Server.FixedFrame % BROADCAST_FIXED_PERIOD == 0)
+            {
+                BroadcastChunkChanges();
             }
         }
 
@@ -115,49 +116,44 @@ namespace Larnix.Server.Terrain
 
             foreach (var vkp in Chunks.ToList())
             {
-                Chunks[vkp.Key].UnloadTime -= Time.deltaTime;
+                Chunks[vkp.Key].UnloadTime -= Server.FIXED_TIME;
             }
         }
 
-        private IEnumerator DataSendingCoroutine()
+        private void BroadcastChunkChanges()
         {
-            while(true)
+            // Updating player chunk data
+
+            foreach (string nickname in Ref.PlayerManager.PlayerUID.Keys)
             {
-                // Updating player chunk data
+                Vector2Int chunkpos = ChunkMethods.CoordsToChunk(Ref.PlayerManager.GetPlayerRenderingPosition(nickname));
+                var player_state = Ref.PlayerManager.GetPlayerState(nickname);
 
-                foreach (string nickname in Ref.PlayerManager.PlayerUID.Keys)
+                HashSet<Vector2Int> chunksMemory = Ref.PlayerManager.ClientChunks[nickname];
+                HashSet<Vector2Int> chunksNearby = GetNearbyChunks(chunkpos, LOADING_DISTANCE).Where(c => ChunkState(c) == LoadState.Active).ToHashSet();
+
+                HashSet<Vector2Int> added = new(chunksNearby);
+                added.ExceptWith(chunksMemory);
+
+                HashSet<Vector2Int> removed = new(chunksMemory);
+                removed.ExceptWith(chunksNearby);
+
+                // send added
+                foreach (var chunk in added)
                 {
-                    Vector2Int chunkpos = ChunkMethods.CoordsToChunk(Ref.PlayerManager.GetPlayerRenderingPosition(nickname));
-                    var player_state = Ref.PlayerManager.GetPlayerState(nickname);
-
-                    HashSet<Vector2Int> chunksMemory = Ref.PlayerManager.ClientChunks[nickname];
-                    HashSet<Vector2Int> chunksNearby = GetNearbyChunks(chunkpos, LOADING_DISTANCE).Where(c => ChunkState(c) == LoadState.Active).ToHashSet();
-
-                    HashSet<Vector2Int> added = new(chunksNearby);
-                    added.ExceptWith(chunksMemory);
-
-                    HashSet<Vector2Int> removed = new(chunksMemory);
-                    removed.ExceptWith(chunksNearby);
-
-                    // send added
-                    foreach (var chunk in added)
-                    {
-                        Chunks[chunk].Instance.MoveChunkIntoArray(PreAllocatedChunkArray);
-                        Packet packet = new ChunkInfo(chunk, PreAllocatedChunkArray);
-                        Ref.QuickServer.Send(nickname, packet);
-                    }
-
-                    // send removed
-                    foreach (var chunk in removed)
-                    {
-                        Packet packet = new ChunkInfo(chunk, null);
-                        Ref.QuickServer.Send(nickname, packet);
-                    }
-
-                    Ref.PlayerManager.ClientChunks[nickname] = chunksNearby;
+                    Chunks[chunk].Instance.MoveChunkIntoArray(PreAllocatedChunkArray);
+                    Packet packet = new ChunkInfo(chunk, PreAllocatedChunkArray);
+                    Ref.QuickServer.Send(nickname, packet);
                 }
 
-                yield return new WaitForSeconds(PLAYER_SENDING_PERIOD);
+                // send removed
+                foreach (var chunk in removed)
+                {
+                    Packet packet = new ChunkInfo(chunk, null);
+                    Ref.QuickServer.Send(nickname, packet);
+                }
+
+                Ref.PlayerManager.ClientChunks[nickname] = chunksNearby;
             }
         }
 

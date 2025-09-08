@@ -6,6 +6,7 @@ using Larnix.Packets;
 using QuickNet.Channel;
 using System.Threading.Tasks;
 using Larnix.Core.Physics;
+using Larnix.Server;
 
 namespace Larnix.Client
 {
@@ -20,13 +21,15 @@ namespace Larnix.Client
         private string Nickname;
         private string Password;
 
+        public string WorldPath;
         public bool IsMultiplayer;
+
         public ulong MyUID = 0;
 
         // Client initialization
         void Awake()
         {
-            if(WorldLoad.LoadType == WorldLoad.LoadTypes.None)
+            if (!WorldLoad.PlayedAlready)
             {
                 BackToMenu();
                 return;
@@ -37,30 +40,15 @@ namespace Larnix.Client
             Ref.Client = this;
             Ref.PhysicsManager = new PhysicsManager();
 
-            IsMultiplayer = WorldLoad.LoadType == WorldLoad.LoadTypes.Remote;
+            WorldPath = WorldLoad.WorldPath;
+            IsMultiplayer = WorldLoad.IsMultiplayer;
 
-            if (IsMultiplayer)
-            {
-                StartCoroutine(CreateClient());
-            }
-            else
-            {
-                StartCoroutine(CreateServerAndClient());
-            }
+            StartCoroutine(CreateClient());
         }
 
         private void Start()
         {
             Ref.Loading.StartLoading("Connecting...");
-        }
-
-        // Server creation
-        private IEnumerator CreateServerAndClient()
-        {
-            AsyncOperation serverCreation = SceneManager.LoadSceneAsync("Server", LoadSceneMode.Additive);
-            yield return new WaitUntil(() => serverCreation.isDone);
-
-            StartCoroutine(CreateClient());
         }
 
         private IEnumerator CreateClient()
@@ -146,7 +134,7 @@ namespace Larnix.Client
         {
             SceneManager.LoadScene("Menu");
 
-            if (WorldLoad.LoadType != WorldLoad.LoadTypes.None && !IsMultiplayer)
+            if (WorldPath != null)
             {
                 if (Ref.MainPlayer.IsAlive)
                     Ref.Screenshots.CaptureTitleImage();
@@ -160,6 +148,9 @@ namespace Larnix.Client
             LarnixClient?.Dispose();
             WorldLoad.ScreenLoad = IsMultiplayer ? "Multiplayer" : "Singleplayer";
             EarlyUpdateInjector.ClearEarlyUpdate();
+
+            // Close server if running any
+            ServerInstancer.Instance.StopServerSync();
         }
     }
 }

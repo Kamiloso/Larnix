@@ -7,20 +7,12 @@ using System;
 
 namespace Larnix.Server.Terrain
 {
-    public class BlockDataManager : MonoBehaviour
+    public class BlockDataManager
     {
         private readonly Dictionary<Vector2Int, BlockData2[,]> ChunkCache = new();
         private readonly HashSet<Vector2Int> ReferencedChunks = new();
 
-        private bool DebugUnlinkDatabase
-        {
-            get => Client.Ref.Debug != null && Client.Ref.Debug.UnlinkTerrainData;
-        }
-
-        private void Awake()
-        {
-            Ref.BlockDataManager = this;
-        }
+        private bool DebugUnlinkDatabase = false;
 
         /// <summary>
         /// Modify this reference during FixedUpdate time and it will automatically update in this script.
@@ -37,7 +29,7 @@ namespace Larnix.Server.Terrain
             {
                 return ChunkCache[chunk];
             }
-            else if(!DebugUnlinkDatabase && Ref.Server.Database.TryGetChunk(chunk.x, chunk.y, out byte[] bytes)) // Get from database
+            else if(!DebugUnlinkDatabase && Ref.Database.TryGetChunk(chunk.x, chunk.y, out byte[] bytes)) // Get from database
             {
                 //BlockData2[,] blocks = BytesToChunk(bytes);
                 BlockData2[,] blocks = ChunkMethods.DeserializeChunk(bytes);
@@ -73,7 +65,7 @@ namespace Larnix.Server.Terrain
                 // Flush data
 
                 byte[] bytes = ChunkMethods.SerializeChunk(data);
-                Ref.Server.Database.SetChunk(chunk.x, chunk.y, bytes);
+                Ref.Database.SetChunk(chunk.x, chunk.y, bytes);
 
                 // Remove disabled chunks from cache
 

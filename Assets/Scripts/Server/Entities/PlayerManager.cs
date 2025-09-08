@@ -8,7 +8,7 @@ using Larnix.Packets;
 
 namespace Larnix.Server.Entities
 {
-    public class PlayerManager : MonoBehaviour
+    public class PlayerManager
     {
         public readonly Dictionary<string, ulong> PlayerUID = new();
 
@@ -22,11 +22,6 @@ namespace Larnix.Server.Entities
             Inactive, // spawned but not activated yet
             Alive, // alive and somewhere in the world
             Dead // player entity doesn't exist, but player is connected
-        }
-
-        private void Awake()
-        {
-            Ref.PlayerManager = this;
         }
 
         public void JoinPlayer(string nickname)

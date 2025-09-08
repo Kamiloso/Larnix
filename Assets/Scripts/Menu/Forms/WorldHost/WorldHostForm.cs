@@ -39,7 +39,7 @@ namespace Larnix.Menu.Forms
         protected override void RealSubmit()
         {
             string worldName = IF_WorldName.text;
-            WorldSelect.PlayWorldByName(worldName);
+            WorldSelect.PlayWorldByName(worldName, true);
         }
     }
 }

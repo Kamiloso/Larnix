@@ -13,6 +13,7 @@ namespace Larnix
             {
                 GameObject obj = new GameObject("EternalScript");
                 instance = obj.AddComponent<EternalScript>();
+                obj.AddComponent<Server.ServerInstancer>();
                 DontDestroyOnLoad(obj);
             }
         }

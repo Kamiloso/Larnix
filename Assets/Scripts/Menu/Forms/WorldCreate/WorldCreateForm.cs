@@ -51,22 +51,20 @@ namespace Larnix.Menu.Forms
             string worldName = IF_WorldName.text;
             string seedStr = IF_Seed.text;
 
+            long? seedSuggestion = null;
+
             // seed calculate
             if (long.TryParse(seedStr, out long seed))
             {
-                WorldLoad.SeedSuggestion = seed;
+                seedSuggestion = seed;
             }
             else if (seedStr.Length > 0)
             {
-                WorldLoad.SeedSuggestion = Common.GetSeedFromString(seedStr);
-            }
-            else
-            {
-                WorldLoad.SeedSuggestion = null;
+                seedSuggestion = Common.GetSeedFromString(seedStr);
             }
 
             WorldSelect.SaveMetadataSGP(worldName, new MetadataSGP(Version.Current, nickname));
-            WorldSelect.PlayWorldByName(worldName);
+            WorldSelect.PlayWorldByName(worldName, false, seedSuggestion);
         }
     }
 }

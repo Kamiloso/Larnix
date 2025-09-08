@@ -79,13 +79,13 @@ namespace Larnix.Client
         public void CaptureTitleImage()
         {
             Larnix.Debug.Log("Capturing title image...");
-            ScreenshotSave(ScreenshotCamera, Path.Combine(WorldLoad.WorldDirectory, "last_image.png"), 16f / 9f);
+            ScreenshotSave(ScreenshotCamera, Path.Combine(WorldLoad.WorldPath, "last_image.png"), 16f / 9f);
         }
 
         public void RemoveTitleImage()
         {
             Larnix.Debug.Log("Removing title image...");
-            string file = Path.Combine(WorldLoad.WorldDirectory, "last_image.png");
+            string file = Path.Combine(WorldLoad.WorldPath, "last_image.png");
             if(File.Exists(file))
                 File.Delete(file);
         }

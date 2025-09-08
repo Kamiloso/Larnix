@@ -12,6 +12,8 @@ namespace Larnix.Core
 {
     public static class Common
     {
+        public const float FIXED_TIME = 0.02f;
+
         private static List<string> reservedFolders = new List<string>
         {
             "CON", "PRN", "AUX", "NUL",

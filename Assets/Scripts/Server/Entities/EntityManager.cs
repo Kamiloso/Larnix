@@ -11,7 +11,7 @@ using System;
 
 namespace Larnix.Server.Entities
 {
-    public class EntityManager : MonoBehaviour
+    public class EntityManager
     {
         private readonly Dictionary<string, EntityAbstraction> PlayerControllers = new();
         private readonly Dictionary<ulong, EntityAbstraction> EntityControllers = new();
@@ -21,10 +21,7 @@ namespace Larnix.Server.Entities
         private uint LastSentFixedCounter = 0;
         private uint UpdateCounter = 0; // just to check modulo when sending NearbyEntities packet
 
-        private void Awake()
-        {
-            Ref.EntityManager = this;
-        }
+        private ulong? nextUID = null;
 
         public void FromFixedUpdate() // FIX-2
         {
@@ -274,6 +271,21 @@ namespace Larnix.Server.Entities
 
             EntityControllers[uid].UnloadEntityInstant();
             EntityControllers.Remove(uid);
+        }
+
+        public ulong GetNextUID()
+        {
+            if (nextUID != null)
+            {
+                ulong uid = nextUID.Value;
+                nextUID--;
+                return uid;
+            }
+            else
+            {
+                nextUID = (ulong)(Ref.Database.GetMinUID() - 1);
+                return GetNextUID();
+            }
         }
     }
 }

@@ -30,7 +30,7 @@ namespace Larnix.Server.Entities
             if (entityData.ID == EntityID.Player)
                 throw new System.ArgumentException("Cannot create player instance as a generic entity!");
 
-            ulong resolvedUid = uid ?? GetNextUID();
+            ulong resolvedUid = uid ?? Ref.EntityManager.GetNextUID();
             Initialize(resolvedUid, entityData);
         }
 
@@ -80,22 +80,6 @@ namespace Larnix.Server.Entities
                 throw new System.InvalidOperationException("Cannot execute FromFixedUpdate() on inactive entity abstraction!");
 
             controller.FromFixedUpdate();
-        }
-
-        private static ulong? nextUID = null;
-        private static ulong GetNextUID()
-        {
-            if (nextUID != null)
-            {
-                ulong uid = nextUID.Value;
-                nextUID--;
-                return uid;
-            }
-            else
-            {
-                nextUID = (ulong)(Ref.Server.Database.GetMinUID() - 1);
-                return GetNextUID();
-            }
         }
     }
 }

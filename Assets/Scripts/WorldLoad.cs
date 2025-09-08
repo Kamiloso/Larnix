@@ -3,88 +3,61 @@ using UnityEngine.SceneManagement;
 using QuickNet.Backend;
 using System.IO;
 using Larnix.Menu.Worlds;
+using Larnix.Server;
+using System.Threading;
 
 namespace Larnix
 {
     public static class WorldLoad
     {
-        public enum LoadTypes
-        {
-            None, // nothing was set
-            Local, // start client and server locally
-            Remote, // start client and connect to remote server
-            Server // start server without client
-        }
-
-        // Universal data
-        public static LoadTypes LoadType = LoadTypes.None;
+        // Useful info
         public static string ScreenLoad = "MainMenu";
+        public static string WorldPath = null;
+        public static bool IsMultiplayer = false;
+        public static bool PlayedAlready = false;
 
-        // Server data
-        public static string WorldDirectory = "";
-        public static bool IsHost = false;
-
-        // Client data
+        // Client data 1
         public static string Address = "";
         public static string Authcode = "";
         public static string Nickname = "";
         public static string Password = "";
 
-        // Seed suggestion
-        private static long? _SeedSuggestion;
-        public static long? SeedSuggestion
+        public static void StartLocal(string world, string nickname, bool isHost, long? seedSuggestion = null)
         {
-            get
-            {
-                long? temp = _SeedSuggestion;
-                _SeedSuggestion = null;
-                return temp;
-            }
-            set
-            {
-                _SeedSuggestion = value;
-            }
-        }
-
-        public static void StartLocal(string world, string nickname)
-        {
-            LoadType = LoadTypes.Local;
             ScreenLoad = "GameUI";
+            WorldPath = Path.Combine(WorldSelect.SavesPath, world);
+            IsMultiplayer = false;
+            PlayedAlready = true;
 
-            WorldDirectory = Path.Combine(WorldSelect.SavesPath, world);
-            IsHost = false;
+            // Load server
+            var tuple = ServerInstancer.Instance.StartServer(isHost ? ServerType.Host : ServerType.Local, WorldPath, seedSuggestion);
 
-            Address = null; // server will set
-            Authcode = null; // server will set
+            // Configure client
+            Address = tuple.address;
+            Authcode = tuple.authcode;
             Nickname = nickname;
             Password = QuickServer.LoopbackOnlyPassword;
 
-            // Client will load the server on awake
+            // Load client
             SceneManager.LoadScene("Client");
         }
 
         public static void StartRemote(string address, string authcode, string nickname, string password)
         {
-            LoadType = LoadTypes.Remote;
             ScreenLoad = "GameUI";
+            WorldPath = null;
+            IsMultiplayer = true;
+            PlayedAlready = true;
 
             Address = address;
             Authcode = authcode;
             Nickname = nickname;
             Password = password;
 
-            // Client will try to connect to the server
+            // server is running remotely...
+
+            // Load client
             SceneManager.LoadScene("Client");
-        }
-
-        // Executes directly from server scene
-        public static void StartServer()
-        {
-            LoadType = LoadTypes.Server;
-            ScreenLoad = "None";
-
-            WorldDirectory = Path.Combine(".", "World");
-            IsHost = true;
         }
     }
 }

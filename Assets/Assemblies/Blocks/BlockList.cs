@@ -19,9 +19,10 @@ namespace Larnix.Blocks
         Ice = 9,
         Snow = 10,
         CrudeOil = 11,
-        WoodenPickaxe = 12,
+        MiningTool = 12,
         Sandstone = 13,
         Glass = 14,
         Plastic = 15,
+        Sword = 16,
     }
 }

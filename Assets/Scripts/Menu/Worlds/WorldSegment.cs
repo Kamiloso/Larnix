@@ -72,7 +72,7 @@ namespace Larnix.Menu.Worlds
         {
             if (MySelect is WorldSelect)
             {
-                WorldSelect.PlayWorldByName(Name);
+                WorldSelect.PlayWorldByName(Name, false);
             }
             
             else if (MySelect is ServerSelect)

@@ -7,13 +7,8 @@ namespace Larnix.Server.Terrain
 {
     public class WorldAPI : IWorldAPI
     {
-        private readonly ChunkLoading Chunks;
-        public WorldAPI(ChunkLoading chunkLoading)
-        {
-            Chunks = chunkLoading;
-        }
-
-        public uint FramesSinceServerStart() => Ref.Server.GetFixedFrame();
+        private ChunkLoading Chunks => Ref.ChunkLoading;
+        public uint FramesSinceServerStart() => Ref.Server.FixedFrame;
 
         public BlockServer GetBlock(Vector2Int POS, bool isFront)
         {

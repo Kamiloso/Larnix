@@ -11,17 +11,12 @@ using System.Linq;
 
 namespace Larnix.Server.Terrain
 {
-    public class BlockSender : MonoBehaviour
+    public class BlockSender
     {
         private static WorldAPI WorldAPI => Ref.ChunkLoading.WorldAPI;
 
         private readonly Queue<(Vector2Int block, BlockData2 data)> BlockUpdates = new();
         private readonly Queue<(string owner, long operation, Vector2Int POS, bool front, bool success)> BlockChanges = new();
-
-        private void Awake()
-        {
-            Ref.BlockSender = this;
-        }
 
         public void AddBlockUpdate((Vector2Int, BlockData2) element)
         {

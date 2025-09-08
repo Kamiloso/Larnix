@@ -140,13 +140,14 @@ namespace QuickNet.Backend
         {
             long timeNow = Timestamp.GetTimestamp();
             uint hashCost = (uint)(isPasswordChange ? 2 : 1);
+            bool isLoopback = IPAddress.IsLoopback(remoteEP.Address);
 
             if (
                 serverSecret != Server.Secret || // wrong server secret
                 !Timestamp.InTimestamp(timestamp) || // login message is outdated
                 CurrentHashingAmount + hashCost > MAX_PARALLEL_HASHINGS || // hashing slots full
-                Server.ReservedNicknames.Contains(username) || // reserved nickname, cannot be used
-                (password == QuickServer.LoopbackOnlyPassword && !IPAddress.IsLoopback(remoteEP.Address))) // loopback-only password
+                (username == QuickServer.LoopbackOnlyNickname && !isLoopback) || // loopback-only nickname
+                (password == QuickServer.LoopbackOnlyPassword && !isLoopback)) // loopback-only password
             {
                 ExecuteFailed();
                 yield break;

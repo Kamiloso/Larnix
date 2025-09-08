@@ -7,18 +7,13 @@ using Larnix.Blocks;
 
 namespace Larnix.Server.Entities
 {
-    public class EntityDataManager : MonoBehaviour
+    public class EntityDataManager
     {
         // Every EntityData entry must be controlled by one specific EntityController object
         private readonly Dictionary<ulong, EntityData> EntityData = new Dictionary<ulong, EntityData>();
 
         private readonly Dictionary<ulong, EntityData> UnloadedEntityData = new Dictionary<ulong, EntityData>();
         private readonly Dictionary<ulong, EntityData> DeletedEntityData = new Dictionary<ulong, EntityData>();
-
-        private void Awake()
-        {
-            Ref.EntityDataManager = this;
-        }
 
         public EntityData TryFindEntityData(ulong uid)
         {
@@ -31,12 +26,12 @@ namespace Larnix.Server.Entities
             if(EntityData.ContainsKey(uid))
                 return EntityData[uid];
 
-            return Ref.Server.Database.FindEntity(uid);
+            return Ref.Database.FindEntity(uid);
         }
 
         public Dictionary<ulong, EntityData> GetUnloadedEntitiesByChunk(Vector2Int chunkCoords)
         {
-            Dictionary<ulong, EntityData> entityList = Ref.Server.Database.GetEntitiesByChunkNoPlayers(chunkCoords);
+            Dictionary<ulong, EntityData> entityList = Ref.Database.GetEntitiesByChunkNoPlayers(chunkCoords);
 
             foreach(var vkp in EntityData)
             {
@@ -108,10 +103,10 @@ namespace Larnix.Server.Entities
 
         public void FlushIntoDatabase()
         {
-            Ref.Server.Database.DeleteEntities(GetKeyList(DeletedEntityData));
+            Ref.Database.DeleteEntities(GetKeyList(DeletedEntityData));
             DeletedEntityData.Clear();
 
-            Ref.Server.Database.FlushEntities(MergeDictionaries(EntityData, UnloadedEntityData));
+            Ref.Database.FlushEntities(MergeDictionaries(EntityData, UnloadedEntityData));
             UnloadedEntityData.Clear();
         }
 

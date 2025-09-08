@@ -6,6 +6,7 @@ using Larnix.Server.Entities;
 using Larnix.Worldgen;
 using Larnix.Core.Physics;
 using QuickNet.Backend;
+using Larnix.Server.Data;
 
 namespace Larnix.Server
 {
@@ -13,12 +14,6 @@ namespace Larnix.Server
     {
         // Mono Behaviours
         public static Server Server;
-        public static EntityDataManager EntityDataManager;
-        public static EntityManager EntityManager;
-        public static ChunkLoading ChunkLoading;
-        public static PlayerManager PlayerManager;
-        public static BlockDataManager BlockDataManager;
-        public static BlockSender BlockSender;
 
         // Client Behaviours
         public static Client.Debug Debug;
@@ -27,5 +22,15 @@ namespace Larnix.Server
         public static Generator Generator;
         public static PhysicsManager PhysicsManager;
         public static QuickServer QuickServer;
+        public static Config Config;
+        public static Database Database;
+
+        // Server Scripts
+        public static EntityDataManager EntityDataManager;
+        public static EntityManager EntityManager;
+        public static ChunkLoading ChunkLoading;
+        public static PlayerManager PlayerManager;
+        public static BlockDataManager BlockDataManager;
+        public static BlockSender BlockSender;
     }
 }

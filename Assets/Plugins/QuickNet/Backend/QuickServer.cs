@@ -14,6 +14,7 @@ namespace QuickNet.Backend
 {
     public class QuickServer : IDisposable
     {
+        public const string LoopbackOnlyNickname = "Player";
         public const string LoopbackOnlyPassword = "SGP_PASSWORD\x01";
 
         public readonly ushort Port;
@@ -93,11 +94,6 @@ namespace QuickNet.Backend
             InitializedMasks = true;
             MaskIPv4 = maskIPv4;
             MaskIPv6 = maskIPv6;
-        }
-
-        public void ReserveNickname(string nickname)
-        {
-            ReservedNicknames.Add(nickname);
         }
 
         private void RememberConnection(string nickname, Connection conn)

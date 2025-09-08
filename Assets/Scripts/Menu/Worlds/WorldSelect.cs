@@ -63,13 +63,13 @@ namespace Larnix.Menu.Worlds
 
         public void PlayWorld()
         {
-            PlayWorldByName(SelectedWorld);
+            PlayWorldByName(SelectedWorld, false);
         }
 
-        public static void PlayWorldByName(string name)
+        public static void PlayWorldByName(string name, bool isHost, long? seedSuggestion = null)
         {
             MetadataSGP mdata = ReadMetadataSGP(name);
-            WorldLoad.StartLocal(name, mdata.nickname);
+            WorldLoad.StartLocal(name, mdata.nickname, isHost, seedSuggestion);
 
             if(mdata.nickname != "Player")
                 Settings.Settings.Instance.SetValue("$last-nickname-SGP", mdata.nickname, true);

@@ -5,9 +5,9 @@ using UnityEngine;
 
 namespace Larnix.Blocks
 {
-    public class WoodenPickaxe : BlockServer, ITool
+    public class MiningTool : BlockServer, ITool
     {
-        public WoodenPickaxe(Vector2Int POS, BlockData1 block, bool isFront) : base(POS, block, isFront) { }
+        public MiningTool(Vector2Int POS, BlockData1 block, bool isFront) : base(POS, block, isFront) { }
 
         public ITool.Type TOOL_TYPE() => ITool.Type.Normal;
         public ITool.Tier TOOL_TIER() => ITool.Tier.Wood;

@@ -93,13 +93,6 @@ namespace Larnix.Client
                 $"X: {playerPos.x}\n" +
                 $"Y: {playerPos.y}\n";
 
-            if (NoiseDisplay)
-            {
-                debugText += $"\n" + (Ref.Client.IsMultiplayer ?
-                    "Cannot access noise info on a remote server." :
-                    Server.Ref.Generator.GetNoiseInfo(Blocks.ChunkMethods.CoordsToBlock(Ref.MainPlayer.Position)));
-            }
-
             DebugF3.text = ShowDebugInfo && Ref.MainPlayer.IsAlive ? debugText : "";
         }
     }
