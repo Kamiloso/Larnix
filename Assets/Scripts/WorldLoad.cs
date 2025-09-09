@@ -3,7 +3,8 @@ using UnityEngine.SceneManagement;
 using QuickNet.Backend;
 using System.IO;
 using Larnix.Menu.Worlds;
-using Larnix.Server;
+using Larnix.ServerRun;
+using ServerType = Larnix.Server.ServerType;
 
 namespace Larnix
 {

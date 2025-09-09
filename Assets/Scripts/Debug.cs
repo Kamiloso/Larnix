@@ -2,11 +2,11 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System;
 using UnityEngine;
-using System.Linq;
 using System.Threading;
 using System.Diagnostics;
 using System.Text;
 using System.IO;
+using Console = Larnix.Core.Console;
 
 namespace Larnix
 {
@@ -43,11 +43,11 @@ namespace Larnix
             {
                 switch (logType)
                 {
-                    case LogType.Log: Server.Console.Log(msg); break;
-                    case LogType.Success: Server.Console.LogSuccess(msg); break;
-                    case LogType.Warning: Server.Console.LogWarning(msg); break;
-                    case LogType.Error: Server.Console.LogError(msg); break;
-                    case LogType.RawConsole: Server.Console.LogRaw(msg); break;
+                    case LogType.Log: Console.Log(msg); break;
+                    case LogType.Success: Console.LogSuccess(msg); break;
+                    case LogType.Warning: Console.LogWarning(msg); break;
+                    case LogType.Error: Console.LogError(msg); break;
+                    case LogType.RawConsole: Console.LogRaw(msg); break;
                 }
             }
         }

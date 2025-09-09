@@ -1,3 +1,4 @@
+using System.Linq;
 using UnityEngine;
 
 namespace Larnix
@@ -13,8 +14,22 @@ namespace Larnix
             {
                 GameObject obj = new GameObject("EternalScript");
                 instance = obj.AddComponent<EternalScript>();
-                obj.AddComponent<Server.ServerInstancer>();
+                SpawnUnitySingletons(obj);
                 DontDestroyOnLoad(obj);
+            }
+        }
+
+        private static void SpawnUnitySingletons(GameObject obj)
+        {
+            var interfaceType = typeof(IGlobalUnitySingleton);
+
+            var types = typeof(EternalScript).Assembly.GetTypes()
+                .Where(t => typeof(MonoBehaviour).IsAssignableFrom(t) &&
+                            interfaceType.IsAssignableFrom(t));
+
+            foreach (var type in types)
+            {
+                obj.AddComponent(type);
             }
         }
 

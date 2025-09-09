@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Larnix.Server.Terrain
 {
-    public class WorldAPI : IWorldAPI
+    internal class WorldAPI : IWorldAPI
     {
         private ChunkLoading Chunks => Ref.ChunkLoading;
         public uint FramesSinceServerStart() => Ref.Server.FixedFrame;

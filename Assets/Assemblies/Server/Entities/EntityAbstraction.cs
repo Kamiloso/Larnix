@@ -5,7 +5,7 @@ using Larnix.Entities;
 
 namespace Larnix.Server.Entities
 {
-    public class EntityAbstraction
+    internal class EntityAbstraction
     {
         // Player constructor
         public EntityAbstraction(string nickname)

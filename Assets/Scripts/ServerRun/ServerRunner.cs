@@ -6,17 +6,16 @@ using System.Threading;
 using System;
 using System.Diagnostics;
 using System.Runtime.ExceptionServices;
+using Larnix.Server;
 
-namespace Larnix.Server
+namespace Larnix.ServerRun
 {
-    public class ServerInstancer : MonoBehaviour
+    public class ServerInstancer : MonoBehaviour, IGlobalUnitySingleton
     {
-        private readonly bool THREADED = true;
-
         public bool IsRunning => _server != null;
 
         public volatile bool StopFlag = false;
-        private Server _server = null;
+        private Server.Server _server = null;
         private Task _task = null;
 
         public static ServerInstancer Instance { get; private set; }
@@ -33,73 +32,52 @@ namespace Larnix.Server
         {
             StopServerSync(); // ensure slot emptiness
 
-            _server = new Server(type, worldPath, seedSuggestion, () => StopFlag = true);
+            _server = new Server.Server(type, worldPath, seedSuggestion, () => StopFlag = true);
             var tuple = (_server.LocalAddress, _server.Authcode);
 
-            if (THREADED)
+            _task = Task.Run(() =>
             {
-                _task = Task.Run(() =>
+                const float PERIOD = Server.Server.FIXED_TIME;
+                Stopwatch sw = Stopwatch.StartNew();
+                bool crashed = false;
+
+                try
                 {
-                    const float PERIOD = Server.FIXED_TIME;
-                    Stopwatch sw = Stopwatch.StartNew();
-                    bool crashed = false;
-
-                    try
+                    while (!StopFlag)
                     {
-                        while (!StopFlag)
-                        {
-                            sw.Restart();
-                            _server.TickFixed();
-                            sw.Stop();
+                        sw.Restart();
+                        _server.TickFixed();
+                        sw.Stop();
 
-                            float sleepSeconds = PERIOD - (float)sw.Elapsed.TotalSeconds;
-                            if (sleepSeconds > 0)
-                            {
-                                Thread.Sleep((int)Math.Ceiling(sleepSeconds * 1000f));
-                            }
+                        float sleepSeconds = PERIOD - (float)sw.Elapsed.TotalSeconds;
+                        if (sleepSeconds > 0)
+                        {
+                            Thread.Sleep((int)Math.Ceiling(sleepSeconds * 1000f));
                         }
                     }
-                    catch
-                    {
-                        crashed = true;
-                        throw;
-                    }
-                    finally
-                    {
-                        sw.Stop();
-                        _server.Dispose(crashed);
-                    }
-                });
-            }
-            else
-            {
-                _task = null;
-            }
+                }
+                catch
+                {
+                    crashed = true;
+                    throw;
+                }
+                finally
+                {
+                    sw.Stop();
+                    _server.Dispose(crashed);
+                }
+            });
 
             return tuple;
         }
 
-        private void FixedUpdate()
+        private void LateUpdate()
         {
             if (IsRunning)
             {
-                if (THREADED)
+                if (_task.IsCompleted)
                 {
-                    if (_task.IsCompleted)
-                    {
-                        StopServerSync();
-                    }
-                }
-                else
-                {
-                    if (!StopFlag)
-                    {
-                        _server?.TickFixed();
-                    }
-                    else
-                    {
-                        StopServerSync();
-                    }
+                    StopServerSync();
                 }
             }
         }
@@ -108,36 +86,23 @@ namespace Larnix.Server
         {
             if (IsRunning)
             {
-                if (THREADED)
+                try
                 {
-                    try
-                    {
-                        StopFlag = true;
-                        _task.Wait();
-                    }
-                    catch (AggregateException ex)
-                    {
-                        ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
-                    }
-                    finally
-                    {
-                        ResetServerSlot();
-                    }
+                    StopFlag = true;
+                    _task.Wait();
                 }
-                else
+                catch (AggregateException ex)
                 {
-                    _server?.Dispose(false);
-                    ResetServerSlot();
+                    ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+                }
+                finally
+                {
+                    _server = null;
+                    _task = null;
+
+                    StopFlag = false;
                 }
             }
-        }
-
-        private void ResetServerSlot()
-        {
-            _server = null;
-            _task = null;
-
-            StopFlag = false;
         }
 
         private void OnDestroy()

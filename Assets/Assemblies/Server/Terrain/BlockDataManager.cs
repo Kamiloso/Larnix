@@ -8,7 +8,7 @@ using System.Linq;
 
 namespace Larnix.Server.Terrain
 {
-    public class BlockDataManager
+    internal class BlockDataManager
     {
         private readonly Dictionary<Vector2Int, BlockData2[,]> ChunkCache = new();
         private readonly HashSet<Vector2Int> ReferencedChunks = new();

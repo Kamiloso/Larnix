@@ -1,3 +1,4 @@
+using Larnix.Core;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -8,5 +9,15 @@ namespace Larnix.Blocks
     {
         BlockServer This => (BlockServer)this;
         IWorldAPI WorldAPI => This.WorldAPI;
+
+        string STATIC_GetBlockName(byte variant)
+        {
+            return STATIC_GetBlockNameFallback(variant);
+        }
+
+        string STATIC_GetBlockNameFallback(byte variant)
+        {
+            return Common.SplitPascalCase(GetType().Name + (variant == 0 ? "" : $" {variant}"));
+        }
     }
 }

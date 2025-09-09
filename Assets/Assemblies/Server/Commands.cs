@@ -8,10 +8,11 @@ using System;
 using Larnix.Server.Terrain;
 using System.Text;
 using Larnix.Packets;
+using Console = Larnix.Core.Console;
 
 namespace Larnix.Server
 {
-    public class Commands
+    internal class Commands
     {
         private WorldAPI WorldAPI => Ref.ChunkLoading.WorldAPI;
 

@@ -50,7 +50,9 @@ namespace Larnix.Client.UI
             if(item.Count != 0)
             {
                 Image.sprite = Tiles.GetSprite(item.Block, true);
-                Title.text = TextDisplayTime > 0f ? Translations.GetBlockName(item.Block) : string.Empty;
+                Title.text = TextDisplayTime > 0f ?
+                    BlockFactory.GetSlaveInstance<IBlockInterface>(item.Block.ID)?.STATIC_GetBlockName(item.Block.Variant) ?? string.Empty :
+                    string.Empty;
             }
             else
             {

@@ -12,6 +12,7 @@ using Larnix.Core.Physics;
 using Larnix.Server.Entities;
 using Larnix.Server.Terrain;
 using Version = Larnix.Core.Version;
+using Console = Larnix.Core.Console;
 
 namespace Larnix.Server
 {
@@ -99,6 +100,13 @@ namespace Larnix.Server
                 {
                     ConfigureConsole();
                 }
+                else
+                {
+                    Core.Debug.Log("Port: " + Ref.QuickServer.Port + " | Authcode: " + Ref.QuickServer.Authcode);
+                }
+
+                // info success
+                Core.Debug.LogSuccess("Server is ready!");
             }
             else throw new Exception("Trying to access world that is already open.");
         }
@@ -139,21 +147,9 @@ namespace Larnix.Server
             }
 
             // socket information
-            string info1 = "Socket created on port " + Ref.QuickServer.Port;
-            string info2 = "Authcode: " + Ref.QuickServer.Authcode;
-            if (Type == ServerType.Remote)
-            {
-                Core.Debug.LogRaw(info1 + "\n");
-                Core.Debug.LogRaw(info2 + "\n");
-            }
-            else
-            {
-                Core.Debug.Log(info1);
-                Core.Debug.Log(info2);
-            }
+            Core.Debug.LogRaw("Socket created on port " + Ref.QuickServer.Port + "\n");
+            Core.Debug.LogRaw("Authcode: " + Ref.QuickServer.Authcode + "\n");
             Core.Debug.LogRaw(new string('-', 60) + "\n");
-
-            Core.Debug.LogSuccess("Server is ready!");
 
             // input thread start
             if (Type == ServerType.Remote)

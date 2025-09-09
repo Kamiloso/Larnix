@@ -26,7 +26,7 @@ namespace Larnix.Menu
 
         private void Update()
         {
-            HashSet<Vector2Int> NearbyChunks = Server.Terrain.ChunkLoading.GetNearbyChunks(
+            HashSet<Vector2Int> NearbyChunks = ChunkMethods.GetNearbyChunks(
                 ChunkMethods.CoordsToChunk(new Vec2(Camera.transform.position, default)), 2);
 
             HashSet<Vector2Int> ToAdd = new HashSet<Vector2Int>(NearbyChunks);

@@ -11,9 +11,8 @@ using Larnix.Core;
 
 namespace Larnix.Server.Terrain
 {
-    public class ChunkLoading
+    internal class ChunkLoading
     {
-        public const int LOADING_DISTANCE = 2; // chunks
         public const float UNLOADING_TIME = 4f; // seconds
 
         public WorldAPI WorldAPI { get; private set; } = null;
@@ -130,7 +129,9 @@ namespace Larnix.Server.Terrain
                 var player_state = Ref.PlayerManager.GetPlayerState(nickname);
 
                 HashSet<Vector2Int> chunksMemory = Ref.PlayerManager.ClientChunks[nickname];
-                HashSet<Vector2Int> chunksNearby = GetNearbyChunks(chunkpos, LOADING_DISTANCE).Where(c => ChunkState(c) == LoadState.Active).ToHashSet();
+                HashSet<Vector2Int> chunksNearby = ChunkMethods.GetNearbyChunks(chunkpos, ChunkMethods.LOADING_DISTANCE)
+                    .Where(c => ChunkState(c) == LoadState.Active)
+                    .ToHashSet();
 
                 HashSet<Vector2Int> added = new(chunksNearby);
                 added.ExceptWith(chunksMemory);
@@ -191,7 +192,7 @@ namespace Larnix.Server.Terrain
 
         public bool TryForceLoadChunk(Vector2Int chunk)
         {
-            if (GetNearbyChunks(chunk, 0).Count == 0)
+            if (ChunkMethods.GetNearbyChunks(chunk, 0).Count == 0)
                 return false;
 
             if(ChunkState(chunk) == LoadState.None)
@@ -299,39 +300,12 @@ namespace Larnix.Server.Terrain
             foreach (string nickname in Ref.PlayerManager.PlayerUID.Keys)
                 positions.Add(Ref.PlayerManager.GetPlayerRenderingPosition(nickname));
 
-            foreach (Vector2Int center in GetCenterChunks(positions))
+            foreach (Vector2Int center in ChunkMethods.GetCenterChunks(positions))
             {
-                targetLoads.UnionWith(GetNearbyChunks(center, LOADING_DISTANCE));
+                targetLoads.UnionWith(ChunkMethods.GetNearbyChunks(center, ChunkMethods.LOADING_DISTANCE));
             }
 
             return targetLoads;
-        }
-
-        public static HashSet<Vector2Int> GetCenterChunks(List<Vec2> positions)
-        {
-            HashSet<Vector2Int> returns = new();
-            foreach(Vec2 pos in positions)
-            {
-                returns.Add(ChunkMethods.CoordsToChunk(pos));
-            }
-            return returns;
-        }
-
-        public static HashSet<Vector2Int> GetNearbyChunks(Vector2Int center, int simDistance)
-        {
-            int min_x = System.Math.Clamp(center.x - simDistance, ChunkMethods.MIN_CHUNK, int.MaxValue);
-            int min_y = System.Math.Clamp(center.y - simDistance, ChunkMethods.MIN_CHUNK, int.MaxValue);
-            int max_x = System.Math.Clamp(center.x + simDistance, int.MinValue, ChunkMethods.MAX_CHUNK);
-            int max_y = System.Math.Clamp(center.y + simDistance, int.MinValue, ChunkMethods.MAX_CHUNK);
-
-            HashSet<Vector2Int> returns = new();
-            for (int x = min_x; x <= max_x; x++)
-                for (int y = min_y; y <= max_y; y++)
-                {
-                    returns.Add(new Vector2Int(x, y));
-                }
-
-            return returns;
         }
     }
 }

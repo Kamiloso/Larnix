@@ -16,5 +16,15 @@ namespace Larnix.Blocks
 
         public double DRY_CHANCE() => 0.001;
         public double GROWTH_CHANCE() => 0.0002;
+
+        public string STATIC_GetBlockName(byte variant)
+        {
+            return variant switch
+            {
+                1 => "Grassy Soil",
+                2 => "Hemo Soil",
+                _ => ((IBlockInterface)this).STATIC_GetBlockNameFallback(variant)
+            };
+        }
     }
 }

@@ -8,7 +8,7 @@ using Larnix.Packets;
 
 namespace Larnix.Server.Entities
 {
-    public class PlayerManager
+    internal class PlayerManager
     {
         public readonly Dictionary<string, ulong> PlayerUID = new();
 

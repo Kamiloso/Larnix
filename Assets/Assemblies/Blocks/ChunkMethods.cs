@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Larnix.Blocks
@@ -11,6 +12,8 @@ namespace Larnix.Blocks
 
         public const int MIN_BLOCK = MIN_CHUNK * 16;
         public const int MAX_BLOCK = -(MIN_BLOCK + 1);
+
+        public const int LOADING_DISTANCE = 2; // chunks
 
         public static Vector2Int CoordsToChunk(Vec2 position)
         {
@@ -55,6 +58,33 @@ namespace Larnix.Blocks
         public static bool InChunk(Vector2Int chunkpos, Vector2Int POS)
         {
             return (POS.x >> 4) == chunkpos.x && (POS.y >> 4) == chunkpos.y;
+        }
+
+        public static HashSet<Vector2Int> GetCenterChunks(List<Vec2> positions)
+        {
+            HashSet<Vector2Int> returns = new();
+            foreach (Vec2 pos in positions)
+            {
+                returns.Add(CoordsToChunk(pos));
+            }
+            return returns;
+        }
+
+        public static HashSet<Vector2Int> GetNearbyChunks(Vector2Int center, int simDistance)
+        {
+            int min_x = System.Math.Clamp(center.x - simDistance, MIN_CHUNK, int.MaxValue);
+            int min_y = System.Math.Clamp(center.y - simDistance, MIN_CHUNK, int.MaxValue);
+            int max_x = System.Math.Clamp(center.x + simDistance, int.MinValue, MAX_CHUNK);
+            int max_y = System.Math.Clamp(center.y + simDistance, int.MinValue, MAX_CHUNK);
+
+            HashSet<Vector2Int> returns = new();
+            for (int x = min_x; x <= max_x; x++)
+                for (int y = min_y; y <= max_y; y++)
+                {
+                    returns.Add(new Vector2Int(x, y));
+                }
+
+            return returns;
         }
 
         public static BlockData2[,] DeserializeChunk(byte[] bytes, int offset = 0)

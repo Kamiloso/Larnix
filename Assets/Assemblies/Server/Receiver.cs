@@ -9,7 +9,7 @@ using Larnix.Packets;
 
 namespace Larnix.Server
 {
-    public class Receiver
+    internal class Receiver
     {
         private WorldAPI WorldAPI => Ref.ChunkLoading.WorldAPI;
 

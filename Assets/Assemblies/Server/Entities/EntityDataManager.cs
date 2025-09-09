@@ -6,7 +6,7 @@ using Larnix.Blocks;
 
 namespace Larnix.Server.Entities
 {
-    public class EntityDataManager
+    internal class EntityDataManager
     {
         // Every EntityData entry must be controlled by one specific EntityController object
         private readonly Dictionary<ulong, EntityData> EntityData = new Dictionary<ulong, EntityData>();

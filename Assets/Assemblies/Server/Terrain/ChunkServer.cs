@@ -8,7 +8,7 @@ using Larnix.Core.Physics;
 
 namespace Larnix.Server.Terrain
 {
-    public class ChunkServer : IDisposable
+    internal class ChunkServer : IDisposable
     {
         private WorldAPI WorldAPI => Ref.ChunkLoading.WorldAPI;
 

@@ -11,7 +11,7 @@ using Larnix.Core;
 
 namespace Larnix.Server.Data
 {
-    public class Database : IDisposable
+    internal class Database : IDisposable
     {
         private SqliteConnection connection = null;
         private SqliteTransaction transaction = null;

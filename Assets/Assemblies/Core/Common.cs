@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using UnityEngine;
 
@@ -78,6 +79,15 @@ namespace Larnix.Core
             using var sha = SHA256.Create();
             byte[] hash = sha.ComputeHash(Encoding.UTF8.GetBytes(input));
             return BitConverter.ToInt64(hash, 0);
+        }
+
+        public static string SplitPascalCase(string input)
+        {
+            if (string.IsNullOrEmpty(input))
+                return input;
+
+            var step1 = Regex.Replace(input, @"([A-Z])(?=[A-Z][a-z])", "$1 ");
+            return Regex.Replace(step1, @"(?<=[a-z])(?=[A-Z])", " ");
         }
     }
 }

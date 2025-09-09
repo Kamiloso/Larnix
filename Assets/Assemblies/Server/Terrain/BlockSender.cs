@@ -10,7 +10,7 @@ using System.Linq;
 
 namespace Larnix.Server.Terrain
 {
-    public class BlockSender
+    internal class BlockSender
     {
         private static WorldAPI WorldAPI => Ref.ChunkLoading.WorldAPI;
 

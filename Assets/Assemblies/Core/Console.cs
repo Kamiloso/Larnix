@@ -3,12 +3,12 @@ using System;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-namespace Larnix.Server
+namespace Larnix.Core
 {
     public static class Console
     {
-        // ------ OUTPUT ------ //
-
+        private static Thread InputThread = null;
+        private static Queue<string> CommandBuffer = new();
         private static object _lock = new();
 
         public static void Log(string msg, ConsoleColor color = ConsoleColor.Gray)
@@ -73,11 +73,6 @@ namespace Larnix.Server
         {
             return DateTime.Now.ToString("[yyyy-MM-dd HH:mm:ss]");
         }
-
-        // ------ INPUT ------ //
-
-        private static Thread InputThread = null;
-        private static Queue<string> CommandBuffer = new();
 
         public static void StartInputThread()
         {

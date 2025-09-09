@@ -9,7 +9,7 @@ using Larnix.Server.Data;
 
 namespace Larnix.Server
 {
-    public static class Ref // SERVER GLOBAL REFERENCES (set in Awake())
+    internal static class Ref // SERVER GLOBAL REFERENCES (set in Awake())
     {
         // Mono Behaviours
         public static Server Server;

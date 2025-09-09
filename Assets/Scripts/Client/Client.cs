@@ -6,7 +6,7 @@ using Larnix.Packets;
 using QuickNet.Channel;
 using System.Threading.Tasks;
 using Larnix.Core.Physics;
-using Larnix.Server;
+using Larnix.ServerRun;
 
 namespace Larnix.Client
 {

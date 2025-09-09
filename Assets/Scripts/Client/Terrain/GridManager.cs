@@ -133,9 +133,9 @@ namespace Larnix.Client.Terrain
             if (isMenu)
                 return false;
 
-            HashSet<Vector2Int> nearbyChunks = Server.Terrain.ChunkLoading.GetNearbyChunks(
+            HashSet<Vector2Int> nearbyChunks = ChunkMethods.GetNearbyChunks(
                 ChunkMethods.CoordsToChunk(Ref.MainPlayer.Position),
-                Server.Terrain.ChunkLoading.LOADING_DISTANCE
+                ChunkMethods.LOADING_DISTANCE
                 );
 
             nearbyChunks.ExceptWith(VisibleChunks);

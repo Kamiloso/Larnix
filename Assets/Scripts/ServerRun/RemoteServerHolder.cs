@@ -2,8 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
+using Larnix.Server;
 
-namespace Larnix.Server
+namespace Larnix.ServerRun
 {
     public class RemoteServerHolder : MonoBehaviour
     {

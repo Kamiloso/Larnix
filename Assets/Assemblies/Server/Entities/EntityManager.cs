@@ -11,7 +11,7 @@ using System;
 
 namespace Larnix.Server.Entities
 {
-    public class EntityManager
+    internal class EntityManager
     {
         private readonly Dictionary<string, EntityAbstraction> PlayerControllers = new();
         private readonly Dictionary<ulong, EntityAbstraction> EntityControllers = new();

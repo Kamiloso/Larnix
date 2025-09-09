@@ -7,7 +7,7 @@ using UnityEngine;
 namespace Larnix.Server.Data
 {
     [System.Serializable]
-    public class Config
+    internal class Config
     {
         /*
         Default remote server values are default class parameters.
