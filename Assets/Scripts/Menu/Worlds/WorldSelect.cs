@@ -39,16 +39,27 @@ namespace Larnix.Menu.Worlds
 
         public void PlayWorld()
         {
-            PlayWorldByName(SelectedWorld, false);
+            PlayWorldByName(SelectedWorld);
         }
 
-        public static void PlayWorldByName(string name, bool isHost, long? seedSuggestion = null)
+        public static void PlayWorldByName(string name, long? seedSuggestion = null)
         {
             MetadataSGP mdata = MetadataSGP.ReadMetadataSGP(name);
-            WorldLoad.StartLocal(name, mdata.nickname, isHost, seedSuggestion);
 
             if(mdata.nickname != "Player")
                 Settings.Settings.Instance.SetValue("$last-nickname-SGP", mdata.nickname, true);
+
+            WorldLoad.StartLocal(name, mdata.nickname, seedSuggestion);
+        }
+
+        public static void HostAndPlayWorldByName(string name, (string address, string authcode) serverTuple)
+        {
+            MetadataSGP mdata = MetadataSGP.ReadMetadataSGP(name);
+
+            if (mdata.nickname != "Player")
+                Settings.Settings.Instance.SetValue("$last-nickname-SGP", mdata.nickname, true);
+
+            WorldLoad.StartHost(name, mdata.nickname, serverTuple);
         }
 
         public void HostWorld()

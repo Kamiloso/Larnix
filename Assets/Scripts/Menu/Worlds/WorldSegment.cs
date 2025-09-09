@@ -16,6 +16,7 @@ namespace Larnix.Menu.Worlds
         [SerializeField] Button PlayButton;
 
         private UniversalSelect MySelect;
+        private bool versionChecked = false;
 
         public string Name { get; private set; }
 
@@ -46,8 +47,12 @@ namespace Larnix.Menu.Worlds
 
             if (MySelect is WorldSelect)
             {
-                MetadataSGP mdata = MetadataSGP.ReadMetadataSGP(Name);
-                PlayButton.interactable = mdata.version <= Version.Current;
+                if (!versionChecked)
+                {
+                    MetadataSGP mdata = MetadataSGP.ReadMetadataSGP(Name);
+                    PlayButton.interactable = mdata.version <= Version.Current;
+                    versionChecked = true;
+                }
             }
 
             if (MySelect is ServerSelect)
@@ -73,7 +78,7 @@ namespace Larnix.Menu.Worlds
         {
             if (MySelect is WorldSelect)
             {
-                WorldSelect.PlayWorldByName(Name, false);
+                WorldSelect.PlayWorldByName(Name);
             }
             
             else if (MySelect is ServerSelect)

@@ -165,6 +165,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: RenameWorld
       objectReference: {fileID: 0}
+    - target: {fileID: 6811304547043775336, guid: c91d6d53e3389274980b06f9737bc61a, type: 3}
+      propertyPath: m_text
+      value: RENAME
+      objectReference: {fileID: 0}
     - target: {fileID: 9197795560022847016, guid: c91d6d53e3389274980b06f9737bc61a, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5

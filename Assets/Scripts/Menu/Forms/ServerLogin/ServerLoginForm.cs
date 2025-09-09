@@ -40,6 +40,9 @@ namespace Larnix.Menu.Forms
             if (!Validation.IsGoodNickname(nickname))
                 return ErrorCode.NICKNAME_FORMAT;
 
+            if (nickname == "Player")
+                return ErrorCode.NICKNAME_IS_PLAYER;
+
             if (!Validation.IsGoodPassword(password))
                 return ErrorCode.PASSWORD_FORMAT;
 

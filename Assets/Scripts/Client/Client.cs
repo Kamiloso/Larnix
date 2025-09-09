@@ -150,7 +150,7 @@ namespace Larnix.Client
             EarlyUpdateInjector.ClearEarlyUpdate();
 
             // Close server if running any
-            ServerInstancer.Instance.StopServerSync();
+            ServerRunner.Instance.StopServerSync();
         }
     }
 }

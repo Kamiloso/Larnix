@@ -10,7 +10,7 @@ using Larnix.Server;
 
 namespace Larnix.ServerRun
 {
-    public class ServerInstancer : MonoBehaviour, IGlobalUnitySingleton
+    public class ServerRunner : MonoBehaviour, IGlobalUnitySingleton
     {
         public bool IsRunning => _server != null;
 
@@ -18,7 +18,7 @@ namespace Larnix.ServerRun
         private Server.Server _server = null;
         private Task _task = null;
 
-        public static ServerInstancer Instance { get; private set; }
+        public static ServerRunner Instance { get; private set; }
 
         private void Awake()
         {
