@@ -11,17 +11,17 @@ namespace Larnix
 {
     public static class WorldLoad
     {
-        // Useful info
-        public static string ScreenLoad = "MainMenu";
-        public static string WorldPath = null;
-        public static bool IsMultiplayer = false;
-        public static bool PlayedAlready = false;
+        // Client data
+        public static string ScreenLoad { get; private set; } = "MainMenu";
+        public static string WorldPath { get; private set; } = null;
+        public static bool IsMultiplayer { get; private set; } = false;
+        public static bool PlayedAlready { get; private set; } = false;
 
-        // Client data 1
-        public static string Address = "";
-        public static string Authcode = "";
-        public static string Nickname = "";
-        public static string Password = "";
+        // Login data
+        public static string Address { get; private set; } = "";
+        public static string Authcode { get; private set; } = "";
+        public static string Nickname { get; private set; } = "";
+        public static string Password { get; private set; } = "";
 
         public static void StartLocal(string world, string nickname, long? seedSuggestion = null)
         {
@@ -50,6 +50,8 @@ namespace Larnix
             IsMultiplayer = false;
             PlayedAlready = true;
 
+            // server is running locally...
+
             // Configure client
             Address = serverTuple.address;
             Authcode = serverTuple.authcode;
@@ -67,15 +69,20 @@ namespace Larnix
             IsMultiplayer = true;
             PlayedAlready = true;
 
+            // server is running remotely...
+
             Address = address;
             Authcode = authcode;
             Nickname = nickname;
             Password = password;
 
-            // server is running remotely...
-
             // Load client
             SceneManager.LoadScene("Client");
+        }
+
+        public static void SetStartingScreen(string screenName)
+        {
+            ScreenLoad = screenName;
         }
     }
 }

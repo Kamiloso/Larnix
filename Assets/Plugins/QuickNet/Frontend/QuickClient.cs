@@ -19,30 +19,22 @@ namespace QuickNet.Frontend
 
         private readonly Dictionary<CmdID, Action<Packet>> Subscriptions = new();
 
-        public static Task<QuickClient> CreateClientAsync(string address, string authcode, string nickname, string password)
+        public static async Task<QuickClient> CreateClientAsync(string address, string authcode, string nickname, string password)
         {
-            return Task.Run(() =>
+            IPEndPoint endPoint = await Resolver.ResolveStringAsync(address);
+            if (endPoint == null) return null;
+
+            EntryTicket ticket = (await Resolver.GetEntryTicketAsync(address, authcode, nickname)).ticket;
+            if (ticket == null) return null;
+
+            try
             {
-                IPEndPoint endPoint = Resolver.ResolveStringSync(address);
-                if (endPoint == null) return null;
-
-                EntryTicket ticket = Resolver.GetEntryTicketAsync(address, authcode, nickname).Result;
-                if (ticket == null) return null;
-
-                try
-                {
-                    return new QuickClient(endPoint, ticket, authcode, nickname, password);
-                }
-                catch
-                {
-                    return null;
-                }
-            });
-        }
-
-        public static QuickClient CreateClientSync(string address, string authcode, string nickname, string password)
-        {
-            return CreateClientAsync(address, authcode, nickname, password).Result;
+                return new QuickClient(endPoint, ticket, authcode, nickname, password);
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         private QuickClient(IPEndPoint endPoint, EntryTicket ticket, string authcode, string nickname, string password)
@@ -68,7 +60,7 @@ namespace QuickNet.Frontend
             Connection = new Connection(UdpClient, EndPoint, keyAES, synPacket, KeyRSA);
         }
 
-        public static UdpClient CreateConfiguredClientObject(IPEndPoint endPoint)
+        internal static UdpClient CreateConfiguredClientObject(IPEndPoint endPoint)
         {
             IPAddress address = endPoint.Address;
             AddressFamily family = endPoint.AddressFamily;

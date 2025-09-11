@@ -10,55 +10,59 @@ namespace Larnix.Client.Terrain
     public static class Tiles
     {
         private static readonly Dictionary<string, Tile> TileCache = new();
-        private const int MAX_CACHE = 512;
 
         public static Tile GetTile(BlockData1 block, bool isFront)
         {
-            string string_id = TileStringID(block, isFront);
-            
-            if(TileCache.ContainsKey(string_id))
-                return TileCache[string_id];
+            string string_id = block.ID + ":" + block.Variant + ":" + isFront;
 
-            if(TileCache.Count > MAX_CACHE)
-                TileCache.Clear();
-            
-            Tile tile = ConstructTile(block, isFront);
-            TileCache[string_id] = tile;
+            if (!TileCache.TryGetValue(string_id, out Tile tile))
+            {
+                tile = ConstructTile(block, isFront);
+                TileCache.Add(string_id, tile);
+            }
+            return tile;
+        }
+        public static Tile GetTileBorder(byte mask)
+        {
+            string string_id = "mask;" + mask;
 
+            if (!TileCache.TryGetValue(string_id, out Tile tile))
+            {
+                tile = ConstructTileBorder(mask);
+                TileCache.Add(string_id, tile);
+            }
             return tile;
         }
 
-        public static Sprite GetSprite(BlockData1 item, bool isFront)
-        {
-            return GetTile(item, isFront).sprite;
-        }
+        public static Sprite GetSprite(BlockData1 item, bool isFront) =>
+            GetTile(item, isFront).sprite;
+        public static Sprite GetSpriteBorder(byte mask) =>
+            GetTileBorder(mask).sprite;
 
-        private static string TileStringID(BlockData1 block, bool isFront)
-        {
-            return block.ID + ":" + block.Variant + ":" + isFront;
-        }
+        public static Texture2D GetTexture(BlockData1 item, bool isFront) =>
+            GetTile(item, isFront).sprite.texture;
+        public static Texture2D GetTextureBorder(byte mask) =>
+            GetTileBorder(mask).sprite.texture;
 
         private static Tile ConstructTile(BlockData1 block, bool isFront)
         {
-            Texture2D texture = UnityEngine.Resources.Load<Texture2D>("BlockTextures/" + block.ID.ToString() + "-" + block.Variant);
-            if (texture != null)
-                goto texture_ready;
+            Texture2D texture = Resources.GetTileTexture(block.ID, block.Variant);
+            return _ConstructTileUniversal(texture);
+        }
 
-            texture = UnityEngine.Resources.Load<Texture2D>("BlockTextures/" + block.ID.ToString());
-            if (texture != null)
-                goto texture_ready;
+        private static Tile ConstructTileBorder(byte mask)
+        {
+            Texture2D texture = Resources.GenerateBorderTexture(16, mask);
+            return _ConstructTileUniversal(texture);
+        }
 
-            texture = UnityEngine.Resources.Load<Texture2D>("BlockTextures/Unknown");
-            if (texture == null)
-                throw new System.NotImplementedException("Couldn't find Unknown texture!");
-
-            texture_ready:
-
+        private static Tile _ConstructTileUniversal(Texture2D texture)
+        {
             Sprite sprite = Sprite.Create(
                 texture,
                 new Rect(0, 0, texture.width, texture.height),
                 new Vector2(0.5f, 0.5f),
-                16
+                System.Math.Max(texture.width, texture.height)
             );
 
             Tile tile = ScriptableObject.CreateInstance<Tile>();

@@ -1,17 +1,20 @@
 === Larnix TO-DO-LIST ===
 
-- Server into threaded class, hosting
-- QuickNet relay system
-- Resource packs
-
 - Better smooth
+- Resource packs
+- QuickNet relay system
+
 - NBT system: Internal / Visual
 - Nicknames
 - Inventory
-- Health system, swords
 - Entity generation
+- Health system, swords
 
 === KNOWN BUGS ===
+
+- Weird problems with slidebar when deleting worlds. Not important, may be ignored.
+
+=== FIXED BUGS ===
 
 - Collisions work weirdly, sometimes allowing entities to go into colliders (only on far away coordinates for example 8000 tiles)
 
@@ -37,3 +40,4 @@
 - Enity system rework (block-like) to Assembly
 - Client offset system + fix bug
 - Physics rework to doubles
+- Server into threaded class, hosting

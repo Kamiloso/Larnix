@@ -1,132 +1,114 @@
-using System.Collections;
-using System.Collections.Generic;
-using System.Net.Sockets;
-using System.Net;
-using System.Security.Cryptography;
-using QuickNet.Processing;
 using QuickNet.Channel;
+using QuickNet.Processing;
 using System;
+using System.Net;
+using System.Net.Sockets;
+using System.Security.Cryptography;
+using System.Threading.Tasks;
 
 namespace QuickNet.Frontend
 {
-    public class Prompter
+    internal sealed class Prompter : IDisposable
     {
-        public PrompterState State = PrompterState.None;
-        public Packet AnswerPacket = null;
+        private readonly UdpClient udpClient;
+        private readonly IPEndPoint endPoint;
+        private bool _disposed;
 
-        private UdpClient udpClient;
-        private IPEndPoint endPoint = null;
-        private uint PromptID = 0;
-
-        private const float MAX_WAITING_TIME = 3f; // seconds
-        private float waitingTime = 0f;
-
-        public enum PrompterState : byte
+        private Prompter(IPEndPoint endPoint, UdpClient udpClient)
         {
-            None,
-            Waiting,
-            Ready,
-            Timeout,
-            Error
+            this.endPoint = endPoint;
+            this.udpClient = udpClient;
         }
 
-        public Prompter(string ip_address, Packet prompt, RSA publicKeyRSA = null)
+        public static async Task<TAnswer> PromptAsync<TAnswer>(string ipAddress, Packet prompt, int timeoutSeconds = 3, RSA publicKeyRSA = null) where TAnswer : Payload, new()
         {
-            endPoint = Resolver.ResolveStringSync(ip_address);
-            if(endPoint == null)
-            {
-                State = PrompterState.Error;
-                AnswerPacket = null;
-                return;
-            }
+            var endPoint = await Resolver.ResolveStringAsync(ipAddress);
+            if (endPoint == null) return null;
 
-            udpClient = QuickClient.CreateConfiguredClientObject(endPoint);
-            PromptID = (uint)(int)KeyObtainer.GetSecureLong();
+            using var udp = QuickClient.CreateConfiguredClientObject(endPoint);
+            var prompter = new Prompter(endPoint, udp);
+
+            return await prompter.SendAndWaitAsync<TAnswer>(prompt, publicKeyRSA, timeoutSeconds);
+        }
+
+        private async Task<TAnswer> SendAndWaitAsync<TAnswer>(Packet prompt, RSA publicKeyRSA, int timeoutSeconds) where TAnswer : Payload, new()
+        {
+            uint promptId = unchecked((uint)KeyObtainer.GetSecureLong());
 
             PacketFlag flags = PacketFlag.NCN;
             Func<byte[], byte[]> encrypt = null;
-            if(publicKeyRSA != null)
+            if (publicKeyRSA != null)
             {
                 flags |= PacketFlag.RSA;
                 encrypt = bytes => Encryption.EncryptRSA(bytes, publicKeyRSA);
             }
 
-            QuickPacket safePacket = new QuickPacket(
-                seqNum: PromptID, // SeqNum - Prompt ID in this context
-                ackNum: 0,
-                flags: (byte)flags,
-                payload: prompt
-                );
-            safePacket.Encryption = encrypt;
-
-            byte[] bytes = safePacket.Serialize();
-            udpClient.SendAsync(bytes, bytes.Length, endPoint);
-
-            State = PrompterState.Waiting;
-        }
-
-        public void Tick(float deltaTime)
-        {
-            waitingTime += deltaTime;
-            if(waitingTime > MAX_WAITING_TIME)
+            var safePacket = new QuickPacket(promptId, 0, (byte)flags, prompt)
             {
-                State = PrompterState.Timeout;
-                AnswerPacket = null;
-                return;
+                Encryption = encrypt
+            };
+
+            byte[] data = safePacket.Serialize();
+
+            try
+            {
+                await udpClient.SendAsync(data, data.Length, endPoint);
+            }
+            catch
+            {
+                // ERROR
+                return null;
             }
 
-            while (udpClient.Available > 0)
+            var deadline = DateTime.UtcNow.AddSeconds(timeoutSeconds);
+
+            while (DateTime.UtcNow < deadline)
             {
-                IPEndPoint remoteEP = new IPEndPoint(IPAddress.Any, 0);
-                byte[] bytes = null;
+                var delay = (int)(deadline - DateTime.UtcNow).TotalMilliseconds;
+                if (delay <= 0) break;
+
+                var receiveTask = udpClient.ReceiveAsync();
+                var timeoutTask = Task.Delay(delay);
+                var completed = await Task.WhenAny(receiveTask, timeoutTask);
+
+                if (completed == timeoutTask)
+                {
+                    break; // timeout
+                }
 
                 try
                 {
-                    bytes = udpClient.Receive(ref remoteEP);
-                }
-                catch (SocketException ex)
-                {
-                    if (ex.SocketErrorCode == SocketError.WouldBlock)
-                    {
-                        break;
-                    }
-                    else if (ex.SocketErrorCode == SocketError.ConnectionReset)
-                    {
-                        State = PrompterState.Error;
-                        AnswerPacket = null;
-                        return;
-                    }
-                    else throw;
-                }
+                    var result = receiveTask.Result;
+                    if (!endPoint.Equals(result.RemoteEndPoint)) continue;
 
-                if (bytes == null)
-                    continue;
-
-                if (endPoint.Equals(remoteEP))
-                {
-                    QuickPacket safePacket = new QuickPacket();
-                    if(safePacket.TryDeserialize(bytes))
+                    var incoming = new QuickPacket();
+                    if (incoming.TryDeserialize(result.Buffer))
                     {
-                        if(safePacket.SeqNum == PromptID && safePacket.HasFlag(PacketFlag.NCN))
+                        if (incoming.SeqNum == promptId && incoming.HasFlag(PacketFlag.NCN))
                         {
-                            State = PrompterState.Ready;
-                            AnswerPacket = safePacket.Packet;
-                            return;
+                            var packet = incoming.Packet;
+                            if (Payload.TryConstructPayload<TAnswer>(packet, out var answer))
+                            {
+                                return answer;
+                            }
                         }
                     }
                 }
+                catch
+                {
+                    break;
+                }
             }
+
+            // ERROR
+            return null;
         }
 
-        public IPEndPoint GetEndPoint()
+        public void Dispose()
         {
-            return new IPEndPoint(endPoint.Address, endPoint.Port);
-        }
-
-        public void Clean()
-        {
-            if(udpClient != null)
-                udpClient.Dispose();
+            if (_disposed) return;
+            udpClient?.Dispose();
+            _disposed = true;
         }
     }
 }

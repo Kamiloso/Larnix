@@ -106,10 +106,10 @@ namespace Larnix.Menu.Forms
         {
             string authcode = thinker.serverData.AuthCodeRSA;
 
-            Task<bool?> changeTask = Resolver.TryChangePasswordAsync(address, authcode, nickname, oldPassword, newPassword);
+            var changeTask = Resolver.TryChangePasswordAsync(address, authcode, nickname, oldPassword, newPassword);
             yield return new WaitUntil(() => changeTask.IsCompleted);
 
-            Result = changeTask.Result;
+            Result = changeTask.Result.success;
 
             if (Result == true)
             {

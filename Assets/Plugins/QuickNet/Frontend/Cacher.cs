@@ -6,12 +6,12 @@ using QuickNet.Channel.Cmds;
 
 namespace QuickNet.Frontend
 {
-    public static class Cacher
+    internal static class Cacher
     {
-        private static Dictionary<(string address, string authcode, string nickname), (A_ServerInfo info, long time)> infoDict = new();
-        private static object locker = new();
+        private static readonly Dictionary<(string address, string authcode, string nickname), (A_ServerInfo info, long time)> infoDict = new();
+        private static readonly object locker = new();
 
-        public static void AddInfo(string address, string authcode, string nickname, A_ServerInfo info)
+        internal static void AddInfo(string address, string authcode, string nickname, A_ServerInfo info)
         {
             long time = Timestamp.GetTimestamp();
             lock (locker)
@@ -21,7 +21,7 @@ namespace QuickNet.Frontend
             }
         }
 
-        public static bool TryGetInfo(string address, string authcode, string nickname, out A_ServerInfo info)
+        internal static bool TryGetInfo(string address, string authcode, string nickname, out A_ServerInfo info)
         {
             lock (locker)
             {
@@ -38,7 +38,7 @@ namespace QuickNet.Frontend
             }
         }
 
-        public static void IncrementChallengeIDs(string address, string authcode, string nickname, long delta = 1)
+        internal static void IncrementChallengeIDs(string address, string authcode, string nickname, long delta = 1)
         {
             lock (locker)
             {

@@ -335,6 +335,8 @@ MonoBehaviour:
   Camera: {fileID: 1891027114}
   EntityProjection: {fileID: 2080946437}
   RaycastCenter: {fileID: 386513221}
+  DebugTeleportPos: {x: 0, y: 0}
+  DebugTeleportSubmit: 0
 --- !u!114 &119917773
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -349,7 +351,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   MainCamera: {fileID: 1891027114}
   FollowTransform: {fileID: 2080946444}
-  Offset: {x: 0, y: 0.375}
 --- !u!1 &301008701
 GameObject:
   m_ObjectHideFlags: 0
@@ -394,6 +395,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6b3a8f676ce3cec49a1a05b8497a273c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  WorldPath: 
   IsMultiplayer: 0
   MyUID: 0
 --- !u!1 &336025968
@@ -985,9 +987,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowDebugInfo: 0
   AdvancedDebugKeys: 1
-  SpawnWildpigsWithZ: 1
-  UnlinkTerrainData: 0
-  NoiseDisplay: 1
   SpectatorMode: 0
   DebugF3: {fileID: 1592990795}
 --- !u!1 &1038397504
@@ -2153,6 +2152,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f27cbc8a3b89c3943a9bd5476eb38ff5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  TilemapPrefabBorder: {fileID: 7022384236602309040, guid: a239740ff154f5a4085a0823b23f28e9, type: 3}
   TilemapPrefabFront: {fileID: 7022384236602309040, guid: c8ac39c488e8cc642be8654b0b65c120, type: 3}
   TilemapPrefabBack: {fileID: 6276738116610429150, guid: 83aee14d96a208f48aaff71828dcb545, type: 3}
 --- !u!1 &2058221963

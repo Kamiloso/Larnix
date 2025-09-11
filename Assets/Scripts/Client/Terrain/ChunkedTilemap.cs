@@ -9,6 +9,7 @@ namespace Larnix.Client.Terrain
 {
     public class ChunkedTilemap : MonoBehaviour
     {
+        [SerializeField] GameObject TilemapPrefabBorder;
         [SerializeField] GameObject TilemapPrefabFront;
         [SerializeField] GameObject TilemapPrefabBack;
 
@@ -35,9 +36,9 @@ namespace Larnix.Client.Terrain
             for (int x = 0; x < 16; x++)
                 for (int y = 0; y < 16; y++)
                 {
-                    Vector2Int pos = new Vector2Int(x, y);
-                    Front.SetTile((Vector3Int)pos, Tiles.GetTile(blocks[x, y].Front, true));
-                    Back.SetTile((Vector3Int)pos, Tiles.GetTile(blocks[x, y].Back, false));
+                    Vector3Int pos = new Vector3Int(x, y, 0);
+                    Front.SetTile(pos, Tiles.GetTile(blocks[x, y].Front, true));
+                    Back.SetTile(pos, Tiles.GetTile(blocks[x, y].Back, false));
                 }
         }
 

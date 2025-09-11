@@ -23,7 +23,7 @@ namespace Larnix.Menu.Forms
         {
             string path = Path.Combine(Core.Common.SavesPath, args[0]);
             serverTuple = ServerRunner.Instance.StartServer(Server.ServerType.Host, path, null);
-            TX_ErrorText.text = $"Server is running on port {PortFromAddress(serverTuple.address)}.\n Players can join now.";
+            TX_ErrorText.text = $"Server is running on port {PortFromAddress(serverTuple.address)}\n Players can join!";
 
             IF_WorldName.text = args[0];
             nickname = args[1];

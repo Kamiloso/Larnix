@@ -3,7 +3,7 @@ using UnityEditor;
 
 public class BlockTexturePostprocessor : AssetPostprocessor
 {
-    private static readonly string targetPath = "Assets/Resources/BlockTextures/";
+    private static readonly string targetPath = "Assets/Resources/Textures/Blocks/";
 
     static void OnPostprocessAllAssets(
         string[] importedAssets,

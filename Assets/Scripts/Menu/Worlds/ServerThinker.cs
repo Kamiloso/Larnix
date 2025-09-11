@@ -148,12 +148,12 @@ namespace Larnix.Menu.Worlds
 
             bool knowsUserData = nickname != "" && password != "";
 
-            var downloading = Resolver.DownloadServerInfoAsync(address, authcode, knowsUserData ? nickname : "Player");
+            var downloading = Resolver.DownloadServerInfoAsync(address, authcode, knowsUserData ? nickname : "Player", true);
             yield return new WaitUntil(() => downloading.IsCompleted);
 
             if (downloading.Result.info == null)
             {
-                if (downloading.Result.publicKeyProblems) // public key problems fail
+                if (downloading.Result.error == ResolverError.PublicKeyInvalid) // public key problems fail
                 {
                     serverInfo = null;
                     State = ThinkerState.WrongPublicKey;
@@ -188,12 +188,12 @@ namespace Larnix.Menu.Worlds
 
             WasRegistration = isRegistration;
 
-            Task<bool?> login = isRegistration ?
+            var login = isRegistration ?
                 Resolver.TryRegisterAsync(address, authcode, nickname, password) :
                 Resolver.TryLoginAsync(address, authcode, nickname, password);
             yield return new WaitUntil(() => login.IsCompleted);
 
-            if (login.Result == true)
+            if (login.Result.success == true)
             {
                 if (isRegistration) // apply data
                 {

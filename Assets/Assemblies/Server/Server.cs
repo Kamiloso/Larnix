@@ -62,32 +62,32 @@ namespace Larnix.Server
             Locker = Locker.TryLock(WorldPath, "world_locker.lock");
             if (Locker != null)
             {
-                // world metadata
+                // World metadata
                 Mdata = MetadataSGP.ReadMetadataSGP(WorldPath, true);
                 Mdata = new MetadataSGP(Version.Current, Mdata?.nickname);
                 MetadataSGP.SaveMetadataSGP(WorldPath, (MetadataSGP)Mdata, true);
 
-                // satelite classes
+                // Satelite classes
                 Ref.Config = Config.Obtain(WorldPath);
                 Ref.Database = new Database(WorldPath, "database.sqlite");
                 Ref.Generator = new Worldgen.Generator(Ref.Database.GetSeed(seedSuggestion));
 
-                // server configuration
+                // Server configuration
                 Ref.QuickServer = new QuickServer(
-                    Type == ServerType.Remote ? Ref.Config.Port : (ushort)0,
-                    Ref.Config.MaxPlayers,
-                    Type == ServerType.Local,
-                    Path.Combine(WorldPath, "Socket"),
-                    Version.Current.ID,
-                    Validation.IsGoodText<String256>(Ref.Config.Motd) ? Ref.Config.Motd : "Wrong motd format :(",
-                    Type == ServerType.Remote ? "Player" : (Mdata?.nickname ?? "Player")
+                    port: Type == ServerType.Remote ? Ref.Config.Port : (ushort)0,
+                    maxClients: Ref.Config.MaxPlayers,
+                    isLoopback: Type == ServerType.Local,
+                    dataPath: Path.Combine(WorldPath, "Socket"),
+                    gameVersion: Version.Current.ID,
+                    userText1: Validation.IsGoodText<String256>(Ref.Config.Motd) ? Ref.Config.Motd : "Wrong motd format :(", // motd
+                    userText2: Type == ServerType.Remote ? "Player" : (Mdata?.nickname ?? "Player") // server owner ("Player" = detached)
                 );
-
                 Ref.QuickServer.ConfigureMasks(
                     Ref.Config.ClientIdentityPrefixSizeIPv4,
                     Ref.Config.ClientIdentityPrefixSizeIPv6
                     );
 
+                // Readonly classes in this file
                 Receiver = new Receiver(Ref.QuickServer);
                 Commands = new Commands();
 
@@ -118,7 +118,7 @@ namespace Larnix.Server
             Core.Debug.LogRaw(new string('-', 60) + "\n");
 
             // force change default password
-            if (Type == ServerType.Remote && Mdata?.nickname != "Player")
+            if (Mdata?.nickname != "Player")
             {
                 string sgpNickname = Mdata?.nickname;
 
@@ -152,8 +152,7 @@ namespace Larnix.Server
             Core.Debug.LogRaw(new string('-', 60) + "\n");
 
             // input thread start
-            if (Type == ServerType.Remote)
-                Console.StartInputThread();
+            Console.StartInputThread();
         }
 
         public void TickFixed()
@@ -210,7 +209,10 @@ namespace Larnix.Server
 
         public void Dispose(bool emergency)
         {
-            if (!emergency) SaveAllNow();
+            if (!emergency)
+            {
+                SaveAllNow();
+            }
 
             Ref.QuickServer?.Dispose();
             Ref.Database?.Dispose();

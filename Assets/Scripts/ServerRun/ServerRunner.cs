@@ -1,8 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
-using System.Threading.Tasks;
-using UnityEngine;
 using System.Threading;
+using UnityEngine;
 using System;
 using System.Diagnostics;
 using System.Runtime.ExceptionServices;
@@ -14,9 +13,11 @@ namespace Larnix.ServerRun
     {
         public bool IsRunning => _server != null;
 
-        public volatile bool StopFlag = false;
         private Server.Server _server = null;
-        private Task _task = null;
+        private Thread _thread = null;
+        private Exception _threadException = null;
+
+        public volatile bool StopFlag = false;
 
         public static ServerRunner Instance { get; private set; }
 
@@ -35,9 +36,9 @@ namespace Larnix.ServerRun
             _server = new Server.Server(type, worldPath, seedSuggestion, () => StopFlag = true);
             var tuple = (_server.LocalAddress, _server.Authcode);
 
-            _task = Task.Run(() =>
+            _thread = new Thread(() =>
             {
-                const float PERIOD = Server.Server.FIXED_TIME;
+                const float PERIOD = Core.Common.FIXED_TIME;
                 Stopwatch sw = Stopwatch.StartNew();
                 bool crashed = false;
 
@@ -52,21 +53,25 @@ namespace Larnix.ServerRun
                         float sleepSeconds = PERIOD - (float)sw.Elapsed.TotalSeconds;
                         if (sleepSeconds > 0)
                         {
-                            Thread.Sleep((int)Math.Ceiling(sleepSeconds * 1000f));
+                            Thread.Sleep((int)Math.Round(sleepSeconds * 1000f));
                         }
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
                     crashed = true;
-                    throw;
+                    _threadException = ex;
                 }
                 finally
                 {
                     sw.Stop();
                     _server.Dispose(crashed);
                 }
-            });
+            })
+            { 
+                IsBackground = true
+            };
+            _thread.Start();
 
             return tuple;
         }
@@ -75,7 +80,7 @@ namespace Larnix.ServerRun
         {
             if (IsRunning)
             {
-                if (_task.IsCompleted)
+                if (!_thread.IsAlive)
                 {
                     StopServerSync();
                 }
@@ -89,16 +94,16 @@ namespace Larnix.ServerRun
                 try
                 {
                     StopFlag = true;
-                    _task.Wait();
-                }
-                catch (AggregateException ex)
-                {
-                    ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+                    _thread.Join();
+
+                    if (_threadException != null)
+                        ExceptionDispatchInfo.Capture(_threadException).Throw();
                 }
                 finally
                 {
                     _server = null;
-                    _task = null;
+                    _thread = null;
+                    _threadException = null;
 
                     StopFlag = false;
                 }

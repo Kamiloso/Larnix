@@ -13,6 +13,7 @@ namespace Larnix.Client
         [SerializeField] public bool ShowDebugInfo;
         [SerializeField] public bool AdvancedDebugKeys;
         [SerializeField] public bool SpectatorMode;
+        [SerializeField] public bool ClientBlockSwap;
 
         [SerializeField] TextMeshProUGUI DebugF3;
 

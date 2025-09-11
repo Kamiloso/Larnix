@@ -146,7 +146,7 @@ namespace Larnix.Client
         private void OnDestroy()
         {
             LarnixClient?.Dispose();
-            WorldLoad.ScreenLoad = IsMultiplayer ? "Multiplayer" : "Singleplayer";
+            WorldLoad.SetStartingScreen(IsMultiplayer ? "Multiplayer" : "Singleplayer");
             EarlyUpdateInjector.ClearEarlyUpdate();
 
             // Close server if running any
