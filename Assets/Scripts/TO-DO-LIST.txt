@@ -1,6 +1,5 @@
 === Larnix TO-DO-LIST ===
 
-- Better smooth
 - Resource packs
 - QuickNet relay system
 
@@ -41,3 +40,4 @@
 - Client offset system + fix bug
 - Physics rework to doubles
 - Server into threaded class, hosting
+- Better smooth

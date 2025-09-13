@@ -8,26 +8,26 @@ namespace QuickNet.Frontend
 {
     internal static class Cacher
     {
-        private static readonly Dictionary<(string address, string authcode, string nickname), (A_ServerInfo info, long time)> infoDict = new();
+        private static readonly Dictionary<(string authcode, string nickname), (A_ServerInfo info, long time)> infoDict = new();
         private static readonly object locker = new();
 
-        internal static void AddInfo(string address, string authcode, string nickname, A_ServerInfo info)
+        internal static void AddInfo(string authcode, string nickname, A_ServerInfo info)
         {
             long time = Timestamp.GetTimestamp();
             lock (locker)
             {
                 CleanOld();
-                infoDict[(address, authcode, nickname)] = (info, time);
+                infoDict[(authcode, nickname)] = (info, time);
             }
         }
 
-        internal static bool TryGetInfo(string address, string authcode, string nickname, out A_ServerInfo info)
+        internal static bool TryGetInfo(string authcode, string nickname, out A_ServerInfo info)
         {
             lock (locker)
             {
                 CleanOld();
 
-                if (infoDict.TryGetValue((address, authcode, nickname), out var tuple))
+                if (infoDict.TryGetValue((authcode, nickname), out var tuple))
                 {
                     info = tuple.info;
                     return true;
@@ -38,12 +38,12 @@ namespace QuickNet.Frontend
             }
         }
 
-        internal static void IncrementChallengeIDs(string address, string authcode, string nickname, long delta = 1)
+        internal static void IncrementChallengeIDs(string authcode, string nickname, long delta = 1)
         {
             lock (locker)
             {
                 var list = infoDict
-                    .Where(vkp => vkp.Key == (address, authcode, nickname))
+                    .Where(vkp => vkp.Key == (authcode, nickname))
                     .Select(vkp => vkp.Value.info)
                     .ToList();
 

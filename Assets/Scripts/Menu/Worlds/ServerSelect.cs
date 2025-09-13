@@ -346,6 +346,11 @@ namespace Larnix.Menu.Worlds
             return ServerThinkers.ContainsKey(address);
         }
 
+        public bool ContainsAuthcode(string authcode)
+        {
+            return ServerThinkers.Values.Any(st => st?.serverData?.AuthCodeRSA == authcode);
+        }
+
         public void EditSegment(string address, string newAddress, string newAuthcode)
         {
             ServerThinker thinker = ServerThinkers[address];

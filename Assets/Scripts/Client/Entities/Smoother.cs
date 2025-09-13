@@ -6,96 +6,121 @@ namespace Larnix.Client.Entities
 {
     public class Smoother
     {
-        private const int IncludeCount = 3;
-        private const double SmoothTime = 0.15;
-        private const double MaxPositionDifference = 5.0;
+        public readonly int MaxCount;
+        public readonly double Delay; // time delay behind server
 
-        private readonly List<double> Times = new List<double>();
-        private readonly List<Vec2> Positions = new List<Vec2>();
-        private readonly List<float> Rotations = new List<float>();
+        private double _time;
+        private LinkedList<Record> _records = new();
 
-        private Vec2 LocalPosition;
-        private float LocalRotation;
-
-        private Vec2 VelocityPosition = Vec2.Zero;
-        private float VelocityRotation = 0f;
-
-        public Smoother(double initialTime, Vec2 initialPosition, float initialRotation)
+        public struct Record
         {
-            LocalPosition = initialPosition;
-            LocalRotation = initialRotation;
-
-            AddRecord(initialTime, initialPosition, initialRotation);
+            public double Time;
+            public Vec2 Position;
+            public float Rotation;
         }
 
-        public void AddRecord(double time, Vec2 position, float rotation)
+        public Vec2 Position { get; private set; }
+        public float Rotation { get; private set; }
+
+        public Smoother(Record initialRecord, int maxCount = 10, double delay = 0.05)
         {
-            if (Times.Count > 0 && time <= Times[Times.Count - 1])
-                ResetPredictor(); // something is wrong, ignore previous records
+            MaxCount = maxCount;
+            Delay = delay;
+            _time = initialRecord.Time;
+            _records.AddLast(initialRecord);
+            Position = initialRecord.Position;
+            Rotation = initialRecord.Rotation;
+        }
 
-            Times.Add(time);
-            Positions.Add(position);
-            Rotations.Add(rotation);
+        public void AddRecord(Record record)
+        {
+            // ignore absurd times
+            if (!double.IsFinite(record.Time))
+                return;
 
-            if (Times.Count > IncludeCount)
+            if (_records.Count > 0)
             {
-                Times.RemoveAt(0);
-                Positions.RemoveAt(0);
-                Rotations.RemoveAt(0);
+                var last = _records.Last.Value;
+
+                // ignore older packets
+                if (record.Time <= last.Time)
+                    return;
+
+                // ignore packets with huge time jump
+                if (record.Time - last.Time > 5.0)
+                    return;
             }
 
-            if (Times.Count >= 2)
-            {
-                double diffTime = Times[Times.Count - 1] - Times[0];
-                if (diffTime > 0f)
-                {
-                    Vec2 diffPos = Positions[Positions.Count - 1] - Positions[0];
-                    float diffRot = GetAngleDifference(Rotations[Rotations.Count - 1], Rotations[0]);
+            // remove old records (>5s older than new record)
+            while (_records.Count > 0 && _records.First.Value.Time < record.Time - 5.0)
+                _records.RemoveFirst();
 
-                    VelocityPosition = diffPos / diffTime;
-                    VelocityRotation = (float)(diffRot / diffTime);
-                }
-            }
+            _records.AddLast(record);
+
+            if (_records.Count > MaxCount)
+                _records.RemoveFirst();
         }
 
         public void UpdateSmooth(float deltaTime)
         {
-            // Prediction
-            LocalPosition += VelocityPosition * deltaTime;
-            LocalRotation += VelocityRotation * deltaTime;
-            LocalRotation = ReduceAngle(LocalRotation);
+            if (_records.Count < 2)
+                return;
 
-            // Correction
-            if(Times.Count >= 1)
+            _time += deltaTime;
+
+            // aim to stay Delay behind the latest record
+            double targetTime = _records.Last.Value.Time - Delay;
+            double diff = targetTime - _time;
+
+            // smooth time catching
+            _time += diff * 0.1f;
+
+            // find interpolation window
+            var a = _records.First;
+            while (a.Next != null && a.Next.Value.Time <= _time)
+                a = a.Next;
+
+            var b = a.Next;
+            if (b == null)
             {
-                Vec2 targetPosition = Positions[Positions.Count - 1];
-                float targetRotation = Rotations[Rotations.Count - 1];
-
-                double FrameProportion = 1 - Math.Exp(-deltaTime / SmoothTime);
-
-                LocalPosition += (targetPosition - LocalPosition) * FrameProportion;
-                LocalRotation += GetAngleDifference(targetRotation, LocalRotation) * (float)FrameProportion;
-                LocalRotation = ReduceAngle(LocalRotation);
-
-                if ((LocalPosition - targetPosition).Magnitude > MaxPositionDifference)
-                {
-                    LocalPosition = targetPosition;
-                    ResetPredictor();
-                }
+                Position = a.Value.Position;
+                Rotation = a.Value.Rotation;
+                return;
             }
+
+            double t0 = a.Value.Time;
+            double t1 = b.Value.Time;
+            float alpha = (float)((_time - t0) / (t1 - t0));
+            alpha = Mathf.Clamp01(alpha);
+
+            // Catmull-Rom requires 4 points: p0, p1, p2, p3
+            Vec2 p0 = a.Previous != null ? a.Previous.Value.Position : a.Value.Position;
+            Vec2 p1 = a.Value.Position;
+            Vec2 p2 = b.Value.Position;
+            Vec2 p3 = b.Next != null ? b.Next.Value.Position : b.Value.Position;
+
+            Position = CatmullRom(p0, p1, p2, p3, alpha);
+
+            // linear rotation interpolation with wrap-around handling
+            float r0 = ReduceAngle(a.Value.Rotation);
+            float r1 = r0 + GetAngleDifference(b.Value.Rotation, r0);
+            Rotation = Mathf.Lerp(r0, r1, alpha);
         }
 
-        public Vec2 GetSmoothedPosition() => LocalPosition;
-        public float GetSmoothedRotation() => LocalRotation;
-
-        private void ResetPredictor()
+        private static Vec2 CatmullRom(Vec2 p0, Vec2 p1, Vec2 p2, Vec2 p3, float t)
         {
-            Times.Clear();
-            Positions.Clear();
-            Rotations.Clear();
-
-            VelocityPosition = Vec2.Zero;
-            VelocityRotation = 0f;
+            float t2 = t * t;
+            float t3 = t2 * t;
+            return new Vec2(
+                0.5f * ((2f * p1.x) +
+                        (-p0.x + p2.x) * t +
+                        (2f * p0.x - 5f * p1.x + 4f * p2.x - p3.x) * t2 +
+                        (-p0.x + 3f * p1.x - 3f * p2.x + p3.x) * t3),
+                0.5f * ((2f * p1.y) +
+                        (-p0.y + p2.y) * t +
+                        (2f * p0.y - 5f * p1.y + 4f * p2.y - p3.y) * t2 +
+                        (-p0.y + 3f * p1.y - 3f * p2.y + p3.y) * t3)
+            );
         }
 
         private static float GetAngleDifference(float a, float b)

@@ -988,6 +988,7 @@ MonoBehaviour:
   ShowDebugInfo: 0
   AdvancedDebugKeys: 1
   SpectatorMode: 0
+  ClientBlockSwap: 0
   DebugF3: {fileID: 1592990795}
 --- !u!1 &1038397504
 GameObject:
@@ -2253,6 +2254,10 @@ PrefabInstance:
     - target: {fileID: 7488170789728145211, guid: 8e01c4a69144ffc4bac7bde9da25c114, type: 3}
       propertyPath: m_Layer
       value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 8251059122140511277, guid: 8e01c4a69144ffc4bac7bde9da25c114, type: 3}
+      propertyPath: SmoothDelay
+      value: 0.05
       objectReference: {fileID: 0}
     - target: {fileID: 8251059122140511277, guid: 8e01c4a69144ffc4bac7bde9da25c114, type: 3}
       propertyPath: RenderingLayer

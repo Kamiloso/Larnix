@@ -44,16 +44,22 @@ namespace Larnix.ServerRun
 
                 try
                 {
+                    const long MAX_FRAME_DELAY = 5;
+                    long frame = 0;
+
                     while (!StopFlag)
                     {
-                        sw.Restart();
                         _server.TickFixed();
-                        sw.Stop();
+                        frame++;
 
-                        float sleepSeconds = PERIOD - (float)sw.Elapsed.TotalSeconds;
-                        if (sleepSeconds > 0)
+                        while (sw.Elapsed.TotalSeconds > (frame + MAX_FRAME_DELAY) * PERIOD)
                         {
-                            Thread.Sleep((int)Math.Round(sleepSeconds * 1000f));
+                            frame++; // we're behind, skip frame
+                        }
+
+                        while (sw.Elapsed.TotalSeconds < frame * PERIOD)
+                        {
+                            Thread.Sleep(1);
                         }
                     }
                 }

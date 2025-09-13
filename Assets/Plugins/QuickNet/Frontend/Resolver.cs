@@ -67,7 +67,7 @@ namespace QuickNet.Frontend
         {
             try
             {
-                if (!ignoreCache && Cacher.TryGetInfo(address, authcode, nickname, out var cached))
+                if (!ignoreCache && Cacher.TryGetInfo(authcode, nickname, out var cached))
                     return (cached, ResolverError.None);
 
                 var prompt = new P_ServerInfo(nickname);
@@ -78,7 +78,7 @@ namespace QuickNet.Frontend
                     return (null, ResolverError.PublicKeyInvalid);
 
                 Timestamp.SetServerTimestamp(await ResolveStringAsync(address), packet.Timestamp);
-                Cacher.AddInfo(address, authcode, nickname, packet);
+                Cacher.AddInfo(authcode, nickname, packet);
 
                 return (packet, ResolverError.None);
             }
@@ -132,7 +132,7 @@ namespace QuickNet.Frontend
                 if (packet == null) return (null, ResolverError.PromptFailed);
 
                 if (packet.Success)
-                    Cacher.IncrementChallengeIDs(address, authcode, nickname, isRegistration ? 2 : 1);
+                    Cacher.IncrementChallengeIDs(authcode, nickname, isRegistration ? 2 : 1);
 
                 return (packet.Code == 1, ResolverError.None);
             }

@@ -11,6 +11,7 @@ namespace Larnix.Client.Entities
     {
         [SerializeField] Transform NameField;
         [SerializeField] string RenderingLayer;
+        [SerializeField] float SmoothDelay = 0.1f;
 
         private bool Initialized = false;
         private Smoother Smoother;
@@ -56,16 +57,21 @@ namespace Larnix.Client.Entities
         {
             if (!Initialized)
             {
-                Smoother = new Smoother(time, entityData.Position, entityData.Rotation);
+                Smoother = new Smoother(new Smoother.Record{
+                    Position = entityData.Position,
+                    Rotation = entityData.Rotation,
+                    Time = time
+                }, delay: SmoothDelay);
                 Initialized = true;
             }
             else
             {
-                Smoother.AddRecord(
-                    time,
-                    entityData.Position,
-                    entityData.Rotation
-                    );
+                Smoother.AddRecord(new Smoother.Record
+                {
+                    Position = entityData.Position,
+                    Rotation = entityData.Rotation,
+                    Time = time
+                });
             }
 
             LastTime = time;
@@ -82,12 +88,12 @@ namespace Larnix.Client.Entities
             // Update smooth & position
 
             Smoother.UpdateSmooth(Time.deltaTime);
-            transform.position = Ref.MainPlayer.ToUnityPos(Smoother.GetSmoothedPosition());
+            transform.position = Ref.MainPlayer.ToUnityPos(Smoother.Position);
 
             // Animations
 
             HeadRotor HeadRotor = GetComponent<HeadRotor>();
-            if (HeadRotor != null) HeadRotor.HeadRotate(Smoother.GetSmoothedRotation());
+            if (HeadRotor != null) HeadRotor.HeadRotate(Smoother.Rotation);
 
             LimbAnimator LimbAnimator = GetComponent<LimbAnimator>();
             if(LimbAnimator != null) LimbAnimator.DoUpdate();

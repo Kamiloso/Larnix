@@ -46,8 +46,11 @@ namespace Larnix.Menu.Forms
             if (address == "")
                 return ErrorCode.ADDRESS_EMPTY;
 
-            if ((args[0] == "ADD" || args[0] == "EDIT" && args[1] != address) && References.ServerSelect.ContainsAddress(address))
+            if ((args[0] == "ADD" || (args[0] == "EDIT" && args[1] != address)) && References.ServerSelect.ContainsAddress(address))
                 return ErrorCode.ADDRESS_EXISTS;
+
+            //if ((args[0] == "ADD" || (args[0] == "EDIT" && args[2] != authcode)) && References.ServerSelect.ContainsAuthcode(authcode))
+            //    return ErrorCode.AUTHCODE_EXISTS;
 
             if (!Validation.IsGoodAuthcode(authcode))
                 return ErrorCode.AUTHCODE_FORMAT;

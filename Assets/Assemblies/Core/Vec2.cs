@@ -82,6 +82,15 @@ public struct Vec2 : IEquatable<Vec2>
         }
     }
 
+    public static Vec2 Lerp(Vec2 a, Vec2 b, float t)
+    {
+        t = Mathf.Clamp01(t);
+        return new Vec2(
+            a.x + (b.x - a.x) * t,
+            a.y + (b.y - a.y) * t
+        );
+    }
+
     public override string ToString() => $"({x}, {y})";
     public static implicit operator string(Vec2 value) => value.ToString();
 
