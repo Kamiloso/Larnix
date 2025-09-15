@@ -7,12 +7,13 @@ using QuickNet.Channel;
 using System.Threading.Tasks;
 using Larnix.Core.Physics;
 using Larnix.ServerRun;
+using QuickNet.Frontend;
 
 namespace Larnix.Client
 {
     public class Client : MonoBehaviour
     {
-        public QuickNet.Frontend.QuickClient LarnixClient = null;
+        public QuickClient LarnixClient = null;
         private Queue<(Packet packet, bool safemode)> delayedPackets = new();
         private Receiver Receiver = null;
 
@@ -58,8 +59,11 @@ namespace Larnix.Client
             Nickname = WorldLoad.Nickname;
             Password = WorldLoad.Password;
 
-            Task<QuickNet.Frontend.QuickClient> connecting = QuickNet.Frontend.QuickClient.CreateClientAsync(Address, Authcode, Nickname, Password);
-            yield return new WaitUntil(() => connecting.IsCompleted);
+            Task<QuickClient> connecting = Task.Run(() =>
+                QuickClient.CreateClientAsync(Address, Authcode, Nickname, Password).Result);
+
+            while (!connecting.IsCompleted)
+                yield return null;
 
             if (connecting.Result != null)
             {

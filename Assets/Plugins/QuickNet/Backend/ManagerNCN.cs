@@ -62,7 +62,7 @@ namespace QuickNet.Backend
             coroutines.Add(coroutine);
         }
 
-        internal void ProcessNCN(IPEndPoint remoteEP, uint ncnID, Packet packet)
+        internal void ProcessNCN(IPEndPoint remoteEP, int ncnID, Packet packet)
         {
             if (Payload.TryConstructPayload<P_ServerInfo>(packet, out var infoask))
             {
@@ -76,6 +76,7 @@ namespace QuickNet.Backend
                     Server.GameVersion,
                     Server.UserManager.GetChallengeID(checkNickname),
                     Timestamp.GetTimestamp(),
+                    Server.RunID,
                     Server.UserText1,
                     Server.UserText2,
                     Server.UserText3
@@ -95,7 +96,8 @@ namespace QuickNet.Backend
 
                 StartCoroutine(
                     LoginCoroutine(remoteEP, nickname, password,
-                    logtry.ServerSecret, logtry.ChallengeID, logtry.Timestamp, password != newPassword,
+                    logtry.ServerSecret, logtry.ChallengeID, logtry.Timestamp, logtry.RunID,
+                    password != newPassword,
                     ExecuteSuccess: () =>
                     {
                         Server.UserManager.IncrementChallengeID(logtry.Nickname);
@@ -117,10 +119,11 @@ namespace QuickNet.Backend
             }
         }
 
-        internal void TryLogin(IPEndPoint remoteEP, string username, string password, long serverSecret, long challengeID, long timestamp)
+        internal void TryLogin(IPEndPoint remoteEP, string username, string password,
+            long serverSecret, long challengeID, long timestamp, long runID)
         {
             StartCoroutine(
-                LoginCoroutine(remoteEP, username, password, serverSecret, challengeID, timestamp, false,
+                LoginCoroutine(remoteEP, username, password, serverSecret, challengeID, timestamp, runID, false,
                 ExecuteSuccess: () =>
                 {
                     Server.UserManager.IncrementChallengeID(username);
@@ -134,8 +137,9 @@ namespace QuickNet.Backend
         }
 
         private IEnumerator LoginCoroutine(
-            IPEndPoint remoteEP, string username, string password, long serverSecret, long challengeID, long timestamp, bool isPasswordChange,
-            Action ExecuteSuccess, Action ExecuteFailed
+            IPEndPoint remoteEP, string username, string password,
+            long serverSecret, long challengeID, long timestamp, long runID,
+            bool isPasswordChange, Action ExecuteSuccess, Action ExecuteFailed
             )
         {
             long timeNow = Timestamp.GetTimestamp();
@@ -144,6 +148,7 @@ namespace QuickNet.Backend
 
             if (
                 serverSecret != Server.Secret || // wrong server secret
+                runID != Server.RunID || // wrong runID
                 !Timestamp.InTimestamp(timestamp) || // login message is outdated
                 CurrentHashingAmount + hashCost > MAX_PARALLEL_HASHINGS || // hashing slots full
                 (username == QuickServer.LoopbackOnlyNickname && !isLoopback) || // loopback-only nickname

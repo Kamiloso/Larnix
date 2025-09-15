@@ -38,6 +38,15 @@ namespace QuickNet.Frontend
             }
         }
 
+        internal static void RemoveRecord(string authcode, string nickname)
+        {
+            lock (locker)
+            {
+                if (infoDict.ContainsKey((authcode, nickname)))
+                    infoDict.Remove((authcode, nickname));
+            }
+        }
+
         internal static void IncrementChallengeIDs(string authcode, string nickname, long delta = 1)
         {
             lock (locker)

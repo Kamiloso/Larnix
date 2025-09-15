@@ -27,6 +27,8 @@ namespace QuickNet.Frontend
             EntryTicket ticket = (await Resolver.GetEntryTicketAsync(address, authcode, nickname)).ticket;
             if (ticket == null) return null;
 
+            Cacher.RemoveRecord(authcode, nickname);
+
             try
             {
                 return new QuickClient(endPoint, ticket, authcode, nickname, password);
@@ -45,6 +47,7 @@ namespace QuickNet.Frontend
 
             long serverSecret = Authcode.GetSecretFromAuthCode(authcode);
             long challengeID = ticket.ChallengeID;
+            long runID = ticket.RunID;
 
             byte[] keyAES = new byte[16];
             using (var rng = RandomNumberGenerator.Create())
@@ -52,11 +55,9 @@ namespace QuickNet.Frontend
                 rng.GetBytes(keyAES);
             }
 
-            long timestamp = IPAddress.IsLoopback(EndPoint.Address) ?
-                Timestamp.GetTimestamp() :
-                Timestamp.GetServerTimestamp(EndPoint);
+            long timestamp = Timestamp.GetServerTimestamp(ticket.RunID);
 
-            Packet synPacket = new AllowConnection(nickname, password, keyAES, serverSecret, challengeID, timestamp);
+            Packet synPacket = new AllowConnection(nickname, password, keyAES, serverSecret, challengeID, timestamp, runID);
             Connection = new Connection(UdpClient, EndPoint, keyAES, synPacket, KeyRSA);
         }
 

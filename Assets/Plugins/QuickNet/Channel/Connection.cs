@@ -19,12 +19,10 @@ namespace QuickNet.Channel
         private byte[] KeyAES = null;
         private RSA KeyRSA = null;
 
-        private uint SeqNum = 0; // last sent message ID
-        private uint AckNum = 0; // last acknowledged message ID
-        private uint GetNum = 0; // last received message ID
-
-        private uint LastSendSequence = 0; // control number to check packet order
-        private uint LastReceiveSequence = 0; // control number to check packet order
+        private const int MaxSeqTolerance = 128;
+        private int SeqNum = 0; // last sent message ID
+        private int AckNum = 0; // last acknowledged message ID
+        private int GetNum = 0; // last received message ID
 
         public const uint MaxTransmissions = 8;
         public const uint MaxStayingPackets = 128;
@@ -47,9 +45,9 @@ namespace QuickNet.Channel
         private readonly List<Task> pendingSendingTasks = new List<Task>();
         private const int MAX_PENDING_SENDING = 64;
 
-        private readonly LinkedList<(uint seq, long time)> PacketTimestamps = new();
+        private readonly LinkedList<(int seq, long time)> PacketTimestamps = new();
         private readonly LinkedList<long> PacketRTTs = new();
-        private readonly HashSet<uint> _RetransmittedNow = new(); // local
+        private readonly HashSet<int> _RetransmittedNow = new(); // local
         private const int MaxRTTs = 10;
         private const float OffsetRTT = 0.050f; // 50 ms
         private const float DefaultAvgRTT = 0.6f;
@@ -63,7 +61,7 @@ namespace QuickNet.Channel
             Udp = udp;
             EndPoint = endPoint;
             KeyRSA = keyPublicRSA;
-            KeyAES = keyAES?.Length == 16 ? keyAES : throw new System.ArgumentException("Wrong keyAES format!");
+            KeyAES = keyAES?.Length == 16 ? keyAES : throw new ArgumentException("Wrong keyAES format!");
 
             IsClient = synPacket != null;
 
@@ -103,15 +101,11 @@ namespace QuickNet.Channel
                         {
                             ReadyPacketTryEnqueue(safePacket, true);
                         }
-                        catch(System.Exception e)
+                        catch (FormatException)
                         {
-                            if (e.Message == "WRONG_PACKET_ORDER")
-                            {
-                                FinishConnection();
-                                IsError = true;
-                                return;
-                            }
-                            else throw;
+                            FinishConnection();
+                            IsError = true;
+                            return;
                         }
                         break;
                     }
@@ -121,7 +115,7 @@ namespace QuickNet.Channel
             }
 
             // Delete packets that are no longer needed
-            receivedPackets.RemoveAll(p => p.SeqNum <= GetNum);
+            receivedPackets.RemoveAll(p => (p.SeqNum - GetNum <= 0));
 
             // Check for retransmissions
             AvgRTT = (float)AverageRTT();
@@ -132,7 +126,7 @@ namespace QuickNet.Channel
                 safePacket.ReduceTime(deltaTime);
                 if (safePacket.TimeToRetransmission == 0f)
                 {
-                    if (safePacket.SeqNum <= AckNum)
+                    if (safePacket.SeqNum - AckNum <= 0)
                     {
                         sendingPackets.RemoveAt(i--);
                     }
@@ -165,7 +159,7 @@ namespace QuickNet.Channel
             {
                 if (!ackSent)
                 {
-                    Send(null, false); // ACK packet (empty packet using fast mode)
+                    Send(new None(0), false); // ACK packet (empty packet using fast mode)
                     ackSent = true;
                 }
                 currentAckCycleTime -= AckCycleTime;
@@ -187,12 +181,11 @@ namespace QuickNet.Channel
 
             if (safemode)
             {
-                packet.ControlSequence = ++LastSendSequence;
                 SendSafePacket(new QuickPacket(++SeqNum, GetNum, 0, packet));
             }
             else
             {
-                Transmit(new QuickPacket(0, GetNum, (byte)PacketFlag.FAS, packet));
+                Transmit(new QuickPacket(SeqNum, GetNum, (byte)PacketFlag.FAS, packet));
             }
         }
 
@@ -214,42 +207,45 @@ namespace QuickNet.Channel
                downloadablePackets.Count >= MaxStayingPackets) return;
 
             QuickPacket safePacket = new QuickPacket();
-            if (!hasSYN)
-                safePacket.Encryption = bytes => Encryption.DecryptAES(bytes, KeyAES);
+            if (!hasSYN) safePacket.Encryption = bytes => Encryption.DecryptAES(bytes, KeyAES);
+            if (!safePacket.TryDeserialize(bytes)) return;
 
-            if (!safePacket.TryDeserialize(bytes))
-                return;
+            int diff = safePacket.SeqNum - GetNum;
 
             if (!safePacket.HasFlag(PacketFlag.FAS)) // safe mode
             {
-                if (safePacket.SeqNum <= GetNum)
+                // range drop
+                if (diff <= 0 || diff > MaxSeqTolerance)
                     return;
 
+                // duplication drop
                 if (receivedPackets.Any(p => p.SeqNum == safePacket.SeqNum))
                     return;
 
+                // safe enqueue
                 receivedPackets.Add(safePacket);
             }
             else // fast mode
             {
+                // range drop
+                if (diff < -MaxSeqTolerance || diff > MaxSeqTolerance)
+                    return;
+
+                // enqueue
                 try
                 {
                     ReadyPacketTryEnqueue(safePacket, false);
                 }
-                catch (System.Exception e)
+                catch (FormatException)
                 {
-                    if (e.Message == "WRONG_PACKET_ORDER")
-                    {
-                        FinishConnection();
-                        IsError = true;
-                        return;
-                    }
-                    else throw;
+                    FinishConnection();
+                    IsError = true;
+                    return;
                 }
             }
 
             // best received acknowledgement get
-            if (safePacket.AckNum > AckNum)
+            if (safePacket.AckNum - AckNum > 0)
             {
                 AckNum = safePacket.AckNum;
                 PongRTT(safePacket.AckNum);
@@ -271,7 +267,7 @@ namespace QuickNet.Channel
                 0,
                 GetNum,
                 (byte)PacketFlag.FAS | (byte)PacketFlag.FIN,
-                null
+                new None(0)
                 );
 
             const int FIN_COUNT = 3;
@@ -318,6 +314,9 @@ namespace QuickNet.Channel
                 }
             }
 
+            // Set control sequence
+            safePacket.Packet.ControlSequence = (long)safePacket.SeqNum;
+
             // Retransmission time reset
             if (!safePacket.HasFlag(PacketFlag.FAS))
                 safePacket.Transmited(AvgRTT + OffsetRTT);
@@ -354,23 +353,23 @@ namespace QuickNet.Channel
                 return false;
 
             // Control order and throw exception if something wrong
-            if(safePacket.Packet.ControlSequence != 0 && (!is_safe || safePacket.Packet.ControlSequence != ++LastReceiveSequence))
-                throw new System.Exception("WRONG_PACKET_ORDER");
+            if (safePacket.Packet.ControlSequence != (long)safePacket.SeqNum)
+                throw new FormatException();
 
             // Enqueue if everything ok
             downloadablePackets.Enqueue(safePacket.Packet);
             return true;
         }
 
-        private void PingRTT(uint seq)
+        private void PingRTT(int seq)
         {
             PacketTimestamps.ForEachRemove(tuple => !Timestamp.InTimestamp(tuple.time));
             PacketTimestamps.AddLast((seq, Timestamp.GetTimestamp()));
         }
 
-        private void PongRTT(uint seq)
+        private void PongRTT(int seq)
         {
-            PacketTimestamps.ForEachRemove(tuple => tuple.seq <= seq, tuple =>
+            PacketTimestamps.ForEachRemove(tuple => tuple.seq - seq <= 0, tuple =>
             {
                 long delta = Timestamp.GetTimestamp() - tuple.time;
 

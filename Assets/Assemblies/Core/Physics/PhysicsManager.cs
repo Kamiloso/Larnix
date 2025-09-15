@@ -135,7 +135,7 @@ namespace Larnix.Core.Physics
                 }
             }
 
-            if (moved.y != 0f)
+            if (moved.y != 0.0)
             {
                 double ty_min = (minCorner.y - startCenter.y) / moved.y;
                 double ty_max = (maxCorner.y - startCenter.y) / moved.y;

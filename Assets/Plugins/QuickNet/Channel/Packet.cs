@@ -7,11 +7,11 @@ namespace QuickNet.Channel
 {
     public class Packet
     {
-        internal const int HEADER_SIZE = 2 + 1 + 4;
+        internal const int HEADER_SIZE = 2 + 1 + 8;
 
         internal CmdID ID = 0;
         internal byte Code = 0;
-        internal uint ControlSequence = 0; // 0 by default, change if needed
+        internal long ControlSequence = 0; // it's basically (long)SeqNum (encrypted, for security)
         internal byte[] Bytes = null;
 
         internal Packet() { }
@@ -45,7 +45,7 @@ namespace QuickNet.Channel
 
             ID = EndianUnsafe.FromBytes<CmdID>(bytes, 0);
             Code = bytes[2];
-            ControlSequence = EndianUnsafe.FromBytes<uint>(bytes, 3);
+            ControlSequence = EndianUnsafe.FromBytes<long>(bytes, 3);
             Bytes = bytes[HEADER_SIZE..bytes.Length];
 
             return true;

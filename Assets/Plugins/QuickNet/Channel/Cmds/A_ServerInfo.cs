@@ -6,7 +6,7 @@ namespace QuickNet.Channel.Cmds
 {
     public class A_ServerInfo : Payload
     {
-        private const int SIZE = 264 + 2 + 2 + 4 + 8 + 8 + 256 + 256 + 256;
+        private const int SIZE = 264 + 2 + 2 + 4 + 8 + 8 + 8 + 256 + 256 + 256;
         private const int CH_START = 272;
 
         public byte[] PublicKey => new Span<byte>(Bytes, 0, 264).ToArray(); // 264B
@@ -15,12 +15,13 @@ namespace QuickNet.Channel.Cmds
         public uint GameVersion => EndianUnsafe.FromBytes<uint>(Bytes, 268); // 4B
         public long ChallengeID => GetChallengeID_ThreadSafe(); // 8B
         public long Timestamp => EndianUnsafe.FromBytes<long>(Bytes, 280); // 8B
-        public String256 UserText1 => EndianUnsafe.FromBytes<String256>(Bytes, 288); // 256B (128 chars)
-        public String256 UserText2 => EndianUnsafe.FromBytes<String256>(Bytes, 544); // 256B (128 chars)
-        public String256 UserText3 => EndianUnsafe.FromBytes<String256>(Bytes, 800); // 256B (128 chars)
+        public long RunID => EndianUnsafe.FromBytes<long>(Bytes, 288); // 8B
+        public String256 UserText1 => EndianUnsafe.FromBytes<String256>(Bytes, 296); // 256B (128 chars)
+        public String256 UserText2 => EndianUnsafe.FromBytes<String256>(Bytes, 552); // 256B (128 chars)
+        public String256 UserText3 => EndianUnsafe.FromBytes<String256>(Bytes, 808); // 256B (128 chars)
 
         public A_ServerInfo() { }
-        public A_ServerInfo(byte[] publicKey, ushort currentPlayers, ushort maxPlayers, uint gameVersion, long challengeID, long timestamp,
+        public A_ServerInfo(byte[] publicKey, ushort currentPlayers, ushort maxPlayers, uint gameVersion, long challengeID, long timestamp, long runID,
             string userText1 = "", string userText2 = "", string userText3 = "", byte code = 0)
         {
             InitializePayload(ArrayUtils.MegaConcat(
@@ -30,6 +31,7 @@ namespace QuickNet.Channel.Cmds
                 EndianUnsafe.GetBytes(gameVersion),
                 EndianUnsafe.GetBytes(challengeID),
                 EndianUnsafe.GetBytes(timestamp),
+                EndianUnsafe.GetBytes(runID),
                 EndianUnsafe.GetBytes<String256>(userText1),
                 EndianUnsafe.GetBytes<String256>(userText2),
                 EndianUnsafe.GetBytes<String256>(userText3)

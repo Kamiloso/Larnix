@@ -29,6 +29,8 @@ namespace QuickNet.Backend
         public readonly long Secret;
         public readonly string Authcode;
 
+        internal readonly long RunID;
+
         public bool CanReceive { get; set; } = true;
 
         private bool InitializedMasks = false;
@@ -83,6 +85,9 @@ namespace QuickNet.Backend
             UserText1 = userText1;
             UserText2 = userText2;
             UserText3 = userText3;
+
+            // run random
+            RunID = KeyObtainer.GetSecureLong();
         }
 
         public void ConfigureMasks(int maskIPv4, int maskIPv6)
@@ -246,6 +251,7 @@ namespace QuickNet.Backend
                                 long serverSecret = allowcon.ServerSecret;
                                 long challengeID = allowcon.ChallengeID;
                                 long timestamp = allowcon.Timestamp;
+                                long runID = allowcon.RunID;
 
                                 if (!CanAcceptSYN(remoteEP, nickname))
                                     continue;
@@ -256,7 +262,7 @@ namespace QuickNet.Backend
                                     preLoginBuffer.AddPacket(bytes);
                                     PreLoginBuffers.Add(remoteEP, preLoginBuffer);
 
-                                    FastMessages.TryLogin(remoteEP, nickname, password, serverSecret, challengeID, timestamp);
+                                    FastMessages.TryLogin(remoteEP, nickname, password, serverSecret, challengeID, timestamp, runID);
                                 }
                             }
                             else continue;
@@ -382,7 +388,7 @@ namespace QuickNet.Backend
             }
         }
 
-        internal void SendNCN(IPEndPoint endPoint, uint ncnID, Packet packet)
+        internal void SendNCN(IPEndPoint endPoint, int ncnID, Packet packet)
         {
             QuickPacket safeAnswer = new QuickPacket(
                 ncnID,

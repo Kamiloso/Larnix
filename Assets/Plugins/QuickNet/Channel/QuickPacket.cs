@@ -20,10 +20,10 @@ namespace QuickNet.Channel
         // ==== DATA SEGMENT ====
 
         internal const int HEADER_SIZE = (2 + 2) + 4 + 4 + 1;
-        internal const ushort PROTOCOL_VERSION = 2;
+        internal const ushort PROTOCOL_VERSION = 3;
 
-        internal uint SeqNum { get; private set; } = 0;
-        internal uint AckNum { get; private set; } = 0;
+        internal int SeqNum { get; private set; } = 0;
+        internal int AckNum { get; private set; } = 0;
         internal byte Flags { get; private set; } = 0;
         internal Packet Packet { get; private set; } = null;
 
@@ -31,7 +31,7 @@ namespace QuickNet.Channel
         internal Func<byte[], byte[]> Encryption = null;
 
         internal QuickPacket() { }
-        internal QuickPacket(uint seqNum, uint ackNum, byte flags, Packet payload)
+        internal QuickPacket(int seqNum, int ackNum, byte flags, Packet payload)
         {
             SeqNum = seqNum;
             AckNum = ackNum;
@@ -76,8 +76,8 @@ namespace QuickNet.Channel
             if (version != PROTOCOL_VERSION)
                 return false;
 
-            SeqNum = EndianUnsafe.FromBytes<uint>(bytes, 4);
-            AckNum = EndianUnsafe.FromBytes<uint>(bytes, 8);
+            SeqNum = EndianUnsafe.FromBytes<int>(bytes, 4);
+            AckNum = EndianUnsafe.FromBytes<int>(bytes, 8);
             Flags = bytes[12];
             Packet = null;
 

@@ -24,6 +24,7 @@ namespace QuickNet.Frontend
     internal class EntryTicket
     {
         internal long ChallengeID;
+        internal long RunID;
         internal byte[] PublicKeyRSA;
     }
 
@@ -71,13 +72,13 @@ namespace QuickNet.Frontend
                     return (cached, ResolverError.None);
 
                 var prompt = new P_ServerInfo(nickname);
-                var packet = await Prompter.PromptAsync<A_ServerInfo>(address, prompt, timeoutSeconds: 3);
+                var packet = await Prompter.PromptAsync<A_ServerInfo>(address, prompt, timeoutMiliseconds: 3000);
                 if (packet == null) return (null, ResolverError.PromptFailed);
 
                 if (!Authcode.VerifyPublicKey(packet.PublicKey, authcode))
                     return (null, ResolverError.PublicKeyInvalid);
 
-                Timestamp.SetServerTimestamp(await ResolveStringAsync(address), packet.Timestamp);
+                Timestamp.SetServerTimestamp(packet.RunID, packet.Timestamp);
                 Cacher.AddInfo(authcode, nickname, packet);
 
                 return (packet, ResolverError.None);
@@ -124,10 +125,10 @@ namespace QuickNet.Frontend
 
                 using RSA rsa = KeyObtainer.PublicBytesToKey(info.PublicKey);
                 long serverSecret = Authcode.GetSecretFromAuthCode(authcode);
-                long timestamp = Timestamp.GetServerTimestamp(await ResolveStringAsync(address));
+                long timestamp = Timestamp.GetServerTimestamp(info.RunID);
 
-                var prompt = new P_LoginTry(nickname, password, serverSecret, info.ChallengeID, timestamp, newPassword);
-                var packet = await Prompter.PromptAsync<A_LoginTry>(address, prompt, timeoutSeconds: 3, publicKeyRSA: rsa);
+                var prompt = new P_LoginTry(nickname, password, serverSecret, info.ChallengeID, timestamp, info.RunID, newPassword);
+                var packet = await Prompter.PromptAsync<A_LoginTry>(address, prompt, timeoutMiliseconds: 3000, publicKeyRSA: rsa);
 
                 if (packet == null) return (null, ResolverError.PromptFailed);
 
@@ -150,6 +151,7 @@ namespace QuickNet.Frontend
             return (new EntryTicket
             {
                 ChallengeID = info.ChallengeID,
+                RunID = info.RunID,
                 PublicKeyRSA = info.PublicKey
             }, ResolverError.None);
         }

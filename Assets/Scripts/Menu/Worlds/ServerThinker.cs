@@ -148,8 +148,11 @@ namespace Larnix.Menu.Worlds
 
             bool knowsUserData = nickname != "" && password != "";
 
-            var downloading = Resolver.DownloadServerInfoAsync(address, authcode, knowsUserData ? nickname : "Player", true);
-            yield return new WaitUntil(() => downloading.IsCompleted);
+            var downloading = Task.Run(() =>
+                Resolver.DownloadServerInfoAsync(address, authcode, knowsUserData ? nickname : "Player", true));
+
+            while (!downloading.IsCompleted)
+                yield return null;
 
             if (downloading.Result.info == null)
             {
@@ -189,9 +192,11 @@ namespace Larnix.Menu.Worlds
             WasRegistration = isRegistration;
 
             var login = isRegistration ?
-                Resolver.TryRegisterAsync(address, authcode, nickname, password) :
-                Resolver.TryLoginAsync(address, authcode, nickname, password);
-            yield return new WaitUntil(() => login.IsCompleted);
+                Task.Run(() => Resolver.TryRegisterAsync(address, authcode, nickname, password)) :
+                Task.Run(() => Resolver.TryLoginAsync(address, authcode, nickname, password));
+
+            while (!login.IsCompleted)
+                yield return null;
 
             if (login.Result.success == true)
             {

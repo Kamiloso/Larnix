@@ -20,7 +20,7 @@ namespace QuickNet.Frontend
             this.udpClient = udpClient;
         }
 
-        public static async Task<TAnswer> PromptAsync<TAnswer>(string ipAddress, Packet prompt, int timeoutSeconds = 3, RSA publicKeyRSA = null) where TAnswer : Payload, new()
+        public static async Task<TAnswer> PromptAsync<TAnswer>(string ipAddress, Packet prompt, int timeoutMiliseconds = 3000, RSA publicKeyRSA = null) where TAnswer : Payload, new()
         {
             var endPoint = await Resolver.ResolveStringAsync(ipAddress);
             if (endPoint == null) return null;
@@ -28,12 +28,12 @@ namespace QuickNet.Frontend
             using var udp = QuickClient.CreateConfiguredClientObject(endPoint);
             var prompter = new Prompter(endPoint, udp);
 
-            return await prompter.SendAndWaitAsync<TAnswer>(prompt, publicKeyRSA, timeoutSeconds);
+            return await prompter.SendAndWaitAsync<TAnswer>(prompt, publicKeyRSA, timeoutMiliseconds);
         }
 
-        private async Task<TAnswer> SendAndWaitAsync<TAnswer>(Packet prompt, RSA publicKeyRSA, int timeoutSeconds) where TAnswer : Payload, new()
+        private async Task<TAnswer> SendAndWaitAsync<TAnswer>(Packet prompt, RSA publicKeyRSA, int timeoutMiliseconds) where TAnswer : Payload, new()
         {
-            uint promptId = unchecked((uint)KeyObtainer.GetSecureLong());
+            int promptId = (int)KeyObtainer.GetSecureLong();
 
             PacketFlag flags = PacketFlag.NCN;
             Func<byte[], byte[]> encrypt = null;
@@ -60,15 +60,15 @@ namespace QuickNet.Frontend
                 return null;
             }
 
-            var deadline = DateTime.UtcNow.AddSeconds(timeoutSeconds);
+            long deadline = Timestamp.GetTimestamp() + timeoutMiliseconds;
 
-            while (DateTime.UtcNow < deadline)
+            while (Timestamp.GetTimestamp() < deadline)
             {
-                var delay = (int)(deadline - DateTime.UtcNow).TotalMilliseconds;
+                long delay = deadline - Timestamp.GetTimestamp();
                 if (delay <= 0) break;
 
                 var receiveTask = udpClient.ReceiveAsync();
-                var timeoutTask = Task.Delay(delay);
+                var timeoutTask = Task.Delay((int)delay);
                 var completed = await Task.WhenAny(receiveTask, timeoutTask);
 
                 if (completed == timeoutTask)

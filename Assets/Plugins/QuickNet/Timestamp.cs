@@ -2,6 +2,7 @@ using QuickNet.Processing;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net;
 
 namespace QuickNet
@@ -9,12 +10,27 @@ namespace QuickNet
     public static class Timestamp
     {
         private const long Window = 6_000; // miliseconds
-        private static Dictionary<EndPoint, long> TimestampDifferences = new();
-        private static object locker = new();
+        private static Dictionary<long, long> TimestampDifferences = new();
+        private static object _locker1 = new();
+
+        private static bool _initialized = false;
+        private static long startingTimestamp = 0;
+        private static Stopwatch stopwatch = new();
+        private static object _locker2 = new();
 
         public static long GetTimestamp()
         {
-            return ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeMilliseconds();
+            lock (_locker2)
+            {
+                long timestampNow = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeMilliseconds();
+                if (!_initialized)
+                {
+                    startingTimestamp = timestampNow;
+                    stopwatch.Start();
+                    _initialized = true;
+                }
+                return startingTimestamp + (long)stopwatch.Elapsed.TotalMilliseconds;
+            }
         }
 
         public static bool InTimestamp(long timestamp, long window = Window)
@@ -23,22 +39,22 @@ namespace QuickNet
             return timestamp >= localTimestamp - window && timestamp <= localTimestamp;
         }
 
-        internal static void SetServerTimestamp(IPEndPoint endPoint, long timestamp)
+        internal static void SetServerTimestamp(long runID, long timestamp)
         {
-            lock (locker)
+            lock (_locker1)
             {
-                TimestampDifferences[endPoint] = timestamp - GetTimestamp();
+                TimestampDifferences[runID] = timestamp - GetTimestamp();
             }
         }
 
-        internal static long GetServerTimestamp(IPEndPoint endPoint)
+        internal static long GetServerTimestamp(long runID)
         {
-            lock (locker)
+            lock (_locker1)
             {
-                if (TimestampDifferences.TryGetValue(endPoint, out long difference))
+                if (TimestampDifferences.TryGetValue(runID, out long difference))
                     return GetTimestamp() + difference;
             }
-            throw new InvalidOperationException($"Cannot get server timestamp of {endPoint} since it was never declared.");
+            throw new InvalidOperationException($"Cannot get server timestamp since it was never declared.");
         }
     }
 }
