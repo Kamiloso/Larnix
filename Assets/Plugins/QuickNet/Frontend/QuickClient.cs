@@ -13,7 +13,7 @@ namespace QuickNet.Frontend
 {
     public class QuickClient : IDisposable
     {
-        private readonly UdpClient UdpClient;
+        private readonly UdpClient2 UdpClient;
         private readonly Connection Connection;
         private readonly IPEndPoint EndPoint;
 
@@ -31,18 +31,26 @@ namespace QuickNet.Frontend
 
             try
             {
-                return new QuickClient(endPoint, ticket, authcode, nickname, password);
+                return new QuickClient(endPoint, ticket, address, authcode, nickname, password);
             }
-            catch
+            catch (Exception ex)
             {
+                QuickNet.Debug.LogError(ex.Message);
                 return null;
             }
         }
 
-        private QuickClient(IPEndPoint endPoint, EntryTicket ticket, string authcode, string nickname, string password)
+        private QuickClient(IPEndPoint endPoint, EntryTicket ticket, string address, string authcode, string nickname, string password)
         {
             EndPoint = endPoint;
-            UdpClient = CreateConfiguredClientObject(EndPoint);
+            UdpClient = new UdpClient2(
+                port: 0,
+                isListener: false,
+                isLoopback: IPAddress.IsLoopback(endPoint.Address),
+                isIPv6: endPoint.AddressFamily == AddressFamily.InterNetworkV6,
+                recvBufferSize: 256 * 1024,
+                destination: endPoint
+                );
             RSA KeyRSA = KeyObtainer.PublicBytesToKey(ticket.PublicKeyRSA);
 
             long serverSecret = Authcode.GetSecretFromAuthCode(authcode);
@@ -55,69 +63,19 @@ namespace QuickNet.Frontend
                 rng.GetBytes(keyAES);
             }
 
-            long timestamp = Timestamp.GetServerTimestamp(ticket.RunID);
+            long timestamp = Timestamp.GetServerTimestamp(address);
 
             Packet synPacket = new AllowConnection(nickname, password, keyAES, serverSecret, challengeID, timestamp, runID);
-            Connection = new Connection(UdpClient, EndPoint, keyAES, synPacket, KeyRSA);
-        }
-
-        internal static UdpClient CreateConfiguredClientObject(IPEndPoint endPoint)
-        {
-            IPAddress address = endPoint.Address;
-            AddressFamily family = endPoint.AddressFamily;
-
-            UdpClient udpClient = new UdpClient(family);
-
-            if (family == AddressFamily.InterNetwork)
-            {
-                udpClient.Client.Bind(new IPEndPoint(
-                    IPAddress.IsLoopback(address) ? IPAddress.Loopback : IPAddress.Any, 0)
-                    );
-            }
-            else if (family == AddressFamily.InterNetworkV6)
-            {
-                udpClient.Client.Bind(new IPEndPoint(
-                    IPAddress.IsLoopback(address) ? IPAddress.IPv6Loopback : IPAddress.IPv6Any, 0)
-                    );
-            }
-            else throw new System.NotSupportedException("Unknown address type.");
-
-            udpClient.Client.Blocking = false;
-            udpClient.Client.ReceiveBufferSize = 1024 * 1024; // 1 MB
-
-            return udpClient;
+            Connection = new Connection(bytes => UdpClient.Send(EndPoint, bytes), EndPoint, keyAES, synPacket, KeyRSA);
         }
 
         public void ClientTick(float deltaTime)
         {
-            // Get packets from UDP client
+            // get packets from UDP client
+            while (UdpClient.TryReceive(out var pair))
+                Connection.PushFromWeb(pair.data);
 
-            while (UdpClient.Available > 0)
-            {
-                IPEndPoint remoteEP = new IPEndPoint(IPAddress.Any, 0);
-                byte[] bytes = null;
-
-                try
-                {
-                    bytes = UdpClient.Receive(ref remoteEP);
-                }
-                catch (SocketException ex)
-                {
-                    if (ex.SocketErrorCode == SocketError.WouldBlock || ex.SocketErrorCode == SocketError.ConnectionReset)
-                        continue;
-                    else
-                        throw;
-                }
-
-                if (bytes != null)
-                {
-                    if (EndPoint.Equals(remoteEP))
-                        Connection.PushFromWeb(bytes);
-                }
-            }
-
-            // Process received packets
-
+            // process received packets
             Connection.Tick(deltaTime);
             Queue<Packet> received = Connection.Receive();
 

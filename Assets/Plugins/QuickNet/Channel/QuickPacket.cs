@@ -100,6 +100,11 @@ namespace QuickNet.Channel
             return sum;
         }
 
+        internal long MakeControlSequence()
+        {
+            return (Flags << 32) | SeqNum;
+        }
+
         // ==== RETRANSMISSION SEGMENT ====
 
         internal float TimeToRetransmission { get; private set; } = float.MaxValue;

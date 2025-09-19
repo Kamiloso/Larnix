@@ -15,7 +15,7 @@ namespace Larnix.Server.Data
         Server (local / remote) can store its values into JSON file and load them on start.
         */
 
-        public ushort ConfigVersion = 3;
+        public ushort ConfigVersion = 4;
         public ushort MaxPlayers = 10;
         public ushort Port = 27682;
         public string Motd = "Welcome to Larnix server!";
@@ -23,6 +23,8 @@ namespace Larnix.Server.Data
         public float EntityBroadcastPeriod = 0.04f;
         public int ClientIdentityPrefixSizeIPv4 = 32;
         public int ClientIdentityPrefixSizeIPv6 = 56;
+        public bool UseRelay = false;
+        public string RelayAddress = "relay-1.se3.page";
 
         private Config() { }
 
@@ -59,21 +61,26 @@ namespace Larnix.Server.Data
         {
             Config defaultConfig = new Config();
             
-            if(ConfigVersion < 1)
+            if (ConfigVersion < 1)
             {
                 DataSavingPeriod = defaultConfig.DataSavingPeriod;
                 EntityBroadcastPeriod = defaultConfig.EntityBroadcastPeriod;
             }
-            if(ConfigVersion < 2)
+            if (ConfigVersion < 2)
             {
                 ClientIdentityPrefixSizeIPv4 = defaultConfig.ClientIdentityPrefixSizeIPv4;
                 ClientIdentityPrefixSizeIPv6 = defaultConfig.ClientIdentityPrefixSizeIPv6;
             }
-            if(ConfigVersion < 3)
+            if (ConfigVersion < 3)
             {
                 // no new variables
             }
-            // if(oldConfig.ConfigVersion < 4)
+            if (ConfigVersion < 4)
+            {
+                UseRelay = defaultConfig.UseRelay;
+                RelayAddress = defaultConfig.RelayAddress;
+            }
+            // if(oldConfig.ConfigVersion < 5)
             // {
             //     UPDATE MORE VARIABLES
             // }

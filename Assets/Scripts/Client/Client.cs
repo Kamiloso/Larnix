@@ -73,7 +73,7 @@ namespace Larnix.Client
             }
             else
             {
-                Core.Debug.LogWarning("Failed creating client! Returning to menu...");
+                Core.Debug.LogError("Failed creating client! Returning to menu...");
                 BackToMenu();
             }
         }

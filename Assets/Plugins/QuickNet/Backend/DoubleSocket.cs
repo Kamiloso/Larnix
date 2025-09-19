@@ -3,14 +3,17 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
+using QuickNet.Channel;
 
 namespace QuickNet.Backend
 {
     internal class DoubleSocket : IDisposable
     {
         internal readonly ushort Port;
-        internal UdpClient UdpClientV4;
-        internal UdpClient UdpClientV6;
+        internal UdpClient2 UdpClientV4;
+        internal UdpClient2 UdpClientV6;
+
+        private readonly System.Random _rand = new System.Random();
 
         internal DoubleSocket(ushort port, bool isLoopback)
         {
@@ -18,7 +21,6 @@ namespace QuickNet.Backend
             {
                 if (!ConfigureSocket(0, isLoopback))
                 {
-                    System.Random rand = new System.Random();
                     int triesLeft = 8;
 
                     while (true)
@@ -26,7 +28,7 @@ namespace QuickNet.Backend
                         if (triesLeft == 0)
                             throw new Exception("Couldn't create double socket on multiple random dynamic ports.");
 
-                        port = (ushort)rand.Next(49152, 65536);
+                        port = (ushort)_rand.Next(49152, 65536);
                         if (!ConfigureSocket(port, isLoopback))
                         {
                             triesLeft--;
@@ -43,59 +45,64 @@ namespace QuickNet.Backend
                 }
             }
 
-            Port = (ushort)((IPEndPoint)UdpClientV4.Client.LocalEndPoint).Port; // V6 is the same
+            Port = UdpClientV4.Port; // V6 is the same
         }
 
         private bool ConfigureSocket(ushort port, bool isLoopback)
         {
-            UdpClientV4 = new UdpClient(AddressFamily.InterNetwork);
-            UdpClientV6 = new UdpClient(AddressFamily.InterNetworkV6);
-
-            IPAddress linkV4 = isLoopback ? IPAddress.Loopback : IPAddress.Any;
-            IPAddress linkV6 = isLoopback ? IPAddress.IPv6Loopback : IPAddress.IPv6Any;
-
             try
             {
-                UdpClientV4.Client.Bind(new IPEndPoint(linkV4, port));
-                port = (ushort)((IPEndPoint)UdpClientV4.Client.LocalEndPoint).Port;
-                UdpClientV6.Client.Bind(new IPEndPoint(linkV6, port));
+                UdpClientV4 = new UdpClient2(
+                    port: port,
+                    isListener: true,
+                    isLoopback: isLoopback,
+                    isIPv6: false,
+                    recvBufferSize: 1024 * 1024
+                    );
+
+                port = UdpClientV4.Port;
+
+                UdpClientV6 = new UdpClient2(
+                    port: port,
+                    isListener: true,
+                    isLoopback: isLoopback,
+                    isIPv6: true,
+                    recvBufferSize: 1024 * 1024
+                    );
             }
-            catch
+            catch (SocketException ex)
             {
-                UdpClientV4?.Dispose();
-                UdpClientV6?.Dispose();
-                return false;
+                if (ex.SocketErrorCode == SocketError.AddressAlreadyInUse)
+                    return false;
+
+                throw;
             }
-
-            UdpClientV4.Client.Blocking = false;
-            UdpClientV6.Client.Blocking = false;
-
-            UdpClientV4.Client.ReceiveBufferSize = 1024 * 1024; // 1 MB
-            UdpClientV6.Client.ReceiveBufferSize = 1024 * 1024; // 1 MB
 
             return true;
         }
 
-        internal bool DataAvailable()
+        internal bool TryReceive(out (IPEndPoint endPoint, byte[] data) result)
         {
-            return UdpClientV4.Available > 0 || UdpClientV6.Available > 0;
+            if (UdpClientV4.TryReceive(out var _resultV4))
+            {
+                result = _resultV4;
+                return true;
+            }
+
+            if (UdpClientV6.TryReceive(out var _resultV6))
+            {
+                result = _resultV6;
+                return true;
+            }
+
+            result = default;
+            return false;
         }
 
-        internal byte[] Receive(ref IPEndPoint remoteEP)
-        {
-            if (UdpClientV4.Available > 0)
-                return UdpClientV4.Receive(ref remoteEP);
-
-            if (UdpClientV6.Available > 0)
-                return UdpClientV6.Receive(ref remoteEP);
-
-            return null;
-        }
-
-        internal void Send(byte[] bytes, IPEndPoint endPoint)
+        internal void Send(IPEndPoint endPoint, byte[] bytes)
         {
             bool IsIPv4Client = endPoint.AddressFamily == AddressFamily.InterNetwork;
-            (IsIPv4Client ? UdpClientV4 : UdpClientV6).SendAsync(bytes, bytes.Length, endPoint);
+            (IsIPv4Client ? UdpClientV4 : UdpClientV6).Send(endPoint, bytes);
         }
 
         public void Dispose()

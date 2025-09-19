@@ -7,13 +7,12 @@ namespace QuickNet.Channel.Cmds
     public class A_ServerInfo : Payload
     {
         private const int SIZE = 264 + 2 + 2 + 4 + 8 + 8 + 8 + 256 + 256 + 256;
-        private const int CH_START = 272;
 
         public byte[] PublicKey => new Span<byte>(Bytes, 0, 264).ToArray(); // 264B
         public ushort CurrentPlayers => EndianUnsafe.FromBytes<ushort>(Bytes, 264); // 2B
         public ushort MaxPlayers => EndianUnsafe.FromBytes<ushort>(Bytes, 266); // 2B
         public uint GameVersion => EndianUnsafe.FromBytes<uint>(Bytes, 268); // 4B
-        public long ChallengeID => GetChallengeID_ThreadSafe(); // 8B
+        public long ChallengeID => EndianUnsafe.FromBytes<long>(Bytes, 272); // 8B
         public long Timestamp => EndianUnsafe.FromBytes<long>(Bytes, 280); // 8B
         public long RunID => EndianUnsafe.FromBytes<long>(Bytes, 288); // 8B
         public String256 UserText1 => EndianUnsafe.FromBytes<String256>(Bytes, 296); // 256B (128 chars)
@@ -44,25 +43,6 @@ namespace QuickNet.Channel.Cmds
                 Validation.IsGoodText<String256>(UserText1) &&
                 Validation.IsGoodText<String256>(UserText2) &&
                 Validation.IsGoodText<String256>(UserText3);
-        }
-
-        private static object locker = new();
-        internal void IncrementChallengeID_ThreadSafe(long delta)
-        {
-            lock (locker)
-            {
-                long value = ChallengeID;
-                value += delta;
-                byte[] bytes = EndianUnsafe.GetBytes(value);
-                Buffer.BlockCopy(bytes, 0, Bytes, CH_START, bytes.Length);
-            }
-        }
-        private long GetChallengeID_ThreadSafe()
-        {
-            lock (locker)
-            {
-                return EndianUnsafe.FromBytes<long>(Bytes, CH_START);
-            }
         }
     }
 }

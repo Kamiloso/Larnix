@@ -9,6 +9,7 @@ using QuickNet.Channel;
 using QuickNet.Channel.Cmds;
 using System.Threading.Tasks;
 using System;
+using System.Threading;
 
 namespace QuickNet.Backend
 {
@@ -57,7 +58,23 @@ namespace QuickNet.Backend
         private Dictionary<InternetID, uint> recentConCount = new();
         private uint globalConCount = 0;
 
-        public QuickServer(ushort port, ushort maxClients, bool isLoopback, string dataPath, uint gameVersion,
+        private int _relaySubmitted = 0; // 0 - false, 1 - true
+        private RelayConnection Relay = null;
+
+        private const float RELAY_KEEP_ALIVE_TIME = 5f;
+        private float relayTimeToKeepAlive = RELAY_KEEP_ALIVE_TIME;
+
+        public static QuickServer CreateServerSync(ushort port, ushort maxClients, bool isLoopback, string dataPath, uint gameVersion,
+            string userText1 = "",
+            string userText2 = "",
+            string userText3 = ""
+            )
+        {
+            return new QuickServer(port, maxClients, isLoopback, dataPath, gameVersion,
+                userText1, userText2, userText3);
+        }
+
+        private QuickServer(ushort port, ushort maxClients, bool isLoopback, string dataPath, uint gameVersion,
             string userText1 = "",
             string userText2 = "",
             string userText3 = ""
@@ -101,6 +118,15 @@ namespace QuickNet.Backend
             MaskIPv6 = maskIPv6;
         }
 
+        public async Task<ushort?> ConfigureRelay(string relayAddress)
+        {
+            if (Interlocked.CompareExchange(ref _relaySubmitted, 1, 0) != 0)
+                throw new InvalidOperationException("Cannot double-configure relay! Please, restart the server and try again.");
+
+            Relay = await RelayConnection.EstablishRelayAsync(relayAddress);
+            return Relay?.RemotePort;
+        }
+
         private void RememberConnection(string nickname, Connection conn)
         {
             connections.Add(nickname, conn);
@@ -138,9 +164,17 @@ namespace QuickNet.Backend
                 return;
             }
 
-            bool IsIPv4Client = (remoteEP.AddressFamily == AddressFamily.InterNetwork);
-            Connection connection = new Connection(
-                IsIPv4Client ? DoubleSocket.UdpClientV4 : DoubleSocket.UdpClientV6, remoteEP, allowConnection.KeyAES);
+            Action<byte[]> SendData;
+            if (IsRelayAddress(remoteEP.Address)) // relay socket
+            {
+                SendData = bytes => Relay.Send(remoteEP, bytes);
+            }
+            else // normal double socket
+            {
+                SendData = bytes => DoubleSocket.Send(remoteEP, bytes);
+            }
+
+            Connection connection = new Connection(SendData, remoteEP, allowConnection.KeyAES);
 
             RememberConnection(nickname, connection);
             PreLoginBuffers.Remove(remoteEP);
@@ -169,120 +203,22 @@ namespace QuickNet.Backend
             // Tick database
             FastMessages.Tick(deltaTime);
 
-            // Get and divide packets between clients
-            while (DoubleSocket.DataAvailable())
+            // Interpret bytes from socket
+            while (DoubleSocket.TryReceive(out var item))
             {
-                IPEndPoint remoteEP = new IPEndPoint(IPAddress.Any, 0);
-                byte[] bytes = null;
+                IPEndPoint remoteEP = item.endPoint;
+                byte[] bytes = item.data;
 
-                try
-                {
-                    bytes = DoubleSocket.Receive(ref remoteEP);
-                }
-                catch (SocketException ex)
-                {
-                    if (ex.SocketErrorCode == SocketError.WouldBlock || ex.SocketErrorCode == SocketError.ConnectionReset)
-                        continue;
-                    else
-                        throw;
-                }
+                InterpretBytes(remoteEP, bytes);
+            }
 
-                if (bytes == null) continue;
-                if (!CanReceive) continue;
+            // Interpret bytes from relay
+            while (Relay?.TryReceive(out var item) == true)
+            {
+                IPEndPoint remoteEP = item.endPoint;
+                byte[] bytes = item.data;
 
-                QuickPacket header = new QuickPacket();
-                if (header.TryDeserialize(bytes, true))
-                {
-                    InternetID internetID = new InternetID(
-                        remoteEP.Address,
-                        remoteEP.AddressFamily == AddressFamily.InterNetwork ? MaskIPv4 : MaskIPv6
-                        );
-                    uint conCount = recentConCount.ContainsKey(internetID) ? recentConCount[internetID] : 0;
-
-                    // Limit packets with specific flags
-                    if (header.HasFlag(PacketFlag.SYN) ||
-                        header.HasFlag(PacketFlag.RSA) ||
-                        header.HasFlag(PacketFlag.NCN))
-                    {
-                        if (conCount < MAX_CON) recentConCount[internetID] = ++conCount;
-                        else continue;
-
-                        if (globalConCount < MAX_GLOBAL_CON) globalConCount++;
-                        else continue;
-                    }
-
-                    if (header.HasFlag(PacketFlag.RSA)) // encrypted with RSA
-                    {
-                        if (KeyRSA != null)
-                        {
-                            // Deserialize with decryption and serialize without encryption
-                            QuickPacket middlePacket = new QuickPacket();
-                            middlePacket.Encryption = bytes => Encryption.DecryptRSA(bytes, KeyRSA);
-                            if (!middlePacket.TryDeserialize(bytes))
-                                continue;
-
-                            middlePacket.Encryption = null;
-                            bytes = middlePacket.Serialize();
-                        }
-                        else continue;
-                    }
-
-                    if(header.HasFlag(PacketFlag.NCN)) // fast question, fast answer
-                    {
-                        // Check packet type and answer properly
-                        QuickPacket ncnPacket = new QuickPacket();
-                        if (!ncnPacket.TryDeserialize(bytes))
-                            continue;
-
-                        FastMessages.ProcessNCN(remoteEP, ncnPacket.SeqNum, ncnPacket.Packet);
-                    }
-                    else
-                    {
-                        if (header.HasFlag(PacketFlag.SYN)) // start connection
-                        {
-                            QuickPacket safeSynPacket = new QuickPacket();
-                            if (!safeSynPacket.TryDeserialize(bytes))
-                                continue;
-
-                            if (Payload.TryConstructPayload<AllowConnection>(safeSynPacket.Packet, out var allowcon))
-                            {
-                                string nickname = allowcon.Nickname;
-                                string password = allowcon.Password;
-                                long serverSecret = allowcon.ServerSecret;
-                                long challengeID = allowcon.ChallengeID;
-                                long timestamp = allowcon.Timestamp;
-                                long runID = allowcon.RunID;
-
-                                if (!CanAcceptSYN(remoteEP, nickname))
-                                    continue;
-
-                                if (!PreLoginBuffers.ContainsKey(remoteEP))
-                                {
-                                    PreLoginBuffer preLoginBuffer = new PreLoginBuffer(allowcon);
-                                    preLoginBuffer.AddPacket(bytes);
-                                    PreLoginBuffers.Add(remoteEP, preLoginBuffer);
-
-                                    FastMessages.TryLogin(remoteEP, nickname, password, serverSecret, challengeID, timestamp, runID);
-                                }
-                            }
-                            else continue;
-                        }
-                        else // receive connection packet
-                        {
-                            if(PreLoginBuffers.TryGetValue(remoteEP, out var preBuffer))
-                            {
-                                preBuffer.AddPacket(bytes);
-                            }
-                            else
-                            {
-                                if (connectionsByEndPoint.TryGetValue(remoteEP, out var conn))
-                                {
-                                    conn.PushFromWeb(bytes);
-                                }
-                            }
-                        }
-                    }
-                }
+                InterpretBytes(remoteEP, bytes);
             }
 
             // Tick every connection
@@ -329,6 +265,14 @@ namespace QuickNet.Backend
                 globalConCount = 0;
             }
 
+            // Relay keep alive
+            relayTimeToKeepAlive -= deltaTime;
+            if (relayTimeToKeepAlive < 0)
+            {
+                relayTimeToKeepAlive = RELAY_KEEP_ALIVE_TIME;
+                Relay?.KeepAlive();
+            }
+
             // Interpret packets
             while (packetList.Count > 0)
             {
@@ -339,6 +283,103 @@ namespace QuickNet.Backend
                 if (packet != null && Subscriptions.TryGetValue(packet.ID, out var Execute))
                 {
                     Execute(packet, owner);
+                }
+            }
+        }
+
+        private void InterpretBytes(IPEndPoint remoteEP, byte[] bytes)
+        {
+            QuickPacket header = new QuickPacket();
+            if (header.TryDeserialize(bytes, true))
+            {
+                InternetID internetID = new InternetID(
+                    remoteEP.Address,
+                    remoteEP.AddressFamily == AddressFamily.InterNetwork ? MaskIPv4 : MaskIPv6
+                    );
+                uint conCount = recentConCount.ContainsKey(internetID) ? recentConCount[internetID] : 0;
+
+                // Limit packets with specific flags
+                if (header.HasFlag(PacketFlag.SYN) ||
+                    header.HasFlag(PacketFlag.RSA) ||
+                    header.HasFlag(PacketFlag.NCN))
+                {
+                    if (conCount < MAX_CON) recentConCount[internetID] = ++conCount;
+                    else return;
+
+                    if (globalConCount < MAX_GLOBAL_CON) globalConCount++;
+                    else return;
+                }
+
+                if (header.HasFlag(PacketFlag.RSA)) // encrypted with RSA
+                {
+                    if (KeyRSA != null)
+                    {
+                        // Deserialize with decryption and serialize without encryption
+                        QuickPacket middlePacket = new QuickPacket();
+                        middlePacket.Encryption = bytes => Encryption.DecryptRSA(bytes, KeyRSA);
+                        if (!middlePacket.TryDeserialize(bytes))
+                            return;
+
+                        middlePacket.Encryption = null;
+                        bytes = middlePacket.Serialize();
+                    }
+                    else return;
+                }
+
+                if (header.HasFlag(PacketFlag.NCN)) // fast question, fast answer
+                {
+                    // Check packet type and answer properly
+                    QuickPacket ncnPacket = new QuickPacket();
+                    if (!ncnPacket.TryDeserialize(bytes))
+                        return;
+
+                    FastMessages.ProcessNCN(remoteEP, ncnPacket.SeqNum, ncnPacket.Packet);
+                }
+                else
+                {
+                    if (header.HasFlag(PacketFlag.SYN)) // start connection
+                    {
+                        QuickPacket safeSynPacket = new QuickPacket();
+                        if (!safeSynPacket.TryDeserialize(bytes))
+                            return;
+
+                        if (Payload.TryConstructPayload<AllowConnection>(safeSynPacket.Packet, out var allowcon))
+                        {
+                            string nickname = allowcon.Nickname;
+                            string password = allowcon.Password;
+                            long serverSecret = allowcon.ServerSecret;
+                            long challengeID = allowcon.ChallengeID;
+                            long timestamp = allowcon.Timestamp;
+                            long runID = allowcon.RunID;
+
+                            if (!CanAcceptSYN(remoteEP, nickname))
+                                return;
+
+                            if (!PreLoginBuffers.ContainsKey(remoteEP))
+                            {
+                                PreLoginBuffer preLoginBuffer = new PreLoginBuffer(allowcon);
+                                preLoginBuffer.AddPacket(bytes);
+                                PreLoginBuffers.Add(remoteEP, preLoginBuffer);
+
+                                FastMessages.TryLogin(remoteEP, nickname, password, serverSecret, challengeID, timestamp, runID);
+                            }
+                        }
+                        else return;
+                    }
+                    else // receive connection packet
+                    {
+                        if (PreLoginBuffers.TryGetValue(remoteEP, out var preBuffer))
+                        {
+                            preBuffer.AddPacket(bytes);
+                        }
+                        else
+                        {
+                            if (connectionsByEndPoint.TryGetValue(remoteEP, out var conn))
+                            {
+                                conn.PushFromWeb(bytes);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -398,7 +439,14 @@ namespace QuickNet.Backend
                 );
 
             byte[] sendBytes = safeAnswer.Serialize();
-            DoubleSocket.Send(sendBytes, endPoint);
+            if (IsRelayAddress(endPoint.Address)) // relay socket
+            {
+                Relay?.Send(endPoint, sendBytes);
+            }
+            else // normal double socket
+            {
+                DoubleSocket.Send(endPoint, sendBytes);
+            }
         }
 
         public IPEndPoint GetClientEndPoint(string nickname)
@@ -406,6 +454,11 @@ namespace QuickNet.Backend
             if (connections.TryGetValue(nickname, out var conn))
                 return conn.EndPoint;
             return null;
+        }
+
+        public static bool IsRelayAddress(IPAddress address)
+        {
+            return address.AddressFamily == AddressFamily.InterNetwork && ((address.GetAddressBytes()[0] & 0xF0) == 0xF0);
         }
 
         public ushort CountPlayers()
@@ -426,16 +479,17 @@ namespace QuickNet.Backend
         {
             FinishAllConnections();
             DoubleSocket?.Dispose();
+            Relay?.Dispose();
             KeyRSA?.Dispose();
         }
 
         // === THREAD SAFE SHUFFLER ===
 
         private static readonly Random _rng = new();
-        private static readonly object _locker = new();
+        private static readonly object _lock = new();
         private static void Shuffle(string[] array)
         {
-            lock (_locker)
+            lock (_lock)
             {
                 int n = array.Length;
                 while (n > 1)

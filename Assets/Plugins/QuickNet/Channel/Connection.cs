@@ -13,8 +13,8 @@ namespace QuickNet.Channel
 {
     public class Connection
     {
-        private UdpClient Udp = null;
-        public IPEndPoint EndPoint { get; private set; } = null;
+        private Action<byte[]> SendToEndPoint;
+        public readonly IPEndPoint EndPoint;
 
         private byte[] KeyAES = null;
         private RSA KeyRSA = null;
@@ -42,23 +42,20 @@ namespace QuickNet.Channel
         private List<QuickPacket> receivedPackets = new List<QuickPacket>();
         private Queue<Packet> downloadablePackets = new Queue<Packet>();
 
-        private readonly List<Task> pendingSendingTasks = new List<Task>();
-        private const int MAX_PENDING_SENDING = 64;
-
         private readonly LinkedList<(int seq, long time)> PacketTimestamps = new();
         private readonly LinkedList<long> PacketRTTs = new();
         private readonly HashSet<int> _RetransmittedNow = new(); // local
         private const int MaxRTTs = 10;
         private const float OffsetRTT = 0.050f; // 50 ms
-        private const float DefaultAvgRTT = 0.6f;
+        private const float DefaultAvgRTT = 0.6f; // assumes 600 ms for safety
 
         public float AvgRTT { get; private set; } = DefaultAvgRTT;
 
         public readonly bool IsClient;
 
-        public Connection(UdpClient udp, IPEndPoint endPoint, byte[] keyAES, Packet synPacket = null, RSA keyPublicRSA = null)
+        public Connection(Action<byte[]> sendToEndPoint, IPEndPoint endPoint, byte[] keyAES, Packet synPacket = null, RSA keyPublicRSA = null)
         {
-            Udp = udp;
+            SendToEndPoint = sendToEndPoint;
             EndPoint = endPoint;
             KeyRSA = keyPublicRSA;
             KeyAES = keyAES?.Length == 16 ? keyAES : throw new ArgumentException("Wrong keyAES format!");
@@ -275,14 +272,6 @@ namespace QuickNet.Channel
                 Transmit(safePacket);
 
             IsDead = true;
-
-            WaitForPendingPackets();
-        }
-
-        public void WaitForPendingPackets()
-        {
-            Task.WaitAll(pendingSendingTasks.ToArray());
-            pendingSendingTasks.RemoveAll(t => t.IsCompleted);
         }
 
         private void SendSafePacket(QuickPacket safePacket)
@@ -315,7 +304,7 @@ namespace QuickNet.Channel
             }
 
             // Set control sequence
-            safePacket.Packet.ControlSequence = (long)safePacket.SeqNum;
+            safePacket.Packet.ControlSequence = safePacket.MakeControlSequence();
 
             // Retransmission time reset
             if (!safePacket.HasFlag(PacketFlag.FAS))
@@ -326,22 +315,14 @@ namespace QuickNet.Channel
                 return;
 
             byte[] payload = safePacket.Serialize();
-            Task task = Udp.SendAsync(payload, payload.Length, EndPoint);
-            pendingSendingTasks.Add(task);
-
-            pendingSendingTasks.RemoveAll(t => t.IsCompleted);
-            while (pendingSendingTasks.Count > MAX_PENDING_SENDING)
-            {
-                Task completed = Task.WhenAny(pendingSendingTasks).GetAwaiter().GetResult();
-                pendingSendingTasks.Remove(completed);
-            }
+            SendToEndPoint(payload);
         }
 
         private bool ReadyPacketTryEnqueue(QuickPacket safePacket, bool is_safe)
         {
-            // No payload, no problem
+            // No payload is not allowed
             if (safePacket.Packet == null)
-                return false;
+                throw new FormatException();
 
             // AllowConnection packets only with SYN flag allowed
             if (safePacket.Packet.ID == Payload.CmdID<AllowConnection>() &&
@@ -353,7 +334,7 @@ namespace QuickNet.Channel
                 return false;
 
             // Control order and throw exception if something wrong
-            if (safePacket.Packet.ControlSequence != (long)safePacket.SeqNum)
+            if (safePacket.Packet.ControlSequence != safePacket.MakeControlSequence())
                 throw new FormatException();
 
             // Enqueue if everything ok

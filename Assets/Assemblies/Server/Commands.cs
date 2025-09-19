@@ -110,7 +110,7 @@ namespace Larnix.Server
         {
             StringBuilder sb = new();
             sb.Append("\n");
-            sb.Append($" | ------ PLAYER LIST [{Ref.QuickServer.CountPlayers()} / {Ref.QuickServer.MaxClients} ] ------\n");
+            sb.Append($" | ------ PLAYER LIST [ {Ref.QuickServer.CountPlayers()} / {Ref.QuickServer.MaxClients} ] ------\n");
             sb.Append(" |\n");
 
             foreach (string nickname in Ref.PlayerManager.PlayerUID.Keys)

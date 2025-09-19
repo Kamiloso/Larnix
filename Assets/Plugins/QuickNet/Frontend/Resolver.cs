@@ -30,15 +30,15 @@ namespace QuickNet.Frontend
 
     public static class Resolver
     {
-        public static async Task<IPEndPoint> ResolveStringAsync(string address)
+        public static async Task<IPEndPoint> ResolveStringAsync(string address, ushort defaultPort = 27682)
         {
             if (address == null) return null;
 
             if (address.EndsWith(']') || !address.Contains(':'))
-                address += ":27682";
+                address += ":" + defaultPort;
 
             if (address.Count(c => c == ':') >= 2 && !address.StartsWith("[") && !address.EndsWith("]"))
-                address = '[' + address + "]:27682";
+                address = '[' + address + "]:" + defaultPort;
 
             string iface = null;
             int p1 = address.IndexOf('%');
@@ -72,13 +72,13 @@ namespace QuickNet.Frontend
                     return (cached, ResolverError.None);
 
                 var prompt = new P_ServerInfo(nickname);
-                var packet = await Prompter.PromptAsync<A_ServerInfo>(address, prompt, timeoutMiliseconds: 3000);
+                var packet = await Prompter.PromptAsync<A_ServerInfo>(address, prompt);
                 if (packet == null) return (null, ResolverError.PromptFailed);
 
                 if (!Authcode.VerifyPublicKey(packet.PublicKey, authcode))
                     return (null, ResolverError.PublicKeyInvalid);
 
-                Timestamp.SetServerTimestamp(packet.RunID, packet.Timestamp);
+                Timestamp.SetServerTimestamp(address, packet.Timestamp);
                 Cacher.AddInfo(authcode, nickname, packet);
 
                 return (packet, ResolverError.None);
@@ -125,15 +125,14 @@ namespace QuickNet.Frontend
 
                 using RSA rsa = KeyObtainer.PublicBytesToKey(info.PublicKey);
                 long serverSecret = Authcode.GetSecretFromAuthCode(authcode);
-                long timestamp = Timestamp.GetServerTimestamp(info.RunID);
+                long timestamp = Timestamp.GetServerTimestamp(address);
 
                 var prompt = new P_LoginTry(nickname, password, serverSecret, info.ChallengeID, timestamp, info.RunID, newPassword);
-                var packet = await Prompter.PromptAsync<A_LoginTry>(address, prompt, timeoutMiliseconds: 3000, publicKeyRSA: rsa);
+                var packet = await Prompter.PromptAsync<A_LoginTry>(address, prompt, publicKeyRSA: rsa);
 
                 if (packet == null) return (null, ResolverError.PromptFailed);
 
-                if (packet.Success)
-                    Cacher.IncrementChallengeIDs(authcode, nickname, isRegistration ? 2 : 1);
+                Cacher.RemoveRecord(authcode, nickname);
 
                 return (packet.Code == 1, ResolverError.None);
             }

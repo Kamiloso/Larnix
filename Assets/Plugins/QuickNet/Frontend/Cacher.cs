@@ -47,22 +47,6 @@ namespace QuickNet.Frontend
             }
         }
 
-        internal static void IncrementChallengeIDs(string authcode, string nickname, long delta = 1)
-        {
-            lock (locker)
-            {
-                var list = infoDict
-                    .Where(vkp => vkp.Key == (authcode, nickname))
-                    .Select(vkp => vkp.Value.info)
-                    .ToList();
-
-                foreach (var info in list)
-                {
-                    info.IncrementChallengeID_ThreadSafe(delta);
-                }
-            }
-        }
-
         private static void CleanOld()
         {
             var keysToRemove = infoDict

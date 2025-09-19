@@ -16,7 +16,7 @@ namespace Larnix.Menu.Settings
         private Dictionary<string, string> options = null;
         private static Dictionary<string, string> defaultOptions = new()
         {
-            { "P2P_Server", "relay.se3.page" },
+            { "$relay-server", "relay-1.se3.page" },
             { "$last-nickname-SGP", "" }
         };
 
@@ -65,6 +65,13 @@ namespace Larnix.Menu.Settings
         public string GetValue(string key)
         {
             if (options.TryGetValue(key, out var value)) return value;
+            return null;
+        }
+
+        public string GetDefaultValue(string key)
+        {
+            if (defaultOptions.TryGetValue(key, out var value))
+                return value;
             return null;
         }
 

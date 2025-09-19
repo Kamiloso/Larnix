@@ -10,7 +10,7 @@ namespace QuickNet
     public static class Timestamp
     {
         private const long Window = 6_000; // miliseconds
-        private static Dictionary<long, long> TimestampDifferences = new();
+        private static Dictionary<string, long> TimestampDifferences = new();
         private static object _locker1 = new();
 
         private static bool _initialized = false;
@@ -39,20 +39,20 @@ namespace QuickNet
             return timestamp >= localTimestamp - window && timestamp <= localTimestamp;
         }
 
-        internal static void SetServerTimestamp(long runID, long timestamp)
+        internal static void SetServerTimestamp(string address, long timestamp)
         {
             lock (_locker1)
             {
-                TimestampDifferences[runID] = timestamp - GetTimestamp();
+                TimestampDifferences[address] = timestamp - GetTimestamp();
             }
         }
 
-        internal static long GetServerTimestamp(long runID)
+        internal static long GetServerTimestamp(string address)
         {
             lock (_locker1)
             {
-                if (TimestampDifferences.TryGetValue(runID, out long difference))
-                    return GetTimestamp() + difference;
+                if (TimestampDifferences.TryGetValue(address, out long difference))
+                    return difference + GetTimestamp();
             }
             throw new InvalidOperationException($"Cannot get server timestamp since it was never declared.");
         }

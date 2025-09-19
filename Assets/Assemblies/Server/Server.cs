@@ -13,6 +13,10 @@ using Larnix.Server.Entities;
 using Larnix.Server.Terrain;
 using Version = Larnix.Core.Version;
 using Console = Larnix.Core.Console;
+using System.Threading.Tasks;
+using System.Linq;
+using System.Net;
+using QuickNet.Frontend;
 
 namespace Larnix.Server
 {
@@ -41,6 +45,8 @@ namespace Larnix.Server
 
         public const float FIXED_TIME = Core.Common.FIXED_TIME;
         public readonly Action CloseServer;
+
+        private bool _disposed = false;
 
         public Server(ServerType type, string worldPath, long? seedSuggestion, Action closeServer)
         {
@@ -73,7 +79,7 @@ namespace Larnix.Server
                 Ref.Generator = new Worldgen.Generator(Ref.Database.GetSeed(seedSuggestion));
 
                 // Server configuration
-                Ref.QuickServer = new QuickServer(
+                Ref.QuickServer = QuickServer.CreateServerSync(
                     port: Type == ServerType.Remote ? Ref.Config.Port : (ushort)0,
                     maxClients: Ref.Config.MaxPlayers,
                     isLoopback: Type == ServerType.Local,
@@ -107,6 +113,13 @@ namespace Larnix.Server
 
                 // info success
                 Core.Debug.LogSuccess("Server is ready!");
+
+                // try establish relay
+                if (Type == ServerType.Remote)
+                {
+                    if (Ref.Config.UseRelay)
+                        _ = Task.Run(() => EstablishRelay(Ref.Config.RelayAddress));
+                }
             }
             else throw new Exception("Trying to access world that is already open.");
         }
@@ -153,6 +166,28 @@ namespace Larnix.Server
 
             // input thread start
             Console.StartInputThread();
+        }
+
+        public async Task<string> EstablishRelay(string relayAddress)
+        {
+            ushort? relayPort = await Ref.QuickServer.ConfigureRelay(relayAddress);
+            if (_disposed) return null;
+
+            if (relayPort != null)
+            {
+                var uri = new UriBuilder("udp://" + relayAddress) { Port = relayPort.Value };
+                string connectAddress = uri.ToString().Replace("udp://", "").Replace("/", "");
+
+                Core.Debug.LogSuccess("Connected to relay!");
+                Core.Debug.Log("Address: " + connectAddress);
+
+                return connectAddress;
+            }
+            else
+            {
+                Core.Debug.LogWarning("Cannot connect to relay!");
+                return null;
+            }
         }
 
         public void TickFixed()
@@ -209,16 +244,21 @@ namespace Larnix.Server
 
         public void Dispose(bool emergency)
         {
-            if (!emergency)
+            if (!_disposed)
             {
-                SaveAllNow();
+                _disposed = true;
+
+                if (!emergency)
+                {
+                    SaveAllNow();
+                }
+
+                Ref.QuickServer?.Dispose();
+                Ref.Database?.Dispose();
+                Locker?.Dispose();
+
+                Core.Debug.Log("Server closed");
             }
-
-            Ref.QuickServer?.Dispose();
-            Ref.Database?.Dispose();
-            Locker?.Dispose();
-
-            Core.Debug.Log("Server closed");
         }
     }
 }

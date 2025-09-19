@@ -1,0 +1,14 @@
+C:\Users\lenovo\source\repos\LarnixRelay\bin\Debug\LarnixRelay.exe.config
+C:\Users\lenovo\source\repos\LarnixRelay\bin\Debug\LarnixRelay.exe
+C:\Users\lenovo\source\repos\LarnixRelay\bin\Debug\LarnixRelay.pdb
+C:\Users\lenovo\source\repos\LarnixRelay\obj\Debug\LarnixRelay.csproj.AssemblyReference.cache
+C:\Users\lenovo\source\repos\LarnixRelay\obj\Debug\LarnixRelay.csproj.CoreCompileInputs.cache
+C:\Users\lenovo\source\repos\LarnixRelay\obj\Debug\LarnixRelay.exe
+C:\Users\lenovo\source\repos\LarnixRelay\obj\Debug\LarnixRelay.pdb
+C:\Users\lenovo\Documents\GitHub\Larnix\LarnixRelay\obj\Debug\LarnixRelay.csproj.AssemblyReference.cache
+C:\Users\lenovo\Documents\GitHub\Larnix\LarnixRelay\obj\Debug\LarnixRelay.csproj.CoreCompileInputs.cache
+C:\Users\lenovo\Documents\GitHub\Larnix\LarnixRelay\obj\Debug\LarnixRelay.exe
+C:\Users\lenovo\Documents\GitHub\Larnix\LarnixRelay\obj\Debug\LarnixRelay.pdb
+C:\Users\lenovo\Documents\GitHub\Larnix\LarnixRelay\bin\Debug\LarnixRelay.exe.config
+C:\Users\lenovo\Documents\GitHub\Larnix\LarnixRelay\bin\Debug\LarnixRelay.exe
+C:\Users\lenovo\Documents\GitHub\Larnix\LarnixRelay\bin\Debug\LarnixRelay.pdb

@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.ExceptionServices;
 using Larnix.Server;
+using System.Threading.Tasks;
 
 namespace Larnix.ServerRun
 {
@@ -91,6 +92,11 @@ namespace Larnix.ServerRun
                     StopServerSync();
                 }
             }
+        }
+
+        public async Task<string> ConnectToRelay(string address)
+        {
+            return await _server.EstablishRelay(address);
         }
 
         public void StopServerSync()
