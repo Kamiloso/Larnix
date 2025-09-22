@@ -34,10 +34,10 @@ namespace Larnix.Relay
             _udpClient = UdpClientExtensions.CreateClient(Port, Config.ReceiveBufferClient, Config.SendBufferClient);
 
             KeepAlive(); // initial keep alive
-            Task.Run(() => StartNetworkLoop());
+            Task.Run(() => NetworkLoop());
         }
 
-        private async Task StartNetworkLoop()
+        private async Task NetworkLoop()
         {
             while (true)
             {

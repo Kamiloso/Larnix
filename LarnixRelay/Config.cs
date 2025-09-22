@@ -14,8 +14,8 @@ namespace Larnix.Relay
 
         // Socket on server port
         public const ushort ServerPort = 27681;
-        public const int ReceiveBufferServer = 2 * 1024 * 1024; // bytes
-        public const int SendBufferServer = 1024 * 1024; // bytes
+        public const int ReceiveBufferServer = 5 * 1024 * 1024; // bytes
+        public const int SendBufferServer = 2 * 1024 * 1024; // bytes
 
         // Sockets on client ports - ports must be free at all times
         public const ushort MinPort = 30_100;

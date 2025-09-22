@@ -8,6 +8,8 @@ using System.Diagnostics;
 using Larnix.Server.Terrain;
 using QuickNet.Channel;
 using System;
+using Org.BouncyCastle.Bcpg;
+using Packet = QuickNet.Channel.Packet;
 
 namespace Larnix.Server.Entities
 {
@@ -139,6 +141,7 @@ namespace Larnix.Server.Entities
                         );
 
                     const int MAX_RECORDS = EntityBroadcast.MAX_RECORDS;
+                    List<Packet> broadcastsToSend = new();
                     List<ulong> sendUIDs = EntityList.Keys.ToList();
                     for (int pos = 0; true; pos += MAX_RECORDS)
                     {
@@ -162,6 +165,12 @@ namespace Larnix.Server.Entities
                         }
 
                         Packet packet = new EntityBroadcast(FixedCounter, fragmentEntities, fragmentFixed);
+                        broadcastsToSend.Add(packet);
+                    }
+
+                    broadcastsToSend = broadcastsToSend.OrderBy(x => Core.Common.Rand().Next()).ToList();
+                    foreach (var packet in broadcastsToSend)
+                    {
                         Ref.QuickServer.Send(nickname, packet, false); // unsafe mode (over raw UDP)
                     }
                 }

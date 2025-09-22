@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace QuickNet.Channel
 {
@@ -18,7 +19,8 @@ namespace QuickNet.Channel
 
         private readonly UdpClient _udpClient;
         private readonly IPEndPoint _destination;
-        private readonly Thread _thread;
+        private readonly Task _sendLoop;
+        private readonly Task _recvLoop;
         private readonly ConcurrentQueue<(IPEndPoint, byte[])> _sendQueue = new();
         private readonly ConcurrentQueue<(IPEndPoint, byte[])> _recvQueue = new();
         private readonly int _maxQueueLength;
@@ -49,7 +51,7 @@ namespace QuickNet.Channel
             {
                 _udpClient = new UdpClient(IsIPv6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork);
                 _udpClient.Client.ReceiveBufferSize = recvBufferSize;
-                _udpClient.Client.Blocking = false;
+                _udpClient.Client.Blocking = true;
                 if (IsIPv6) _udpClient.Client.DualMode = false;
 
                 _udpClient.Client.Bind(new IPEndPoint(IsLoopback ?
@@ -65,71 +67,91 @@ namespace QuickNet.Channel
                 throw;
             }
 
-            _thread = new Thread(() => NetworkLoop());
-            _thread.Start();
+            _sendLoop = Task.Run(() => SendLoop());
+            _recvLoop = Task.Run(() => ReceiveLoop());
         }
 
-        private void NetworkLoop()
+        private async Task SendLoop()
         {
             while (true)
             {
                 try
                 {
-                    while (_sendQueue.Count > _maxQueueLength) _sendQueue.TryDequeue(out _);
-                    while (_recvQueue.Count > _maxQueueLength) _recvQueue.TryDequeue(out _);
-
-                    if (_stop)
-                    {
-                        FlushSending();
-                        return;
-                    }
-
-                    FlushSending();
-                    FlushReceiving();
-
-                    Thread.Sleep(1);
+                    await _SendAll();
                 }
                 catch (Exception ex)
                 {
-                    if (ex is SocketException sx)
-                    {
-                        if (sx.SocketErrorCode == SocketError.WouldBlock ||
-                            sx.SocketErrorCode == SocketError.ConnectionReset)
-                            continue;
-                    }
+                    if (!HandleNetworkException(ex))
+                        return; // stop loop
+                }
 
-                    QuickNet.Debug.LogError(ex.Message);
-                    break;
+                if (_stop) { // STOP (send)
+                    await _SendAll();
+                    return;
+                }
+
+                await Task.Delay(1);
+            }
+        }
+
+        private async Task _SendAll()
+        {
+            while (_sendQueue.TryDequeue(out var result))
+            {
+                IPEndPoint endPoint = result.Item1;
+                byte[] bytes = result.Item2;
+
+                await _udpClient.SendAsync(bytes, bytes.Length, endPoint);
+            }
+        }
+
+        private async Task ReceiveLoop()
+        {
+            while (true)
+            {
+                try
+                {
+                    while (_recvQueue.Count > _maxQueueLength)
+                        _recvQueue.TryDequeue(out _); // discard old packets
+
+                    var result = await _udpClient.ReceiveAsync();
+                    IPEndPoint endPoint = result.RemoteEndPoint;
+                    byte[] bytes = result.Buffer;
+
+                    _recvQueue.Enqueue((endPoint, bytes));
+                }
+                catch (Exception ex)
+                {
+                    if (!HandleNetworkException(ex))
+                        return; // stop loop
                 }
             }
         }
 
-        private void FlushReceiving()
+        private bool HandleNetworkException(Exception ex)
         {
-            while (_udpClient.Available > 0)
+            if (ex is ObjectDisposedException)
             {
-                IPEndPoint endPoint = null;
-                byte[] data = _udpClient.Receive(ref endPoint);
-
-                if (IsListener || _destination.Equals(endPoint))
-                    _recvQueue.Enqueue((endPoint, data));
+                // stop task when ObjectDisposed to prevent "zombie-threads"
+                // it is a normal cancellation method
+                return false;
             }
-        }
 
-        private void FlushSending()
-        {
-            while (_sendQueue.TryDequeue(out var send))
+            if (ex is SocketException sx)
             {
-                IPEndPoint endPoint = send.Item1;
-                byte[] data = send.Item2;
-
-                if (IsListener || _destination.Equals(endPoint))
-                    _udpClient.Send(data, data.Length, endPoint);
+                if (sx.SocketErrorCode == SocketError.ConnectionReset)
+                    return true; // connection reset can be ignored
             }
+
+            if (!_stop) QuickNet.Debug.LogError(ex.ToString());
+            return false; // other errors, close socket
         }
 
         public void Send(IPEndPoint endPoint, byte[] data)
         {
+            while (_sendQueue.Count > _maxQueueLength)
+                _sendQueue.TryDequeue(out _); // discard packets when sending too many
+
             _sendQueue.Enqueue((endPoint, data));
         }
 
@@ -152,7 +174,7 @@ namespace QuickNet.Channel
                 _disposed = true;
 
                 _stop = true;
-                _thread.Join();
+                _sendLoop?.Wait(); // don't wait for receiving, will close anyway
                 _udpClient?.Dispose();
             }
         }

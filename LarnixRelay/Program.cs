@@ -33,14 +33,14 @@ namespace Larnix.Relay
                 _serverSocket = udpServer;
                 Console.WriteLine($"Relay started! Running on port {Config.ServerPort}...");
 
-                _ = PeriodicTask();
+                _ = PeriodicTask_100ms();
+                _ = PeriodicTask_1s();
 
                 while (true)
                 {
                     try
                     {
-                        UdpReceiveResult result = await udpServer.ReceiveAsync();
-
+                        var result = await udpServer.ReceiveAsync();
                         IPEndPoint remoteEP = result.RemoteEndPoint;
                         byte[] data = result.Buffer;
 
@@ -91,49 +91,52 @@ namespace Larnix.Relay
             }
         }
 
-        private static async Task PeriodicTask()
+        private static async Task PeriodicTask_100ms()
         {
-            int n = 0;
             while (true)
             {
                 try
                 {
-                    if (n++ == 10)
-                    {
-                        lock (_lock) // once per second
-                        {
-                            foreach (var vkp in _Listeners.ToList())
-                            {
-                                var key = vkp.Key;
-                                var value = vkp.Value;
-
-                                if (!value.ShouldBeAlive())
-                                    _ = HandleRemoveServer(key);
-                            }
-
-                            _ControlMsgs.Clear();
-                        }
-
-                        n = 0;
-                    }
-
                     lock (_lock) // once per 100 ms
                     {
-                        if (n == 0)
-                            foreach (var amount in _RelayedBytes.Values)
-                            {
-                                Console.WriteLine("Rate: " + (amount * 10.0 / 1000.0) + " KB/s");
-                            }
-
                         _RelayedBytes.Clear();
                     }
                 }
-                catch (Exception er)
+                catch (Exception ex)
                 {
-                    Console.WriteLine("Periodic error: " + er.Message);
+                    Console.WriteLine("Periodic error 100ms: " + ex.Message);
                 }
 
-                await Task.Delay(50);
+                await Task.Delay(100);
+            }
+        }
+
+        private static async Task PeriodicTask_1s()
+        {
+            while (true)
+            {
+                try
+                {
+                    lock (_lock) // once per second
+                    {
+                        foreach (var vkp in _Listeners.ToList())
+                        {
+                            var key = vkp.Key;
+                            var value = vkp.Value;
+
+                            if (!value.ShouldBeAlive())
+                                _ = HandleRemoveServer(key);
+                        }
+
+                        _ControlMsgs.Clear();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Periodic error 1s: " + ex.Message);
+                }
+
+                await Task.Delay(1000);
             }
         }
 
@@ -210,7 +213,7 @@ namespace Larnix.Relay
 
         private static async Task HandleRemoveServer(IPEndPoint serverEP)
         {
-            await Task.Delay(500); // to ensure all ending packets are sent properly
+            await Task.Delay(250); // to ensure all ending packets are sent properly
 
             lock (_lock)
             {

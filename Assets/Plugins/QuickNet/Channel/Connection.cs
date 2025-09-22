@@ -261,7 +261,7 @@ namespace QuickNet.Channel
             // If they don't, protocol will automatically disconnect after a few seconds.
 
             QuickPacket safePacket = new QuickPacket(
-                0,
+                SeqNum,
                 GetNum,
                 (byte)PacketFlag.FAS | (byte)PacketFlag.FIN,
                 new None(0)

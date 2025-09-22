@@ -65,5 +65,13 @@ namespace Larnix.Blocks
                 }
             );
         }
+
+        public long UniqueLong()
+        {
+            long frontPart = ((long)Front.ID & 0xFFFF) | (((long)Front.Variant & 0xFF) << 16);
+            long backPart = (((long)Back.ID & 0xFFFF) | (((long)Back.Variant & 0xFF) << 16)) << 24;
+
+            return frontPart | backPart;
+        }
     }
 }
