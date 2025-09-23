@@ -14,14 +14,14 @@ namespace Larnix.Relay
 
         // Socket on server port
         public const ushort ServerPort = 27681;
-        public const int ReceiveBufferServer = 5 * 1024 * 1024; // bytes
-        public const int SendBufferServer = 2 * 1024 * 1024; // bytes
+        public const int ReceiveBufferServer = 2 * 1024 * 1024; // bytes
+        public const int SendBufferServer = 512 * 1024; // bytes
 
         // Sockets on client ports - ports must be free at all times
         public const ushort MinPort = 30_100;
         public const ushort MaxPort = 30_999;
         public const int ReceiveBufferClient = 512 * 1024; // bytes
-        public const int SendBufferClient = 256 * 1024; // bytes
+        public const int SendBufferClient = 128 * 1024; // bytes
 
         // Debugging
         public const int ArtificialPing = 0; // miliseconds

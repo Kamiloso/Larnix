@@ -93,6 +93,8 @@ namespace Larnix.Server.Entities
                 Dictionary<ulong, uint> FixedFrames = Ref.PlayerManager.GetFixedFramesByUID();
                 List<string> connected_nicknames = Ref.PlayerManager.PlayerUID.Keys.ToList();
 
+                List<(string, EntityBroadcast)> broadcastsToSend = new();
+
                 foreach (string nickname in connected_nicknames)
                 {
                     Vec2 playerPos = Ref.PlayerManager.GetPlayerRenderingPosition(nickname);
@@ -141,7 +143,6 @@ namespace Larnix.Server.Entities
                         );
 
                     const int MAX_RECORDS = EntityBroadcast.MAX_RECORDS;
-                    List<Packet> broadcastsToSend = new();
                     List<ulong> sendUIDs = EntityList.Keys.ToList();
                     for (int pos = 0; true; pos += MAX_RECORDS)
                     {
@@ -164,15 +165,15 @@ namespace Larnix.Server.Entities
                                 fragmentFixed[uid] = fixedIndex;
                         }
 
-                        Packet packet = new EntityBroadcast(FixedCounter, fragmentEntities, fragmentFixed);
-                        broadcastsToSend.Add(packet);
+                        EntityBroadcast brdcst = new EntityBroadcast(FixedCounter, fragmentEntities, fragmentFixed);
+                        broadcastsToSend.Add((nickname, brdcst));
                     }
+                }
 
-                    broadcastsToSend = broadcastsToSend.OrderBy(x => Core.Common.Rand().Next()).ToList();
-                    foreach (var packet in broadcastsToSend)
-                    {
-                        Ref.QuickServer.Send(nickname, packet, false); // unsafe mode (over raw UDP)
-                    }
+                broadcastsToSend = broadcastsToSend.OrderBy(x => Core.Common.Rand().Next()).ToList();
+                foreach (var pair in broadcastsToSend)
+                {
+                    Ref.QuickServer.Send(pair.Item1, pair.Item2, false); // unsafe mode (over raw UDP)
                 }
 
                 UpdateCounter++;
