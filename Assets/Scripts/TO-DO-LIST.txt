@@ -1,13 +1,12 @@
 === Larnix TO-DO-LIST ===
 
-- Resource packs
 - QuickNet relay system
 
 - NBT system: Internal / Visual
 - Nicknames
 - Inventory
 - Entity generation
-- Health system, swords
+- Health system & swords
 
 === KNOWN BUGS ===
 
@@ -41,3 +40,4 @@
 - Physics rework to doubles
 - Server into threaded class, hosting
 - Better smooth
+- Resource packs
