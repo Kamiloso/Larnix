@@ -8,7 +8,7 @@ using System.Linq;
 using UnityEngine.UI;
 using TMPro;
 using Unity.VisualScripting;
-using QuickNet;
+using Socket;
 using Larnix.Menu.Forms;
 using Version = Larnix.Core.Version;
 

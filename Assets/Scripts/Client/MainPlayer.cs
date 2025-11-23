@@ -1,13 +1,13 @@
 using System.Collections;
 using System.Collections.Generic;
-using TMPro;
 using UnityEngine;
 using Larnix.Packets;
 using Larnix.Client.Entities;
 using Larnix.Entities;
-using QuickNet.Channel;
+using Socket.Channel;
 using Larnix.Core.Physics;
 using Larnix.Blocks;
+using Larnix.Core.Vectors;
 using IHasCollider = Larnix.Entities.IHasCollider;
 
 namespace Larnix.Client
@@ -27,15 +27,7 @@ namespace Larnix.Client
         private DynamicCollider DynamicCollider;
         private readonly Vec2 ColliderOffset = EntityFactory.GetSlaveInstance<IHasCollider>(EntityID.Player).COLLIDER_OFFSET();
         private readonly Vec2 ColliderSize = EntityFactory.GetSlaveInstance<IHasCollider>(EntityID.Player).COLLIDER_SIZE();
-        private readonly PhysicsProperties PhysicsProperties = new()
-        {
-            Gravity = 1.00,
-            HorizontalForce = 2.00,
-            HorizontalDrag = 2.00,
-            JumpSize = 25.00,
-            MaxVerticalVelocity = 45.00,
-            MaxHorizontalVelocity = 15.00,
-        };
+        private readonly PhysicsProperties PhysicsProperties = EntityFactory.GetSlaveInstance<IPhysicsProperties>(EntityID.Player).PHYSICS_PROPERTIES();
 
         // Player / Entity data
         public bool IsAlive => transform.parent.gameObject.activeSelf;

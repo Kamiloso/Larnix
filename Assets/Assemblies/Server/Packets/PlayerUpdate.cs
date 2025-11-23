@@ -1,8 +1,9 @@
 using System;
 using System.Collections;
-using QuickNet;
-using QuickNet.Channel;
+using Socket;
+using Socket.Channel;
 using UnityEngine;
+using Larnix.Core.Vectors;
 
 namespace Larnix.Packets
 {

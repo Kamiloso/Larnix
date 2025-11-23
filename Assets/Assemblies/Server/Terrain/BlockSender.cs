@@ -2,10 +2,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Blocks;
-using QuickNet;
+using Socket;
 using Larnix.Packets;
 using System;
-using QuickNet.Channel;
+using Socket.Channel;
 using System.Linq;
 
 namespace Larnix.Server.Terrain

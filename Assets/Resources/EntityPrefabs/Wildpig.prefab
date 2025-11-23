@@ -53,6 +53,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   NameField: {fileID: 2833220651275622873}
   RenderingLayer: Entities
+  SmoothDelay: 0.1
 --- !u!114 &3947000869394770182
 MonoBehaviour:
   m_ObjectHideFlags: 0

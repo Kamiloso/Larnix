@@ -6,8 +6,9 @@ using UnityEngine;
 using Larnix.Blocks;
 using Larnix.Packets;
 using Larnix.Server.Entities;
-using QuickNet.Channel;
-using Larnix.Core;
+using Socket.Channel;
+using Larnix.Core.Utils;
+using Larnix.Core.Vectors;
 
 namespace Larnix.Server.Terrain
 {
@@ -51,7 +52,7 @@ namespace Larnix.Server.Terrain
         {
             var activeChunks = Chunks.Where(kv => ChunkState(kv.Key) == LoadState.Active).ToList();
             var orderedChunks = activeChunks.OrderBy(kv => kv.Key.y).ThenBy(kv => kv.Key.x).ToList();
-            var shuffledChunks = activeChunks.OrderBy(_ => Core.Common.Rand().NextDouble()).ToList();
+            var shuffledChunks = activeChunks.OrderBy(_ => Common.Rand().NextDouble()).ToList();
 
             foreach (var kvp in activeChunks) // pre-frame configure
             {

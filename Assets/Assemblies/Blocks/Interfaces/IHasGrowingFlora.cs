@@ -2,7 +2,7 @@ using Larnix.Blocks;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Larnix.Core;
+using Larnix.Core.Utils;
 
 namespace Larnix.Blocks
 {

@@ -3,8 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Larnix.Entities;
-using QuickNet;
-using QuickNet.Channel;
+using Socket;
+using Socket.Channel;
 
 namespace Larnix.Packets
 {

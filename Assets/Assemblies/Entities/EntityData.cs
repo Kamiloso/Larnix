@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
-using QuickNet;
+using Socket;
+using Larnix.Core.Vectors;
 
 namespace Larnix.Entities
 {
@@ -9,7 +10,7 @@ namespace Larnix.Entities
         public EntityID ID = EntityID.None;
         public Vec2 Position = new Vec2(0, 0);
         public float Rotation = 0f;
-        public string NBT = "{}";
+        public EntityNBT NBT = new EntityNBT();
 
         public EntityData DeepCopy()
         {
@@ -18,7 +19,7 @@ namespace Larnix.Entities
                 ID = ID,
                 Position = Position,
                 Rotation = Rotation,
-                NBT = NBT
+                NBT = NBT.Copy<EntityNBT>()
             };
         }
 

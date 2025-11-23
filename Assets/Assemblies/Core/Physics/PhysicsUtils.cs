@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Larnix.Core.Vectors;
 
 namespace Larnix.Core.Physics
 {

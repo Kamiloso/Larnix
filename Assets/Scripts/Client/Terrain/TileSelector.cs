@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEngine.Tilemaps;
 using System;
 using System.Linq;
+using Larnix.Core.Vectors;
 
 namespace Larnix.Client.Terrain
 {

@@ -1,13 +1,13 @@
 using System.Collections;
 using System.Collections.Generic;
 using Larnix.Packets;
-using QuickNet.Channel.Cmds;
+using Larnix.Core.Vectors;
 
 namespace Larnix.Client
 {
     public class Receiver
     {
-        public Receiver(QuickNet.Frontend.QuickClient client)
+        public Receiver(Socket.Frontend.QuickClient client)
         {
             client.Subscribe<PlayerInitialize>(_PlayerInitialize);
             client.Subscribe<EntityBroadcast>(_EntityBroadcast);

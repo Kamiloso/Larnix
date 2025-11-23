@@ -4,7 +4,8 @@ using UnityEngine;
 using Larnix.Worldgen;
 using Larnix.Client.Terrain;
 using Larnix.Blocks;
-using Larnix.Core;
+using Larnix.Core.Utils;
+using Larnix.Core.Vectors;
 
 namespace Larnix.Menu
 {

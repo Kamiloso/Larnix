@@ -1,11 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Tilemaps;
 using Larnix.Blocks;
 using System.Linq;
 using System;
+using Larnix.Core.Utils;
 using Larnix.Core.Physics;
+using Larnix.Core.Vectors;
 
 namespace Larnix.Client.Terrain
 {
@@ -122,7 +123,7 @@ namespace Larnix.Client.Terrain
 
         private int ChunkDistance(Vector2Int chunk)
         {
-            return Core.Common.ManhattanDistance(
+            return Common.ManhattanDistance(
                 ChunkMethods.CoordsToChunk(!isMenu ? Ref.MainPlayer.Position : new Vec2(0, 0)),
                 chunk
                 );
@@ -255,7 +256,7 @@ namespace Larnix.Client.Terrain
 
         private long LockBlock(Vector2Int POS)
         {
-            System.Random Rand = Core.Common.Rand();
+            System.Random Rand = Common.Rand();
             long operation = ((long)Rand.Next(int.MinValue, int.MaxValue) << 32) | (uint)Rand.Next(int.MinValue, int.MaxValue);
             LockedBlocks.Add(new BlockLock
             {

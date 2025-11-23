@@ -1,6 +1,6 @@
 using Larnix;
 using UnityEngine;
-using Larnix.Core;
+using Larnix.Core.Vectors;
 
 namespace Larnix.Core.Physics
 {

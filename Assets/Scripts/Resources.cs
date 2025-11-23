@@ -4,7 +4,7 @@ using UnityEngine;
 using Larnix.Entities;
 using Larnix.Blocks;
 using UnityEngine.Tilemaps;
-using System;
+using Larnix.Core.ClientThreadUtils;
 
 namespace Larnix
 {

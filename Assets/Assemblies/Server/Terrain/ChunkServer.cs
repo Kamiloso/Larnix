@@ -5,6 +5,7 @@ using Larnix.Blocks;
 using System;
 using System.Linq;
 using Larnix.Core.Physics;
+using Larnix.Core.Vectors;
 
 namespace Larnix.Server.Terrain
 {

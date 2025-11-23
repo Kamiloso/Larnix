@@ -5,7 +5,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using Larnix.Menu.Worlds;
-using Larnix.Core;
+using Larnix.Core.Utils;
 
 namespace Larnix.Menu.Forms
 {

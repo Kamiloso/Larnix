@@ -1,0 +1,30 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+
+namespace Socket
+{
+    public static class Validation
+    {
+        public static bool IsGoodNickname(string nickname) =>
+            nickname != null &&
+            !nickname.EndsWith('\0') &&
+            nickname.Length is >= 3 and <= 16 &&
+            nickname.All(c => char.IsLetterOrDigit(c) || c == '-' || c == '_');
+
+        public static bool IsGoodPassword(string password) =>
+            password != null &&
+            !password.EndsWith('\0') &&
+            password.Length is >= 7 and <= 32;
+
+        public static bool IsGoodAuthcode(string authcode) =>
+            Processing.Authcode.IsGoodAuthcode(authcode);
+
+        public static bool IsGoodText<T>(string message) where T : IStringStruct, new() =>
+            message != null &&
+            !message.EndsWith('\0') &&
+            message.Length <= new T().BinarySize / 2;
+    }
+}

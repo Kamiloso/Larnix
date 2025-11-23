@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using UnityEngine;
 
@@ -23,9 +24,27 @@ namespace Larnix
         {
             var interfaceType = typeof(IGlobalUnitySingleton);
 
-            var types = typeof(EternalScript).Assembly.GetTypes()
+            var assembliesToSearch = new[]
+            {
+                typeof(EternalScript).Assembly, // default assembly
+                typeof(Core.Utils.Common).Assembly // Larnix.Core assembly
+            };
+
+            var types = assembliesToSearch
+                .SelectMany(assembly =>
+                {
+                    try
+                    {
+                        return assembly.GetTypes();
+                    }
+                    catch
+                    {
+                        return Array.Empty<Type>();
+                    }
+                })
                 .Where(t => typeof(MonoBehaviour).IsAssignableFrom(t) &&
-                            interfaceType.IsAssignableFrom(t));
+                            interfaceType.IsAssignableFrom(t) &&
+                            !t.IsAbstract);
 
             foreach (var type in types)
             {

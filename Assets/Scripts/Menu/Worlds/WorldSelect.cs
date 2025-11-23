@@ -8,13 +8,14 @@ using UnityEngine.UI;
 using TMPro;
 using Larnix.Menu.Forms;
 using Larnix.Core;
+using Larnix.Core.Utils;
 using Version = Larnix.Core.Version;
 
 namespace Larnix.Menu.Worlds
 {
     public class WorldSelect : UniversalSelect
     {
-        public static string SavesPath => Core.Common.SavesPath;
+        public static string SavesPath => Common.SavesPath;
 
         [SerializeField] Image TitleImage;
         [SerializeField] TextMeshProUGUI DescriptionText;
@@ -110,7 +111,7 @@ namespace Larnix.Menu.Worlds
             bool compatible = enable ? MetadatasSGP[worldName].version <= Version.Current : false;
 
             BT_Play.interactable = enable && compatible;
-            BT_Host.interactable = enable;
+            BT_Host.interactable = enable && compatible;
             BT_Rename.interactable = enable;
             BT_Delete.interactable = enable;
 

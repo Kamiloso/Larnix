@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Runtime.ExceptionServices;
 using Larnix.Server;
 using System.Threading.Tasks;
+using Larnix.Core.Utils;
 
 namespace Larnix.ServerRun
 {
@@ -39,7 +40,7 @@ namespace Larnix.ServerRun
 
             _thread = new Thread(() =>
             {
-                const float PERIOD = Core.Common.FIXED_TIME;
+                const float PERIOD = Common.FIXED_TIME;
                 Stopwatch sw = Stopwatch.StartNew();
                 bool crashed = false;
 

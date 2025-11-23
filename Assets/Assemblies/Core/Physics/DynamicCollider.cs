@@ -1,7 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using System;
+using Larnix.Core.Utils;
+using Larnix.Core.Vectors;
 
 namespace Larnix.Core.Physics
 {
@@ -33,7 +34,7 @@ namespace Larnix.Core.Physics
     public struct PhysicsProperties
     {
         public double Gravity;
-        public double HorizontalForce;
+        public double ControlForce;
         public double HorizontalDrag;
         public double JumpSize;
         public double MaxVerticalVelocity;
@@ -76,7 +77,7 @@ namespace Larnix.Core.Physics
             int wantSide = (inputData.Left ? -1 : 0) + (inputData.Right ? 1 : 0);
 
             if (wantSide != 0)
-                Velocity += wantSide * new Vec2(Properties.HorizontalForce, 0f);
+                Velocity += wantSide * new Vec2(Properties.ControlForce, 0f);
             else
             {
                 int sgn1 = Math.Sign(Velocity.x);
@@ -123,7 +124,7 @@ namespace Larnix.Core.Physics
 
             // Generate report & update position
 
-            SetWill(Center, Center + Velocity * Core.Common.FIXED_TIME);
+            SetWill(Center, Center + Velocity * Common.FIXED_TIME);
             Report = Physics.MoveCollider(this);
             return RemoveOffset(Report);
         }

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
-using System;
+using Larnix.Core.Vectors;
 
 namespace Larnix.Client.Entities
 {
@@ -46,9 +46,9 @@ namespace Larnix.Client.Entities
                 if (record.Time <= last.Time)
                     return;
 
-                // ignore packets with huge time jump
+                // packets with huge time jump -> reset memory
                 if (record.Time - last.Time > 5.0)
-                    return;
+                    _records.Clear();
             }
 
             // remove old records (>5s older than new record)

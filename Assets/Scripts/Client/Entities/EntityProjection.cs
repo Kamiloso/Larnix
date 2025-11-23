@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Entities;
 using Larnix.Client.Entities.Body;
-using Larnix.Core;
+using Larnix.Core.Utils;
 
 namespace Larnix.Client.Entities
 {

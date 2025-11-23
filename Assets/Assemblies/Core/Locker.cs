@@ -1,7 +1,7 @@
 using System;
 using System.Collections;
 using System.IO;
-using QuickNet;
+using Socket;
 
 namespace Larnix
 {

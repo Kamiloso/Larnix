@@ -1,5 +1,5 @@
 using System.Collections;
-using QuickNet;
+using Socket;
 
 namespace Larnix.Blocks
 {

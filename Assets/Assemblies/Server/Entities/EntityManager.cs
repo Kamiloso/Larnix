@@ -6,10 +6,10 @@ using System.Linq;
 using Larnix.Packets;
 using System.Diagnostics;
 using Larnix.Server.Terrain;
-using QuickNet.Channel;
+using Larnix.Core.Vectors;
 using System;
-using Org.BouncyCastle.Bcpg;
-using Packet = QuickNet.Channel.Packet;
+using Larnix.Core.Utils;
+using Packet = Socket.Channel.Packet;
 
 namespace Larnix.Server.Entities
 {
@@ -44,7 +44,7 @@ namespace Larnix.Server.Entities
             foreach (ulong uid in EntityControllers.Keys.ToList())
                 if (EntityControllers[uid].IsActive)
                 {
-                    if (EntityControllers[uid].EntityData.NBT == "something... idk")
+                    if (EntityControllers[uid].EntityData.NBT.MarkedToKill)
                         KillEntity(uid);
                 }
 
@@ -170,7 +170,7 @@ namespace Larnix.Server.Entities
                     }
                 }
 
-                broadcastsToSend = broadcastsToSend.OrderBy(x => Core.Common.Rand().Next()).ToList();
+                broadcastsToSend = broadcastsToSend.OrderBy(x => Common.Rand().Next()).ToList();
                 foreach (var pair in broadcastsToSend)
                 {
                     Ref.QuickServer.Send(pair.Item1, pair.Item2, false); // unsafe mode (over raw UDP)

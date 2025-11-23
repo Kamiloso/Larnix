@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Larnix.Packets;
-using QuickNet.Channel;
+using Socket.Channel;
 using System.Threading.Tasks;
 using Larnix.Core.Physics;
 using Larnix.ServerRun;
-using QuickNet.Frontend;
+using Socket.Frontend;
 
 namespace Larnix.Client
 {

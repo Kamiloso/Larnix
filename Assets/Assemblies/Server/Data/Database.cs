@@ -6,8 +6,9 @@ using System.IO;
 using System;
 using Larnix.Entities;
 using Larnix.Blocks;
-using QuickNet;
-using Larnix.Core;
+using Socket;
+using Larnix.Core.Utils;
+using Larnix.Core.Vectors;
 
 namespace Larnix.Server.Data
 {
@@ -55,7 +56,12 @@ namespace Larnix.Server.Data
 
                 CREATE TABLE IF NOT EXISTS seed (
                     value INTEGER
-                );";
+                );
+
+                UPDATE entities
+                    SET nbt = ''
+                    WHERE nbt = '{}';
+                ";
                 cmd.ExecuteNonQuery();
             }
         }
@@ -86,7 +92,7 @@ namespace Larnix.Server.Data
                             ID = (EntityID)(long)reader["type"],
                             Position = new Vec2((double)reader["pos_x"], (double)reader["pos_y"]),
                             Rotation = (float)(double)reader["rotation"],
-                            NBT = (string)reader["nbt"]
+                            NBT = new EntityNBT(Convert.FromBase64String((string)reader["nbt"]))
                         };
                         return entityData;
                     }
@@ -113,7 +119,7 @@ namespace Larnix.Server.Data
                             ID = (EntityID)(long)reader["type"],
                             Position = new Vec2((double)reader["pos_x"], (double)reader["pos_y"]),
                             Rotation = (float)(double)reader["rotation"],
-                            NBT = reader["nbt"] as string
+                            NBT = new EntityNBT(Convert.FromBase64String((string)reader["nbt"]))
                         });
                     }
                     return returns;
@@ -154,7 +160,7 @@ namespace Larnix.Server.Data
                     paramPosX.Value = entity.Position.x;
                     paramPosY.Value = entity.Position.y;
                     paramRotation.Value = entity.Rotation;
-                    paramNbt.Value = entity.NBT;
+                    paramNbt.Value = Convert.ToBase64String(entity.NBT.Data);
                     cmd.ExecuteNonQuery();
                 }
             }

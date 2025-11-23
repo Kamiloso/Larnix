@@ -4,7 +4,7 @@ using Larnix.Server.Terrain;
 using Larnix.Server.Entities;
 using Larnix.Worldgen;
 using Larnix.Core.Physics;
-using QuickNet.Backend;
+using Socket.Backend;
 using Larnix.Server.Data;
 
 namespace Larnix.Server

@@ -1,8 +1,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using QuickNet.Channel;
-using QuickNet.Channel.Cmds;
+using Socket.Channel;
+using Socket.Channel.Cmds;
 
 namespace Larnix.Packets
 {

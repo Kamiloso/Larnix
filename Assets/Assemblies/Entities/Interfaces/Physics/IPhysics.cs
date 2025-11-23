@@ -1,16 +1,15 @@
 using System.Collections;
 using System.Collections.Generic;
 using Larnix.Core.Physics;
+using Larnix.Core.Vectors;
 
 namespace Larnix.Entities
 {
-    public interface IPhysics : IManagesTransform, IHasCollider
+    public interface IPhysics : IManagesTransform, IHasCollider, IPhysicsProperties
     {
-        PhysicsProperties PHYSICS_PROPERTIES();
-
         DynamicCollider dynamicCollider { get; set; }
-        InputData inputData { get; }
-        OutputData? outputData { get; set; }
+        InputData inputData { get; } // getter lazy-activates behaviour
+        OutputData? outputData { get; set; } // last known output
 
         void Init()
         {
@@ -32,8 +31,18 @@ namespace Larnix.Entities
 
         private void PhysicsUpdate()
         {
-            outputData = dynamicCollider.PhysicsUpdate(inputData);
+            InputData idata = inputData; // getter performs actions!
+
+            outputData = dynamicCollider.PhysicsUpdate(idata);
             This.EntityData.Position = ((OutputData)outputData).Position;
+
+            // head rotation perform
+
+            if (idata.Right && !idata.Left)
+                This.EntityData.Rotation = 0f;
+
+            if (idata.Left && !idata.Right)
+                This.EntityData.Rotation = 180f;
         }
     }
 }

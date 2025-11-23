@@ -4,8 +4,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Packets;
 using System;
-using QuickNet;
-using QuickNet.Channel;
+using Socket;
+using Socket.Channel;
 
 namespace Larnix.Client.Terrain
 {

@@ -8,5 +8,6 @@ namespace Larnix.Entities
     {
         EntityServer This => (EntityServer)this;
         PhysicsManager Physics => This.Physics;
+        EntityNBT NBT => This.EntityData.NBT;
     }
 }

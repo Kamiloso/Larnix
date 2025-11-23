@@ -8,6 +8,7 @@ using System;
 using Larnix.Server.Terrain;
 using System.Text;
 using Larnix.Packets;
+using Larnix.Core.Vectors;
 using Console = Larnix.Core.Console;
 
 namespace Larnix.Server

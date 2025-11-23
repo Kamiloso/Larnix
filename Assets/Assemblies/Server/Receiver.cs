@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using QuickNet.Channel.Cmds;
+using Socket.Channel.Cmds;
 using Larnix.Blocks;
 using Larnix.Server.Entities;
 using Larnix.Server.Terrain;
@@ -13,7 +13,7 @@ namespace Larnix.Server
     {
         private WorldAPI WorldAPI => Ref.ChunkLoading.WorldAPI;
 
-        public Receiver(QuickNet.Backend.QuickServer server)
+        public Receiver(Socket.Backend.QuickServer server)
         {
             server.Subscribe<AllowConnection>(_AllowConnection);
             server.Subscribe<Stop>(_Stop);

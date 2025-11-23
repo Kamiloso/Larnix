@@ -1,8 +1,8 @@
 using System;
 using System.Collections;
 using Larnix.Blocks;
-using QuickNet;
-using QuickNet.Channel;
+using Socket;
+using Socket.Channel;
 using UnityEngine;
 
 namespace Larnix.Packets

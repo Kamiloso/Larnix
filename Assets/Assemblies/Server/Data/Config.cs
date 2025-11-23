@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using QuickNet;
+using Socket;
 using UnityEngine;
 
 namespace Larnix.Server.Data
