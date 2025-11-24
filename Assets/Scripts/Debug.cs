@@ -152,7 +152,6 @@ namespace Larnix
         {
             MainThread = Thread.CurrentThread;
             Core.Debug.InitLogs(Log, LogWarning, LogError, LogSuccess, LogRawConsole);
-            Socket.Debug.InitLogs(Log, LogWarning, LogError);
         }
     }
 }

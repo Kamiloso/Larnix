@@ -1,11 +1,11 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Socket.Channel.Cmds;
-using Larnix.Blocks;
+using Larnix.Socket.Packets;
 using Larnix.Server.Entities;
 using Larnix.Server.Terrain;
-using Larnix.Packets;
+using Larnix.Core.Utils;
+using Larnix.Socket.Backend;
 
 namespace Larnix.Server
 {
@@ -13,7 +13,7 @@ namespace Larnix.Server
     {
         private WorldAPI WorldAPI => Ref.ChunkLoading.WorldAPI;
 
-        public Receiver(Socket.Backend.QuickServer server)
+        public Receiver(QuickServer server)
         {
             server.Subscribe<AllowConnection>(_AllowConnection);
             server.Subscribe<Stop>(_Stop);
@@ -65,7 +65,7 @@ namespace Larnix.Server
         private void _BlockChange(BlockChange msg, string owner)
         {
             Vector2Int POS = msg.BlockPosition;
-            Vector2Int chunk = ChunkMethods.CoordsToChunk(POS);
+            Vector2Int chunk = BlockUtils.CoordsToChunk(POS);
             bool front = msg.Front;
             byte code = msg.Code;
 

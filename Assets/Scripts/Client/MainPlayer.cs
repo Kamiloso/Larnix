@@ -1,13 +1,14 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Larnix.Packets;
+using Larnix.Socket.Packets;
 using Larnix.Client.Entities;
 using Larnix.Entities;
-using Socket.Channel;
+using Larnix.Socket.Channel;
 using Larnix.Core.Physics;
-using Larnix.Blocks;
 using Larnix.Core.Vectors;
+using Larnix.Entities.Structs;
+using Larnix.Core.Utils;
 using IHasCollider = Larnix.Entities.IHasCollider;
 
 namespace Larnix.Client
@@ -60,7 +61,7 @@ namespace Larnix.Client
             OutputData? odata = null;
             if (!Ref.Debug.SpectatorMode)
             {
-                Vector2Int chunk = ChunkMethods.CoordsToChunk(Position);
+                Vector2Int chunk = BlockUtils.CoordsToChunk(Position);
                 if (Ref.GridManager.ChunkLoaded(chunk))
                 {
                     odata = DynamicCollider.PhysicsUpdate(new InputData

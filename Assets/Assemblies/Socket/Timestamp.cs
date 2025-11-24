@@ -1,11 +1,9 @@
-using Socket.Processing;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Net;
 
-namespace Socket
+namespace Larnix.Socket
 {
     public static class Timestamp
     {

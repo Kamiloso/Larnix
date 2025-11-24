@@ -1,5 +1,6 @@
 using Larnix.Blocks;
 using UnityEngine;
+using Larnix.Blocks.Structs;
 
 namespace Larnix.Blocks
 {

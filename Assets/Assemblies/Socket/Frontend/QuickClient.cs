@@ -4,12 +4,12 @@ using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System;
-using Socket.Processing;
-using Socket.Channel;
-using Socket.Channel.Cmds;
+using Larnix.Socket.Packets;
 using System.Threading.Tasks;
+using Larnix.Socket.Security;
+using Larnix.Socket.Channel;
 
-namespace Socket.Frontend
+namespace Larnix.Socket.Frontend
 {
     public class QuickClient : IDisposable
     {
@@ -35,7 +35,7 @@ namespace Socket.Frontend
             }
             catch (Exception ex)
             {
-                Socket.Debug.LogError(ex.Message);
+                Core.Debug.LogError(ex.Message);
                 return null;
             }
         }

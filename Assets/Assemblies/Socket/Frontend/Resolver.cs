@@ -1,14 +1,12 @@
-using Socket.Channel;
-using Socket.Channel.Cmds;
-using Socket.Processing;
+using Larnix.Socket.Packets;
 using System;
-using System.Collections.Concurrent;
 using System.Linq;
 using System.Net;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
+using Larnix.Socket.Security;
 
-namespace Socket.Frontend
+namespace Larnix.Socket.Frontend
 {
     public enum ResolverError
     {

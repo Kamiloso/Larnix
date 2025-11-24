@@ -4,12 +4,12 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Net;
 using System.Security.Cryptography;
-using System.Threading.Tasks;
-using Socket.Processing;
-using Socket.Channel.Cmds;
+using Larnix.Socket.Packets;
 using System;
+using Larnix.Core.Utils;
+using Larnix.Socket.Security;
 
-namespace Socket.Channel
+namespace Larnix.Socket.Channel
 {
     public class Connection
     {
@@ -292,14 +292,14 @@ namespace Socket.Channel
                 if (safePacket.HasFlag(PacketFlag.RSA))
                 {
                     safePacket.Encryption = bytes => Encryption.EncryptRSA(bytes, KeyRSA);
-                    Debug.Log("Transmiting RSA-encrypted SYN.");
+                    Core.Debug.Log("Transmiting RSA-encrypted SYN.");
                 }
                 else
                 {
                     if (IPAddress.IsLoopback(EndPoint.Address))
-                        Debug.LogWarning("Transmiting unencrypted SYN to localhost.");
+                        Core.Debug.LogWarning("Transmiting unencrypted SYN to localhost.");
                     else
-                        Debug.LogWarning("Transmiting unencrypted SYN!");
+                        Core.Debug.LogWarning("Transmiting unencrypted SYN!");
                 }
             }
 

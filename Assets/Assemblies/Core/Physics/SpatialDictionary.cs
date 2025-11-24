@@ -1,9 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System;
 using UnityEngine;
 using Larnix.Core.Vectors;
+using Larnix.Core.Utils;
 
 namespace Larnix.Core.Physics
 {
@@ -71,7 +71,7 @@ namespace Larnix.Core.Physics
 
         private Vector2Int ConvertToSector(Vec2 pos)
         {
-            return PhysicsUtils.CoordsToBlock(pos, SectorSize);
+            return BlockUtils.CoordsToBlock(pos, SectorSize);
         }
     }
 }

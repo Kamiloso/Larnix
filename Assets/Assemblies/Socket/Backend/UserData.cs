@@ -1,8 +1,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Larnix.Core.Utils;
+using Larnix.Core.Serialization;
 
-namespace Socket
+namespace Larnix.Socket.Backend
 {
     internal class UserData
     {

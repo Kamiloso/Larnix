@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using Larnix.Menu.Worlds;
-using Socket;
+using Larnix.Socket;
 
 namespace Larnix.Menu.Forms
 {

@@ -2,10 +2,10 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
-using Socket.Channel.Cmds;
+using Larnix.Socket.Packets;
 using System.Linq;
 
-namespace Socket.Channel
+namespace Larnix.Socket.Channel
 {
     public enum CmdID : ushort { None = 0 }
 
@@ -51,7 +51,7 @@ namespace Socket.Channel
                 throw new FormatException($"Message with bytes.Length = {lngt} cannot be sent. The size limit for payload is 65_436.");
 
             if (!WarningSuppress && lngt > 1500 - 100)
-                Socket.Debug.LogWarning($"Constructed {GetType()} message may need fragmentation with bytes.Length = {lngt}. " +
+                Core.Debug.LogWarning($"Constructed {GetType()} message may need fragmentation with bytes.Length = {lngt}. " +
                     $"It is recommended to not create payload larger than 1400 bytes to prevent unnecessary packet loss. " +
                     $"You can suppress this warning by overriding property \"WarningSuppress\" to \"true\" in a message class.");
         }

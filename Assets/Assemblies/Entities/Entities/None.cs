@@ -1,3 +1,4 @@
+using Larnix.Entities.Structs;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;

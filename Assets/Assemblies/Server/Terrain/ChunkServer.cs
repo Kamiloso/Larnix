@@ -4,8 +4,10 @@ using UnityEngine;
 using Larnix.Blocks;
 using System;
 using System.Linq;
+using Larnix.Core.Utils;
 using Larnix.Core.Physics;
 using Larnix.Core.Vectors;
+using Larnix.Blocks.Structs;
 
 namespace Larnix.Server.Terrain
 {
@@ -120,7 +122,7 @@ namespace Larnix.Server.Terrain
                 )
             {
                 Ref.BlockSender.AddBlockUpdate((
-                    ChunkMethods.GlobalBlockCoords(Chunkpos, pos),
+                    BlockUtils.GlobalBlockCoords(Chunkpos, pos),
                     new BlockData2(newDataFront, newDataBack)
                     ));
             }
@@ -144,10 +146,10 @@ namespace Larnix.Server.Terrain
 
         private void CreateBlock(Vector2Int pos, BlockData2 blockData)
         {
-            BlockServer frontBlock = ConstructAndBindBlockObject(ChunkMethods.GlobalBlockCoords(Chunkpos, pos), blockData.Front, true);
+            BlockServer frontBlock = ConstructAndBindBlockObject(BlockUtils.GlobalBlockCoords(Chunkpos, pos), blockData.Front, true);
             BlocksFront[pos.x, pos.y] = frontBlock;
 
-            BlockServer backBlock = ConstructAndBindBlockObject(ChunkMethods.GlobalBlockCoords(Chunkpos, pos), blockData.Back, false);
+            BlockServer backBlock = ConstructAndBindBlockObject(BlockUtils.GlobalBlockCoords(Chunkpos, pos), blockData.Back, false);
             BlocksBack[pos.x, pos.y] = backBlock;
 
             RefreshCollider(pos);
@@ -174,7 +176,7 @@ namespace Larnix.Server.Terrain
                 StaticCollider staticCollider = StaticCollider.Create(
                     new Vec2(iface.COLLIDER_WIDTH(), iface.COLLIDER_HEIGHT()),
                     new Vec2(iface.COLLIDER_OFFSET_X(), iface.COLLIDER_OFFSET_Y()),
-                    ChunkMethods.GlobalBlockCoords(Chunkpos, pos)
+                    BlockUtils.GlobalBlockCoords(Chunkpos, pos)
                     );
                 StaticColliders[pos] = staticCollider;
                 Ref.PhysicsManager.AddCollider(staticCollider);

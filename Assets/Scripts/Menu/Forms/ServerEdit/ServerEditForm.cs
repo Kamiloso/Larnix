@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using Larnix.Menu.Worlds;
-using Socket;
 using System;
+using Larnix.Socket;
 
 namespace Larnix.Menu.Forms
 {

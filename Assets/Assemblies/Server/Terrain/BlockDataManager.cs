@@ -2,8 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Blocks;
-using Unity.VisualScripting;
-using System;
+using Larnix.Blocks.Structs;
 using System.Linq;
 
 namespace Larnix.Server.Terrain

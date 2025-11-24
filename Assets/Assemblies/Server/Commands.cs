@@ -7,8 +7,10 @@ using Larnix.Server.Entities;
 using System;
 using Larnix.Server.Terrain;
 using System.Text;
-using Larnix.Packets;
+using Larnix.Socket.Packets;
 using Larnix.Core.Vectors;
+using Larnix.Blocks.Structs;
+using Larnix.Entities.Structs;
 using Console = Larnix.Core.Console;
 
 namespace Larnix.Server

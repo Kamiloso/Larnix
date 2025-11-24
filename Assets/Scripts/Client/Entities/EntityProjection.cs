@@ -1,9 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Larnix.Entities;
 using Larnix.Client.Entities.Body;
 using Larnix.Core.Utils;
+using Larnix.Entities.Structs;
 
 namespace Larnix.Client.Entities
 {

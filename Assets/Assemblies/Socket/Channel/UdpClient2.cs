@@ -6,9 +6,8 @@ using System.Collections.Concurrent;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Linq;
 
-namespace Socket.Channel
+namespace Larnix.Socket.Channel
 {
     public class UdpClient2 : IDisposable
     {
@@ -143,7 +142,7 @@ namespace Socket.Channel
                     return true; // connection reset can be ignored
             }
 
-            if (!_stop) Socket.Debug.LogError(ex.ToString());
+            if (!_stop) Core.Debug.LogError(ex.ToString());
             return false; // other errors, close socket
         }
 

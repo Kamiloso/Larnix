@@ -1,9 +1,7 @@
 {
     "name": "Larnix.Core",
     "rootNamespace": "Larnix.Core",
-    "references": [
-        "GUID:e47ec16989832dc49bbccde857433a2f"
-    ],
+    "references": [],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": true,

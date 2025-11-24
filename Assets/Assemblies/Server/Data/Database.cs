@@ -6,9 +6,10 @@ using System.IO;
 using System;
 using Larnix.Entities;
 using Larnix.Blocks;
-using Socket;
+using Larnix.Core.Files;
 using Larnix.Core.Utils;
 using Larnix.Core.Vectors;
+using Larnix.Entities.Structs;
 
 namespace Larnix.Server.Data
 {
@@ -151,7 +152,7 @@ namespace Larnix.Server.Data
                 foreach (var vkp in entities)
                 {
                     EntityData entity = vkp.Value;
-                    Vector2Int chunkCoords = ChunkMethods.CoordsToChunk(entity.Position);
+                    Vector2Int chunkCoords = BlockUtils.CoordsToChunk(entity.Position);
 
                     paramUid.Value = (long)vkp.Key;
                     paramType.Value = (long)entity.ID;

@@ -1,14 +1,14 @@
-using Socket.Processing;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
-using Socket.Channel;
-using Socket.Channel.Cmds;
 using System.Net.Sockets;
+using Larnix.Socket.Channel;
+using Larnix.Socket.Security;
+using Larnix.Socket.Packets;
 
-namespace Socket.Backend
+namespace Larnix.Socket.Backend
 {
     internal class ManagerNCN
     {
@@ -213,7 +213,7 @@ namespace Socket.Backend
 
                 string hashed_password = hashing.Result;
                 Server.UserManager.AddUser(username, hashed_password);
-                Socket.Debug.Log($"{username} created an account from {remoteEP}");
+                Core.Debug.Log($"{username} created an account from {remoteEP}");
 
                 ExecuteSuccess();
                 yield break; // created new account

@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Entities;
 using System.Linq;
-using Larnix.Packets;
+using Larnix.Socket.Packets;
 using System.Diagnostics;
 using Larnix.Server.Terrain;
 using Larnix.Core.Vectors;
 using System;
 using Larnix.Core.Utils;
-using Packet = Socket.Channel.Packet;
+using Larnix.Entities.Structs;
+using Packet = Larnix.Socket.Channel.Packet;
 
 namespace Larnix.Server.Entities
 {

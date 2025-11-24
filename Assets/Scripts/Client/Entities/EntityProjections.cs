@@ -1,10 +1,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Larnix.Entities;
 using System.Linq;
 using System.Diagnostics;
-using Larnix.Packets;
+using Larnix.Socket.Packets;
+using Larnix.Entities.Structs;
 
 namespace Larnix.Client.Entities
 {

@@ -3,8 +3,12 @@ using System;
 using System.Security.Cryptography;
 using System.Collections.Generic;
 using System.IO;
+using Larnix.Core.Files;
+using Larnix.Core.Serialization;
+using Larnix.Core.Utils;
+using Larnix.Socket.Security;
 
-namespace Socket.Backend
+namespace Larnix.Socket.Backend
 {
     public class UserManager
     {
@@ -26,7 +30,7 @@ namespace Socket.Backend
             }
             else // generate pepper
             {
-                Pepper = Processing.KeyObtainer.GetSecureLong();
+                Pepper = KeyObtainer.GetSecureLong();
                 pepperBytes = EndianUnsafe.GetBytes(Pepper);
                 FileManager.WriteBinary(DataPath, "pepper.bin", pepperBytes);
             }
@@ -74,7 +78,7 @@ namespace Socket.Backend
                 {
                     do
                     {
-                        userData.UserID = (Processing.KeyObtainer.GetSecureLong() & 0x7F_FF_FF_FF_FF_FF_00_00) | (ushort)hashID;
+                        userData.UserID = (KeyObtainer.GetSecureLong() & 0x7F_FF_FF_FF_FF_FF_00_00) | (ushort)hashID;
                     }
                     while (reservedIDs.Contains(userData.UserID) || userData.UserID == 0);
 

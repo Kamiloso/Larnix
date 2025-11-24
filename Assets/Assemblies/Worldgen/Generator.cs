@@ -10,6 +10,8 @@ using System;
 using System.Buffers.Binary;
 using System.Reflection;
 using System.Text;
+using Larnix.Core.Utils;
+using Larnix.Blocks.Structs;
 
 namespace Larnix.Worldgen
 {
@@ -131,7 +133,7 @@ namespace Larnix.Worldgen
             for (int x = 0; x < 16; x++)
                 for (int y = 0; y < 16; y++)
                 {
-                    Vector2Int POS = ChunkMethods.GlobalBlockCoords(chunk, new Vector2Int(x, y));
+                    Vector2Int POS = BlockUtils.GlobalBlockCoords(chunk, new Vector2Int(x, y));
 
                     const int SOIL_LAYER_SIZE = 3;
 
@@ -160,7 +162,7 @@ namespace Larnix.Worldgen
             for (int x = 0; x < 16; x++)
                 for (int y = 0; y < 16; y++)
                 {
-                    Vector2Int POS = ChunkMethods.GlobalBlockCoords(chunk, new Vector2Int(x, y));
+                    Vector2Int POS = BlockUtils.GlobalBlockCoords(chunk, new Vector2Int(x, y));
 
                     const double CAVE_NOISE_WIDTH = 0.2f;
                     double cave_value = ProviderCave.GetValue(POS.x, POS.y);
@@ -185,7 +187,7 @@ namespace Larnix.Worldgen
             for (int x = 0; x < 16; x++)
                 for (int y = 0; y < 16; y++)
                 {
-                    Vector2Int POS = ChunkMethods.GlobalBlockCoords(chunk, new Vector2Int(x, y));
+                    Vector2Int POS = BlockUtils.GlobalBlockCoords(chunk, new Vector2Int(x, y));
 
                     BiomeID biomeID = BiomeID.Empty;
                     double temperature = NoiseTemperature.GetValue(POS.x, POS.y);

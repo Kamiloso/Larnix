@@ -2,8 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
-using Socket.Frontend;
-using Socket.Channel.Cmds;
+using Larnix.Socket.Frontend;
+using Larnix.Socket.Packets;
 using Version = Larnix.Core.Version;
 
 namespace Larnix.Menu.Worlds

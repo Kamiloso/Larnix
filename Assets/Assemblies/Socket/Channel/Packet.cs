@@ -1,9 +1,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using Socket.Processing;
+using Larnix.Core.Utils;
+using Larnix.Core.Serialization;
 
-namespace Socket.Channel
+namespace Larnix.Socket.Channel
 {
     public class Packet
     {

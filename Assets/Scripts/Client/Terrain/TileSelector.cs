@@ -7,6 +7,8 @@ using UnityEngine.Tilemaps;
 using System;
 using System.Linq;
 using Larnix.Core.Vectors;
+using Larnix.Core.Utils;
+using Larnix.Blocks.Structs;
 
 namespace Larnix.Client.Terrain
 {
@@ -55,7 +57,7 @@ namespace Larnix.Client.Terrain
 
             List<Vector2Int> grids = old_cursor_pos != null ?
                 GetCellsIntersectedByLine((Vec2)old_cursor_pos, cursor_pos) :
-                new List<Vector2Int> { ChunkMethods.CoordsToBlock(cursor_pos) };
+                new List<Vector2Int> { BlockUtils.CoordsToBlock(cursor_pos) };
 
             if (!Ref.Debug.SpectatorMode)
                 grids.RemoveAll(grid => (new Vec2(grid.x, grid.y) - player_pos).Magnitude > INTERACTION_RANGE);
@@ -147,7 +149,7 @@ namespace Larnix.Client.Terrain
         {
             double magnitude = (start - end).Magnitude;
             if (magnitude > 256.0) return new();
-            if (magnitude == 0.0) return new() { ChunkMethods.CoordsToBlock(start) };
+            if (magnitude == 0.0) return new() { BlockUtils.CoordsToBlock(start) };
 
             const int ACCURACY = 40;
             int segments = (int)Math.Ceiling(ACCURACY * magnitude);
@@ -157,7 +159,7 @@ namespace Larnix.Client.Terrain
             HashSet<Vector2Int> tiles = new();
             for (int i = 0; i <= segments; i++)
             {
-                Vector2Int block = ChunkMethods.CoordsToBlock(start + i * roadpart);
+                Vector2Int block = BlockUtils.CoordsToBlock(start + i * roadpart);
                 tiles.Add(block);
             }
 

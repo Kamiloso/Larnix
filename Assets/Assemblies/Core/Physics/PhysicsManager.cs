@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Core.Vectors;
+using Larnix.Core.Utils;
 
 namespace Larnix.Core.Physics
 {
@@ -31,7 +32,7 @@ namespace Larnix.Core.Physics
             OutputData totalReport = new OutputData { Position = dynCollider.Center };
             var list = StaticColliders.Get3x3SectorList(dynCollider.Center);
 
-            Vector2Int middleChunk = PhysicsUtils.CoordsToBlock(dynCollider.Center, 16.0);
+            Vector2Int middleChunk = BlockUtils.CoordsToBlock(dynCollider.Center, 16.0);
             for (int dx = -1; dx <= 1 ; dx++)
                 for (int dy = -1; dy <= 1; dy++)
                 {
@@ -39,7 +40,7 @@ namespace Larnix.Core.Physics
                     if(!ActiveChunks.Contains(chunk))
                     {
                         list.Add(new StaticCollider(
-                            PhysicsUtils.ChunkCenter(chunk),
+                            BlockUtils.ChunkCenter(chunk),
                             new Vec2(16.01, 16.01)
                             ));
                     }

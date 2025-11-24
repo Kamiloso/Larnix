@@ -5,6 +5,8 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 using Larnix.Core.Vectors;
+using Larnix.Core.Utils;
+using Larnix.Blocks.Structs;
 
 namespace Larnix.Client.Terrain
 {
@@ -118,7 +120,7 @@ namespace Larnix.Client.Terrain
 
         private Vector2 WorldPositionFromOrigin(Vector2Int chunk, Vector2Int origin)
         {
-            Vector2Int startBlock = ChunkMethods.GlobalBlockCoords(chunk, new Vector2Int(0, 0));
+            Vector2Int startBlock = BlockUtils.GlobalBlockCoords(chunk, new Vector2Int(0, 0));
             Vector2 subtract = IsMenu ? Vector2.zero : Vec2.ORIGIN_STEP / 2 * Vector2.one;
             return (startBlock - Vec2.ORIGIN_STEP * CurrentOrigin) - subtract;
         }

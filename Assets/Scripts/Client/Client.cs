@@ -2,12 +2,12 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using Larnix.Packets;
-using Socket.Channel;
+using Larnix.Socket.Packets;
+using Larnix.Socket.Channel;
 using System.Threading.Tasks;
 using Larnix.Core.Physics;
 using Larnix.ServerRun;
-using Socket.Frontend;
+using Larnix.Socket.Frontend;
 
 namespace Larnix.Client
 {

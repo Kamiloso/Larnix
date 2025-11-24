@@ -1,13 +1,14 @@
-using Socket.Channel;
-using Socket.Frontend;
 using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using System.Linq;
+using Larnix.Core.Utils;
+using Larnix.Socket.Frontend;
+using Larnix.Socket.Channel;
 
-namespace Socket
+namespace Larnix.Socket.Backend
 {
     internal class RelayConnection : IDisposable
     {

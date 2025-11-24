@@ -1,6 +1,7 @@
 using Larnix.Core.Physics;
 using System;
 using Larnix.Core.Vectors;
+using Larnix.Entities.Structs;
 
 namespace Larnix.Entities
 {

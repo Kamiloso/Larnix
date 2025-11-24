@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Entities;
 using Larnix.Blocks;
+using Larnix.Core.Utils;
+using Larnix.Entities.Structs;
 
 namespace Larnix.Server.Entities
 {
@@ -47,7 +49,7 @@ namespace Larnix.Server.Entities
             foreach (var vkp in UnloadedEntityData)
             {
                 EntityData newData = vkp.Value;
-                Vector2Int newChunkCoords = ChunkMethods.CoordsToChunk(newData.Position);
+                Vector2Int newChunkCoords = BlockUtils.CoordsToChunk(newData.Position);
                 bool in_the_chunk = (newChunkCoords == chunkCoords);
 
                 if (entityList.ContainsKey(vkp.Key))

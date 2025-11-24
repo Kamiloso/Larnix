@@ -1,14 +1,12 @@
-using Socket.Channel;
-using Socket.Processing;
 using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
+using Larnix.Socket.Security;
+using Larnix.Socket.Channel;
 
-namespace Socket.Frontend
+namespace Larnix.Socket.Frontend
 {
     internal sealed class Prompter : IDisposable
     {

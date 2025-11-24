@@ -2,11 +2,11 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Blocks;
-using Socket;
-using Larnix.Packets;
-using System;
-using Socket.Channel;
+using Larnix.Socket.Packets;
 using System.Linq;
+using Larnix.Core.Utils;
+using Larnix.Blocks.Structs;
+using Larnix.Socket.Channel;
 
 namespace Larnix.Server.Terrain
 {
@@ -45,7 +45,7 @@ namespace Larnix.Server.Terrain
             while (BlockUpdates.Count > 0)
             {
                 var element = BlockUpdates.Dequeue();
-                Vector2Int chunk = ChunkMethods.CoordsToChunk(element.block);
+                Vector2Int chunk = BlockUtils.CoordsToChunk(element.block);
 
                 foreach (string nickname in Ref.PlayerManager.PlayerUID.Keys)
                 {
@@ -79,7 +79,7 @@ namespace Larnix.Server.Terrain
 
                 string nickname = element.owner;
                 Vector2Int POS = element.POS;
-                Vector2Int chunk = ChunkMethods.CoordsToChunk(POS);
+                Vector2Int chunk = BlockUtils.CoordsToChunk(POS);
                 bool front = element.front;
                 bool success = element.success;
                 long operation = element.operation;

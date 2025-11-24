@@ -2,9 +2,10 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using Larnix.Core.Utils;
+using Larnix.Socket.Security;
 
-namespace Socket
+namespace Larnix.Socket
 {
     public static class Validation
     {
@@ -20,7 +21,7 @@ namespace Socket
             password.Length is >= 7 and <= 32;
 
         public static bool IsGoodAuthcode(string authcode) =>
-            Processing.Authcode.IsGoodAuthcode(authcode);
+            Authcode.IsGoodAuthcode(authcode);
 
         public static bool IsGoodText<T>(string message) where T : IStringStruct, new() =>
             message != null &&

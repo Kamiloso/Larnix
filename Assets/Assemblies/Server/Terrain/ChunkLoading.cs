@@ -3,12 +3,12 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using Larnix.Blocks;
-using Larnix.Packets;
+using Larnix.Socket.Packets;
 using Larnix.Server.Entities;
-using Socket.Channel;
 using Larnix.Core.Utils;
 using Larnix.Core.Vectors;
+using Larnix.Blocks.Structs;
+using Larnix.Socket.Channel;
 
 namespace Larnix.Server.Terrain
 {
@@ -126,11 +126,11 @@ namespace Larnix.Server.Terrain
 
             foreach (string nickname in Ref.PlayerManager.PlayerUID.Keys)
             {
-                Vector2Int chunkpos = ChunkMethods.CoordsToChunk(Ref.PlayerManager.GetPlayerRenderingPosition(nickname));
+                Vector2Int chunkpos = BlockUtils.CoordsToChunk(Ref.PlayerManager.GetPlayerRenderingPosition(nickname));
                 var player_state = Ref.PlayerManager.GetPlayerState(nickname);
 
                 HashSet<Vector2Int> chunksMemory = Ref.PlayerManager.ClientChunks[nickname];
-                HashSet<Vector2Int> chunksNearby = ChunkMethods.GetNearbyChunks(chunkpos, ChunkMethods.LOADING_DISTANCE)
+                HashSet<Vector2Int> chunksNearby = BlockUtils.GetNearbyChunks(chunkpos, BlockUtils.LOADING_DISTANCE)
                     .Where(c => ChunkState(c) == LoadState.Active)
                     .ToHashSet();
 
@@ -168,7 +168,7 @@ namespace Larnix.Server.Terrain
 
         public bool IsEntityInZone(EntityAbstraction entity, LoadState state)
         {
-            Vector2Int chunk = ChunkMethods.CoordsToChunk(entity.EntityData.Position);
+            Vector2Int chunk = BlockUtils.CoordsToChunk(entity.EntityData.Position);
             return ChunkState(chunk) == state;
         }
 
@@ -193,7 +193,7 @@ namespace Larnix.Server.Terrain
 
         public bool TryForceLoadChunk(Vector2Int chunk)
         {
-            if (ChunkMethods.GetNearbyChunks(chunk, 0).Count == 0)
+            if (BlockUtils.GetNearbyChunks(chunk, 0).Count == 0)
                 return false;
 
             if(ChunkState(chunk) == LoadState.None)
@@ -279,7 +279,7 @@ namespace Larnix.Server.Terrain
                 {
                     int dist = Common.ManhattanDistance(
                         chunk,
-                        ChunkMethods.CoordsToChunk(Ref.PlayerManager.GetPlayerRenderingPosition(nickname))
+                        BlockUtils.CoordsToChunk(Ref.PlayerManager.GetPlayerRenderingPosition(nickname))
                         );
 
                     if (dist < dist_min)
@@ -301,9 +301,9 @@ namespace Larnix.Server.Terrain
             foreach (string nickname in Ref.PlayerManager.PlayerUID.Keys)
                 positions.Add(Ref.PlayerManager.GetPlayerRenderingPosition(nickname));
 
-            foreach (Vector2Int center in ChunkMethods.GetCenterChunks(positions))
+            foreach (Vector2Int center in BlockUtils.GetCenterChunks(positions))
             {
-                targetLoads.UnionWith(ChunkMethods.GetNearbyChunks(center, ChunkMethods.LOADING_DISTANCE));
+                targetLoads.UnionWith(BlockUtils.GetNearbyChunks(center, BlockUtils.LOADING_DISTANCE));
             }
 
             return targetLoads;

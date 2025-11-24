@@ -1,7 +1,9 @@
 using Larnix.Blocks;
+using Larnix.Core.Utils;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Larnix.Blocks.Structs;
 
 namespace Larnix.Server.Terrain
 {
@@ -12,10 +14,10 @@ namespace Larnix.Server.Terrain
 
         public BlockServer GetBlock(Vector2Int POS, bool isFront)
         {
-            Vector2Int chunk = ChunkMethods.CoordsToChunk(POS);
+            Vector2Int chunk = BlockUtils.CoordsToChunk(POS);
             if (Chunks.TryGetChunk(chunk, out var chunkObject))
             {
-                Vector2Int pos = ChunkMethods.LocalBlockCoords(POS);
+                Vector2Int pos = BlockUtils.LocalBlockCoords(POS);
                 return chunkObject.GetBlock(pos, isFront);
             }
             return null;
@@ -23,10 +25,10 @@ namespace Larnix.Server.Terrain
 
         public BlockServer ReplaceBlock(Vector2Int POS, bool isFront, BlockData1 blockData)
         {
-            Vector2Int chunk = ChunkMethods.CoordsToChunk(POS);
+            Vector2Int chunk = BlockUtils.CoordsToChunk(POS);
             if (Chunks.TryGetChunk(chunk, out var chunkObject))
             {
-                Vector2Int pos = ChunkMethods.LocalBlockCoords(POS);
+                Vector2Int pos = BlockUtils.LocalBlockCoords(POS);
                 return chunkObject.UpdateBlock(pos, isFront, blockData);
             }
             return null;

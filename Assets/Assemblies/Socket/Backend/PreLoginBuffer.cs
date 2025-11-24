@@ -1,9 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Net;
-using Socket.Channel.Cmds;
+using Larnix.Socket.Packets;
 
-namespace Socket.Backend
+namespace Larnix.Socket.Backend
 {
     internal class PreLoginBuffer
     {

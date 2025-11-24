@@ -50,13 +50,13 @@ namespace Larnix.Core.ClientThreadUtils
         public static void LoadPacks()
         {
             _packs = new List<ResourcePack>();
-            string packsRoot = System.IO.Path.Combine(Application.streamingAssetsPath, "Resources");
+            string packsRoot = Path.Combine(Application.streamingAssetsPath, "Resources");
 
             if (Directory.Exists(packsRoot))
             {
                 foreach (string dir in Directory.GetDirectories(packsRoot))
                 {
-                    string manifestPath = System.IO.Path.Combine(dir, "manifest.json");
+                    string manifestPath = Path.Combine(dir, "manifest.json");
                     ResourcePackManifest manifest = null;
                     if (File.Exists(manifestPath))
                     {

@@ -2,8 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
-using Larnix.Blocks;
-using System.Linq;
+using Larnix.Blocks.Structs;
 
 namespace Larnix.Client.Terrain
 {

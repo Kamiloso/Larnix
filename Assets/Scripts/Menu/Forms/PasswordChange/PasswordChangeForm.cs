@@ -4,8 +4,8 @@ using UnityEngine;
 using Larnix.Menu.Worlds;
 using Larnix.Forms;
 using System.Threading.Tasks;
-using Socket.Frontend;
-using Socket;
+using Larnix.Socket.Frontend;
+using Larnix.Socket;
 
 namespace Larnix.Menu.Forms
 {

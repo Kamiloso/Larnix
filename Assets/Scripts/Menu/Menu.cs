@@ -1,11 +1,10 @@
-using Socket;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Menu.Worlds;
 using TMPro;
-using Version = Larnix.Core.Version;
 using Larnix.ServerRun;
+using Ver = Larnix.Core.Version;
 
 namespace Larnix.Menu
 {
@@ -29,7 +28,7 @@ namespace Larnix.Menu
 
         private void Start()
         {
-            VersionText.text = "Version " + Version.Current;
+            VersionText.text = "Version " + Ver.Current;
 
             foreach (var screen in Screens)
             {

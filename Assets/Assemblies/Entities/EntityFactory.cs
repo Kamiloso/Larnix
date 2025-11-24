@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Runtime.Serialization;
 using Larnix.Core;
 using Larnix.Core.Physics;
+using Larnix.Entities.Structs;
 
 namespace Larnix.Entities
 {

@@ -3,9 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
-using Socket.Channel;
+using Larnix.Socket.Channel;
 
-namespace Socket.Backend
+namespace Larnix.Socket.Backend
 {
     internal class DoubleSocket : IDisposable
     {

@@ -2,7 +2,6 @@
     "name": "Larnix.Blocks",
     "rootNamespace": "Larnix.Blocks",
     "references": [
-        "GUID:e47ec16989832dc49bbccde857433a2f",
         "GUID:b9668968ef3fc7d40adac0aa4237498e"
     ],
     "includePlatforms": [],

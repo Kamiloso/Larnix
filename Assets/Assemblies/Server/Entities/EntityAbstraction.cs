@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Entities;
+using Larnix.Entities.Structs;
 
 namespace Larnix.Server.Entities
 {

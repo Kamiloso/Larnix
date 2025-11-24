@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 using Larnix.Entities;
-using Socket.Channel;
-using Larnix.Packets;
+using Larnix.Socket.Channel;
+using Larnix.Socket.Packets;
 using Larnix.Core.Vectors;
 
 namespace Larnix.Server.Entities

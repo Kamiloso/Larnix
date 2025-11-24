@@ -4,6 +4,7 @@ using System.Collections.Concurrent;
 using System;
 using System.Reflection;
 using System.Linq;
+using Larnix.Blocks.Structs;
 
 namespace Larnix.Worldgen
 {

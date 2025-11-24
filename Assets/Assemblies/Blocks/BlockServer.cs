@@ -3,8 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Blocks;
 using System;
-using System.Text.RegularExpressions;
-using Larnix.Core;
+using Larnix.Blocks.Structs;
 
 namespace Larnix.Blocks
 {

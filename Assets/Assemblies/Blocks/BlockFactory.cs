@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Runtime.Serialization;
 using UnityEngine;
 using Larnix.Core;
+using Larnix.Blocks.Structs;
 
 namespace Larnix.Blocks
 {

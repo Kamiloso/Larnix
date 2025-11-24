@@ -2,9 +2,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using Socket.Channel.Cmds;
+using Larnix.Socket.Packets;
 
-namespace Socket.Frontend
+namespace Larnix.Socket.Frontend
 {
     internal static class Cacher
     {

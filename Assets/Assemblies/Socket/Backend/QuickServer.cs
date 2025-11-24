@@ -4,14 +4,15 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Net;
 using System.Security.Cryptography;
-using Socket.Processing;
-using Socket.Channel;
-using Socket.Channel.Cmds;
+using Larnix.Socket.Packets;
 using System.Threading.Tasks;
 using System;
 using System.Threading;
+using Larnix.Core.Utils;
+using Larnix.Socket.Security;
+using Larnix.Socket.Channel;
 
-namespace Socket.Backend
+namespace Larnix.Socket.Backend
 {
     public class QuickServer : IDisposable
     {
@@ -97,7 +98,7 @@ namespace Socket.Backend
             IsLoopback = isLoopback;
             DataPath = dataPath;
             Secret = KeyObtainer.ObtainSecret(dataPath);
-            Authcode = Processing.Authcode.ProduceAuthCodeRSA(KeyObtainer.KeyToPublicBytes(KeyRSA), Secret);
+            Authcode = Security.Authcode.ProduceAuthCodeRSA(KeyObtainer.KeyToPublicBytes(KeyRSA), Secret);
             GameVersion = gameVersion;
             UserText1 = userText1;
             UserText2 = userText2;
