@@ -69,30 +69,20 @@ namespace Larnix
             }
         }
 
-        public static void Log(string msg)
-        {
+        public static void Log(string msg) =>
             _LogOrEnqueue(msg, LogType.Log);
-        }
 
-        public static void LogSuccess(string msg)
-        {
+        public static void LogSuccess(string msg) =>
             _LogOrEnqueue(msg, LogType.Success);
-        }
 
-        public static void LogWarning(string msg)
-        {
+        public static void LogWarning(string msg) =>
             _LogOrEnqueue(msg, LogType.Warning);
-        }
 
-        public static void LogError(string msg)
-        {
+        public static void LogError(string msg) =>
             _LogOrEnqueue(msg, LogType.Error);
-        }
 
-        public static void LogRawConsole(string msg)
-        {
+        public static void LogRawConsole(string msg) =>
             _LogOrEnqueue(msg, LogType.RawConsole);
-        }
 
         public static void FlushLogs()
         {

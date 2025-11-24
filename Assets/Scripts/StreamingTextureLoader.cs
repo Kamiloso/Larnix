@@ -4,75 +4,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
+using Larnix.Patches;
 
-namespace Larnix.Core.ClientThreadUtils
+namespace Larnix
 {
-    [Serializable]
-    internal class ResourcePackManifest
-    {
-        public string name;
-        public int priority;
-    }
-
-    internal class ResourcePack
-    {
-        public string Name { get; private set; }
-        public string Path { get; private set; }
-        public int Priority { get; private set; }
-
-        public ResourcePack(string path, string name, int priority)
-        {
-            Path = path;
-            Name = name;
-            Priority = priority;
-        }
-
-        public string GetFilePath(string relativePath)
-        {
-            return System.IO.Path.Combine(Path, relativePath);
-        }
-    }
-
-    internal class ResourcePackManager
-    {
-        private static List<ResourcePack> _packs;
-
-        public static List<ResourcePack> Packs
-        {
-            get
-            {
-                if (_packs == null)
-                    LoadPacks();
-                return _packs;
-            }
-        }
-
-        public static void LoadPacks()
-        {
-            _packs = new List<ResourcePack>();
-            string packsRoot = Path.Combine(Application.streamingAssetsPath, "Resources");
-
-            if (Directory.Exists(packsRoot))
-            {
-                foreach (string dir in Directory.GetDirectories(packsRoot))
-                {
-                    string manifestPath = Path.Combine(dir, "manifest.json");
-                    ResourcePackManifest manifest = null;
-                    if (File.Exists(manifestPath))
-                    {
-                        string json = File.ReadAllText(manifestPath);
-                        manifest = JsonUtility.FromJson<ResourcePackManifest>(json);
-                    }
-                    string name = manifest != null ? manifest.name : new DirectoryInfo(dir).Name;
-                    int priority = manifest != null ? manifest.priority : 0;
-                    _packs.Add(new ResourcePack(dir, name, priority));
-                }
-
-                _packs.Sort((a, b) => b.Priority.CompareTo(a.Priority));
-            }
-        }
-    }
-
     public class StreamingTextureLoader : MonoBehaviour, IGlobalUnitySingleton
     {
         public static StreamingTextureLoader Instance { get; private set; }
@@ -158,6 +93,74 @@ namespace Larnix.Core.ClientThreadUtils
         return_null:
             _cache[key] = null;
             return null;
+        }
+
+        // --- Nested Classes ---
+
+        [Serializable]
+        private class ResourcePackManifest
+        {
+            public string name;
+            public int priority;
+        }
+
+        private class ResourcePack
+        {
+            public string Name { get; private set; }
+            public string Path { get; private set; }
+            public int Priority { get; private set; }
+
+            public ResourcePack(string path, string name, int priority)
+            {
+                Path = path;
+                Name = name;
+                Priority = priority;
+            }
+
+            public string GetFilePath(string relativePath)
+            {
+                return System.IO.Path.Combine(Path, relativePath);
+            }
+        }
+
+        private class ResourcePackManager
+        {
+            private static List<ResourcePack> _packs;
+
+            public static List<ResourcePack> Packs
+            {
+                get
+                {
+                    if (_packs == null)
+                        LoadPacks();
+                    return _packs;
+                }
+            }
+
+            public static void LoadPacks()
+            {
+                _packs = new List<ResourcePack>();
+                string packsRoot = Path.Combine(Application.streamingAssetsPath, "Resources");
+
+                if (Directory.Exists(packsRoot))
+                {
+                    foreach (string dir in Directory.GetDirectories(packsRoot))
+                    {
+                        string manifestPath = Path.Combine(dir, "manifest.json");
+                        ResourcePackManifest manifest = null;
+                        if (File.Exists(manifestPath))
+                        {
+                            string json = File.ReadAllText(manifestPath);
+                            manifest = JsonUtility.FromJson<ResourcePackManifest>(json);
+                        }
+                        string name = manifest != null ? manifest.name : new DirectoryInfo(dir).Name;
+                        int priority = manifest != null ? manifest.priority : 0;
+                        _packs.Add(new ResourcePack(dir, name, priority));
+                    }
+
+                    _packs.Sort((a, b) => b.Priority.CompareTo(a.Priority));
+                }
+            }
         }
     }
 }

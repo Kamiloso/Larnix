@@ -5,7 +5,7 @@ using UnityEngine.LowLevel;
 using UnityEngine.PlayerLoop;
 using static UnityEngine.PlayerLoop.Update;
 
-namespace Larnix
+namespace Larnix.Patches
 {
     // This class was written by ChatGPT - Thank you, dear chatbot!
 

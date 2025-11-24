@@ -2,7 +2,7 @@ using System;
 using System.Linq;
 using UnityEngine;
 
-namespace Larnix
+namespace Larnix.Patches
 {
     public class EternalScript : MonoBehaviour
     {

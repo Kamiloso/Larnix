@@ -4,7 +4,7 @@ using UnityEngine;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-namespace Larnix
+namespace Larnix.Patches
 {
     public static class CrashHandler
     {

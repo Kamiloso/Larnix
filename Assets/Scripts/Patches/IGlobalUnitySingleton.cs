@@ -2,4 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public interface IGlobalUnitySingleton { }
+namespace Larnix.Patches
+{
+    public interface IGlobalUnitySingleton { }
+}

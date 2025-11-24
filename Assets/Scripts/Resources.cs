@@ -4,11 +4,11 @@ using UnityEngine;
 using Larnix.Entities;
 using Larnix.Blocks;
 using UnityEngine.Tilemaps;
-using Larnix.Core.ClientThreadUtils;
 
 namespace Larnix
 {
     public static class Resources
+
     {
         private static readonly Dictionary<string, GameObject> PrefabChildCache = new();
         private static readonly Dictionary<string, Tile> TileCache = new();
