@@ -83,6 +83,7 @@ namespace Larnix.Server
                     maxClients: Ref.Config.MaxPlayers,
                     isLoopback: Type == ServerType.Local,
                     dataPath: Path.Combine(WorldPath, "Socket"),
+                    userAPI: Ref.Database,
                     gameVersion: Version.Current.ID,
                     userText1: Validation.IsGoodText<String256>(Ref.Config.Motd) ? Ref.Config.Motd : "Wrong motd format :(", // motd
                     userText2: Type == ServerType.Remote ? "Player" : (Mdata?.nickname ?? "Player") // server owner ("Player" = detached)
@@ -252,7 +253,7 @@ namespace Larnix.Server
                     SaveAllNow();
                 }
 
-                Ref.QuickServer?.Dispose();
+                Ref.QuickServer?.Dispose(); // depends on database, must be closed before it
                 Ref.Database?.Dispose();
                 Locker?.Dispose();
 

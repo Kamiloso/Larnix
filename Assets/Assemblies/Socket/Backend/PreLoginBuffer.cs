@@ -7,26 +7,28 @@ namespace Larnix.Socket.Backend
 {
     internal class PreLoginBuffer
     {
-        internal readonly AllowConnection AllowConnection;
+        public readonly AllowConnection AllowConnection;
+        public readonly EndPoint EndPoint;
 
-        internal readonly EndPoint EndPoint;
-        private readonly List<byte[]> Buffer = new List<byte[]>(MaxPackets);
-        internal const int MaxPackets = 32;
+        private readonly Queue<byte[]> Buffer = new(MaxPackets);
+        private const int MaxPackets = 64;
 
-        internal PreLoginBuffer(AllowConnection allowConnection)
+        public PreLoginBuffer(AllowConnection allowConnection)
         {
             AllowConnection = allowConnection;
         }
 
-        internal void AddPacket(byte[] bytes)
+        public void Push(byte[] bytes)
         {
             if(Buffer.Count < MaxPackets)
-                Buffer.Add(bytes);
+                Buffer.Enqueue(bytes);
         }
 
-        internal List<byte[]> GetBuffer()
+        public byte[] Pop()
         {
-            return Buffer;
+            if (Buffer.Count > 0)
+                return Buffer.Dequeue();
+            return null;
         }
     }
 }

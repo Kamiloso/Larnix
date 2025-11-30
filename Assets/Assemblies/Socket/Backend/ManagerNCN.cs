@@ -22,12 +22,12 @@ namespace Larnix.Socket.Backend
         private const uint MAX_PARALLEL_HASHINGS = 6; // max hashing amount at the time globally
         private uint CurrentHashingAmount = 0;
 
-        internal ManagerNCN(QuickServer server)
+        public ManagerNCN(QuickServer server)
         {
             Server = server;
         }
 
-        internal void Tick(float deltaTime)
+        public void Tick(float deltaTime)
         {
             RunEveryTick();
 
@@ -62,7 +62,7 @@ namespace Larnix.Socket.Backend
             coroutines.Add(coroutine);
         }
 
-        internal void ProcessNCN(IPEndPoint remoteEP, int ncnID, Packet packet)
+        public void ProcessNCN(IPEndPoint remoteEP, int ncnID, Packet packet)
         {
             if (Payload.TryConstructPayload<P_ServerInfo>(packet, out var infoask))
             {
@@ -119,7 +119,7 @@ namespace Larnix.Socket.Backend
             }
         }
 
-        internal void TryLogin(IPEndPoint remoteEP, string username, string password,
+        public void TryLogin(IPEndPoint remoteEP, string username, string password,
             long serverSecret, long challengeID, long timestamp, long runID)
         {
             StartCoroutine(

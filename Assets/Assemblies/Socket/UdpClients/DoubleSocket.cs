@@ -3,32 +3,32 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
-using Larnix.Socket.Channel;
+using Larnix.Socket.UdpClients;
 
 namespace Larnix.Socket.Backend
 {
     internal class DoubleSocket : IDisposable
     {
-        internal readonly ushort Port;
-        internal UdpClient2 UdpClientV4;
-        internal UdpClient2 UdpClientV6;
+        public readonly ushort Port;
+        public UdpClient2 UdpClient4;
+        public UdpClient2 UdpClient6;
 
-        private readonly System.Random _rand = new System.Random();
+        private bool _disposed;
 
-        internal DoubleSocket(ushort port, bool isLoopback)
+        public DoubleSocket(ushort port, bool isLoopback)
         {
             if (port == 0)
             {
                 if (!ConfigureSocket(0, isLoopback))
                 {
                     int triesLeft = 8;
-
                     while (true)
                     {
                         if (triesLeft == 0)
                             throw new Exception("Couldn't create double socket on multiple random dynamic ports.");
 
-                        port = (ushort)_rand.Next(49152, 65536);
+                        Random rand = new Random();
+                        port = (ushort)rand.Next(49152, 65536);
                         if (!ConfigureSocket(port, isLoopback))
                         {
                             triesLeft--;
@@ -45,14 +45,14 @@ namespace Larnix.Socket.Backend
                 }
             }
 
-            Port = UdpClientV4.Port; // V6 is the same
+            Port = UdpClient4.Port; // V6 is the same
         }
 
         private bool ConfigureSocket(ushort port, bool isLoopback)
         {
             try
             {
-                UdpClientV4 = new UdpClient2(
+                UdpClient4 = new UdpClient2(
                     port: port,
                     isListener: true,
                     isLoopback: isLoopback,
@@ -60,9 +60,9 @@ namespace Larnix.Socket.Backend
                     recvBufferSize: 1024 * 1024
                     );
 
-                port = UdpClientV4.Port;
+                port = UdpClient4.Port;
 
-                UdpClientV6 = new UdpClient2(
+                UdpClient6 = new UdpClient2(
                     port: port,
                     isListener: true,
                     isLoopback: isLoopback,
@@ -81,15 +81,15 @@ namespace Larnix.Socket.Backend
             return true;
         }
 
-        internal bool TryReceive(out (IPEndPoint endPoint, byte[] data) result)
+        public bool TryReceive(out (IPEndPoint endPoint, byte[] data) result)
         {
-            if (UdpClientV4.TryReceive(out var _resultV4))
+            if (UdpClient4.TryReceive(out var _resultV4))
             {
                 result = _resultV4;
                 return true;
             }
 
-            if (UdpClientV6.TryReceive(out var _resultV6))
+            if (UdpClient6.TryReceive(out var _resultV6))
             {
                 result = _resultV6;
                 return true;
@@ -99,16 +99,21 @@ namespace Larnix.Socket.Backend
             return false;
         }
 
-        internal void Send(IPEndPoint endPoint, byte[] bytes)
+        public void Send(IPEndPoint endPoint, byte[] bytes)
         {
             bool IsIPv4Client = endPoint.AddressFamily == AddressFamily.InterNetwork;
-            (IsIPv4Client ? UdpClientV4 : UdpClientV6).Send(endPoint, bytes);
+            (IsIPv4Client ? UdpClient4 : UdpClient6).Send(endPoint, bytes);
         }
 
         public void Dispose()
         {
-            UdpClientV4?.Dispose();
-            UdpClientV6?.Dispose();
+            if (!_disposed)
+            {
+                _disposed = true;
+
+                UdpClient4?.Dispose();
+                UdpClient6?.Dispose();
+            }
         }
     }
 }

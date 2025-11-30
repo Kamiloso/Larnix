@@ -3,7 +3,7 @@ using System.Net;
 using System.Net.Sockets;
 using System;
 
-namespace Larnix.Socket.Channel
+namespace Larnix.Socket
 {
     public class InternetID
     {
@@ -20,7 +20,7 @@ namespace Larnix.Socket.Channel
 
         public static bool operator ==(InternetID left, InternetID right)
         {
-            if(left is null && right is null)
+            if (left is null && right is null)
                 return true;
 
             return left?.Equals(right) ?? false;

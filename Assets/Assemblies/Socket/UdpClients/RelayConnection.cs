@@ -6,27 +6,39 @@ using System.Threading.Tasks;
 using System.Linq;
 using Larnix.Core.Utils;
 using Larnix.Socket.Frontend;
-using Larnix.Socket.Channel;
 
-namespace Larnix.Socket.Backend
+namespace Larnix.Socket.UdpClients
 {
     internal class RelayConnection : IDisposable
     {
         public const ushort RELAY_PORT = 27681;
 
-        private readonly IPEndPoint _endPoint;
-        private readonly UdpClient2 _udpClient;
+        private readonly UdpClient2 Udp;
+        private readonly IPEndPoint EndPoint;
 
-        private const int MAX_REVERTER_ENTRIES = 1 << 16;
-        private readonly Dictionary<IPEndPoint, (IPEndPoint endPoint, long timestamp)> ExperimentalReverter = new();
+        private const int MAP_CAPACITY = 1 << 16; // over 65k
+        private readonly Dictionary<IPEndPoint, (IPEndPoint endPoint, long timestamp)> IPMap = new();
 
-        public IPEndPoint EndPoint => new IPEndPoint(_endPoint.Address, _endPoint.Port);
         public ushort RemotePort { get; private set; } // relay port to connect to
 
-        internal static async Task<RelayConnection> EstablishRelayAsync(string address)
+        private enum RelayInfo : byte
+        {
+            KeepAlive = 0x00,
+            Start = 0x01,
+            Stop = 0x02
+        };
+
+        private RelayConnection(IPEndPoint endPoint, UdpClient2 udpClient)
+        {
+            EndPoint = endPoint;
+            Udp = udpClient;
+        }
+
+        public static async Task<RelayConnection> EstablishRelayAsync(string address)
         {
             IPEndPoint endPoint = await Resolver.ResolveStringAsync(address, RELAY_PORT);
-            if (endPoint == null) return null;
+            if (endPoint == null)
+                return null;
 
             UdpClient2 udpClient = new UdpClient2(
                 port: 0,
@@ -38,12 +50,10 @@ namespace Larnix.Socket.Backend
                 );
             RelayConnection relay = new RelayConnection(endPoint, udpClient);
 
-            udpClient.Send(endPoint, new byte[] { 0x01 });
-            bool success = false;
-
             long timeNow = Timestamp.GetTimestamp();
             long deadline = timeNow + 1500; // + 1500 miliseconds
 
+            relay.SendInfo(RelayInfo.Start); // send and wait for answer
             while (Timestamp.GetTimestamp() < deadline)
             {
                 while (udpClient.TryReceive(out var item))
@@ -53,62 +63,39 @@ namespace Larnix.Socket.Backend
 
                     if (bytes.Length == 2)
                     {
-                        success = true;
                         relay.RemotePort = (ushort)(bytes[0] << 8 | bytes[1]);
-                        goto finalize;
+                        return relay;
                     }
                 }
                 await Task.Delay(100);
             }
 
-        finalize:
-            if (success)
+            relay.Dispose();
+            return null; // timeout
+        }
+
+        public void KeepAlive()
+        {
+            IPMapCleanup();
+            SendInfo(RelayInfo.KeepAlive);
+        }
+
+        public void Send(IPEndPoint client, byte[] bytes)
+        {
+            IPEndPoint remoteEP;
+            if ((remoteEP = FromClassE(client)) != null)
             {
-                return relay;
+                bytes = ArrayUtils.MegaConcat(
+                    SerializeEndPoint(remoteEP),
+                    bytes);
+
+                Udp.Send(EndPoint, bytes);
             }
-            else
-            {
-                relay.Dispose();
-                return null;
-            }
         }
 
-        private RelayConnection(IPEndPoint endPoint, UdpClient2 udpClient)
+        public bool TryReceive(out (IPEndPoint endPoint, byte[] data) result)
         {
-            _endPoint = endPoint;
-            _udpClient = udpClient;
-        }
-
-        internal void KeepAlive()
-        {
-            // clean dictionary
-            foreach (var vkp in ExperimentalReverter.ToList())
-            {
-                var key = vkp.Key;
-                var value = vkp.Value;
-
-                if (!Timestamp.InTimestamp(value.timestamp))
-                    ExperimentalReverter.Remove(key);
-            }
-
-            // keep alive
-            _udpClient.Send(_endPoint, new byte[] { 0x00 });
-        }
-
-        internal void Send(IPEndPoint client, byte[] bytes)
-        {
-            IPEndPoint remoteEP = FromClassE(client);
-            bytes = ArrayUtils.MegaConcat(
-                SerializeEndPoint(remoteEP),
-                bytes
-                );
-
-            _udpClient.Send(_endPoint, bytes);
-        }
-
-        internal bool TryReceive(out (IPEndPoint endPoint, byte[] data) result)
-        {
-            if (_udpClient.TryReceive(out var item))
+            if (Udp.TryReceive(out var item))
             {
                 IPEndPoint remoteEP = item.endPoint;
                 byte[] bytes = item.data;
@@ -127,37 +114,43 @@ namespace Larnix.Socket.Backend
 
         private byte[] UnpackPayload(byte[] bytes, ref IPEndPoint remoteEP)
         {
-            if (bytes == null || bytes.Length < 6)
-                throw new ArgumentException("Bytes should be at least 6 bytes long!");
-
-            remoteEP = DeserializeEndPoint(bytes);
+            remoteEP = DeserializeEndPoint(bytes, 0);
             remoteEP = ToClassE(remoteEP);
             return bytes[6..];
         }
 
         private IPEndPoint ToClassE(IPEndPoint endPoint)
         {
-            if (endPoint.AddressFamily != AddressFamily.InterNetwork)
-                throw new ArgumentException("Only IPv4 allowed!");
-
             byte[] addressBytes = endPoint.Address.GetAddressBytes();
             addressBytes[0] |= 0xF0;
-            IPEndPoint ArtificialEndPoint = new IPEndPoint(new IPAddress(addressBytes), endPoint.Port);
 
-            if (ExperimentalReverter.Count < MAX_REVERTER_ENTRIES)
-            {
-                ExperimentalReverter[ArtificialEndPoint] = (endPoint, Timestamp.GetTimestamp());
-            }
+            IPEndPoint endPointE = new IPEndPoint(
+                new IPAddress(addressBytes),
+                endPoint.Port);
 
-            return ArtificialEndPoint;
+            if (IPMap.Count < MAP_CAPACITY)
+                IPMap[endPointE] = (endPoint, Timestamp.GetTimestamp());
+
+            return endPointE;
         }
 
         private IPEndPoint FromClassE(IPEndPoint endPoint)
         {
-            if (ExperimentalReverter.TryGetValue(endPoint, out var tuple))
-                return tuple.endPoint;
+            if (IPMap.TryGetValue(endPoint, out var item))
+                return item.endPoint;
 
-            return new IPEndPoint(IPAddress.Any, 0);
+            return null;
+        }
+
+        private void IPMapCleanup()
+        {
+            foreach (var vkp in IPMap.ToList())
+            {
+                long timestamp = vkp.Value.timestamp;
+
+                if (!Timestamp.InTimestamp(timestamp))
+                    IPMap.Remove(vkp.Key);
+            }
         }
 
         private static byte[] SerializeEndPoint(IPEndPoint endPoint)
@@ -195,10 +188,15 @@ namespace Larnix.Socket.Backend
             return new IPEndPoint(address, port);
         }
 
+        private void SendInfo(RelayInfo info)
+        {
+            Udp.Send(EndPoint, new byte[] { (byte)info });
+        }
+
         public void Dispose()
         {
-            _udpClient.Send(_endPoint, new byte[] { 0x02 });
-            _udpClient.Dispose();
+            SendInfo(RelayInfo.Stop);
+            Udp.Dispose();
         }
     }
 }

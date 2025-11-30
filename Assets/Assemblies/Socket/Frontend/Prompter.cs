@@ -5,10 +5,11 @@ using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Larnix.Socket.Security;
 using Larnix.Socket.Channel;
+using Larnix.Socket.UdpClients;
 
 namespace Larnix.Socket.Frontend
 {
-    internal sealed class Prompter : IDisposable
+    internal class Prompter : IDisposable
     {
         private readonly UdpClient2 udpClient;
         private readonly IPEndPoint endPoint;
@@ -99,9 +100,11 @@ namespace Larnix.Socket.Frontend
 
         public void Dispose()
         {
-            if (_disposed) return;
-            udpClient?.Dispose();
+            if (_disposed)
+                return;
+
             _disposed = true;
+            udpClient?.Dispose();
         }
     }
 }

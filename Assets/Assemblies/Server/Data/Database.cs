@@ -5,26 +5,28 @@ using Microsoft.Data.Sqlite;
 using System.IO;
 using System;
 using Larnix.Entities;
-using Larnix.Blocks;
 using Larnix.Core.Files;
 using Larnix.Core.Utils;
 using Larnix.Core.Vectors;
 using Larnix.Entities.Structs;
+using Larnix.Socket;
 
 namespace Larnix.Server.Data
 {
-    internal class Database : IDisposable
+    internal class Database : IUserAPI ,IDisposable
     {
         private SqliteConnection connection = null;
         private SqliteTransaction transaction = null;
-        private static bool initialized = false;
+
+        private static bool _initialized = false;
+        private bool _disposed = false;
 
         public Database(string path, string filename)
         {
-            if(!initialized)
+            if(!_initialized)
             {
                 SQLitePCL.Batteries_V2.Init();
-                initialized = true;
+                _initialized = true;
             }
 
             FileManager.EnsureDirectory(path);
@@ -34,6 +36,15 @@ namespace Larnix.Server.Data
             using (var cmd = CreateCommand())
             {
                 cmd.CommandText = @"
+                CREATE TABLE IF NOT EXISTS players(
+                    uid INTEGER PRIMARY KEY,
+                    nickname TEXT NOT NULL,
+                    password_hash TEXT NOT NULL,
+                    challenge_id INTEGER
+                );
+                CREATE INDEX IF NOT EXISTS idx_players
+                    ON players(nickname);
+
                 CREATE TABLE IF NOT EXISTS entities(
                     uid INTEGER PRIMARY KEY,
                     type INTEGER,
@@ -44,7 +55,6 @@ namespace Larnix.Server.Data
                     rotation REAL,
                     nbt TEXT NOT NULL
                 );
-
                 CREATE INDEX IF NOT EXISTS idx_chunk_entities
                     ON entities(chunk_x, chunk_y);
 
@@ -65,6 +75,63 @@ namespace Larnix.Server.Data
                 ";
                 cmd.ExecuteNonQuery();
             }
+        }
+
+        public void SaveUserData(UserData userData, bool create)
+        {
+            using (var cmd = CreateCommand())
+            {
+                if (create) // create account, auto-generate uid
+                {
+                    cmd.CommandText = @"
+                        INSERT INTO players (nickname, password_hash, challenge_id)
+                        VALUES ($nickname, $password_hash, $challenge_id);
+                        ";
+                    cmd.Parameters.AddWithValue("$nickname", userData.Username);
+                    cmd.Parameters.AddWithValue("$password_hash", userData.PasswordHash);
+                    cmd.Parameters.AddWithValue("$challenge_id", userData.ChallengeID);
+                }
+                else // change data, insert on uid
+                {
+                    cmd.CommandText = @"
+                        UPDATE players
+                        SET nickname = $nickname,
+                            password_hash = $password_hash,
+                            challenge_id = $challenge_id
+                        WHERE uid = $uid;
+                       ";
+                    cmd.Parameters.AddWithValue("$uid", userData.UserID);
+                    cmd.Parameters.AddWithValue("$nickname", userData.Username);
+                    cmd.Parameters.AddWithValue("$password_hash", userData.PasswordHash);
+                    cmd.Parameters.AddWithValue("$challenge_id", userData.ChallengeID);
+                }
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        public UserData? ReadUserData(string nickname)
+        {
+            using (var cmd = CreateCommand())
+            {
+                cmd.CommandText = "SELECT * FROM players WHERE nickname = $nickname;";
+                cmd.Parameters.AddWithValue("$nickname", nickname);
+
+                using (var reader = cmd.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        UserData userData = new UserData
+                        {
+                            UserID = (long)reader["uid"],
+                            Username = (string)reader["nickname"],
+                            PasswordHash = (string)reader["password_hash"],
+                            ChallengeID = (long)reader["challenge_id"]
+                        };
+                        return userData;
+                    }
+                }
+            }
+            return null;
         }
 
         public long GetMinUID()
@@ -137,8 +204,8 @@ namespace Larnix.Server.Data
             {
                 cmd.CommandText = @"
                     INSERT OR REPLACE INTO entities
-                    (uid, type, chunk_x, chunk_y, pos_x, pos_y, rotation, nbt) VALUES
-                    ($uid, $type, $chunk_x, $chunk_y, $pos_x, $pos_y, $rotation, $nbt);";
+                        (uid, type, chunk_x, chunk_y, pos_x, pos_y, rotation, nbt) VALUES
+                        ($uid, $type, $chunk_x, $chunk_y, $pos_x, $pos_y, $rotation, $nbt);";
 
                 var paramUid = cmd.Parameters.Add("$uid", SqliteType.Integer);
                 var paramType = cmd.Parameters.Add("$type", SqliteType.Integer);
@@ -315,15 +382,19 @@ namespace Larnix.Server.Data
 
         public void Dispose()
         {
-            if (transaction != null)
+            if (!_disposed)
             {
-                RollbackTransaction();
-            }
-            if (connection != null)
-            {
-                connection.Close();
-                connection.Dispose();
-                connection = null;
+                _disposed = true;
+
+                if (transaction != null)
+                    RollbackTransaction();
+
+                if (connection != null)
+                {
+                    connection.Close();
+                    connection.Dispose();
+                    connection = null;
+                }
             }
         }
     }

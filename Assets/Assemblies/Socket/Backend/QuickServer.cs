@@ -11,6 +11,7 @@ using System.Threading;
 using Larnix.Core.Utils;
 using Larnix.Socket.Security;
 using Larnix.Socket.Channel;
+using Larnix.Socket.UdpClients;
 
 namespace Larnix.Socket.Backend
 {
@@ -19,14 +20,11 @@ namespace Larnix.Socket.Backend
         public const string LoopbackOnlyNickname = "Player";
         public const string LoopbackOnlyPassword = "SGP_PASSWORD\x01";
 
-        public readonly ushort Port;
-        public readonly ushort MaxClients;
+        public readonly ushort Port, MaxClients;
         public readonly bool IsLoopback;
         public readonly string DataPath;
         public readonly uint GameVersion;
-        public readonly string UserText1;
-        public readonly string UserText2;
-        public readonly string UserText3;
+        public readonly string UserText1, UserText2, UserText3;
 
         public readonly long Secret;
         public readonly string Authcode;
@@ -62,20 +60,20 @@ namespace Larnix.Socket.Backend
         private int _relaySubmitted = 0; // 0 - false, 1 - true
         private RelayConnection Relay = null;
 
-        private const float RELAY_KEEP_ALIVE_TIME = 5f;
-        private float relayTimeToKeepAlive = RELAY_KEEP_ALIVE_TIME;
+        private const float KEEP_ALIVE_PERIOD = 5f;
+        private float relayTimeToKeepAlive = KEEP_ALIVE_PERIOD;
 
-        public static QuickServer CreateServerSync(ushort port, ushort maxClients, bool isLoopback, string dataPath, uint gameVersion,
+        public static QuickServer CreateServerSync(ushort port, ushort maxClients, bool isLoopback, string dataPath, IUserAPI userAPI, uint gameVersion,
             string userText1 = "",
             string userText2 = "",
             string userText3 = ""
             )
         {
-            return new QuickServer(port, maxClients, isLoopback, dataPath, gameVersion,
+            return new QuickServer(port, maxClients, isLoopback, dataPath, userAPI, gameVersion,
                 userText1, userText2, userText3);
         }
 
-        private QuickServer(ushort port, ushort maxClients, bool isLoopback, string dataPath, uint gameVersion,
+        private QuickServer(ushort port, ushort maxClients, bool isLoopback, string dataPath, IUserAPI userAPI, uint gameVersion,
             string userText1 = "",
             string userText2 = "",
             string userText3 = ""
@@ -89,7 +87,7 @@ namespace Larnix.Socket.Backend
             // managed objects
             DoubleSocket = new DoubleSocket(port, isLoopback);
             FastMessages = new ManagerNCN(this);
-            UserManager = new UserManager(this, dataPath);
+            UserManager = new UserManager(userAPI);
             KeyRSA = KeyObtainer.ObtainKeyRSA(dataPath);
 
             // other configuration
@@ -181,7 +179,8 @@ namespace Larnix.Socket.Backend
             PreLoginBuffers.Remove(remoteEP);
 
             bool hasSyn = true;
-            foreach (byte[] bytes in preLoginBuffer.GetBuffer())
+            byte[] bytes;
+            while ((bytes = preLoginBuffer.Pop()) != null)
             {
                 connection.PushFromWeb(bytes, hasSyn);
                 hasSyn = false;
@@ -270,7 +269,7 @@ namespace Larnix.Socket.Backend
             relayTimeToKeepAlive -= deltaTime;
             if (relayTimeToKeepAlive < 0)
             {
-                relayTimeToKeepAlive = RELAY_KEEP_ALIVE_TIME;
+                relayTimeToKeepAlive = KEEP_ALIVE_PERIOD;
                 Relay?.KeepAlive();
             }
 
@@ -359,7 +358,7 @@ namespace Larnix.Socket.Backend
                             if (!PreLoginBuffers.ContainsKey(remoteEP))
                             {
                                 PreLoginBuffer preLoginBuffer = new PreLoginBuffer(allowcon);
-                                preLoginBuffer.AddPacket(bytes);
+                                preLoginBuffer.Push(bytes);
                                 PreLoginBuffers.Add(remoteEP, preLoginBuffer);
 
                                 FastMessages.TryLogin(remoteEP, nickname, password, serverSecret, challengeID, timestamp, runID);
@@ -371,7 +370,7 @@ namespace Larnix.Socket.Backend
                     {
                         if (PreLoginBuffers.TryGetValue(remoteEP, out var preBuffer))
                         {
-                            preBuffer.AddPacket(bytes);
+                            preBuffer.Push(bytes);
                         }
                         else
                         {

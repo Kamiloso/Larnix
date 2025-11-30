@@ -11,7 +11,7 @@ namespace Larnix.Socket.Frontend
         private static readonly Dictionary<(string authcode, string nickname), (A_ServerInfo info, long time)> infoDict = new();
         private static readonly object locker = new();
 
-        internal static void AddInfo(string authcode, string nickname, A_ServerInfo info)
+        public static void AddInfo(string authcode, string nickname, A_ServerInfo info)
         {
             long time = Timestamp.GetTimestamp();
             lock (locker)
@@ -21,7 +21,7 @@ namespace Larnix.Socket.Frontend
             }
         }
 
-        internal static bool TryGetInfo(string authcode, string nickname, out A_ServerInfo info)
+        public static bool TryGetInfo(string authcode, string nickname, out A_ServerInfo info)
         {
             lock (locker)
             {
@@ -38,7 +38,7 @@ namespace Larnix.Socket.Frontend
             }
         }
 
-        internal static void RemoveRecord(string authcode, string nickname)
+        public static void RemoveRecord(string authcode, string nickname)
         {
             lock (locker)
             {
