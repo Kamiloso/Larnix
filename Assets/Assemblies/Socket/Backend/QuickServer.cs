@@ -7,11 +7,10 @@ using System.Security.Cryptography;
 using Larnix.Socket.Packets;
 using System.Threading.Tasks;
 using System;
-using System.Threading;
 using Larnix.Core.Utils;
 using Larnix.Socket.Security;
 using Larnix.Socket.Channel;
-using Larnix.Socket.UdpClients;
+using Larnix.Socket.Structs;
 
 namespace Larnix.Socket.Backend
 {
@@ -31,8 +30,6 @@ namespace Larnix.Socket.Backend
 
         internal readonly long RunID;
 
-        public bool CanReceive { get; set; } = true;
-
         private bool InitializedMasks = false;
         internal int MaskIPv4 = 32;
         internal int MaskIPv6 = 56;
@@ -40,14 +37,14 @@ namespace Larnix.Socket.Backend
         public readonly UserManager UserManager;
         public readonly RSA KeyRSA;
 
-        private readonly DoubleSocket DoubleSocket;
+        private readonly TripleSocket UdpSocket;
         private readonly ManagerNCN FastMessages;
         internal readonly HashSet<string> ReservedNicknames = new();
 
         private readonly Dictionary<string, Connection> connections = new();
         private readonly Dictionary<IPEndPoint, Connection> connectionsByEndPoint = new();
-
         private readonly Dictionary<IPEndPoint, PreLoginBuffer> PreLoginBuffers = new();
+
         private readonly Dictionary<CmdID, Action<Packet, string>> Subscriptions = new();
 
         private const float CON_RESET_TIME = 1f; // seconds
@@ -57,11 +54,10 @@ namespace Larnix.Socket.Backend
         private Dictionary<InternetID, uint> recentConCount = new();
         private uint globalConCount = 0;
 
-        private int _relaySubmitted = 0; // 0 - false, 1 - true
-        private RelayConnection Relay = null;
-
         private const float KEEP_ALIVE_PERIOD = 5f;
         private float relayTimeToKeepAlive = KEEP_ALIVE_PERIOD;
+
+        private bool _disposed;
 
         public static QuickServer CreateServerSync(ushort port, ushort maxClients, bool isLoopback, string dataPath, IUserAPI userAPI, uint gameVersion,
             string userText1 = "",
@@ -85,13 +81,13 @@ namespace Larnix.Socket.Backend
                 throw new ArgumentException("Wrong UserText format! Cannot be larger than 128 characters or end with NULL (0x00).");
 
             // managed objects
-            DoubleSocket = new DoubleSocket(port, isLoopback);
+            UdpSocket = new TripleSocket(port, isLoopback);
             FastMessages = new ManagerNCN(this);
             UserManager = new UserManager(userAPI);
             KeyRSA = KeyObtainer.ObtainKeyRSA(dataPath);
 
             // other configuration
-            Port = DoubleSocket.Port;
+            Port = UdpSocket.Port;
             MaxClients = maxClients;
             IsLoopback = isLoopback;
             DataPath = dataPath;
@@ -119,11 +115,7 @@ namespace Larnix.Socket.Backend
 
         public async Task<ushort?> ConfigureRelay(string relayAddress)
         {
-            if (Interlocked.CompareExchange(ref _relaySubmitted, 1, 0) != 0)
-                throw new InvalidOperationException("Cannot double-configure relay! Please, restart the server and try again.");
-
-            Relay = await RelayConnection.EstablishRelayAsync(relayAddress);
-            return Relay?.RemotePort;
+            return await UdpSocket.StartRelay(relayAddress);
         }
 
         private void RememberConnection(string nickname, Connection conn)
@@ -163,17 +155,11 @@ namespace Larnix.Socket.Backend
                 return;
             }
 
-            Action<byte[]> SendData;
-            if (IsRelayAddress(remoteEP.Address)) // relay socket
-            {
-                SendData = bytes => Relay.Send(remoteEP, bytes);
-            }
-            else // normal double socket
-            {
-                SendData = bytes => DoubleSocket.Send(remoteEP, bytes);
-            }
-
-            Connection connection = new Connection(SendData, remoteEP, allowConnection.KeyAES);
+            Connection connection = new Connection(
+                bytes => UdpSocket.Send(remoteEP, bytes),
+                remoteEP,
+                allowConnection.KeyAES
+                );
 
             RememberConnection(nickname, connection);
             PreLoginBuffers.Remove(remoteEP);
@@ -204,18 +190,9 @@ namespace Larnix.Socket.Backend
             FastMessages.Tick(deltaTime);
 
             // Interpret bytes from socket
-            while (DoubleSocket.TryReceive(out var item))
+            while (UdpSocket.TryReceive(out var item))
             {
-                IPEndPoint remoteEP = item.endPoint;
-                byte[] bytes = item.data;
-
-                InterpretBytes(remoteEP, bytes);
-            }
-
-            // Interpret bytes from relay
-            while (Relay?.TryReceive(out var item) == true)
-            {
-                IPEndPoint remoteEP = item.endPoint;
+                IPEndPoint remoteEP = item.target;
                 byte[] bytes = item.data;
 
                 InterpretBytes(remoteEP, bytes);
@@ -228,8 +205,9 @@ namespace Larnix.Socket.Backend
             }
 
             // Randomize client order
-            string[] nicknames = connections.Keys.ToArray();
-            Shuffle(nicknames);
+            List<string> nicknames = connections.Keys
+                .OrderBy(x => Common.Rand().Next())
+                .ToList();
 
             // Receive packets
             Queue<(Packet, string)> packetList = new();
@@ -242,7 +220,7 @@ namespace Larnix.Socket.Backend
             }
 
             // Remove dead connections
-            foreach (string nickname in connections.Keys.ToList())
+            foreach (string nickname in nicknames)
             {
                 Connection conn = connections[nickname];
                 if (conn.IsDead)
@@ -270,7 +248,7 @@ namespace Larnix.Socket.Backend
             if (relayTimeToKeepAlive < 0)
             {
                 relayTimeToKeepAlive = KEEP_ALIVE_PERIOD;
-                Relay?.KeepAlive();
+                UdpSocket?.KeepAlive();
             }
 
             // Interpret packets
@@ -281,9 +259,7 @@ namespace Larnix.Socket.Backend
                 string owner = element.Item2;
 
                 if (packet != null && Subscriptions.TryGetValue(packet.ID, out var Execute))
-                {
                     Execute(packet, owner);
-                }
             }
         }
 
@@ -399,9 +375,7 @@ namespace Larnix.Socket.Backend
         public void Send(string nickname, Packet packet, bool safemode = true)
         {
             if (connections.TryGetValue(nickname, out var conn))
-            {
                 conn.Send(packet, safemode);
-            }
         }
 
         public void Broadcast(Packet packet, bool safemode = true)
@@ -439,14 +413,12 @@ namespace Larnix.Socket.Backend
                 );
 
             byte[] sendBytes = safeAnswer.Serialize();
-            if (IsRelayAddress(endPoint.Address)) // relay socket
-            {
-                Relay?.Send(endPoint, sendBytes);
-            }
-            else // normal double socket
-            {
-                DoubleSocket.Send(endPoint, sendBytes);
-            }
+            UdpSocket.Send(endPoint, sendBytes);
+        }
+
+        public ushort CountPlayers()
+        {
+            return (ushort)connections.Count;
         }
 
         public IPEndPoint GetClientEndPoint(string nickname)
@@ -456,49 +428,22 @@ namespace Larnix.Socket.Backend
             return null;
         }
 
-        public static bool IsRelayAddress(IPAddress address)
-        {
-            return address.AddressFamily == AddressFamily.InterNetwork && ((address.GetAddressBytes()[0] & 0xF0) == 0xF0);
-        }
-
-        public ushort CountPlayers()
-        {
-            return (ushort)connections.Count;
-        }
-
         public float GetPing(string nickname)
         {
             if (connections.TryGetValue(nickname, out var conn))
-            {
-                return conn.AvgRTT * 1000f; // ms
-            }
+                return conn.AvgRTT * 1000f;
             return 0.0f;
         }
 
         public void Dispose()
         {
-            FinishAllConnections();
-            DoubleSocket?.Dispose();
-            Relay?.Dispose();
-            KeyRSA?.Dispose();
-        }
-
-        // === THREAD SAFE SHUFFLER ===
-
-        private static readonly Random _rng = new();
-        private static readonly object _lock = new();
-        private static void Shuffle(string[] array)
-        {
-            lock (_lock)
+            if (!_disposed)
             {
-                int n = array.Length;
-                while (n > 1)
-                {
-                    int k = _rng.Next(n--);
-                    string temp = array[n];
-                    array[n] = array[k];
-                    array[k] = temp;
-                }
+                _disposed = true;
+
+                FinishAllConnections();
+                UdpSocket?.Dispose();
+                KeyRSA?.Dispose();
             }
         }
     }

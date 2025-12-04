@@ -3,8 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using Larnix.Core.Utils;
 using Larnix.Core.Serialization;
+using Larnix.Socket.Channel;
 
-namespace Larnix.Socket.Channel
+namespace Larnix.Socket.Structs
 {
     public class Packet
     {
@@ -38,7 +39,7 @@ namespace Larnix.Socket.Channel
 
         internal bool TryDeserialize(byte[] bytes, Func<byte[], byte[]> decryption)
         {
-            if(decryption != null)
+            if (decryption != null)
                 bytes = decryption(bytes);
 
             if (bytes.Length < HEADER_SIZE)

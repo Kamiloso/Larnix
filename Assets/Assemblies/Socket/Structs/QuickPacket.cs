@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Larnix.Core.Utils;
 using Larnix.Core.Serialization;
+using Larnix.Socket.Channel;
 
 namespace Larnix.Socket.Channel
 {
@@ -15,12 +16,15 @@ namespace Larnix.Socket.Channel
         RSA = 1 << 3, // encrypted RSA
         NCN = 1 << 4, // no connection
     }
+}
 
+namespace Larnix.Socket.Structs
+{
     internal class QuickPacket
     {
         // ==== DATA SEGMENT ====
 
-        internal const int HEADER_SIZE = (2 + 2) + 4 + 4 + 1;
+        internal const int HEADER_SIZE = 2 + 2 + 4 + 4 + 1;
         internal const ushort PROTOCOL_VERSION = 3;
 
         internal int SeqNum { get; private set; } = 0;
@@ -103,7 +107,7 @@ namespace Larnix.Socket.Channel
 
         internal long MakeControlSequence()
         {
-            return (Flags << 32) | SeqNum;
+            return Flags << 32 | SeqNum;
         }
 
         // ==== RETRANSMISSION SEGMENT ====

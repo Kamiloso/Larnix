@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 using Larnix.Entities;
-using Larnix.Socket.Channel;
 using Larnix.Socket.Packets;
 using Larnix.Core.Vectors;
+using Larnix.Socket.Structs;
 
 namespace Larnix.Server.Entities
 {

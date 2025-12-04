@@ -4,11 +4,15 @@ using System.Collections.Generic;
 using System.Reflection;
 using Larnix.Socket.Packets;
 using System.Linq;
+using Larnix.Socket.Channel;
 
 namespace Larnix.Socket.Channel
 {
     public enum CmdID : ushort { None = 0 }
+}
 
+namespace Larnix.Socket.Structs
+{
     public abstract class Payload
     {
         private Packet Packet = null;
@@ -132,7 +136,7 @@ namespace Larnix.Socket.Channel
             foreach (Type type in allTypes)
             {
                 if (cmdID == 0)
-                    throw new System.OverflowException("Too many classes deriving from QuickNet.Payload! " +
+                    throw new OverflowException("Too many classes deriving from QuickNet.Payload! " +
                         "How is this possible that you caused a ushort overflow?!");
 
                 // Checking because it may already have default values set
@@ -173,7 +177,7 @@ namespace Larnix.Socket.Channel
 
         private CmdID GetMyCmdID()
         {
-            return CmdIDByType(this.GetType());
+            return CmdIDByType(GetType());
         }
     }
 }

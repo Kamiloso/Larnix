@@ -5,7 +5,6 @@ using System.Net;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Larnix.Socket.Security;
-using Larnix.Socket.UdpClients;
 
 namespace Larnix.Socket.Frontend
 {

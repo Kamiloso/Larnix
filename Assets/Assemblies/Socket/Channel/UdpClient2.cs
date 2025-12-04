@@ -3,10 +3,12 @@ using System.Net.Sockets;
 using System.Collections.Concurrent;
 using System;
 using System.Threading.Tasks;
+using Larnix.Socket.Structs;
+using System.Threading;
 
-namespace Larnix.Socket.UdpClients
+namespace Larnix.Socket.Channel
 {
-    public class UdpClient2 : IDisposable
+    internal class UdpClient2 : INetworkInteractions, IDisposable
     {
         public readonly ushort Port;
         public readonly bool IsListener;
@@ -17,12 +19,12 @@ namespace Larnix.Socket.UdpClients
         private readonly IPEndPoint _destination;
         private readonly Task _sendLoop;
         private readonly Task _recvLoop;
-        private readonly ConcurrentQueue<(IPEndPoint, byte[])> _sendQueue = new();
-        private readonly ConcurrentQueue<(IPEndPoint, byte[])> _recvQueue = new();
+        private readonly ConcurrentQueue<DataBox> _sendQueue = new();
+        private readonly ConcurrentQueue<DataBox> _recvQueue = new();
         private readonly int _maxQueueLength;
 
-        private volatile bool _stop = false;
-        private bool _disposed = false;
+        private volatile bool _stop;
+        private volatile int _disposedState = 0;
 
         public UdpClient2(ushort port, bool isListener, bool isLoopback, bool isIPv6, int recvBufferSize, IPEndPoint destination = null)
         {
@@ -51,8 +53,8 @@ namespace Larnix.Socket.UdpClients
                 if (IsIPv6) _udpClient.Client.DualMode = false;
 
                 _udpClient.Client.Bind(new IPEndPoint(IsLoopback ?
-                    (IsIPv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback) :
-                    (IsIPv6 ? IPAddress.IPv6Any : IPAddress.Any),
+                    IsIPv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback :
+                    IsIPv6 ? IPAddress.IPv6Any : IPAddress.Any,
                     port));
 
                 Port = (ushort)((IPEndPoint)_udpClient.Client.LocalEndPoint).Port;
@@ -71,17 +73,11 @@ namespace Larnix.Socket.UdpClients
         {
             while (true)
             {
-                try
-                {
-                    await _SendAll();
-                }
-                catch (Exception ex)
-                {
-                    if (!HandleNetworkException(ex))
-                        return; // stop loop
-                }
+                if(!await _SendAll())
+                    return; // stop loop
 
-                if (_stop) { // STOP (send)
+                if (_stop)
+                {
                     await _SendAll();
                     return;
                 }
@@ -90,15 +86,28 @@ namespace Larnix.Socket.UdpClients
             }
         }
 
-        private async Task _SendAll()
+        private async Task<bool> _SendAll()
         {
-            while (_sendQueue.TryDequeue(out var result))
+        retry:
+            try
             {
-                IPEndPoint endPoint = result.Item1;
-                byte[] bytes = result.Item2;
+                while (_sendQueue.TryDequeue(out var result))
+                {
+                    IPEndPoint endPoint = result.target;
+                    byte[] bytes = result.data;
 
-                await _udpClient.SendAsync(bytes, bytes.Length, endPoint);
+                    await _udpClient.SendAsync(bytes, bytes.Length, endPoint);
+                }
             }
+            catch (Exception ex)
+            {
+                if (!HandleNetworkException(ex))
+                    return false;
+
+                goto retry;
+            }
+
+            return true;
         }
 
         private async Task ReceiveLoop()
@@ -111,10 +120,10 @@ namespace Larnix.Socket.UdpClients
                         _recvQueue.TryDequeue(out _); // discard old packets
 
                     var result = await _udpClient.ReceiveAsync();
-                    IPEndPoint endPoint = result.RemoteEndPoint;
+                    IPEndPoint remoteEP = result.RemoteEndPoint;
                     byte[] bytes = result.Buffer;
 
-                    _recvQueue.Enqueue((endPoint, bytes));
+                    _recvQueue.Enqueue(new DataBox(remoteEP, bytes));
                 }
                 catch (Exception ex)
                 {
@@ -145,15 +154,15 @@ namespace Larnix.Socket.UdpClients
             return false; // other errors, close socket
         }
 
-        public void Send(IPEndPoint endPoint, byte[] data)
+        public void Send(IPEndPoint remoteEP, byte[] data)
         {
             while (_sendQueue.Count > _maxQueueLength)
                 _sendQueue.TryDequeue(out _); // discard packets when sending too many
 
-            _sendQueue.Enqueue((endPoint, data));
+            _sendQueue.Enqueue(new DataBox(remoteEP, data));
         }
 
-        public bool TryReceive(out (IPEndPoint endPoint, byte[] data) result)
+        public bool TryReceive(out DataBox result)
         {
             if (_recvQueue.TryDequeue(out var _result))
             {
@@ -167,12 +176,11 @@ namespace Larnix.Socket.UdpClients
 
         public void Dispose()
         {
-            if (!_disposed)
+            if (Interlocked.CompareExchange(ref _disposedState, 1, 0) == 0)
             {
-                _disposed = true;
-
                 _stop = true;
-                _sendLoop?.Wait(); // don't wait for receiving, will close anyway
+                _sendLoop?.Wait(); // wait for sending to ensure that everything is sent before end of Dispose()
+                // don't wait for receiving, will close anyway or may be killed - who cares?
                 _udpClient?.Dispose();
             }
         }

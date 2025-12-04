@@ -8,6 +8,7 @@ using Larnix.Socket.Packets;
 using System;
 using Larnix.Core.Utils;
 using Larnix.Socket.Security;
+using Larnix.Socket.Structs;
 
 namespace Larnix.Socket.Channel
 {

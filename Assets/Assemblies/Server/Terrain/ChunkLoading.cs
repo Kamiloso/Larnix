@@ -8,7 +8,7 @@ using Larnix.Server.Entities;
 using Larnix.Core.Utils;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
-using Larnix.Socket.Channel;
+using Larnix.Socket.Structs;
 
 namespace Larnix.Server.Terrain
 {

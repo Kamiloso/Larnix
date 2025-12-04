@@ -10,7 +10,7 @@ using Larnix.Core.Vectors;
 using System;
 using Larnix.Core.Utils;
 using Larnix.Entities.Structs;
-using Packet = Larnix.Socket.Channel.Packet;
+using Packet = Larnix.Socket.Structs.Packet;
 
 namespace Larnix.Server.Entities
 {

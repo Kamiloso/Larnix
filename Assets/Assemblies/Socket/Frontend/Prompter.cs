@@ -5,7 +5,7 @@ using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Larnix.Socket.Security;
 using Larnix.Socket.Channel;
-using Larnix.Socket.UdpClients;
+using Larnix.Socket.Structs;
 
 namespace Larnix.Socket.Frontend
 {
@@ -74,7 +74,7 @@ namespace Larnix.Socket.Frontend
             {
                 while (udpClient.TryReceive(out var item))
                 {
-                    IPEndPoint remoteEP = item.endPoint;
+                    IPEndPoint remoteEP = item.target;
                     byte[] bytes = item.data;
 
                     var incoming = new QuickPacket();

@@ -1,21 +1,29 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
-using Larnix.Socket.UdpClients;
+using System.Threading;
+using System.Threading.Tasks;
+using Larnix.Socket.Structs;
+using System.Collections.Generic;
 
-namespace Larnix.Socket.Backend
+namespace Larnix.Socket.Channel
 {
-    internal class DoubleSocket : IDisposable
+    internal class TripleSocket : INetworkInteractions, IDisposable
     {
         public readonly ushort Port;
-        public UdpClient2 UdpClient4;
-        public UdpClient2 UdpClient6;
+        private UdpClient2 UdpClient4;
+        private UdpClient2 UdpClient6;
 
+        private HashSet<IPEndPoint> RelayEndPoints = new();
+        private const int EP_CACHE_CAPACITY = 1 << 16; // over 65k
+
+        private volatile RelayConnection RelayUdpClient;
+        private volatile int _relayEnabled = 0;
+        private volatile bool _disposeStarted = false;
+        
         private bool _disposed;
 
-        public DoubleSocket(ushort port, bool isLoopback)
+        public TripleSocket(ushort port, bool isLoopback)
         {
             if (port == 0)
             {
@@ -81,11 +89,35 @@ namespace Larnix.Socket.Backend
             return true;
         }
 
-        public bool TryReceive(out (IPEndPoint endPoint, byte[] data) result)
+        public async Task<ushort?> StartRelay(string address)
+        {
+            if (Interlocked.CompareExchange(ref _relayEnabled, 1, 0) == 0)
+            {
+                RelayUdpClient = await RelayConnection.EstablishRelayAsync(address);
+
+                if (_disposeStarted)
+                {
+                    RelayUdpClient.Dispose();
+                    return null; // failed
+                }
+
+                return RelayUdpClient?.RemotePort; // null or port
+            }
+
+            return null; // second activation returns null
+        }
+
+        public void KeepAlive()
+        {
+            RelayUdpClient?.KeepAlive();
+        }
+
+        public bool TryReceive(out DataBox result)
         {
             if (UdpClient4.TryReceive(out var _resultV4))
             {
                 result = _resultV4;
+                RelayEndPoints.Remove(_resultV4.target);
                 return true;
             }
 
@@ -95,14 +127,32 @@ namespace Larnix.Socket.Backend
                 return true;
             }
 
-            result = default;
+            if (RelayUdpClient?.TryReceive(out var _resultR) == true)
+            {
+                result = _resultR;
+                if (RelayEndPoints.Count < EP_CACHE_CAPACITY)
+                    RelayEndPoints.Add(_resultR.target);
+                return true;
+            }
+
+            result = null;
             return false;
         }
 
-        public void Send(IPEndPoint endPoint, byte[] bytes)
+        public void Send(IPEndPoint remoteEP, byte[] bytes)
         {
-            bool IsIPv4Client = endPoint.AddressFamily == AddressFamily.InterNetwork;
-            (IsIPv4Client ? UdpClient4 : UdpClient6).Send(endPoint, bytes);
+            bool isIPv4Client = remoteEP.AddressFamily == AddressFamily.InterNetwork;
+            if (isIPv4Client)
+            {
+                if (RelayEndPoints.Contains(remoteEP))
+                    RelayUdpClient?.Send(remoteEP, bytes); // relay IPv4 send
+                else
+                    UdpClient4.Send(remoteEP, bytes); // direct IPv4 send
+            }
+            else
+            {
+                UdpClient6.Send(remoteEP, bytes); // IPv6 send
+            }
         }
 
         public void Dispose()
@@ -110,9 +160,11 @@ namespace Larnix.Socket.Backend
             if (!_disposed)
             {
                 _disposed = true;
+                _disposeStarted = true;
 
                 UdpClient4?.Dispose();
                 UdpClient6?.Dispose();
+                RelayUdpClient?.Dispose();
             }
         }
     }

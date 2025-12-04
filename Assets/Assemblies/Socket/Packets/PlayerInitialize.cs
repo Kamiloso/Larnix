@@ -3,7 +3,7 @@ using System.Collections;
 using Larnix.Core.Vectors;
 using Larnix.Core.Serialization;
 using Larnix.Core.Utils;
-using Larnix.Socket.Channel;
+using Larnix.Socket.Structs;
 
 namespace Larnix.Socket.Packets
 {

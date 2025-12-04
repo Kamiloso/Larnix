@@ -1,6 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
-using Larnix.Socket.Channel;
+using Larnix.Socket.Structs;
 
 namespace Larnix.Socket.Packets
 {

@@ -8,7 +8,7 @@ using Larnix.Socket.Packets;
 using System.Threading.Tasks;
 using Larnix.Socket.Security;
 using Larnix.Socket.Channel;
-using Larnix.Socket.UdpClients;
+using Larnix.Socket.Structs;
 
 namespace Larnix.Socket.Frontend
 {

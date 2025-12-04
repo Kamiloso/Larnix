@@ -4,12 +4,12 @@ using UnityEngine;
 using Larnix.Socket.Packets;
 using Larnix.Client.Entities;
 using Larnix.Entities;
-using Larnix.Socket.Channel;
 using Larnix.Core.Physics;
 using Larnix.Core.Vectors;
 using Larnix.Entities.Structs;
 using Larnix.Core.Utils;
 using IHasCollider = Larnix.Entities.IHasCollider;
+using Larnix.Socket.Structs;
 
 namespace Larnix.Client
 {

@@ -4,9 +4,9 @@ using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 using System.Net.Sockets;
-using Larnix.Socket.Channel;
 using Larnix.Socket.Security;
 using Larnix.Socket.Packets;
+using Larnix.Socket.Structs;
 
 namespace Larnix.Socket.Backend
 {
