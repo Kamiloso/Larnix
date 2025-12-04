@@ -11,7 +11,7 @@ namespace Larnix.Socket.Security
         internal static byte[] EncryptAES(byte[] bytes, byte[] key)
         {
             if (key.Length != 16)
-                throw new System.Exception("AES key length must be 16 bytes.");
+                throw new Exception("AES key length must be 16 bytes.");
 
             if(bytes == null)
                 bytes = new byte[0];

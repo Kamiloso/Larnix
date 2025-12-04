@@ -5,7 +5,7 @@ using System;
 
 namespace Larnix.Socket
 {
-    public class InternetID
+    internal class InternetID
     {
         private readonly IPAddress Address;
         private readonly int Subnet;
@@ -33,12 +33,12 @@ namespace Larnix.Socket
 
         public override bool Equals(object obj)
         {
-            if (obj is InternetID other && IsIPv4 == other.IsIPv4)
-            {
-                int mask = Math.Min(Subnet, other.Subnet);
-
-                return MasksCompare(Address, other.Address, mask);
+            if (obj is InternetID other &&
+                IsIPv4 == other.IsIPv4 &&
+                Subnet == other.Subnet) {
+                return MasksCompare(Address, other.Address, Subnet);
             }
+
             return false;
         }
 

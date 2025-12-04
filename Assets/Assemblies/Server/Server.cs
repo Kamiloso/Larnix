@@ -141,10 +141,10 @@ namespace Larnix.Server
             password_ask:
                 {
                     Core.Debug.LogRaw("> ");
-                    string input = Console.GetInputSync();
-                    if (Validation.IsGoodPassword(input))
+                    string password = Console.GetInputSync();
+                    if (Validation.IsGoodPassword(password))
                     {
-                        Ref.QuickServer.UserManager.ChangePassword(sgpNickname, Hasher.HashPassword(input));
+                        Ref.QuickServer.UserManager.ChangePasswordSync(sgpNickname, password);
                         Mdata = new MetadataSGP(Version.Current, "Player");
                         MetadataSGP.SaveMetadataSGP(WorldPath, (MetadataSGP)Mdata, true);
                     }

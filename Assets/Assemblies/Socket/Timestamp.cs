@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace Larnix.Socket
 {
-    public static class Timestamp
+    internal static class Timestamp
     {
         private const long Window = 6_000; // miliseconds
         private static Dictionary<string, long> TimestampDifferences = new();
@@ -37,7 +37,7 @@ namespace Larnix.Socket
             return timestamp >= localTimestamp - window && timestamp <= localTimestamp;
         }
 
-        internal static void SetServerTimestamp(string address, long timestamp)
+        public static void SetServerTimestamp(string address, long timestamp)
         {
             lock (_locker1)
             {
@@ -45,7 +45,7 @@ namespace Larnix.Socket
             }
         }
 
-        internal static long GetServerTimestamp(string address)
+        public static long GetServerTimestamp(string address)
         {
             lock (_locker1)
             {

@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Larnix.Socket.Security
 {
-    public static class Hasher
+    internal static class Hasher
     {
         private static Dictionary<string, byte[]> HashingCache = new();
         private const int MAX_CACHE_COUNT = 256;

@@ -7,9 +7,9 @@ using Org.BouncyCastle.Crypto.Generators;
 using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Security;
 using Org.BouncyCastle.Crypto.Parameters;
-using System;
 using System.Linq;
 using Larnix.Core.Files;
+using Larnix.Core.Utils;
 
 namespace Larnix.Socket.Security
 {
@@ -51,7 +51,7 @@ namespace Larnix.Socket.Security
                     return readSecret;
             }
 
-            long secret = GetSecureLong();
+            long secret = Common.GetSecureLong();
             FileManager.Write(path, secretfile, secret.ToString());
             return secret;
         }
@@ -144,13 +144,6 @@ namespace Larnix.Socket.Security
             var rsa = RSA.Create();
             rsa.ImportParameters(rsaParams);
             return rsa;
-        }
-
-        internal static long GetSecureLong()
-        {
-            var buffer = new byte[8];
-            RandomNumberGenerator.Fill(buffer);
-            return BitConverter.ToInt64(buffer, 0);
         }
     }
 }

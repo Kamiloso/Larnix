@@ -3,11 +3,8 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
-using System.Linq;
-using Larnix.Core.Utils;
 using Larnix.Socket.Frontend;
 using Larnix.Socket.Structs;
-using System.Threading;
 
 namespace Larnix.Socket.Channel
 {
@@ -20,7 +17,7 @@ namespace Larnix.Socket.Channel
 
         public ushort RemotePort { get; private set; } // relay port to connect to
 
-        private volatile int _disposedState;
+        private bool _disposed;
 
         private enum RelayInfo : byte
         {
@@ -108,8 +105,10 @@ namespace Larnix.Socket.Channel
 
         public void Dispose()
         {
-            if (Interlocked.CompareExchange(ref _disposedState, 1, 0) == 0)
+            if (!_disposed)
             {
+                _disposed = true;
+
                 SendInfo(RelayInfo.Stop); // thread safe
                 Udp.Dispose(); // thread safe
             }

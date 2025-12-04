@@ -19,9 +19,9 @@ namespace Larnix.Socket.Channel
 
         private volatile RelayConnection RelayUdpClient;
         private volatile int _relayEnabled = 0;
-        private volatile bool _disposeStarted = false;
         
-        private bool _disposed;
+        private object _lock = new();
+        private volatile bool _disposed;
 
         public TripleSocket(ushort port, bool isLoopback)
         {
@@ -93,15 +93,21 @@ namespace Larnix.Socket.Channel
         {
             if (Interlocked.CompareExchange(ref _relayEnabled, 1, 0) == 0)
             {
-                RelayUdpClient = await RelayConnection.EstablishRelayAsync(address);
+                RelayConnection relayCon = await RelayConnection.EstablishRelayAsync(address);
 
-                if (_disposeStarted)
+                lock (_lock)
                 {
-                    RelayUdpClient.Dispose();
-                    return null; // failed
+                    if (_disposed)
+                    {
+                        relayCon?.Dispose();
+                        return null; // failed
+                    }
+                    else
+                    {
+                        RelayUdpClient = relayCon;
+                        return RelayUdpClient?.RemotePort; // null or port
+                    }
                 }
-
-                return RelayUdpClient?.RemotePort; // null or port
             }
 
             return null; // second activation returns null
@@ -157,14 +163,16 @@ namespace Larnix.Socket.Channel
 
         public void Dispose()
         {
-            if (!_disposed)
+            lock (_lock)
             {
-                _disposed = true;
-                _disposeStarted = true;
+                if (!_disposed)
+                {
+                    _disposed = true;
 
-                UdpClient4?.Dispose();
-                UdpClient6?.Dispose();
-                RelayUdpClient?.Dispose();
+                    UdpClient4?.Dispose();
+                    UdpClient6?.Dispose();
+                    RelayUdpClient?.Dispose();
+                }
             }
         }
     }

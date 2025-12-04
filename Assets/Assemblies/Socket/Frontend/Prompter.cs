@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Larnix.Socket.Security;
 using Larnix.Socket.Channel;
 using Larnix.Socket.Structs;
+using Larnix.Core.Utils;
 
 namespace Larnix.Socket.Frontend
 {
@@ -41,7 +42,7 @@ namespace Larnix.Socket.Frontend
 
         private async Task<TAnswer> SendAndWaitAsync<TAnswer>(Packet prompt, RSA publicKeyRSA, int timeoutMiliseconds) where TAnswer : Payload, new()
         {
-            int promptId = (int)KeyObtainer.GetSecureLong();
+            int promptId = (int)Common.GetSecureLong();
 
             PacketFlag flags = PacketFlag.NCN;
             Func<byte[], byte[]> encrypt = null;

@@ -2,7 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using UnityEngine;
-using Larnix.Blocks;
 using LibNoise;
 using LibNoise.Generator;
 using System.Security.Cryptography;
@@ -12,6 +11,7 @@ using System.Reflection;
 using System.Text;
 using Larnix.Core.Utils;
 using Larnix.Blocks.Structs;
+using Random = System.Random;
 
 namespace Larnix.Worldgen
 {
@@ -222,9 +222,9 @@ namespace Larnix.Worldgen
 
         private T ValueFromGradient<T>(T value1, T value2, double gradient, long entropySource)
         {
-            gradient = System.Math.Clamp(gradient, 0.0, 1.0);
+            gradient = Math.Clamp(gradient, 0.0, 1.0);
 
-            System.Random rng = new System.Random((int)(entropySource ^ (entropySource >> 32)));
+            Random rng = new Random((int)(entropySource ^ (entropySource >> 32)));
             double roll = rng.NextDouble();
 
             return roll < gradient ? value2 : value1;

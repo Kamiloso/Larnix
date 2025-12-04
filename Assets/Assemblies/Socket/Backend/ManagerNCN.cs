@@ -229,7 +229,7 @@ namespace Larnix.Socket.Backend
             CurrentHashingAmount--;
 
             string hash = hashing.Result;
-            Server.UserManager.ChangePassword(username, hash);
+            Server.UserManager.SetPasswordHash(username, hash);
 
             Finally();
         }

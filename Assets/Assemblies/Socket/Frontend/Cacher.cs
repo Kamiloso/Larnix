@@ -9,12 +9,12 @@ namespace Larnix.Socket.Frontend
     internal static class Cacher
     {
         private static readonly Dictionary<(string authcode, string nickname), (A_ServerInfo info, long time)> infoDict = new();
-        private static readonly object locker = new();
+        private static readonly object _lock = new();
 
         public static void AddInfo(string authcode, string nickname, A_ServerInfo info)
         {
             long time = Timestamp.GetTimestamp();
-            lock (locker)
+            lock (_lock)
             {
                 CleanOld();
                 infoDict[(authcode, nickname)] = (info, time);
@@ -23,7 +23,7 @@ namespace Larnix.Socket.Frontend
 
         public static bool TryGetInfo(string authcode, string nickname, out A_ServerInfo info)
         {
-            lock (locker)
+            lock (_lock)
             {
                 CleanOld();
 
@@ -40,7 +40,7 @@ namespace Larnix.Socket.Frontend
 
         public static void RemoveRecord(string authcode, string nickname)
         {
-            lock (locker)
+            lock (_lock)
             {
                 if (infoDict.ContainsKey((authcode, nickname)))
                     infoDict.Remove((authcode, nickname));

@@ -36,7 +36,7 @@ namespace Larnix.Socket.Channel
         private const float SafeCycleTime = 0.5f;
         private float currentSafeCycleTime = 0.0f;
 
-        private System.Random Rand = new();
+        private Random Rand = new();
         private const float DebugDropChance = 0.0f;
 
         private List<QuickPacket> sendingPackets = new List<QuickPacket>();

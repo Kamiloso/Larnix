@@ -1,3 +1,4 @@
+using Larnix.Socket.Security;
 using System;
 using System.Collections.Generic;
 
@@ -52,7 +53,13 @@ namespace Larnix.Socket.Backend
             return user.UserID.Value;
         }
 
-        public void ChangePassword(string username, string hashedPassword)
+        public void ChangePasswordSync(string username, string password)
+        {
+            string hashedPassword = Hasher.HashPassword(password);
+            SetPasswordHash(username, hashedPassword);
+        }
+
+        internal void SetPasswordHash(string username, string hashedPassword)
         {
             UserData? n_user = UserAPI.ReadUserData(username);
             if (n_user != null)
@@ -68,7 +75,7 @@ namespace Larnix.Socket.Backend
             }
         }
 
-        public string GetPasswordHash(string username)
+        internal string GetPasswordHash(string username)
         {
             UserData user = UserAPI.ReadUserData(username) ??
                 throw new KeyNotFoundException($"Username {username} not found!");

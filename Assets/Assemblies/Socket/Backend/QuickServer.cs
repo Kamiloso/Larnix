@@ -99,7 +99,7 @@ namespace Larnix.Socket.Backend
             UserText3 = userText3;
 
             // run random
-            RunID = KeyObtainer.GetSecureLong();
+            RunID = Common.GetSecureLong();
         }
 
         public void ConfigureMasks(int maskIPv4, int maskIPv6)
