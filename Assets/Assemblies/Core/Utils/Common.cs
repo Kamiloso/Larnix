@@ -74,6 +74,13 @@ namespace Larnix.Core.Utils
             return BitConverter.ToInt64(buffer, 0);
         }
 
+        public static byte[] GetSecureBytes(int size)
+        {
+            var buffer = new byte[size];
+            RandomNumberGenerator.Fill(buffer);
+            return buffer;
+        }
+
         public static long GetSeedFromString(string input)
         {
             using var sha = SHA256.Create();

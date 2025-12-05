@@ -9,12 +9,12 @@ namespace Larnix.Socket.Structs
 {
     public class Packet
     {
-        internal const int HEADER_SIZE = 2 + 1 + 8;
+        private const int HEADER_SIZE = 2 + 1 + 8;
 
         internal CmdID ID = 0;
         internal byte Code = 0;
         internal long ControlSequence = 0; // it's basically (long)SeqNum (encrypted, for security)
-        internal byte[] Bytes = null;
+        internal byte[] Bytes;
 
         internal Packet() { }
         internal Packet(CmdID id, byte code, byte[] bytes)

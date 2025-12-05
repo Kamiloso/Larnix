@@ -1,3 +1,5 @@
+using Larnix.Core.Files;
+using Larnix.Core.Utils;
 using System.Collections;
 using System.Collections.Generic;
 using System.Security.Cryptography;
@@ -7,19 +9,34 @@ namespace Larnix.Socket.Security
 {
     internal static class Authcode
     {
-        internal const string Base64 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz#&";
+        private const string Base64 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz#&";
+
         private const int VERIFY_PART_LENGTH = 12;
         private const int SECRET_PART_LENGTH = 11; // must be at least 11 to fit one long
         private const int TOTAL_LENGTH = VERIFY_PART_LENGTH + SECRET_PART_LENGTH + 1 /* +checksum */;
         private const int SEGMENT_SIZE = 6;
 
-        internal static string ProduceAuthCodeRSA(byte[] key, long secret)
+        public static long ObtainSecret(string path, string filename)
+        {
+            string data = FileManager.Read(path, filename);
+            if (data != null)
+            {
+                if (long.TryParse(data, out long readSecret))
+                    return readSecret;
+            }
+
+            long secret = Common.GetSecureLong();
+            FileManager.Write(path, filename, secret.ToString());
+            return secret;
+        }
+
+        public static string ProduceAuthCodeRSA(byte[] key, long secret)
         {
             string raw = ProduceRawAuthCodeRSA(key, secret);
             return InsertDashes(raw, SEGMENT_SIZE);
         }
 
-        internal static string ProduceRawAuthCodeRSA(byte[] key, long secret)
+        public static string ProduceRawAuthCodeRSA(byte[] key, long secret)
         {
             const int ITERATIONS = 50_000;
             byte[] hash = key;
@@ -55,7 +72,7 @@ namespace Larnix.Socket.Security
             return sb.ToString();
         }
 
-        internal static bool IsGoodAuthcode(string authCodeRSA)
+        public static bool IsGoodAuthcode(string authCodeRSA)
         {
             if (authCodeRSA == null)
                 return false;
@@ -82,7 +99,7 @@ namespace Larnix.Socket.Security
             return Base64[checksum % 64] == code[TOTAL_LENGTH - 1];
         }
 
-        internal static bool VerifyPublicKey(byte[] key, string authCodeRSA)
+        public static bool VerifyPublicKey(byte[] key, string authCodeRSA)
         {
             string code1 = authCodeRSA.Replace("-", "").Substring(0, VERIFY_PART_LENGTH);
             string code2 = ProduceRawAuthCodeRSA(key, 0).Substring(0, VERIFY_PART_LENGTH);
@@ -90,7 +107,7 @@ namespace Larnix.Socket.Security
             return code1 == code2;
         }
 
-        internal static long GetSecretFromAuthCode(string authCodeRSA)
+        public static long GetSecretFromAuthCode(string authCodeRSA)
         {
             string code1 = authCodeRSA.Replace("-", "").Substring(VERIFY_PART_LENGTH, SECRET_PART_LENGTH);
 

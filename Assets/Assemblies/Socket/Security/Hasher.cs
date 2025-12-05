@@ -7,8 +7,9 @@ namespace Larnix.Socket.Security
 {
     internal static class Hasher
     {
-        private static Dictionary<string, byte[]> HashingCache = new();
         private const int MAX_CACHE_COUNT = 256;
+
+        private static Dictionary<string, byte[]> HashingCache = new();
         private static object locker = new();
 
         private static string InputHashingString(string str, byte[] salt)

@@ -118,8 +118,9 @@ namespace Larnix.Socket.Structs
                 string assemblyA = typeA.Assembly.GetName().Name;
                 string assemblyB = typeB.Assembly.GetName().Name;
 
-                if (assemblyA == "QuickNet" && assemblyB != "QuickNet") return -1;
-                if (assemblyA != "QuickNet" && assemblyB == "QuickNet") return 1;
+                string thisAssembly = typeof(Payload).Assembly.GetName().Name;
+                if (assemblyA == thisAssembly && assemblyB != thisAssembly) return -1;
+                if (assemblyA != thisAssembly && assemblyB == thisAssembly) return 1;
 
                 int cmp = string.Compare(assemblyA, assemblyB, StringComparison.Ordinal);
                 if (cmp != 0) return cmp;

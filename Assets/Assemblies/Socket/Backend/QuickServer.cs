@@ -91,7 +91,7 @@ namespace Larnix.Socket.Backend
             MaxClients = maxClients;
             IsLoopback = isLoopback;
             DataPath = dataPath;
-            Secret = KeyObtainer.ObtainSecret(dataPath);
+            Secret = Security.Authcode.ObtainSecret(dataPath, "server_secret.txt");
             Authcode = Security.Authcode.ProduceAuthCodeRSA(KeyObtainer.KeyToPublicBytes(KeyRSA), Secret);
             GameVersion = gameVersion;
             UserText1 = userText1;
@@ -365,7 +365,7 @@ namespace Larnix.Socket.Backend
             CmdID ID = Payload.CmdID<T>();
             Subscriptions[ID] = (Packet packet, string owner) =>
             {
-                if(Payload.TryConstructPayload<T>(packet, out var message))
+                if (Payload.TryConstructPayload<T>(packet, out var message))
                 {
                     InterpretPacket(message, owner);
                 }

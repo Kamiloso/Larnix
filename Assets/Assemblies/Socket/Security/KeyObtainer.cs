@@ -16,7 +16,6 @@ namespace Larnix.Socket.Security
     internal static class KeyObtainer
     {
         private const string filename = "rsa_keypair.pem";
-        private const string secretfile = "server_secret.txt";
 
         internal static RSA ObtainKeyRSA(string path)
         {
@@ -40,20 +39,6 @@ namespace Larnix.Socket.Security
             data = ConvertKeyPairToPem(keyPair);
             FileManager.Write(path, filename, data);
             return BouncyToRSA(keyPair);
-        }
-
-        internal static long ObtainSecret(string path)
-        {
-            string data = FileManager.Read(path, secretfile);
-            if (data != null)
-            {
-                if (long.TryParse(data, out long readSecret))
-                    return readSecret;
-            }
-
-            long secret = Common.GetSecureLong();
-            FileManager.Write(path, secretfile, secret.ToString());
-            return secret;
         }
 
         internal static byte[] KeyToPublicBytes(RSA rsa)
