@@ -15,7 +15,7 @@ namespace Larnix.Client
     public class Client : MonoBehaviour
     {
         public QuickClient LarnixClient = null;
-        private Queue<(Packet packet, bool safemode)> delayedPackets = new();
+        private Queue<(Payload packet, bool safemode)> delayedPackets = new();
         private Receiver Receiver = null;
 
         private string Address;
@@ -79,7 +79,7 @@ namespace Larnix.Client
             }
         }
 
-        public void Send(Packet packet, bool safemode = true)
+        public void Send(Payload packet, bool safemode = true)
         {
             if (LarnixClient != null && delayedPackets.Count == 0)
                 LarnixClient.Send(packet, safemode);
@@ -117,7 +117,7 @@ namespace Larnix.Client
             {
                 if (!Ref.MainPlayer.gameObject.activeInHierarchy)
                 {
-                    Packet packet = new CodeInfo(CodeInfo.Info.RespawnMe);
+                    Payload packet = new CodeInfo(CodeInfo.Info.RespawnMe);
                     Send(packet);
 
                     Ref.Loading.StartLoading("Respawning...");

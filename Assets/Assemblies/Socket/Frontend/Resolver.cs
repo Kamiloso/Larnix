@@ -2,9 +2,9 @@ using Larnix.Socket.Packets;
 using System;
 using System.Linq;
 using System.Net;
-using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Larnix.Socket.Security;
+using Larnix.Socket.Security.Keys;
 
 namespace Larnix.Socket.Frontend
 {
@@ -21,9 +21,19 @@ namespace Larnix.Socket.Frontend
 
     internal class EntryTicket
     {
-        internal long ChallengeID;
-        internal long RunID;
-        internal byte[] PublicKeyRSA;
+        private A_ServerInfo _serverInfo;
+        public long ChallengeID => _serverInfo.ChallengeID;
+        public long RunID => _serverInfo.RunID;
+
+        public EntryTicket(A_ServerInfo info)
+        {
+            _serverInfo = info;
+        }
+
+        public KeyRSA CreatePublicKey()
+        {
+            return new KeyRSA(_serverInfo.PublicKey);
+        }
     }
 
     public static class Resolver
@@ -121,12 +131,12 @@ namespace Larnix.Socket.Frontend
                 if (isRegistration && info.ChallengeID != 0)
                     return (null, ResolverError.LoginNotAllowed);
 
-                using RSA rsa = KeyObtainer.PublicBytesToKey(info.PublicKey);
+                using KeyRSA rsa = new KeyRSA(info.PublicKey);
                 long serverSecret = Authcode.GetSecretFromAuthCode(authcode);
                 long timestamp = Timestamp.GetServerTimestamp(address);
 
                 var prompt = new P_LoginTry(nickname, password, serverSecret, info.ChallengeID, timestamp, info.RunID, newPassword);
-                var packet = await Prompter.PromptAsync<A_LoginTry>(address, prompt, publicKeyRSA: rsa);
+                var packet = await Prompter.PromptAsync<A_LoginTry>(address, prompt, publicKey: rsa);
 
                 if (packet == null) return (null, ResolverError.PromptFailed);
 
@@ -145,12 +155,7 @@ namespace Larnix.Socket.Frontend
             var (info, error) = await DownloadServerInfoAsync(address, authcode, nickname);
             if (info == null) return (null, error);
 
-            return (new EntryTicket
-            {
-                ChallengeID = info.ChallengeID,
-                RunID = info.RunID,
-                PublicKeyRSA = info.PublicKey
-            }, ResolverError.None);
+            return (new EntryTicket(info), ResolverError.None);
         }
     }
 }

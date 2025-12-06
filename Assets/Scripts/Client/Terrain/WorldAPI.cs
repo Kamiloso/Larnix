@@ -64,7 +64,7 @@ namespace Larnix.Client.Terrain
 
         private static void SendBlockChange(Vector2Int POS, BlockData1 item, BlockData1 tool, bool front, long operation, byte code)
         {
-            Packet packet = new BlockChange(POS, item, tool, operation, front, code);
+            Payload packet = new BlockChange(POS, item, tool, operation, front, code);
             Ref.Client.Send(packet);
         }
     }

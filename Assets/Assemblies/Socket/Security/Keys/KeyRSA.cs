@@ -15,8 +15,7 @@ namespace Larnix.Socket.Security.Keys
 {
     public class KeyRSA : IEncryptionKey, IDisposable
     {
-        public const int PublicKeySize = 310; // adds safe padding for 2048-byte keys
-
+        private const int PublicKeySize = 264;
         private readonly bool _isFullKey;
         private readonly RSA _rsa;
 
@@ -54,8 +53,11 @@ namespace Larnix.Socket.Security.Keys
 
             try
             {
-                ushort len = (ushort) ((keyBytes[0] << 8) | (keyBytes[1]));
-                _rsa.ImportSubjectPublicKeyInfo(keyBytes[2..(2 + len)], out _);
+                _rsa.ImportParameters(new RSAParameters
+                {
+                    Modulus = keyBytes[..256],
+                    Exponent = ArrayUtils.RemoveLeadingZeros(keyBytes[256..])
+                });
             }
             catch
             {
@@ -68,13 +70,12 @@ namespace Larnix.Socket.Security.Keys
             if (_isBroken)
                 return new byte[PublicKeySize];
 
-            byte[] actualBytes = _rsa.ExportSubjectPublicKeyInfo();
-            ushort len = (ushort) actualBytes.Length;
+            var parameters = _rsa.ExportParameters(false);
 
-            byte[] lengthHeader = { (byte)((len & 0xFF_00) >> 8), (byte)(len & 0xFF) };
-            byte[] padding = new byte[PublicKeySize - actualBytes.Length - lengthHeader.Length];
-
-            return ArrayUtils.MegaConcat(lengthHeader, actualBytes, padding);
+            return ArrayUtils.MegaConcat(
+                parameters.Modulus,
+                ArrayUtils.AddLeadingZeros(parameters.Exponent, 8)
+                );
         }
 
         public byte[] Encrypt(byte[] plaintext)

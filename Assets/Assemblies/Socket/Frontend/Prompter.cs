@@ -1,111 +1,100 @@
 using System;
 using System.Net;
 using System.Net.Sockets;
-using System.Security.Cryptography;
 using System.Threading.Tasks;
-using Larnix.Socket.Security;
+using Larnix.Socket.Security.Keys;
 using Larnix.Socket.Channel;
 using Larnix.Socket.Structs;
 using Larnix.Core.Utils;
+using Larnix.Socket.Packets;
 
 namespace Larnix.Socket.Frontend
 {
     internal class Prompter : IDisposable
     {
-        private readonly UdpClient2 udpClient;
-        private readonly IPEndPoint endPoint;
+        private readonly UdpClient2 _udpClient;
+        private readonly IPEndPoint _target;
+
         private bool _disposed;
 
         private Prompter(IPEndPoint endPoint, UdpClient2 udpClient)
         {
-            this.endPoint = endPoint;
-            this.udpClient = udpClient;
+            _target = endPoint;
+            _udpClient = udpClient;
         }
 
-        public static async Task<TAnswer> PromptAsync<TAnswer>(string ipAddress, Packet prompt, int timeoutMiliseconds = 1500, RSA publicKeyRSA = null) where TAnswer : Payload, new()
+        public static async Task<TAnswer> PromptAsync<TAnswer>(string address, Payload prompt, int timeoutMiliseconds = 1500, KeyRSA publicKey = null) where TAnswer : Payload, new()
         {
-            var endPoint = await Resolver.ResolveStringAsync(ipAddress);
-            if (endPoint == null) return null;
+            IPEndPoint target = await Resolver.ResolveStringAsync(address);
+            if (target == null) return null;
 
             using UdpClient2 udp = new UdpClient2(
                 port: 0,
                 isListener: false,
-                isLoopback: IPAddress.IsLoopback(endPoint.Address),
-                isIPv6: endPoint.AddressFamily == AddressFamily.InterNetworkV6,
+                isLoopback: IPAddress.IsLoopback(target.Address),
+                isIPv6: target.AddressFamily == AddressFamily.InterNetworkV6,
                 recvBufferSize: 16 * 1024,
-                destination: endPoint
+                destination: target
                 );
-            var prompter = new Prompter(endPoint, udp);
+            var prompter = new Prompter(target, udp);
 
-            return await prompter.SendAndWaitAsync<TAnswer>(prompt, publicKeyRSA, timeoutMiliseconds);
+            return await prompter.SendAndWaitAsync<TAnswer>(prompt, publicKey, timeoutMiliseconds);
         }
 
-        private async Task<TAnswer> SendAndWaitAsync<TAnswer>(Packet prompt, RSA publicKeyRSA, int timeoutMiliseconds) where TAnswer : Payload, new()
+        private async Task<TAnswer> SendAndWaitAsync<TAnswer>(Payload prompt, KeyRSA publicKey, int timeoutMiliseconds) where TAnswer : Payload, new()
         {
-            int promptId = (int)Common.GetSecureLong();
+            int promptID = (int)Common.GetSecureLong();
 
-            PacketFlag flags = PacketFlag.NCN;
-            Func<byte[], byte[]> encrypt = null;
-            if (publicKeyRSA != null)
-            {
-                flags |= PacketFlag.RSA;
-                encrypt = bytes => Encryption.EncryptRSA(bytes, publicKeyRSA);
-            }
+            PayloadBox payloadBox = new PayloadBox(
+                seqNum: promptID,
+                ackNum: 0,
+                flags: (byte)(PacketFlag.NCN | (publicKey != null ? PacketFlag.RSA : 0)),
+                payload: prompt
+                );
 
-            var safePacket = new QuickPacket(promptId, 0, (byte)flags, prompt)
-            {
-                Encryption = encrypt
-            };
-
-            byte[] data = safePacket.Serialize();
+            byte[] data = publicKey != null ?
+                payloadBox.Serialize(publicKey) :
+                payloadBox.Serialize(KeyEmpty.GetInstance());
 
             try
             {
-                udpClient.Send(endPoint, data);
+                _udpClient.Send(_target, data);
             }
             catch
             {
-                // ERROR
-                return null;
+                Core.Debug.LogWarning($"Cannot send prompt! CmdID = {prompt.ID}");
+                return null; // sending error
             }
 
             long deadline = Timestamp.GetTimestamp() + timeoutMiliseconds;
 
             while (Timestamp.GetTimestamp() < deadline)
             {
-                while (udpClient.TryReceive(out var item))
+                while (_udpClient.TryReceive(out var item))
                 {
-                    IPEndPoint remoteEP = item.target;
-                    byte[] bytes = item.data;
+                    byte[] networkBytes = item.data;
 
-                    var incoming = new QuickPacket();
-                    if (incoming.TryDeserialize(bytes))
+                    if (PayloadBox.TryDeserialize(networkBytes, KeyEmpty.GetInstance(), out var incoming) && incoming.SeqNum == promptID)
                     {
-                        if (incoming.SeqNum == promptId && incoming.HasFlag(PacketFlag.NCN))
-                        {
-                            var packet = incoming.Packet;
-                            if (Payload.TryConstructPayload<TAnswer>(packet, out var answer))
-                            {
-                                return answer;
-                            }
-                        }
+                        if (Payload.TryConstructPayload<TAnswer>(incoming.Bytes, out var answer))
+                            return answer;
                     }
                 }
 
                 await Task.Delay(100);
             }
 
-            // ERROR
-            return null;
+            return null; // timeout
         }
 
         public void Dispose()
         {
-            if (_disposed)
-                return;
+            if (!_disposed)
+            {
+                _disposed = true;
 
-            _disposed = true;
-            udpClient?.Dispose();
+                _udpClient?.Dispose();
+            }
         }
     }
 }

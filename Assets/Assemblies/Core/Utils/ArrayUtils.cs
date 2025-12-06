@@ -19,5 +19,25 @@ namespace Larnix.Core.Utils
 
             return result;
         }
+
+        public static T[] AddLeadingZeros<T>(T[] array, int targetLength) where T : new()
+        {
+            if (array.Length > targetLength)
+                throw new ArgumentException(nameof(array));
+
+            return MegaConcat(
+                new T[targetLength - array.Length],
+                array
+                );
+        }
+
+        public static T[] RemoveLeadingZeros<T>(T[] array) where T : new()
+        {
+            int i = 0, lngt = array.Length;
+            while (i < lngt && array[i].Equals(new T()))
+                i++;
+
+            return array[i..];
+        }
     }
 }

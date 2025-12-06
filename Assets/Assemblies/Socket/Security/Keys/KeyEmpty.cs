@@ -5,7 +5,17 @@ namespace Larnix.Socket.Security.Keys
 {
     internal class KeyEmpty : IEncryptionKey
     {
-        public KeyEmpty() { }
+        private static KeyEmpty _instance;
+
+        private KeyEmpty() { }
+
+        public static KeyEmpty GetInstance()
+        {
+            if (_instance == null)
+                _instance = new KeyEmpty();
+
+            return _instance;
+        }
 
         public byte[] Encrypt(byte[] plaintext) => plaintext;
         public byte[] Decrypt(byte[] ciphertext) => ciphertext;

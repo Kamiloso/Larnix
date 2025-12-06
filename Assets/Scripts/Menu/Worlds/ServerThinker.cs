@@ -172,7 +172,7 @@ namespace Larnix.Menu.Worlds
             else // success
             {
                 serverInfo = downloading.Result.info;
-                State = Version.Current.CompatibleWith(new Version(serverInfo.GameVersion)) ? ThinkerState.Ready : ThinkerState.Incompatible;
+                State = Version.Current.CompatibleWith(serverInfo.GameVersion) ? ThinkerState.Ready : ThinkerState.Incompatible;
 
                 if (knowsUserData && State != ThinkerState.Incompatible)
                 {

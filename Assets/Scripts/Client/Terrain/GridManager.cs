@@ -124,7 +124,7 @@ namespace Larnix.Client.Terrain
 
         private int ChunkDistance(Vector2Int chunk)
         {
-            return Common.ManhattanDistance(
+            return GeometryUtils.ManhattanDistance(
                 BlockUtils.CoordsToChunk(!isMenu ? Ref.MainPlayer.Position : new Vec2(0, 0)),
                 chunk
                 );

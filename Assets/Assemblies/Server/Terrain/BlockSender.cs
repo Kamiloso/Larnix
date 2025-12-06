@@ -64,7 +64,7 @@ namespace Larnix.Server.Terrain
                 }).ToArray();
 
                 List<BlockUpdate> packets = BlockUpdate.CreateList(records);
-                foreach (Packet packet in packets)
+                foreach (Payload packet in packets)
                 {
                     Ref.QuickServer.Send(nickname, packet);
                 }
@@ -95,7 +95,7 @@ namespace Larnix.Server.Terrain
                 {
                     BlockData2 currentBlock = new BlockData2(blockFront.BlockData, blockBack.BlockData);
 
-                    Packet packet = new RetBlockChange(POS, operation, currentBlock, front, success);
+                    Payload packet = new RetBlockChange(POS, operation, currentBlock, front, success);
                     Ref.QuickServer.Send(nickname, packet);
                 }
             }

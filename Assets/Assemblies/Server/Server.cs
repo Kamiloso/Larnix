@@ -78,15 +78,14 @@ namespace Larnix.Server
                 Ref.Generator = new Worldgen.Generator(Ref.Database.GetSeed(seedSuggestion));
 
                 // Server configuration
-                Ref.QuickServer = QuickServer.CreateServerSync(
+                Ref.QuickServer = new QuickServer(
                     port: Type == ServerType.Remote ? Ref.Config.Port : (ushort)0,
                     maxClients: Ref.Config.MaxPlayers,
                     isLoopback: Type == ServerType.Local,
                     dataPath: Path.Combine(WorldPath, "Socket"),
                     userAPI: Ref.Database,
-                    gameVersion: Version.Current.ID,
-                    userText1: Validation.IsGoodText<String256>(Ref.Config.Motd) ? Ref.Config.Motd : "Wrong motd format :(", // motd
-                    userText2: Type == ServerType.Remote ? "Player" : (Mdata?.nickname ?? "Player") // server owner ("Player" = detached)
+                    motd: Validation.IsGoodText<String256>(Ref.Config.Motd) ? Ref.Config.Motd : "Wrong motd format :(", // motd
+                    hostUser: Type == ServerType.Remote ? "Player" : (Mdata?.nickname ?? "Player") // server owner ("Player" = detached)
                 );
                 Ref.QuickServer.ConfigureMasks(
                     Ref.Config.ClientIdentityPrefixSizeIPv4,

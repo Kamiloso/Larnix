@@ -111,7 +111,7 @@ namespace Larnix.Client
 
             if(LastSentFixedCounter != FixedCounter)
             {
-                Packet packet = new PlayerUpdate(Position, Rotation, FixedCounter);
+                Payload packet = new PlayerUpdate(Position, Rotation, FixedCounter);
                 Ref.Client.Send(packet, false); // fast mode (over raw udp)
 
                 LastSentFixedCounter = FixedCounter;

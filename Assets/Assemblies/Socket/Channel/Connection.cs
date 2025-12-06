@@ -1,34 +1,19 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Sockets;
 using System.Net;
-using System.Security.Cryptography;
 using Larnix.Socket.Packets;
 using System;
 using Larnix.Core.Utils;
-using Larnix.Socket.Security;
 using Larnix.Socket.Structs;
+using Larnix.Socket.Security.Keys;
 
 namespace Larnix.Socket.Channel
 {
-    public class Connection
+    internal class Connection
     {
-        private Action<byte[]> SendToEndPoint;
-        public readonly IPEndPoint EndPoint;
-
-        private byte[] KeyAES = null;
-        private RSA KeyRSA = null;
-
-        private const int MaxSeqTolerance = 128;
-        private int SeqNum = 0; // last sent message ID
-        private int AckNum = 0; // last acknowledged message ID
-        private int GetNum = 0; // last received message ID
-
-        public const uint MaxTransmissions = 8;
         public const uint MaxStayingPackets = 128;
-        public bool IsDead { get; private set; } = false; // blocks socket
-        public bool IsError { get; private set; } = false; // communiactes that an error occured
+        private const int MaxSeqTolerance = 128;
 
         private const float AckCycleTime = 0.1f;
         private float currentAckCycleTime = 0.0f;
@@ -36,48 +21,59 @@ namespace Larnix.Socket.Channel
         private const float SafeCycleTime = 0.5f;
         private float currentSafeCycleTime = 0.0f;
 
-        private Random Rand = new();
         private const float DebugDropChance = 0.0f;
 
-        private List<QuickPacket> sendingPackets = new List<QuickPacket>();
-        private List<QuickPacket> receivedPackets = new List<QuickPacket>();
-        private Queue<Packet> downloadablePackets = new Queue<Packet>();
+        // -------------------------------------------
+
+        private readonly Retransmitter _retransmitter = new Retransmitter(8);
+
+        public readonly IPEndPoint EndPoint;
+        public readonly bool IsClient;
+
+        private readonly Action<byte[]> SendBytes;
+        private readonly KeyRSA _rsaKey;
+        private readonly KeyAES _aesKey;
+
+        private int SeqNum = 0; // last sent message ID
+        private int AckNum = 0; // last acknowledged message ID
+        private int GetNum = 0; // last received message ID
+
+        public bool IsDead { get; private set; } = false; // blocks socket
+        public bool IsError { get; private set; } = false; // communiactes that an error occured
+
+        private List<PayloadBox> sendingBoxes = new();
+        private List<PayloadBox> receivedBoxes = new();
+        private Queue<HeaderSpan> readyPackets = new();
 
         private readonly LinkedList<(int seq, long time)> PacketTimestamps = new();
         private readonly LinkedList<long> PacketRTTs = new();
         private readonly HashSet<int> _RetransmittedNow = new(); // local
+
         private const int MaxRTTs = 10;
         private const float OffsetRTT = 0.050f; // 50 ms
         private const float DefaultAvgRTT = 0.6f; // assumes 600 ms for safety
 
         public float AvgRTT { get; private set; } = DefaultAvgRTT;
 
-        public readonly bool IsClient;
-
-        public Connection(Action<byte[]> sendToEndPoint, IPEndPoint endPoint, byte[] keyAES, Packet synPacket = null, RSA keyPublicRSA = null)
+        public Connection(INetworkInteractions udp, IPEndPoint target, KeyAES aesKey, Payload synPacket = null, KeyRSA rsaKey = null)
         {
-            SendToEndPoint = sendToEndPoint;
-            EndPoint = endPoint;
-            KeyRSA = keyPublicRSA;
-            KeyAES = keyAES?.Length == 16 ? keyAES : throw new ArgumentException("Wrong keyAES format!");
-
+            EndPoint = target;
             IsClient = synPacket != null;
 
-            if (synPacket != null) // CLIENT, use RSA public key
-            {
-                // Send SYN packet
-                PacketFlag flags = PacketFlag.SYN;
-                if(keyPublicRSA != null)
-                    flags |= PacketFlag.RSA; // guarantees encryption
+            SendBytes = b => udp.Send(target, b);
+            _rsaKey = rsaKey;
+            _aesKey = aesKey;
 
-                QuickPacket safePacket = new QuickPacket(
-                    ++SeqNum,
-                    GetNum,
-                    (byte)flags,
-                    synPacket
+            if (synPacket != null) // send SYN packet (encrypted or not)
+            {
+                PayloadBox synBox = new PayloadBox(
+                    seqNum: ++SeqNum,
+                    ackNum: GetNum,
+                    flags: (byte)(PacketFlag.SYN | (rsaKey != null ? PacketFlag.RSA : 0)),
+                    payload: synPacket
                     );
 
-                SendSafePacket(safePacket);
+                SendSafePacket(synBox);
             }
         }
 
@@ -89,15 +85,15 @@ namespace Larnix.Socket.Channel
             while (true)
             {
                 bool foundNextPacket = false;
-                for (int i = 0; i < receivedPackets.Count; i++)
+                for (int i = 0; i < receivedBoxes.Count; i++)
                 {
-                    QuickPacket safePacket = receivedPackets[i];
-                    if (safePacket.SeqNum == GetNum + 1)
+                    PayloadBox box = receivedBoxes[i];
+                    if (box.SeqNum == GetNum + 1)
                     {
                         foundNextPacket = true;
                         try
                         {
-                            ReadyPacketTryEnqueue(safePacket, true);
+                            ReadyPacketTryEnqueue(box, true);
                         }
                         catch (FormatException)
                         {
@@ -113,34 +109,35 @@ namespace Larnix.Socket.Channel
             }
 
             // Delete packets that are no longer needed
-            receivedPackets.RemoveAll(p => (p.SeqNum - GetNum <= 0));
+            receivedBoxes.RemoveAll(p => (p.SeqNum - GetNum <= 0));
 
             // Check for retransmissions
             AvgRTT = (float)AverageRTT();
             _RetransmittedNow.Clear();
-            for (int i = 0; i < sendingPackets.Count; i++)
+            for (int i = 0; i < sendingBoxes.Count; i++)
             {
-                QuickPacket safePacket = sendingPackets[i];
-                safePacket.ReduceTime(deltaTime);
-                if (safePacket.TimeToRetransmission == 0f)
+                PayloadBox box = sendingBoxes[i];
+
+                try
                 {
-                    if (safePacket.SeqNum - AckNum <= 0)
+                    if (box.SeqNum - AckNum <= 0)
                     {
-                        sendingPackets.RemoveAt(i--);
+                        sendingBoxes.RemoveAt(i--);
+                        _retransmitter.Discard(box);
                     }
                     else
                     {
-                        if (safePacket.TransmissionCount < MaxTransmissions)
+                        if (_retransmitter.AllowRetransmission(box, (long)Math.Round((AvgRTT + OffsetRTT) * 1000f)))
                         {
-                            Transmit(safePacket);
-                            _RetransmittedNow.Add(safePacket.SeqNum);
-                        }
-                        else
-                        {
-                            FinishConnection();
-                            return;
+                            Transmit(box);
+                            _RetransmittedNow.Add(box.SeqNum);
                         }
                     }
+                }
+                catch (TimeoutException)
+                {
+                    FinishConnection();
+                    return;
                 }
             }
 
@@ -173,85 +170,94 @@ namespace Larnix.Socket.Channel
             }
         }
 
-        public void Send(Packet packet, bool safemode = true)
+        public void Send(Payload packet, bool safemode = true)
         {
             if (IsDead) return;
 
             if (safemode)
             {
-                SendSafePacket(new QuickPacket(++SeqNum, GetNum, 0, packet));
+                PayloadBox box = new PayloadBox(
+                    seqNum: ++SeqNum,
+                    ackNum: GetNum,
+                    flags: 0,
+                    payload: packet
+                    );
+
+                SendSafePacket(box);
             }
             else
             {
-                Transmit(new QuickPacket(SeqNum, GetNum, (byte)PacketFlag.FAS, packet));
+                PayloadBox box = new PayloadBox(
+                    seqNum: SeqNum,
+                    ackNum: GetNum,
+                    flags: (byte)PacketFlag.FAS,
+                    payload: packet
+                    );
+
+                Transmit(box);
             }
         }
 
-        public Queue<Packet> Receive()
+        public Queue<HeaderSpan> Receive()
         {
-            if (IsDead) return new Queue<Packet>();
+            if (IsDead) return new();
 
-            Queue<Packet> readyToRead = downloadablePackets;
-            downloadablePackets = new Queue<Packet>();
-            return readyToRead;
+            var ready = readyPackets;
+            readyPackets = new();
+            return ready;
         }
 
-        public void PushFromWeb(byte[] bytes, bool hasSYN = false)
+        public void PushFromWeb(byte[] networkBytes, bool hasSYN = false)
         {
             if (IsDead) return;
 
             // Drop packets if too many
-            if (receivedPackets.Count >= MaxStayingPackets ||
-               downloadablePackets.Count >= MaxStayingPackets) return;
+            if (receivedBoxes.Count >= MaxStayingPackets ||
+                readyPackets.Count >= MaxStayingPackets)
+                return;
 
-            QuickPacket safePacket = new QuickPacket();
-            if (!hasSYN) safePacket.Encryption = bytes => Encryption.DecryptAES(bytes, KeyAES);
-            if (!safePacket.TryDeserialize(bytes)) return;
-
-            int diff = safePacket.SeqNum - GetNum;
-
-            if (!safePacket.HasFlag(PacketFlag.FAS)) // safe mode
+            if (PayloadBox.TryDeserialize(networkBytes, !hasSYN ? _aesKey : KeyEmpty.GetInstance(), out PayloadBox box))
             {
-                // range drop
-                if (diff <= 0 || diff > MaxSeqTolerance)
-                    return;
+                int diff = box.SeqNum - GetNum;
 
-                // duplication drop
-                if (receivedPackets.Any(p => p.SeqNum == safePacket.SeqNum))
-                    return;
-
-                // safe enqueue
-                receivedPackets.Add(safePacket);
-            }
-            else // fast mode
-            {
-                // range drop
-                if (diff < -MaxSeqTolerance || diff > MaxSeqTolerance)
-                    return;
-
-                // enqueue
-                try
+                if (!box.HasFlag(PacketFlag.FAS))
                 {
-                    ReadyPacketTryEnqueue(safePacket, false);
+                    if (diff <= 0 || diff > MaxSeqTolerance) // range drop
+                        return;
+
+                    if (receivedBoxes.Any(p => p.SeqNum == box.SeqNum)) // duplication drop
+                        return;
+
+                    receivedBoxes.Add(box);
                 }
-                catch (FormatException)
+                else
                 {
-                    FinishConnection();
-                    IsError = true;
-                    return;
+                    if (diff < -MaxSeqTolerance || diff > MaxSeqTolerance) // range drop
+                        return;
+
+                    try
+                    {
+                        ReadyPacketTryEnqueue(box, false);
+                    }
+                    catch (FormatException)
+                    {
+                        FinishConnection();
+                        IsError = true;
+                        return;
+                    }
                 }
-            }
 
-            // best received acknowledgement get
-            if (safePacket.AckNum - AckNum > 0)
-            {
-                AckNum = safePacket.AckNum;
-                PongRTT(safePacket.AckNum);
-            }
+                // best received acknowledgement get
+                if (box.AckNum - AckNum > 0)
+                {
+                    AckNum = box.AckNum;
+                    PongRTT(box.AckNum);
+                }
 
-            // end connection
-            if (safePacket.HasFlag(PacketFlag.FIN))
-                IsDead = true;
+                // end connection
+                if (box.HasFlag(PacketFlag.FIN))
+                    IsDead = true;
+            }
         }
 
         public void FinishConnection()
@@ -261,85 +267,71 @@ namespace Larnix.Socket.Channel
             // Send 3 FIN flags (to ensure they arrive).
             // If they don't, protocol will automatically disconnect after a few seconds.
 
-            QuickPacket safePacket = new QuickPacket(
-                SeqNum,
-                GetNum,
-                (byte)PacketFlag.FAS | (byte)PacketFlag.FIN,
-                new None(0)
+            PayloadBox box = new PayloadBox(
+                seqNum: SeqNum,
+                ackNum: GetNum,
+                flags: (byte)PacketFlag.FAS | (byte)PacketFlag.FIN,
+                payload: new None(0)
                 );
 
-            const int FIN_COUNT = 3;
-            for (int i = 0; i < FIN_COUNT; i++)
-                Transmit(safePacket);
+            const int Retries = 3;
+            for (int i = 0; i < Retries; i++)
+                Transmit(box);
 
             IsDead = true;
         }
 
-        private void SendSafePacket(QuickPacket safePacket)
+        private void SendSafePacket(PayloadBox box)
         {
-            Transmit(safePacket);
-            PingRTT(safePacket.SeqNum);
-            sendingPackets.Add(safePacket);
+            Transmit(box);
+            PingRTT(box.SeqNum);
+            sendingBoxes.Add(box);
+
+            _retransmitter.Add(box, (long)Math.Round((AvgRTT + OffsetRTT) * 1000f));
         }
 
-        private void Transmit(QuickPacket safePacket)
+        private void Transmit(PayloadBox box)
         {
-            if (!safePacket.HasFlag(PacketFlag.SYN))
+            byte[] payload;
+
+            if (!box.HasFlag(PacketFlag.SYN))
             {
-                safePacket.Encryption = bytes => Encryption.EncryptAES(bytes, KeyAES);
+                payload = box.Serialize(_aesKey);
             }
             else
             {
-                if (safePacket.HasFlag(PacketFlag.RSA))
+                if (box.HasFlag(PacketFlag.RSA))
                 {
-                    safePacket.Encryption = bytes => Encryption.EncryptRSA(bytes, KeyRSA);
+                    payload = box.Serialize(_rsaKey);
                     Core.Debug.Log("Transmiting RSA-encrypted SYN.");
                 }
                 else
                 {
-                    if (IPAddress.IsLoopback(EndPoint.Address))
-                        Core.Debug.LogWarning("Transmiting unencrypted SYN to localhost.");
-                    else
-                        Core.Debug.LogWarning("Transmiting unencrypted SYN!");
+                    payload = box.Serialize(KeyEmpty.GetInstance());
+                    Core.Debug.LogWarning("Transmiting unencrypted SYN!");
                 }
             }
 
-            // Set control sequence
-            safePacket.Packet.ControlSequence = safePacket.MakeControlSequence();
-
-            // Retransmission time reset
-            if (!safePacket.HasFlag(PacketFlag.FAS))
-                safePacket.Transmited(AvgRTT + OffsetRTT);
-
             // Drop simulate
-            if (DebugDropChance != 0f && Rand.NextDouble() < DebugDropChance)
+            if (DebugDropChance != 0f && Common.Rand().NextDouble() < DebugDropChance)
                 return;
 
-            byte[] payload = safePacket.Serialize();
-            SendToEndPoint(payload);
+            SendBytes(payload);
         }
 
-        private bool ReadyPacketTryEnqueue(QuickPacket safePacket, bool is_safe)
+        private bool ReadyPacketTryEnqueue(PayloadBox box, bool isSafe)
         {
-            // No payload is not allowed
-            if (safePacket.Packet == null)
-                throw new FormatException();
-
             // AllowConnection packets only with SYN flag allowed
-            if (safePacket.Packet.ID == Payload.CmdID<AllowConnection>() &&
-                !safePacket.HasFlag(PacketFlag.SYN))
+            if (Payload.TryConstructPayload<AllowConnection>(box.Bytes, out _) &&
+                !box.HasFlag(PacketFlag.SYN))
                 return false;
 
             // Stop packets generate on server side, they cannot be sent through network
-            if (safePacket.Packet.ID == Payload.CmdID<Stop>())
+            if (Payload.TryConstructPayload<Stop>(box.Bytes, out _))
                 return false;
 
-            // Control order and throw exception if something wrong
-            if (safePacket.Packet.ControlSequence != safePacket.MakeControlSequence())
-                throw new FormatException();
-
             // Enqueue if everything ok
-            downloadablePackets.Enqueue(safePacket.Packet);
+            readyPackets.Enqueue(new HeaderSpan(box.Bytes));
             return true;
         }
 

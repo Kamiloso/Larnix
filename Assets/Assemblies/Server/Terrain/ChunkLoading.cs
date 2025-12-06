@@ -9,6 +9,7 @@ using Larnix.Core.Utils;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
 using Larnix.Socket.Structs;
+using UnityEditor;
 
 namespace Larnix.Server.Terrain
 {
@@ -144,14 +145,14 @@ namespace Larnix.Server.Terrain
                 foreach (var chunk in added)
                 {
                     Chunks[chunk].Instance.MoveChunkIntoArray(PreAllocatedChunkArray);
-                    Packet packet = new ChunkInfo(chunk, PreAllocatedChunkArray);
+                    Payload packet = new ChunkInfo(chunk, PreAllocatedChunkArray);
                     Ref.QuickServer.Send(nickname, packet);
                 }
 
                 // send removed
                 foreach (var chunk in removed)
                 {
-                    Packet packet = new ChunkInfo(chunk, null);
+                    Payload packet = new ChunkInfo(chunk, null);
                     Ref.QuickServer.Send(nickname, packet);
                 }
 
@@ -277,7 +278,7 @@ namespace Larnix.Server.Terrain
 
                 foreach(string nickname in Ref.PlayerManager.PlayerUID.Keys)
                 {
-                    int dist = Common.ManhattanDistance(
+                    int dist = GeometryUtils.ManhattanDistance(
                         chunk,
                         BlockUtils.CoordsToChunk(Ref.PlayerManager.GetPlayerRenderingPosition(nickname))
                         );

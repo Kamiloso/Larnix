@@ -4,6 +4,7 @@ using System.IO;
 using Larnix.Menu.Worlds;
 using Larnix.ServerRun;
 using Larnix.Socket.Backend;
+using Larnix.Core.Utils;
 using ServerType = Larnix.Server.ServerType;
 
 namespace Larnix
@@ -36,7 +37,7 @@ namespace Larnix
             Address = tuple.address;
             Authcode = tuple.authcode;
             Nickname = nickname;
-            Password = QuickServer.LoopbackOnlyPassword;
+            Password = Common.LoopbackOnlyPassword;
 
             // Load client
             SceneManager.LoadScene("Client");
@@ -55,7 +56,7 @@ namespace Larnix
             Address = serverTuple.address;
             Authcode = serverTuple.authcode;
             Nickname = nickname;
-            Password = QuickServer.LoopbackOnlyPassword;
+            Password = Common.LoopbackOnlyPassword;
 
             // Load client
             SceneManager.LoadScene("Client");

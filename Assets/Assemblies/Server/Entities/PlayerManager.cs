@@ -92,7 +92,7 @@ namespace Larnix.Server.Entities
             List<NearbyEntities> packets = NearbyEntities.CreateList(fixedFrame, addedList, removedList);
             if (packets.Count > 0)
             {
-                foreach(Packet packet in packets)
+                foreach(Payload packet in packets)
                 {
                     Ref.QuickServer.Send(nickname, packet);
                 }

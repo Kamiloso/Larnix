@@ -4,47 +4,69 @@ using System.Collections.Generic;
 using System.Reflection;
 using Larnix.Socket.Packets;
 using System.Linq;
-using Larnix.Socket.Channel;
-
-namespace Larnix.Socket.Channel
-{
-    public enum CmdID : ushort { None = 0 }
-}
+using Larnix.Core.Serialization;
+using Larnix.Core.Utils;
 
 namespace Larnix.Socket.Structs
 {
+    public enum CmdID : ushort { None = 0 }
+
     public abstract class Payload
     {
-        private Packet Packet = null;
+        internal const int BASE_HEADER_SIZE = 2 + 1 + 4;
+
+        public CmdID ID { get; private set; } // [0..2]
+        public byte Code { get; private set; } // [2..3] + SeqSecure: [3..7] (read in PayloadBox)
+        protected byte[] Bytes { get; private set; } // [7..]
+
         protected virtual bool WarningSuppress => false;
+        protected abstract bool IsValid();
 
-        public CmdID ID => Packet.ID;
-        public byte Code => Packet.Code;
-        protected byte[] Bytes => Packet.Bytes;
-
-        public static bool TryConstructPayload<T>(Packet packet, out T typed) where T : Payload, new()
+        internal static bool TryConstructPayload<T>(HeaderSpan headerSpan, out T output) where T : Payload, new()
         {
-            if (packet?.ID == CmdID<T>())
-            {
-                T payload = new T();
-                payload.Packet = packet;
+            return TryConstructPayload(headerSpan.AllBytes, out output);
+        }
 
-                if (payload.IsValid())
+        internal static bool TryConstructPayload<T>(byte[] rawBytes, out T output) where T : Payload, new()
+        {
+            if (rawBytes.Length >= BASE_HEADER_SIZE)
+            {
+                CmdID id = EndianUnsafe.FromBytes<CmdID>(rawBytes, 0);
+                if (id == CmdID<T>())
                 {
-                    typed = payload;
-                    return true;
+                    T payload = new T();
+
+                    payload.ID = payload.GetMyCmdID();
+                    payload.Code = EndianUnsafe.FromBytes<byte>(rawBytes, 2);
+                    payload.Bytes = rawBytes[7..];
+
+                    if (payload.IsValid())
+                    {
+                        output = payload;
+                        return true;
+                    }
                 }
             }
-            typed = null;
+
+            output = null;
             return false;
+        }
+
+        public byte[] Serialize(int seqSecure)
+        {
+            return ArrayUtils.MegaConcat(
+                EndianUnsafe.GetBytes(ID),
+                EndianUnsafe.GetBytes(Code),
+                EndianUnsafe.GetBytes(seqSecure), // SeqNum signature
+                Bytes
+                );
         }
 
         protected void InitializePayload(byte[] bytes, byte code = 0)
         {
-            if (Packet != null)
-                throw new InvalidOperationException("Payload can be initialized only once!");
-
-            Packet = new Packet(GetMyCmdID(), code, bytes);
+            ID = GetMyCmdID();
+            Code = code;
+            Bytes = bytes;
 
             if (!IsValid())
                 throw new FormatException("Payload data is not valid! Couldn't construct " + GetType() + " message.");
@@ -59,18 +81,6 @@ namespace Larnix.Socket.Structs
                     $"It is recommended to not create payload larger than 1400 bytes to prevent unnecessary packet loss. " +
                     $"You can suppress this warning by overriding property \"WarningSuppress\" to \"true\" in a message class.");
         }
-
-        protected abstract bool IsValid();
-
-
-        // ===== OPERATORS =====
-
-        public static implicit operator Packet(Payload payload)
-        {
-            return payload.Packet ?? throw new InvalidOperationException("Cannot convert Payload to Packet, because Payload was never initialized properly. " +
-                $"Are you using a default constructor on a {payload.GetType()} object? Only parametric constructors are allowed.");
-        }
-
 
         // ===== REFLECTIVE SEGMENT =====
 

@@ -2,6 +2,9 @@ using System;
 using System.IO;
 using System.Security.Cryptography;
 using Larnix.Core.Utils;
+using Org.BouncyCastle.Crypto.Engines;
+using Org.BouncyCastle.Crypto.Modes;
+using Org.BouncyCastle.Crypto.Parameters;
 
 namespace Larnix.Socket.Security.Keys
 {
@@ -42,15 +45,20 @@ namespace Larnix.Socket.Security.Keys
 
             byte[] nonce = Common.GetSecureBytes(NonceSize);
 
-            byte[] encrypted = new byte[plaintext.Length];
-            byte[] tag = new byte[TagSize];
+            var cipher = new GcmBlockCipher(new AesEngine());
+            var parameters = new AeadParameters(
+                new KeyParameter(_key),
+                TagSize * 8,
+                nonce
+            );
 
-            using (var aes = new AesGcm(_key))
-            {
-                aes.Encrypt(nonce, plaintext, encrypted, tag);
-            }
+            cipher.Init(true, parameters);
 
-            return ArrayUtils.MegaConcat(nonce, tag, encrypted);
+            byte[] output = new byte[cipher.GetOutputSize(plaintext.Length)];
+            int len = cipher.ProcessBytes(plaintext, 0, plaintext.Length, output, 0);
+            cipher.DoFinal(output, len);
+
+            return ArrayUtils.MegaConcat(nonce, output);
         }
 
         public byte[] Decrypt(byte[] ciphertext)
@@ -59,28 +67,32 @@ namespace Larnix.Socket.Security.Keys
                 throw new ArgumentNullException(nameof(ciphertext));
 
             if (ciphertext.Length < NonceSize + TagSize)
-            {
                 return new byte[0];
-            }
 
-            ReadOnlySpan<byte> fullData = new ReadOnlySpan<byte>(ciphertext);
+            byte[] nonce = new byte[NonceSize];
+            byte[] encrypted = new byte[ciphertext.Length - NonceSize];
 
-            ReadOnlySpan<byte> nonce = fullData.Slice(0, NonceSize);
-            ReadOnlySpan<byte> tag = fullData.Slice(NonceSize, TagSize);
-            ReadOnlySpan<byte> encrypted = fullData.Slice(NonceSize + TagSize);
+            Array.Copy(ciphertext, 0, nonce, 0, NonceSize);
+            Array.Copy(ciphertext, NonceSize, encrypted, 0, encrypted.Length);
 
-            byte[] plaintext = new byte[encrypted.Length];
+            var cipher = new GcmBlockCipher(new AesEngine());
+            var parameters = new AeadParameters(
+                new KeyParameter(_key),
+                TagSize * 8,
+                nonce
+            );
+
+            cipher.Init(false, parameters);
 
             try
             {
-                using (var aes = new AesGcm(_key))
-                {
-                    aes.Decrypt(nonce, encrypted, tag, plaintext);
-                }
+                byte[] output = new byte[cipher.GetOutputSize(encrypted.Length)];
+                int len = cipher.ProcessBytes(encrypted, 0, encrypted.Length, output, 0);
+                cipher.DoFinal(output, len);
 
-                return plaintext;
+                return output;
             }
-            catch (CryptographicException)
+            catch
             {
                 return new byte[0];
             }

@@ -13,6 +13,9 @@ namespace Larnix.Core.Utils
 {
     public static class Common
     {
+        public const string LoopbackOnlyNickname = "Player";
+        public const string LoopbackOnlyPassword = "SGP_PASSWORD\x01";
+
         public static string SavesPath => Path.Combine(Application.persistentDataPath, "Saves");
         public const float FIXED_TIME = 0.02f;
 
@@ -30,36 +33,6 @@ namespace Larnix.Core.Utils
             worldName.All(c => char.IsLetterOrDigit(c) || c == '-' || c == '_' || c == ' ') &&
             worldName == worldName.Trim() &&
             !reservedFolders.Contains(worldName.ToUpperInvariant());
-
-        public static int ManhattanDistance(Vector2Int v1, Vector2Int v2)
-        {
-            return Math.Abs(v1.x - v2.x) + Math.Abs(v1.y - v2.y);
-        }
-
-        public static float InSquareDistance(Vector2 v1, Vector2 v2)
-        {
-            return Math.Max(Math.Abs(v1.x - v2.x), Math.Abs(v1.y - v2.y));
-        }
-
-        public static Vector2 ReduceIntoSquare(Vector2 center, Vector2 point, float size)
-        {
-            if (InSquareDistance(center, point) <= size)
-                return point;
-
-            if (point.x > center.x + size)
-                point = new Vector2(center.x + size, point.y);
-
-            if (point.x < center.x - size)
-                point = new Vector2(center.x - size, point.y);
-
-            if (point.y > center.y + size)
-                point = new Vector2(point.x, center.y + size);
-
-            if (point.y < center.y - size)
-                point = new Vector2(point.x, center.y - size);
-
-            return point;
-        }
 
         private static readonly ThreadLocal<System.Random> ThreadRandom = new(() => new System.Random());
         public static System.Random Rand()

@@ -10,7 +10,7 @@ using Larnix.Core.Vectors;
 using System;
 using Larnix.Core.Utils;
 using Larnix.Entities.Structs;
-using Packet = Larnix.Socket.Structs.Packet;
+using Larnix.Socket.Structs;
 
 namespace Larnix.Server.Entities
 {
@@ -189,7 +189,7 @@ namespace Larnix.Server.Entities
             EntityControllers.Add(playerController.uID, playerController);
 
             // Construct and send PlayerInitialize
-            Packet packet = new PlayerInitialize(
+            Payload packet = new PlayerInitialize(
                 playerController.EntityData.Position,
                 playerController.uID,
                 LastSentFixedCounter

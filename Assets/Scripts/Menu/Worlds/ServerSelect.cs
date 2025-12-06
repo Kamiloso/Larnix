@@ -220,13 +220,13 @@ namespace Larnix.Menu.Worlds
             }
             else if (state == ThinkerState.Ready || state == ThinkerState.Incompatible)
             {
-                string versionDisplay = new Version(serverThinker.serverInfo.GameVersion).ToString();
-                string nicknameText = serverThinker.serverInfo.UserText2;
+                string versionDisplay = serverThinker.serverInfo.GameVersion.ToString();
+                string nicknameText = serverThinker.serverInfo.HostUser;
                 string hostDisplay = nicknameText != "Player" ? $"Host: {nicknameText}" : "Detached Server";
 
                 NameText.text = SelectedWorld ?? "";
                 TX_Description.text = $"Version: {versionDisplay}\n{hostDisplay}";
-                TX_Motd.text = serverThinker.serverInfo.UserText1;
+                TX_Motd.text = serverThinker.serverInfo.Motd;
                 TX_PlayerAmount.text = $"ACTIVE\n{serverThinker.serverInfo.CurrentPlayers} / {serverThinker.serverInfo.MaxPlayers}";
 
                 bool regist = serverThinker.WasRegistration;
