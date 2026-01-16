@@ -82,6 +82,11 @@ namespace Larnix.Socket.Structs
             return false;
         }
 
+        public static bool TryDeserializeOnlyHeader(byte[] networkBytes, out PayloadBox output)
+        {
+            return TryDeserialize(networkBytes, null, out output);
+        }
+
         public byte[] Serialize(IEncryptionKey key)
         {
             byte[] serialized = ArrayUtils.MegaConcat(

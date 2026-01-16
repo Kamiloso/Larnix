@@ -9,6 +9,7 @@ using Larnix.ServerRun;
 using Larnix.Socket.Frontend;
 using Larnix.Patches;
 using Larnix.Socket.Structs;
+using Unity.VisualScripting;
 
 namespace Larnix.Client
 {
@@ -143,8 +144,6 @@ namespace Larnix.Client
             {
                 if (Ref.MainPlayer.IsAlive)
                     Ref.Screenshots.CaptureTitleImage();
-                //else
-                //    References.Screenshots.RemoveTitleImage();
             }
         }
 

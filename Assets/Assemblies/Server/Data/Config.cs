@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using Larnix.Core.Files;
+using Larnix.Core.Utils;
 using UnityEngine;
 
 namespace Larnix.Server.Data
@@ -17,7 +18,7 @@ namespace Larnix.Server.Data
 
         public ushort ConfigVersion = 4;
         public ushort MaxPlayers = 10;
-        public ushort Port = 27682;
+        public ushort Port = Common.LarnixPort;
         public string Motd = "Welcome to Larnix server!";
         public float DataSavingPeriod = 15.00f;
         public float EntityBroadcastPeriod = 0.04f;

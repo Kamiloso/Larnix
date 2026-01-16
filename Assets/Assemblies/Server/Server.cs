@@ -78,26 +78,24 @@ namespace Larnix.Server
                 Ref.Generator = new Worldgen.Generator(Ref.Database.GetSeed(seedSuggestion));
 
                 // Server configuration
-                Ref.QuickServer = new QuickServer(
+                Ref.QuickServer = new QuickServer(new QuickServerConfig(
                     port: Type == ServerType.Remote ? Ref.Config.Port : (ushort)0,
                     maxClients: Ref.Config.MaxPlayers,
                     isLoopback: Type == ServerType.Local,
                     dataPath: Path.Combine(WorldPath, "Socket"),
                     userAPI: Ref.Database,
-                    motd: Validation.IsGoodText<String256>(Ref.Config.Motd) ? Ref.Config.Motd : "Wrong motd format :(", // motd
-                    hostUser: Type == ServerType.Remote ? "Player" : (Mdata?.nickname ?? "Player") // server owner ("Player" = detached)
-                );
-                Ref.QuickServer.ConfigureMasks(
-                    Ref.Config.ClientIdentityPrefixSizeIPv4,
-                    Ref.Config.ClientIdentityPrefixSizeIPv6
-                    );
+                    motd: Ref.Config.Motd,
+                    hostUser: Type == ServerType.Remote ? "Player" : (Mdata?.nickname ?? "Player"), // server owner ("Player" = detached)
+                    maskIPv4: Ref.Config.ClientIdentityPrefixSizeIPv4,
+                    maskIPv6: Ref.Config.ClientIdentityPrefixSizeIPv6
+                    ));
 
                 // Readonly classes in this file
                 Receiver = new Receiver(Ref.QuickServer);
                 Commands = new Commands();
 
                 // Configure for client
-                LocalAddress = "localhost:" + Ref.QuickServer.Port;
+                LocalAddress = "localhost:" + Ref.QuickServer.Config.Port;
                 Authcode = Ref.QuickServer.Authcode;
 
                 // Configure console
@@ -107,7 +105,7 @@ namespace Larnix.Server
                 }
                 else
                 {
-                    Core.Debug.Log("Port: " + Ref.QuickServer.Port + " | Authcode: " + Ref.QuickServer.Authcode);
+                    Core.Debug.Log("Port: " + Ref.QuickServer.Config.Port + " | Authcode: " + Ref.QuickServer.Authcode);
                 }
 
                 // info success
@@ -159,7 +157,7 @@ namespace Larnix.Server
             }
 
             // socket information
-            Core.Debug.LogRaw("Socket created on port " + Ref.QuickServer.Port + "\n");
+            Core.Debug.LogRaw("Socket created on port " + Ref.QuickServer.Config.Port + "\n");
             Core.Debug.LogRaw("Authcode: " + Ref.QuickServer.Authcode + "\n");
             Core.Debug.LogRaw(new string('-', 60) + "\n");
 

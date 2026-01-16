@@ -14,27 +14,58 @@ using Larnix.Socket.Security;
 
 namespace Larnix.Socket.Backend
 {
+    public struct QuickServerConfig
+    {
+        public readonly ushort Port;
+        public readonly ushort MaxClients;
+        public readonly bool IsLoopback;
+        public readonly string DataPath;
+        public readonly String256 Motd;
+        public readonly String32 HostUser;
+        public readonly int MaskIPv4;
+        public readonly int MaskIPv6;
+        public readonly IUserAPI UserAPI;
+
+        public QuickServerConfig(ushort port, ushort maxClients, bool isLoopback, string dataPath,
+            String256 motd, String32 hostUser, int maskIPv4, int maskIPv6, IUserAPI userAPI)
+        {
+            Port = port;
+            MaxClients = maxClients;
+            IsLoopback = isLoopback;
+            DataPath = dataPath;
+            Motd = motd;
+            HostUser = hostUser;
+            MaskIPv4 = maskIPv4;
+            MaskIPv6 = maskIPv6;
+            UserAPI = userAPI;
+        }
+
+        public QuickServerConfig WithPort(ushort realPort)
+        {
+            return new QuickServerConfig(
+                port: realPort,
+                maxClients: MaxClients,
+                isLoopback: IsLoopback,
+                dataPath: DataPath,
+                motd: Motd,
+                hostUser: HostUser,
+                maskIPv4: MaskIPv4,
+                maskIPv6: MaskIPv6,
+                userAPI: UserAPI
+                );
+        }
+    }
+
     public class QuickServer : IDisposable
     {
-        public readonly ushort Port, MaxClients;
-        public readonly bool IsLoopback;
-        public readonly string Motd;
-        public readonly string HostUser;
-
-        public readonly long Secret;
+        public readonly QuickServerConfig Config;
+        public readonly UserManager UserManager;
         public readonly string Authcode;
 
-        internal readonly long RunID;
-
-        private bool InitializedMasks = false;
-        internal int MaskIPv4 = 32;
-        internal int MaskIPv6 = 56;
-
-        public readonly UserManager UserManager;
-        public readonly KeyRSA _keyRSA;
-
+        private readonly long Secret;
+        private readonly long RunID;
+        private readonly KeyRSA _keyRSA;
         private readonly TripleSocket _udpSocket;
-        internal readonly HashSet<string> ReservedNicknames = new();
 
         private readonly Dictionary<string, Connection> _connections = new();
         private readonly Dictionary<IPEndPoint, Connection> _connectionsByEndPoint = new();
@@ -54,41 +85,18 @@ namespace Larnix.Socket.Backend
 
         private bool _disposed;
 
-        public QuickServer(ushort port, ushort maxClients, bool isLoopback, string dataPath, IUserAPI userAPI, string motd, string hostUser)
+        public QuickServer(QuickServerConfig serverConfig)
         {
-            if (!Validation.IsGoodText<String256>(motd))
-                throw new ArgumentException("Wrong motd format! Cannot be larger than 128 characters or end with NULL (0x00).");
-
-            if(!Validation.IsGoodText<String32>(hostUser))
-                throw new ArgumentException("Wrong host nickname format! Cannot be larger than 16 characters or end with NULL (0x00).");
-
             // managed objects
-            _udpSocket = new TripleSocket(port, isLoopback);
-            _keyRSA = new KeyRSA(dataPath, "private_key.pem");
-            UserManager = new UserManager(userAPI);
+            UserManager = new UserManager(serverConfig.UserAPI);
+            _udpSocket = new TripleSocket(serverConfig.Port, serverConfig.IsLoopback);
+            _keyRSA = new KeyRSA(serverConfig.DataPath, "private_key.pem");
+            Config = serverConfig.WithPort(_udpSocket.Port);
 
-            // other configuration
-            Port = _udpSocket.Port;
-            MaxClients = maxClients;
-            IsLoopback = isLoopback;
-            Secret = Security.Authcode.ObtainSecret(dataPath, "server_secret.txt");
+            // dynamic generated readonlys
+            Secret = Security.Authcode.ObtainSecret(serverConfig.DataPath, "server_secret.txt");
             Authcode = Security.Authcode.ProduceAuthCodeRSA(_keyRSA.ExportPublicKey(), Secret);
-            Motd = motd;
-            HostUser = hostUser;
-
-            // run random
             RunID = Common.GetSecureLong();
-        }
-
-        public void ConfigureMasks(int maskIPv4, int maskIPv6)
-        {
-            if (InitializedMasks)
-                throw new InvalidOperationException("Masks were already initialized! " +
-                    "This method should be called from directly after QuickServer constructor.");
-
-            InitializedMasks = true;
-            MaskIPv4 = maskIPv4;
-            MaskIPv6 = maskIPv6;
         }
 
         public async Task<ushort?> ConfigureRelay(string relayAddress)
@@ -111,7 +119,7 @@ namespace Larnix.Socket.Backend
 
         private bool CanAcceptSYN(IPEndPoint endPoint, string nickname)
         {
-            if (_connections.Count >= MaxClients)
+            if (_connections.Count >= Config.MaxClients)
                 return false;
 
             return !_connections.Any(kvp =>
@@ -162,9 +170,6 @@ namespace Larnix.Socket.Backend
 
         public void ServerTick(float deltaTime)
         {
-            // Block initializing masks
-            InitializedMasks = true;
-
             // Tick database
             Tick(deltaTime);
 
@@ -244,11 +249,11 @@ namespace Larnix.Socket.Backend
 
         private void InterpretBytes(IPEndPoint target, byte[] bytes)
         {
-            if (PayloadBox.TryDeserialize(bytes, null, out var header))
+            if (PayloadBox.TryDeserializeOnlyHeader(bytes, out var header))
             {
                 InternetID internetID = new InternetID(
                     target.Address,
-                    target.AddressFamily == AddressFamily.InterNetwork ? MaskIPv4 : MaskIPv6
+                    target.AddressFamily == AddressFamily.InterNetwork ? Config.MaskIPv4 : Config.MaskIPv6
                     );
                 uint conCount = recentConCount.ContainsKey(internetID) ? recentConCount[internetID] : 0;
 
@@ -458,13 +463,13 @@ namespace Larnix.Socket.Backend
                 SendNCN(remoteEP, ncnID, new A_ServerInfo(
                     publicKey.ExportPublicKey(),
                     CountPlayers(),
-                    MaxClients,
+                    Config.MaxClients,
                     Core.Version.Current,
                     UserManager.GetChallengeID(checkNickname),
                     Timestamp.GetTimestamp(),
                     RunID,
-                    Motd,
-                    HostUser
+                    Config.Motd,
+                    Config.HostUser
                     ));
             }
 
@@ -546,7 +551,7 @@ namespace Larnix.Socket.Backend
             InternetID internetID = new InternetID(
                 remoteEP.Address,
                 remoteEP.AddressFamily == AddressFamily.InterNetwork ?
-                    MaskIPv4 : MaskIPv6
+                    Config.MaskIPv4 : Config.MaskIPv6
                 );
 
             if (!LoginAmount.ContainsKey(internetID))

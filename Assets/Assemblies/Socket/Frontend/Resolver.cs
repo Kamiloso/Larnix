@@ -5,6 +5,7 @@ using System.Net;
 using System.Threading.Tasks;
 using Larnix.Socket.Security;
 using Larnix.Socket.Security.Keys;
+using Larnix.Core.Utils;
 
 namespace Larnix.Socket.Frontend
 {
@@ -38,7 +39,7 @@ namespace Larnix.Socket.Frontend
 
     public static class Resolver
     {
-        public static async Task<IPEndPoint> ResolveStringAsync(string address, ushort defaultPort = 27682)
+        public static async Task<IPEndPoint> ResolveStringAsync(string address, ushort defaultPort = Common.LarnixPort)
         {
             if (address == null) return null;
 

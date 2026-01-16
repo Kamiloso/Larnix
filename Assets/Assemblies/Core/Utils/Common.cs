@@ -13,6 +13,8 @@ namespace Larnix.Core.Utils
 {
     public static class Common
     {
+        public const ushort LarnixPort = 27682;
+
         public const string LoopbackOnlyNickname = "Player";
         public const string LoopbackOnlyPassword = "SGP_PASSWORD\x01";
 
