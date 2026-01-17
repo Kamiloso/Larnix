@@ -13,6 +13,7 @@ using System.Diagnostics;
 using Larnix.Core.Files;
 using Larnix.Socket.Backend;
 using Larnix.Socket;
+using Larnix.Worldgen;
 using Version = Larnix.Core.Version;
 using Console = Larnix.Core.Console;
 using Object = System.Object;
@@ -29,19 +30,19 @@ namespace Larnix.Server
 
     public class Server
     {
-        private WorldMeta? Mdata = null;
-
         public readonly ServerType Type;
         public readonly string WorldPath;
         public readonly string LocalAddress;
         public readonly string Authcode;
         public uint FixedFrame { get; private set; } = 0;
 
-        private readonly LinkedList<Type> _refOrder = new();
-        private readonly Dictionary<Type, Object> _registeredRefs = new();
-
+        private WorldMeta _mdata;
         private readonly Stopwatch _stopwatch = Stopwatch.StartNew();
         private double _lastTickTime = 0;
+
+        private readonly LinkedList<Type> _refOrder = new();
+        private readonly Dictionary<Type, Object> _registeredRefs = new();
+        private object _refLock = new();
 
         public readonly Action CloseServer;
         private bool _disposed = false;
@@ -74,16 +75,17 @@ namespace Larnix.Server
                 // Establish locker
                 AddRef(locker);
 
-                // World metadata
-                Mdata = WorldMeta.ReadData(WorldPath, true);
-                Mdata = new WorldMeta(Version.Current, Mdata?.nickname);
-                WorldMeta.SaveData(WorldPath, (WorldMeta)Mdata, true);
-
                 // Satelite classes
                 AddRef(Config.Obtain(WorldPath));
                 AddRef(new Database(WorldPath, "database.sqlite"));
-                AddRef(new Worldgen.Generator(Ref<Database>().GetSeed(seedSuggestion)));
+                AddRef(new Generator(Ref<Database>().GetSeed(seedSuggestion)));
 
+                // World metadata
+                _mdata = WorldMeta.ReadData(WorldPath, true);
+                _mdata = new WorldMeta(Version.Current, _mdata.nickname);
+                WorldMeta.SaveData(WorldPath, _mdata, true);
+
+                // QuickServer
                 AddRef(new QuickServer(new QuickServerConfig(
                     port: Type == ServerType.Remote ? Ref<Config>().Port : (ushort)0,
                     maxClients: Ref<Config>().MaxPlayers,
@@ -91,7 +93,7 @@ namespace Larnix.Server
                     dataPath: Path.Combine(WorldPath, "Socket"),
                     userAPI: Ref<Database>(),
                     motd: Ref<Config>().Motd,
-                    hostUser: Type == ServerType.Remote ? "Player" : (Mdata?.nickname ?? "Player"), // server owner ("Player" = detached)
+                    hostUser: Type == ServerType.Remote ? "Player" : _mdata.nickname, // server owner ("Player" => detached)
                     maskIPv4: Ref<Config>().ClientIdentityPrefixSizeIPv4,
                     maskIPv6: Ref<Config>().ClientIdentityPrefixSizeIPv6
                     )));
@@ -118,7 +120,7 @@ namespace Larnix.Server
                 if (Type == ServerType.Remote)
                 {
                     if (Ref<Config>().UseRelay)
-                        _ = Task.Run(() => EstablishRelay(Ref<Config>().RelayAddress));
+                        _ = Task.Run(() => EstablishRelayAsync(Ref<Config>().RelayAddress));
                 }
 
                 // Info success
@@ -129,15 +131,14 @@ namespace Larnix.Server
 
         private void ConfigureConsole()
         {
-            // title set
+            // Title set
             Console.SetTitle("Larnix Server " + Version.Current);
             Core.Debug.LogRaw(new string('-', 60) + "\n");
 
-            // force change default password
-            if (Mdata?.nickname != "Player")
+            // Force change default password
+            if (_mdata.nickname != "Player")
             {
-                string sgpNickname = Mdata?.nickname;
-                Core.Debug.LogRaw("This world was previously in use by " + sgpNickname + ".\n");
+                Core.Debug.LogRaw("This world was previously in use by " + _mdata.nickname + ".\n");
                 Core.Debug.LogRaw("Choose a password for this player to start the server.\n");
 
                 bool changeSuccess = false;
@@ -147,9 +148,9 @@ namespace Larnix.Server
                     string password = Console.GetInputSync();
                     if (Validation.IsGoodPassword(password))
                     {
-                        Ref<QuickServer>().UserManager.ChangePasswordSync(sgpNickname, password);
-                        Mdata = new WorldMeta(Version.Current, "Player");
-                        WorldMeta.SaveData(WorldPath, (WorldMeta)Mdata, true);
+                        Ref<QuickServer>().UserManager.ChangePasswordSync(_mdata.nickname, password);
+                        _mdata = new WorldMeta(Version.Current, "Player");
+                        WorldMeta.SaveData(WorldPath, _mdata, true);
                         changeSuccess = true;
                     }
                     else
@@ -163,19 +164,18 @@ namespace Larnix.Server
                 Core.Debug.LogRaw(new string('-', 60) + "\n");
             }
 
-            // socket information
+            // Socket information
             Core.Debug.LogRaw("Socket created on port " + Ref<QuickServer>().Config.Port + "\n");
             Core.Debug.LogRaw("Authcode: " + Ref<QuickServer>().Authcode + "\n");
             Core.Debug.LogRaw(new string('-', 60) + "\n");
 
-            // input thread start
+            // Input thread start
             Console.StartInputThread();
         }
 
-        public async Task<string> EstablishRelay(string relayAddress)
+        public async Task<string> EstablishRelayAsync(string relayAddress)
         {
-            ushort? relayPort = await Ref<QuickServer>().ConfigureRelay(relayAddress);
-            if (_disposed) return null;
+            ushort? relayPort = await Ref<QuickServer>().ConfigureRelayAsync(relayAddress);
 
             if (relayPort != null)
             {
@@ -194,30 +194,6 @@ namespace Larnix.Server
             }
         }
 
-        public void AddRef(Object obj)
-        {
-            Type type = obj.GetType();
-            if (!_registeredRefs.ContainsKey(type))
-            {
-                _registeredRefs[type] = obj;
-                _refOrder.AddLast(type);
-            }
-        }
-
-        public T Ref<T>() where T : class
-        {
-            return _registeredRefs.TryGetValue(typeof(T), out Object obj) ? (T)obj : null;
-        }
-
-        private float GetTimeElapsed()
-        {
-            double currentTime = _stopwatch.Elapsed.TotalSeconds;
-            double elapsedTime = currentTime - _lastTickTime;
-            _lastTickTime = currentTime;
-
-            return (float)elapsedTime;
-        }
-
         public void TickFixed()
         {
             FixedFrame++;
@@ -231,16 +207,15 @@ namespace Larnix.Server
 
             for (int i = 1; i <= 5; i++)
             {
-                foreach (Type t in _refOrder)
+                foreach (Object obj in TakeRefSnapshot())
                 {
-                    Object obj = _registeredRefs[t];
                     if (obj is ServerSingleton singleton)
                     {
                         if (i == 1) singleton.EarlyFrameUpdate();
-                        if (i == 2) singleton.TechEarlyFrameUpdate();
+                        if (i == 2) singleton.PostEarlyFrameUpdate();
                         if (i == 3) singleton.FrameUpdate();
-                        if (i == 4) singleton.TechLateFrameUpdate();
-                        if (i == 5) singleton.LateFrameUpdate();
+                        if (i == 4) singleton.LateFrameUpdate();
+                        if (i == 5) singleton.PostLateFrameUpdate();
                     }
                 }
             }
@@ -252,6 +227,49 @@ namespace Larnix.Server
 
             if (FixedFrame % Ref<Config>().DataSavingPeriodFrames == 0)
                 SaveAllNow();
+        }
+
+        public void AddRef(Object obj)
+        {
+            Type type = obj.GetType();
+            lock (_refLock)
+            {
+                if (!_registeredRefs.ContainsKey(type))
+                {
+                    _registeredRefs[type] = obj;
+                    _refOrder.AddLast(type);
+                }
+            }
+        }
+
+        public T Ref<T>() where T : class
+        {
+            lock (_refLock)
+            {
+                return _registeredRefs.TryGetValue(typeof(T), out Object obj) ? (T)obj : null;
+            }
+        }
+
+        private LinkedList<Object> TakeRefSnapshot()
+        {
+            LinkedList<Object> snapshot = new();
+            lock (_refLock)
+            {
+                foreach (Type t in _refOrder)
+                {
+                    snapshot.AddLast(_registeredRefs[t]);
+                }
+            }
+            return snapshot;
+        }
+
+        private float GetTimeElapsed()
+        {
+            double currentTime = _stopwatch.Elapsed.TotalSeconds;
+            double elapsedTime = currentTime - _lastTickTime;
+            _lastTickTime = currentTime;
+
+            return (float)elapsedTime;
         }
 
         private void SaveAllNow()
@@ -280,22 +298,19 @@ namespace Larnix.Server
             if (!_disposed)
             {
                 _disposed = true;
-
                 if (!emergency) SaveAllNow();
 
-                while (_refOrder.Count > 0)
+                LinkedList<Object> snapshot = TakeRefSnapshot();
+                while (snapshot.Count > 0)
                 {
-                    Type type = _refOrder.Last.Value;
-                    _refOrder.RemoveLast();
-
-                    Object obj = _registeredRefs[type];
+                    Object obj = snapshot.Last.Value;
                     if (obj is IDisposable disposable)
                     {
                         disposable.Dispose();
                     }
-                }
 
-                _registeredRefs.Clear();
+                    snapshot.RemoveLast();
+                }
 
                 Core.Debug.Log("Server closed");
             }

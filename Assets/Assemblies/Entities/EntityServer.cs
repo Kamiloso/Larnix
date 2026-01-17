@@ -9,7 +9,7 @@ namespace Larnix.Entities
     {
         public readonly ulong uID;
         public readonly EntityData EntityData; // Changing doesn't need saving. This is the same object as in EntityDataManager.cs
-        public EventHandler OnFixedUpdate;
+        public EventHandler OnFrameUpdate;
 
         public PhysicsManager Physics { get => _Physics ?? throw new InvalidOperationException("Trying to use an uninitialized PhysicsManager."); }
         private PhysicsManager _Physics = null;
@@ -37,9 +37,9 @@ namespace Larnix.Entities
             EntityData.Rotation = rotation;
         }
 
-        public void FromFixedUpdate()
+        public void FromFrameUpdate()
         {
-            OnFixedUpdate?.Invoke(null, EventArgs.Empty);
+            OnFrameUpdate?.Invoke(null, EventArgs.Empty);
         }
     }
 }

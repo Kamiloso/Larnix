@@ -11,7 +11,15 @@ namespace Larnix.Server.Entities
 {
     internal class EntityAbstraction : RefObject
     {
-        // Player constructor
+        private EntityServer controller;
+        private ulong storedUID;
+        private EntityData storedEntityData;
+
+        public bool IsActive => controller != null;
+        public ulong uID => IsActive ? controller.uID : storedUID;
+        public EntityData EntityData => IsActive ? controller.EntityData : storedEntityData;
+
+        // === Player constructor ===
         public EntityAbstraction(RefObject reff, string nickname) : base(reff)
         {
             ulong uid = (ulong)Ref<QuickServer>().UserManager.GetUserID(nickname);
@@ -28,7 +36,7 @@ namespace Larnix.Server.Entities
             Initialize(uid, entityData);
         }
 
-        // Entity constructor
+        // === Entity constructor ===
         public EntityAbstraction(RefObject reff, EntityData entityData, ulong? uid = null) : base(reff)
         {
             if (entityData.ID == EntityID.Player)
@@ -46,14 +54,6 @@ namespace Larnix.Server.Entities
             // flushing data to EntityDataManager
             Ref<EntityDataManager>().SetEntityData(storedUID, storedEntityData);
         }
-
-        private EntityServer controller;
-        private ulong storedUID;
-        private EntityData storedEntityData;
-
-        public bool IsActive => controller != null;
-        public ulong uID => IsActive ? controller.uID : storedUID;
-        public EntityData EntityData => IsActive ? controller.EntityData : storedEntityData;
 
         public void Activate()
         {
@@ -78,12 +78,12 @@ namespace Larnix.Server.Entities
             Ref<EntityDataManager>().UnloadEntityData(uID);
         }
 
-        public void FromFixedUpdate()
+        public void FromFrameUpdate()
         {
             if (!IsActive)
-                throw new System.InvalidOperationException("Cannot execute FromFixedUpdate() on inactive entity abstraction!");
+                throw new System.InvalidOperationException("Cannot execute FromFrameUpdate() on inactive entity abstraction!");
 
-            controller.FromFixedUpdate();
+            controller.FromFrameUpdate();
         }
     }
 }

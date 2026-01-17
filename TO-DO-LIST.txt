@@ -1,13 +1,16 @@
 === Larnix TO-DO-LIST ===
 
-- The great refactor
+- Repait client build
+- Vec2Int struct & disconnect from Unity
+- Socket finish refactor: server, ticketing
+- Structs rework, better serialization
+
 - QuickNet relay system
 
 - NBT system: Internal / Visual
 - Nicknames
 - Inventory
 - Entity generation
-- Health system & swords
 
 === KNOWN BUGS ===
 

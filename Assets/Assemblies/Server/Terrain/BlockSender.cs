@@ -17,22 +17,22 @@ namespace Larnix.Server.Terrain
     {
         private WorldAPI WorldAPI => Ref<ChunkLoading>().WorldAPI;
 
-        private readonly Queue<(Vector2Int block, BlockData2 data)> BlockUpdates = new();
-        private readonly Queue<(string owner, long operation, Vector2Int POS, bool front, bool success)> BlockChanges = new();
+        private readonly Queue<(Vector2Int block, BlockData2 data)> _blockUpdates = new();
+        private readonly Queue<(string owner, long operation, Vector2Int POS, bool front, bool success)> _blockChanges = new();
 
         public BlockSender(Server server) : base(server) {}
 
         public void AddBlockUpdate((Vector2Int, BlockData2) element)
         {
-            BlockUpdates.Enqueue(element);
+            _blockUpdates.Enqueue(element);
         }
 
         public void AddRetBlockChange(string owner, long operation, Vector2Int POS, bool front, bool success)
         {
-            BlockChanges.Enqueue((owner, operation, POS, front, success));
+            _blockChanges.Enqueue((owner, operation, POS, front, success));
         }
 
-        public override void TechLateFrameUpdate()
+        public override void PostLateFrameUpdate()
         {
             SendBlockUpdate(); // common block updates (server / players)
             SendBlockChanges(); // unlocking client-side & telling the real block state
@@ -47,9 +47,9 @@ namespace Larnix.Server.Terrain
                 IndividualUpdates[nickname] = new();
             }
 
-            while (BlockUpdates.Count > 0)
+            while (_blockUpdates.Count > 0)
             {
-                var element = BlockUpdates.Dequeue();
+                var element = _blockUpdates.Dequeue();
                 Vector2Int chunk = BlockUtils.CoordsToChunk(element.block);
 
                 foreach (string nickname in Ref<PlayerManager>().GetAllPlayerNicknames())
@@ -78,9 +78,9 @@ namespace Larnix.Server.Terrain
 
         private void SendBlockChanges()
         {
-            while(BlockChanges.Count > 0)
+            while(_blockChanges.Count > 0)
             {
-                var element = BlockChanges.Dequeue();
+                var element = _blockChanges.Dequeue();
 
                 string nickname = element.owner;
                 Vector2Int POS = element.POS;

@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace Larnix.Server.References
 {
-    public class RefObject
+    public abstract class RefObject
     {
         protected readonly Server ThisServer;
 

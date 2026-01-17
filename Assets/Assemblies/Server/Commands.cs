@@ -34,7 +34,7 @@ namespace Larnix.Server
 
         public Commands(Server server) : base(server) { }
 
-        public override void TechEarlyFrameUpdate()
+        public override void PostEarlyFrameUpdate()
         {
             while (true)
             {

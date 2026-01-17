@@ -1,6 +1,6 @@
 using System;
 
-namespace Larnix.Core.Serialization
+namespace Larnix.Core
 {
     public interface IIgnoresEndianness { }
 

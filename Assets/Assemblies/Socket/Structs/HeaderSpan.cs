@@ -1,4 +1,4 @@
-using Larnix.Core.Serialization;
+using Larnix.Core;
 using Larnix.Socket.Structs;
 using System.Collections;
 using System.Collections.Generic;

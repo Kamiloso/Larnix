@@ -19,34 +19,30 @@ namespace Larnix.Server.Entities
 {
     internal class EntityManager : ServerSingleton
     {
-        private readonly Dictionary<string, EntityAbstraction> PlayerControllers = new();
-        private readonly Dictionary<ulong, EntityAbstraction> EntityControllers = new();
+        private readonly Dictionary<string, EntityAbstraction> playerControllers = new();
+        private readonly Dictionary<ulong, EntityAbstraction> entityControllers = new();
 
-        private uint FixedCounter = 0;
-        private uint LastSentFixedCounter = 0;
-        private uint UpdateCounter = 0; // just to check modulo when sending NearbyEntities packet
-
-        private ulong? nextUID = null;
+        private uint _lastFixedFrame = 0;
+        private uint _updateCounter = 0; // just to check modulo when sending NearbyEntities packet
+        private ulong? _nextUID = null;
 
         public EntityManager(Server server) : base(server) { }
 
         public override void FrameUpdate()
         {
-            FixedCounter++;
-
             // DON'T add .ToList() or anything like that here.
             // We need a clear error message when accessing this dictionary inproperly.
-            foreach (var controller in EntityControllers.Values)
+            foreach (var controller in entityControllers.Values)
                 if (controller.IsActive)
                 {
-                    controller.FromFixedUpdate();
+                    controller.FromFrameUpdate();
                 }
 
             // Kill entities when needed
-            foreach (ulong uid in EntityControllers.Keys.ToList())
-                if (EntityControllers[uid].IsActive)
+            foreach (ulong uid in entityControllers.Keys.ToList())
+                if (entityControllers[uid].IsActive)
                 {
-                    if (EntityControllers[uid].EntityData.NBT.MarkedToKill)
+                    if (entityControllers[uid].EntityData.NBT.MarkedToKill)
                         KillEntity(uid);
                 }
         }
@@ -54,9 +50,9 @@ namespace Larnix.Server.Entities
         public override void EarlyFrameUpdate()
         {
             // Unload entities
-            foreach(ulong uid in EntityControllers.Keys.ToList())
+            foreach(ulong uid in entityControllers.Keys.ToList())
             {
-                EntityAbstraction controller = EntityControllers[uid];
+                EntityAbstraction controller = entityControllers[uid];
                 if (controller.IsActive && controller.EntityData.ID != EntityID.Player)
                 {
                     if (Ref<ChunkLoading>().IsEntityInZone(controller, ChunkLoading.LoadState.None))
@@ -68,9 +64,9 @@ namespace Larnix.Server.Entities
             const double MAX_ACTIVATING_MS = 3.0f;
             Stopwatch timer = Stopwatch.StartNew();
 
-            foreach (ulong uid in EntityControllers.Keys.ToList())
+            foreach (ulong uid in entityControllers.Keys.ToList())
             {
-                EntityAbstraction controller = EntityControllers[uid];
+                EntityAbstraction controller = entityControllers[uid];
                 if (!controller.IsActive && controller.EntityData.ID != EntityID.Player)
                 {
                     if(Ref<ChunkLoading>().IsEntityInZone(controller, ChunkLoading.LoadState.Active))
@@ -87,7 +83,7 @@ namespace Larnix.Server.Entities
 
         public void SendEntityBroadcast() // It works, better don't touch it
         {
-            if(FixedCounter != LastSentFixedCounter)
+            if(Ref<Server>().FixedFrame != _lastFixedFrame)
             {
                 Dictionary<ulong, uint> FixedFrames = Ref<PlayerManager>().GetFixedFramesByUID();
                 List<(string, EntityBroadcast)> broadcastsToSend = new();
@@ -101,10 +97,10 @@ namespace Larnix.Server.Entities
 
                     HashSet<ulong> EntitiesWithInactive = new HashSet<ulong>(); // contains inactive entities too (not inactive players)
 
-                    foreach (ulong uid in EntityControllers.Keys)
+                    foreach (ulong uid in entityControllers.Keys)
                     {
                         // -- checking entities to add --
-                        EntityAbstraction entity = EntityControllers[uid];
+                        EntityAbstraction entity = entityControllers[uid];
                         Vec2 entityPos = entity.EntityData.Position;
                         bool isPlayer = entity.EntityData.ID == EntityID.Player;
 
@@ -135,8 +131,8 @@ namespace Larnix.Server.Entities
                     Ref<PlayerManager>().UpdateNearbyUIDs(
                         nickname,
                         EntitiesWithInactive,
-                        FixedCounter,
-                        UpdateCounter % 6 == 0
+                        Ref<Server>().FixedFrame,
+                        _updateCounter % 6 == 0
                         );
 
                     const int MAX_RECORDS = EntityBroadcast.MAX_RECORDS;
@@ -162,7 +158,7 @@ namespace Larnix.Server.Entities
                                 fragmentFixed[uid] = fixedIndex;
                         }
 
-                        EntityBroadcast brdcst = new EntityBroadcast(FixedCounter, fragmentEntities, fragmentFixed);
+                        EntityBroadcast brdcst = new EntityBroadcast(Ref<Server>().FixedFrame, fragmentEntities, fragmentFixed);
                         broadcastsToSend.Add((nickname, brdcst));
                     }
                 }
@@ -173,39 +169,39 @@ namespace Larnix.Server.Entities
                     Ref<QuickServer>().Send(pair.Item1, pair.Item2, false); // unsafe mode (over raw UDP)
                 }
 
-                UpdateCounter++;
-                LastSentFixedCounter = FixedCounter;
+                _updateCounter++;
+                _lastFixedFrame = Ref<Server>().FixedFrame;
             }
         }
 
         public void CreatePlayerController(string nickname)
         {
             EntityAbstraction playerController = new(this, nickname);
-            PlayerControllers.Add(nickname, playerController);
-            EntityControllers.Add(playerController.uID, playerController);
+            playerControllers.Add(nickname, playerController);
+            entityControllers.Add(playerController.uID, playerController);
 
             // Construct and send PlayerInitialize
             Payload packet = new PlayerInitialize(
                 playerController.EntityData.Position,
                 playerController.uID,
-                LastSentFixedCounter
+                _lastFixedFrame
             );
             Ref<QuickServer>().Send(nickname, packet);
         }
 
         public EntityAbstraction GetPlayerController(string nickname)
         {
-            PlayerControllers.TryGetValue(nickname, out var value);
+            playerControllers.TryGetValue(nickname, out var value);
             return value;
         }
 
         public void UnloadPlayerController(string nickname)
         {
-            if (PlayerControllers.TryGetValue(nickname, out var value))
+            if (playerControllers.TryGetValue(nickname, out var value))
             {
                 EntityAbstraction playerController = value;
-                PlayerControllers.Remove(nickname);
-                EntityControllers.Remove(playerController.uID);
+                playerControllers.Remove(nickname);
+                entityControllers.Remove(playerController.uID);
                 playerController.UnloadEntityInstant();
             }
             else throw new InvalidOperationException($"Controller of player {nickname} is not loaded!");
@@ -213,18 +209,18 @@ namespace Larnix.Server.Entities
 
         public List<EntityAbstraction> GetAllPlayerControllers()
         {
-            return PlayerControllers.Values.ToList();
+            return playerControllers.Values.ToList();
         }
 
         public List<EntityAbstraction> GetAllEntityControllers()
         {
-            return EntityControllers.Values.ToList();
+            return entityControllers.Values.ToList();
         }
 
         public void SummonEntity(EntityData entityData)
         {
             EntityAbstraction entityController = new(this, entityData);
-            EntityControllers.Add(entityController.uID, entityController);
+            entityControllers.Add(entityController.uID, entityController);
         }
 
         public void LoadEntitiesByChunk(Vector2Int chunkCoords)
@@ -233,27 +229,27 @@ namespace Larnix.Server.Entities
             foreach (var kvp in entities)
             {
                 EntityAbstraction entityController = new(this, kvp.Value, kvp.Key);
-                EntityControllers.Add(entityController.uID, entityController);
+                entityControllers.Add(entityController.uID, entityController);
             }
         }
 
         public bool IsEntityLoaded(ulong uid)
         {
-            return EntityControllers.ContainsKey(uid);
+            return entityControllers.ContainsKey(uid);
         }
 
         public void KillEntity(ulong uid)
         {
-            if (!EntityControllers.ContainsKey(uid))
+            if (!entityControllers.ContainsKey(uid))
                 throw new System.InvalidOperationException("Entity with ID " + uid + " is not loaded!");
 
-            if (EntityControllers[uid].EntityData.ID == EntityID.Player)
+            if (entityControllers[uid].EntityData.ID == EntityID.Player)
             {
-                foreach(string nickname in PlayerControllers.Keys.ToList())
+                foreach(string nickname in playerControllers.Keys.ToList())
                 {
-                    if (PlayerControllers[nickname].uID == uid)
+                    if (playerControllers[nickname].uID == uid)
                     {
-                        PlayerControllers.Remove(nickname);
+                        playerControllers.Remove(nickname);
 
                         CodeInfo packet = new CodeInfo(CodeInfo.Info.YouDie);
                         Ref<QuickServer>().Send(nickname, packet);
@@ -263,34 +259,34 @@ namespace Larnix.Server.Entities
                 }
             }
 
-            EntityControllers[uid].DeleteEntityInstant();
-            EntityControllers.Remove(uid);
+            entityControllers[uid].DeleteEntityInstant();
+            entityControllers.Remove(uid);
         }
 
         private void UnloadEntity(ulong uid)
         {
-            if (!EntityControllers.ContainsKey(uid))
+            if (!entityControllers.ContainsKey(uid))
                 throw new InvalidOperationException("Entity with ID " + uid + " is not loaded!");
 
-            EntityAbstraction entityController = EntityControllers[uid];
+            EntityAbstraction entityController = entityControllers[uid];
             if (entityController.EntityData.ID == EntityID.Player)
                 throw new InvalidOperationException("Cannot unload player this way!");
 
-            EntityControllers[uid].UnloadEntityInstant();
-            EntityControllers.Remove(uid);
+            entityControllers[uid].UnloadEntityInstant();
+            entityControllers.Remove(uid);
         }
 
         public ulong GetNextUID()
         {
-            if (nextUID != null)
+            if (_nextUID != null)
             {
-                ulong uid = nextUID.Value;
-                nextUID--;
+                ulong uid = _nextUID.Value;
+                _nextUID--;
                 return uid;
             }
             else
             {
-                nextUID = (ulong)(Ref<Database>().GetMinUID() - 1);
+                _nextUID = (ulong)(Ref<Database>().GetMinUID() - 1);
                 return GetNextUID();
             }
         }

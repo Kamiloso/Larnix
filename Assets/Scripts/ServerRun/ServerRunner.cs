@@ -98,7 +98,7 @@ namespace Larnix.ServerRun
 
         public async Task<string> ConnectToRelay(string address)
         {
-            return await _server.EstablishRelay(address);
+            return await _server.EstablishRelayAsync(address);
         }
 
         public void StopServerSync()

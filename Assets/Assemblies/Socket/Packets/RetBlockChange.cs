@@ -2,7 +2,7 @@ using System;
 using System.Collections;
 using Larnix.Blocks;
 using UnityEngine;
-using Larnix.Core.Serialization;
+using Larnix.Core;
 using Larnix.Core.Utils;
 using Larnix.Blocks.Structs;
 using Larnix.Socket.Structs;

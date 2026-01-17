@@ -2,7 +2,7 @@ using Larnix.Socket.Security.Keys;
 using System.Collections;
 using System.Collections.Generic;
 using System;
-using Larnix.Core.Serialization;
+using Larnix.Core;
 using Larnix.Core.Utils;
 
 namespace Larnix.Socket.Structs

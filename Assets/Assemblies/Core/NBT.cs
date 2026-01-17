@@ -2,7 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
-using Larnix.Core.Serialization;
+using Larnix.Core;
 
 namespace Larnix.Core
 {

@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System;
-using Larnix.Core.Serialization;
+using Larnix.Core;
 using Larnix.Core.Utils;
 using Larnix.Socket.Structs;
 using Version = Larnix.Core.Version;

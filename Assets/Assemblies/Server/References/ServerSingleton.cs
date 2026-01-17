@@ -9,9 +9,9 @@ namespace Larnix.Server.References
         protected ServerSingleton(Server server) : base(server) {}
 
         public virtual void EarlyFrameUpdate() {}
-        public virtual void TechEarlyFrameUpdate() {}
+        public virtual void PostEarlyFrameUpdate() {}
         public virtual void FrameUpdate() {}
-        public virtual void TechLateFrameUpdate() {}
         public virtual void LateFrameUpdate() {}
+        public virtual void PostLateFrameUpdate() {}
     }
 }

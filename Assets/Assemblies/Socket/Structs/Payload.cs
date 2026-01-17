@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using Larnix.Socket.Packets;
 using System.Linq;
-using Larnix.Core.Serialization;
+using Larnix.Core;
 using Larnix.Core.Utils;
 
 namespace Larnix.Socket.Structs

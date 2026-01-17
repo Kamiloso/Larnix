@@ -12,24 +12,22 @@ namespace Larnix.Server.Entities
 {
     internal class EntityDataManager : ServerSingleton
     {
-        // Every EntityData entry must be controlled by one specific EntityController object
-        private readonly Dictionary<ulong, EntityData> EntityData = new Dictionary<ulong, EntityData>();
-
-        private readonly Dictionary<ulong, EntityData> UnloadedEntityData = new Dictionary<ulong, EntityData>();
-        private readonly Dictionary<ulong, EntityData> DeletedEntityData = new Dictionary<ulong, EntityData>();
+        private readonly Dictionary<ulong, EntityData> entityData = new Dictionary<ulong, EntityData>();
+        private readonly Dictionary<ulong, EntityData> unloadedEntityData = new Dictionary<ulong, EntityData>();
+        private readonly Dictionary<ulong, EntityData> deletedEntityData = new Dictionary<ulong, EntityData>();
 
         public EntityDataManager(Server server) : base(server) { }
 
         public EntityData TryFindEntityData(ulong uid)
         {
-            if (DeletedEntityData.ContainsKey(uid))
+            if (deletedEntityData.ContainsKey(uid))
                 return null;
 
-            if (UnloadedEntityData.ContainsKey(uid))
-                return UnloadedEntityData[uid];
+            if (unloadedEntityData.ContainsKey(uid))
+                return unloadedEntityData[uid];
 
-            if(EntityData.ContainsKey(uid))
-                return EntityData[uid];
+            if(entityData.ContainsKey(uid))
+                return entityData[uid];
 
             return Ref<Database>().FindEntity(uid);
         }
@@ -38,23 +36,23 @@ namespace Larnix.Server.Entities
         {
             Dictionary<ulong, EntityData> entityList = Ref<Database>().GetEntitiesByChunkNoPlayers(chunkCoords);
 
-            foreach(var vkp in EntityData)
+            foreach(var vkp in entityData)
             {
                 if(entityList.ContainsKey(vkp.Key)) // already loaded entity
                     entityList.Remove(vkp.Key);
             }
 
-            foreach (var vkp in DeletedEntityData)
+            foreach (var vkp in deletedEntityData)
             {
                 if (entityList.ContainsKey(vkp.Key)) // entity already removed
                     entityList.Remove(vkp.Key);
             }
 
-            foreach (var vkp in UnloadedEntityData)
+            foreach (var vkp in unloadedEntityData)
             {
                 EntityData newData = vkp.Value;
                 Vector2Int newChunkCoords = BlockUtils.CoordsToChunk(newData.Position);
-                bool in_the_chunk = (newChunkCoords == chunkCoords);
+                bool in_the_chunk = newChunkCoords == chunkCoords;
 
                 if (entityList.ContainsKey(vkp.Key))
                 {
@@ -79,40 +77,40 @@ namespace Larnix.Server.Entities
 
         public void SetEntityData(ulong uid, EntityData entityData)
         {
-            if (UnloadedEntityData.ContainsKey(uid))
-                UnloadedEntityData.Remove(uid);
+            if (unloadedEntityData.ContainsKey(uid))
+                unloadedEntityData.Remove(uid);
 
-            if (DeletedEntityData.ContainsKey(uid))
-                DeletedEntityData.Remove(uid);
+            if (deletedEntityData.ContainsKey(uid))
+                deletedEntityData.Remove(uid);
 
-            EntityData[uid] = entityData;
+            this.entityData[uid] = entityData;
         }
 
         public void UnloadEntityData(ulong uid)
         {
-            if (EntityData.ContainsKey(uid))
+            if (entityData.ContainsKey(uid))
             {
-                UnloadedEntityData.Add(uid, EntityData[uid]);
-                EntityData.Remove(uid);
+                unloadedEntityData.Add(uid, entityData[uid]);
+                entityData.Remove(uid);
             }
         }
 
         public void DeleteEntityData(ulong uid)
         {
-            if (EntityData.ContainsKey(uid))
+            if (entityData.ContainsKey(uid))
             {
-                DeletedEntityData.Add(uid, EntityData[uid]);
-                EntityData.Remove(uid);
+                deletedEntityData.Add(uid, entityData[uid]);
+                entityData.Remove(uid);
             }
         }
 
         public void FlushIntoDatabase()
         {
-            Ref<Database>().DeleteEntities(GetKeyList(DeletedEntityData));
-            DeletedEntityData.Clear();
+            Ref<Database>().DeleteEntities(GetKeyList(deletedEntityData));
+            deletedEntityData.Clear();
 
-            Ref<Database>().FlushEntities(MergeDictionaries(EntityData, UnloadedEntityData));
-            UnloadedEntityData.Clear();
+            Ref<Database>().FlushEntities(MergeDictionaries(entityData, unloadedEntityData));
+            unloadedEntityData.Clear();
         }
 
         private static Dictionary<ulong, EntityData> MergeDictionaries(

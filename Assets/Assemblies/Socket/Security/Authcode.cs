@@ -2,8 +2,9 @@ using Larnix.Core.Files;
 using Larnix.Core.Utils;
 using System.Collections;
 using System.Collections.Generic;
-using System.Security.Cryptography;
+using Org.BouncyCastle.Crypto.Generators;
 using System.Text;
+using Larnix.Core;
 
 namespace Larnix.Socket.Security
 {
@@ -38,17 +39,7 @@ namespace Larnix.Socket.Security
 
         public static string ProduceRawAuthCodeRSA(byte[] key, long secret)
         {
-            const int ITERATIONS = 50_000;
-            byte[] hash = key;
-
-            using (var incrementalHash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256))
-            {
-                for (int i = 0; i < ITERATIONS; i++)
-                {
-                    incrementalHash.AppendData(hash);
-                    hash = incrementalHash.GetHashAndReset();
-                }
-            }
+            byte[] hash = DeriveKeyScrypt(key, EndianUnsafe.GetBytes((long)-7264111368357934733)); // random, hard-coded salt
 
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < VERIFY_PART_LENGTH; i++)
@@ -134,6 +125,15 @@ namespace Larnix.Socket.Security
                 sb.Append(input[i]);
             }
             return sb.ToString();
+        }
+
+        private static byte[] DeriveKeyScrypt(byte[] password, byte[] salt)
+        {
+            return SCrypt.Generate(password, salt,
+                N: 1 << 14, // 16 MB
+                r: 8,
+                p: 1,
+                dkLen: VERIFY_PART_LENGTH);
         }
     }
 }

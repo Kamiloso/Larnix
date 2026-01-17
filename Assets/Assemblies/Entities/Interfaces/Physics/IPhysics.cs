@@ -13,7 +13,7 @@ namespace Larnix.Entities
 
         void Init()
         {
-            This.OnFixedUpdate += (sender, args) => PhysicsUpdate();
+            This.OnFrameUpdate += (sender, args) => PhysicsUpdate();
             dynamicCollider = new DynamicCollider(
                 Physics,
                 This.EntityData.Position,

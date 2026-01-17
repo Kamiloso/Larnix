@@ -1,7 +1,7 @@
 using System;
 using System.Collections;
 using Larnix.Core.Vectors;
-using Larnix.Core.Serialization;
+using Larnix.Core;
 using Larnix.Core.Utils;
 
 namespace Larnix.Entities.Structs

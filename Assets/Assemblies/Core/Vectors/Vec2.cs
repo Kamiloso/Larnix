@@ -1,7 +1,7 @@
 using UnityEngine;
 using System;
 using Larnix.Core.Utils;
-using Larnix.Core.Serialization;
+using Larnix.Core;
 
 namespace Larnix.Core.Vectors
 {

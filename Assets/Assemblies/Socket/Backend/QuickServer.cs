@@ -99,7 +99,7 @@ namespace Larnix.Socket.Backend
             RunID = Common.GetSecureLong();
         }
 
-        public async Task<ushort?> ConfigureRelay(string relayAddress)
+        public async Task<ushort?> ConfigureRelayAsync(string relayAddress)
         {
             return await _udpSocket.StartRelay(relayAddress);
         }
