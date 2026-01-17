@@ -8,8 +8,7 @@ namespace Larnix.Core.Vectors
     public struct Vec2 : IEquatable<Vec2>
     {
         public const int ORIGIN_STEP = 16 * 64;
-        public readonly double x;
-        public readonly double y;
+        public readonly double x, y;
 
         public Vec2(double x, double y)
         {

@@ -65,7 +65,9 @@
         "MemoryCaptures": true,
         "LarnixRelay": true,
         "Packages": true,
-        "Builds": true
+        "Builds": true,
+        "**/*.csproj": true,
+        "Larnix.sln": true,
     },
     "dotnet.defaultSolution": "Larnix.slnx"
 }

@@ -25,7 +25,7 @@ namespace Larnix.Menu.Worlds
         [SerializeField] Button BT_Rename;
         [SerializeField] Button BT_Delete;
 
-        private readonly Dictionary<string, MetadataSGP> MetadatasSGP = new();
+        private readonly Dictionary<string, WorldMeta> MetadatasSGP = new();
 
         private void Awake()
         {
@@ -45,7 +45,7 @@ namespace Larnix.Menu.Worlds
 
         public static void PlayWorldByName(string name, long? seedSuggestion = null)
         {
-            MetadataSGP mdata = MetadataSGP.ReadMetadataSGP(name);
+            WorldMeta mdata = WorldMeta.ReadData(name);
 
             if(mdata.nickname != "Player")
                 Settings.Settings.Instance.SetValue("$last-nickname-SGP", mdata.nickname, true);
@@ -55,7 +55,7 @@ namespace Larnix.Menu.Worlds
 
         public static void HostAndPlayWorldByName(string name, (string address, string authcode) serverTuple)
         {
-            MetadataSGP mdata = MetadataSGP.ReadMetadataSGP(name);
+            WorldMeta mdata = WorldMeta.ReadData(name);
 
             if (mdata.nickname != "Player")
                 Settings.Settings.Instance.SetValue("$last-nickname-SGP", mdata.nickname, true);
@@ -65,7 +65,7 @@ namespace Larnix.Menu.Worlds
 
         public void HostWorld()
         {
-            MetadataSGP mdata = MetadataSGP.ReadMetadataSGP(SelectedWorld);
+            WorldMeta mdata = WorldMeta.ReadData(SelectedWorld);
             BaseForm.GetInstance<WorldHostForm>().EnterForm(SelectedWorld, mdata.nickname);
         }
 
@@ -99,7 +99,7 @@ namespace Larnix.Menu.Worlds
                 rt.GetComponent<WorldSegment>().Init(worldName, this);
                 ScrollView.BottomAddElement(rt);
 
-                MetadatasSGP[worldName] = MetadataSGP.ReadMetadataSGP(worldPath);
+                MetadatasSGP[worldName] = WorldMeta.ReadData(worldPath);
             }
         }
 

@@ -9,11 +9,13 @@ using Larnix.Core.Utils;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
 using Larnix.Socket.Structs;
+using Larnix.Socket.Backend;
 using UnityEditor;
+using Larnix.Server.References;
 
 namespace Larnix.Server.Terrain
 {
-    internal class ChunkLoading
+    internal class ChunkLoading : ServerSingleton
     {
         public const float UNLOADING_TIME = 4f; // seconds
 
@@ -36,10 +38,9 @@ namespace Larnix.Server.Terrain
             Active
         }
 
-        public ChunkLoading()
+        public ChunkLoading(Server server) : base(server)
         {
-            Ref.ChunkLoading = this;
-            WorldAPI = new WorldAPI();
+            WorldAPI = new WorldAPI(server);
 
             if (PreAllocatedChunkArray[0, 0] == null) // pre-allocating chunk array
             {
@@ -49,7 +50,7 @@ namespace Larnix.Server.Terrain
             }
         }
 
-        public void FromFixedUpdate() // FIX-1
+        public override void FrameUpdate()
         {
             var activeChunks = Chunks.Where(kv => ChunkState(kv.Key) == LoadState.Active).ToList();
             var orderedChunks = activeChunks.OrderBy(kv => kv.Key.y).ThenBy(kv => kv.Key.x).ToList();
@@ -75,13 +76,13 @@ namespace Larnix.Server.Terrain
 
             // Chunk changes broadcasting
             const int BROADCAST_FIXED_PERIOD = 8;
-            if (Ref.Server.FixedFrame % BROADCAST_FIXED_PERIOD == 0)
+            if (Ref<Server>().FixedFrame % BROADCAST_FIXED_PERIOD == 0)
             {
                 BroadcastChunkChanges();
             }
         }
 
-        public void FromEarlyUpdate() // 1
+        public override void EarlyFrameUpdate()
         {
             // Chunk stimulating
 
@@ -117,7 +118,7 @@ namespace Larnix.Server.Terrain
 
             foreach (var vkp in Chunks.ToList())
             {
-                Chunks[vkp.Key].UnloadTime -= Server.FIXED_TIME;
+                Chunks[vkp.Key].UnloadTime -= Common.FIXED_TIME;
             }
         }
 
@@ -125,12 +126,12 @@ namespace Larnix.Server.Terrain
         {
             // Updating player chunk data
 
-            foreach (string nickname in Ref.PlayerManager.PlayerUID.Keys)
+            foreach (string nickname in Ref<PlayerManager>().GetAllPlayerNicknames())
             {
-                Vector2Int chunkpos = BlockUtils.CoordsToChunk(Ref.PlayerManager.GetPlayerRenderingPosition(nickname));
-                var player_state = Ref.PlayerManager.GetPlayerState(nickname);
+                Vector2Int chunkpos = BlockUtils.CoordsToChunk(Ref<PlayerManager>().GetPlayerRenderingPosition(nickname));
+                var player_state = Ref<PlayerManager>().GetPlayerState(nickname);
 
-                HashSet<Vector2Int> chunksMemory = Ref.PlayerManager.ClientChunks[nickname];
+                HashSet<Vector2Int> chunksMemory = Ref<PlayerManager>().LoadedChunksCopy(nickname);
                 HashSet<Vector2Int> chunksNearby = BlockUtils.GetNearbyChunks(chunkpos, BlockUtils.LOADING_DISTANCE)
                     .Where(c => ChunkState(c) == LoadState.Active)
                     .ToHashSet();
@@ -146,17 +147,17 @@ namespace Larnix.Server.Terrain
                 {
                     Chunks[chunk].Instance.MoveChunkIntoArray(PreAllocatedChunkArray);
                     Payload packet = new ChunkInfo(chunk, PreAllocatedChunkArray);
-                    Ref.QuickServer.Send(nickname, packet);
+                    Ref<QuickServer>().Send(nickname, packet);
                 }
 
                 // send removed
                 foreach (var chunk in removed)
                 {
                     Payload packet = new ChunkInfo(chunk, null);
-                    Ref.QuickServer.Send(nickname, packet);
+                    Ref<QuickServer>().Send(nickname, packet);
                 }
 
-                Ref.PlayerManager.ClientChunks[nickname] = chunksNearby;
+                Ref<PlayerManager>().UpdateClientChunks(nickname, chunksNearby);
             }
         }
 
@@ -217,7 +218,7 @@ namespace Larnix.Server.Terrain
                         UnloadTime = UNLOADING_TIME,
                         Instance = null
                     };
-                    Ref.EntityManager.LoadEntitiesByChunk(chunk); // passive load (without instance)
+                    Ref<EntityManager>().LoadEntitiesByChunk(chunk); // passive load (without instance)
                     break;
 
                 case LoadState.Loading:
@@ -240,7 +241,7 @@ namespace Larnix.Server.Terrain
 
             // Create block chunk
 
-            Chunks[chunk].Instance = new ChunkServer(chunk);
+            Chunks[chunk].Instance = new ChunkServer(this, chunk);
         }
 
         private void ChunkUnload(Vector2Int chunk)
@@ -276,11 +277,11 @@ namespace Larnix.Server.Terrain
             {
                 int dist_min = int.MaxValue;
 
-                foreach(string nickname in Ref.PlayerManager.PlayerUID.Keys)
+                foreach(string nickname in Ref<PlayerManager>().GetAllPlayerNicknames())
                 {
                     int dist = GeometryUtils.ManhattanDistance(
                         chunk,
-                        BlockUtils.CoordsToChunk(Ref.PlayerManager.GetPlayerRenderingPosition(nickname))
+                        BlockUtils.CoordsToChunk(Ref<PlayerManager>().GetPlayerRenderingPosition(nickname))
                         );
 
                     if (dist < dist_min)
@@ -299,8 +300,8 @@ namespace Larnix.Server.Terrain
             HashSet<Vector2Int> targetLoads = new();
 
             List<Vec2> positions = new();
-            foreach (string nickname in Ref.PlayerManager.PlayerUID.Keys)
-                positions.Add(Ref.PlayerManager.GetPlayerRenderingPosition(nickname));
+            foreach (string nickname in Ref<PlayerManager>().GetAllPlayerNicknames())
+                positions.Add(Ref<PlayerManager>().GetPlayerRenderingPosition(nickname));
 
             foreach (Vector2Int center in BlockUtils.GetCenterChunks(positions))
             {

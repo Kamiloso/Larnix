@@ -11,14 +11,16 @@ using System;
 using Larnix.Core.Utils;
 using Larnix.Entities.Structs;
 using Larnix.Socket.Structs;
+using Larnix.Socket.Backend;
+using Larnix.Server.Data;
+using Larnix.Server.References;
 
 namespace Larnix.Server.Entities
 {
-    internal class EntityManager
+    internal class EntityManager : ServerSingleton
     {
         private readonly Dictionary<string, EntityAbstraction> PlayerControllers = new();
         private readonly Dictionary<ulong, EntityAbstraction> EntityControllers = new();
-        public int EntityCount = 0;
 
         private uint FixedCounter = 0;
         private uint LastSentFixedCounter = 0;
@@ -26,12 +28,11 @@ namespace Larnix.Server.Entities
 
         private ulong? nextUID = null;
 
-        public void FromFixedUpdate() // FIX-2
-        {
-            // Fixed counter increment
-            FixedCounter++;
+        public EntityManager(Server server) : base(server) { }
 
-            // Execute entity behaviours
+        public override void FrameUpdate()
+        {
+            FixedCounter++;
 
             // DON'T add .ToList() or anything like that here.
             // We need a clear error message when accessing this dictionary inproperly.
@@ -48,12 +49,9 @@ namespace Larnix.Server.Entities
                     if (EntityControllers[uid].EntityData.NBT.MarkedToKill)
                         KillEntity(uid);
                 }
-
-            // Debug info
-            EntityCount = EntityControllers.Count;
         }
 
-        public void FromEarlyUpdate() // 2
+        public override void EarlyFrameUpdate()
         {
             // Unload entities
             foreach(ulong uid in EntityControllers.Keys.ToList())
@@ -61,7 +59,7 @@ namespace Larnix.Server.Entities
                 EntityAbstraction controller = EntityControllers[uid];
                 if (controller.IsActive && controller.EntityData.ID != EntityID.Player)
                 {
-                    if (Ref.ChunkLoading.IsEntityInZone(controller, ChunkLoading.LoadState.None))
+                    if (Ref<ChunkLoading>().IsEntityInZone(controller, ChunkLoading.LoadState.None))
                         UnloadEntity(uid);
                 }
             }
@@ -75,7 +73,7 @@ namespace Larnix.Server.Entities
                 EntityAbstraction controller = EntityControllers[uid];
                 if (!controller.IsActive && controller.EntityData.ID != EntityID.Player)
                 {
-                    if(Ref.ChunkLoading.IsEntityInZone(controller, ChunkLoading.LoadState.Active))
+                    if(Ref<ChunkLoading>().IsEntityInZone(controller, ChunkLoading.LoadState.Active))
                     {
                         if (timer.Elapsed.TotalMilliseconds < MAX_ACTIVATING_MS)
                             controller.Activate();
@@ -91,14 +89,12 @@ namespace Larnix.Server.Entities
         {
             if(FixedCounter != LastSentFixedCounter)
             {
-                Dictionary<ulong, uint> FixedFrames = Ref.PlayerManager.GetFixedFramesByUID();
-                List<string> connected_nicknames = Ref.PlayerManager.PlayerUID.Keys.ToList();
-
+                Dictionary<ulong, uint> FixedFrames = Ref<PlayerManager>().GetFixedFramesByUID();
                 List<(string, EntityBroadcast)> broadcastsToSend = new();
 
-                foreach (string nickname in connected_nicknames)
+                foreach (string nickname in Ref<PlayerManager>().GetAllPlayerNicknames())
                 {
-                    Vec2 playerPos = Ref.PlayerManager.GetPlayerRenderingPosition(nickname);
+                    Vec2 playerPos = Ref<PlayerManager>().GetPlayerRenderingPosition(nickname);
 
                     Dictionary<ulong, EntityData> EntityList = new();
                     Dictionary<ulong, uint> PlayerFixedIndexes = new();
@@ -136,7 +132,7 @@ namespace Larnix.Server.Entities
                         }
                     }
 
-                    Ref.PlayerManager.UpdateNearbyUIDs(
+                    Ref<PlayerManager>().UpdateNearbyUIDs(
                         nickname,
                         EntitiesWithInactive,
                         FixedCounter,
@@ -174,7 +170,7 @@ namespace Larnix.Server.Entities
                 broadcastsToSend = broadcastsToSend.OrderBy(x => Common.Rand().Next()).ToList();
                 foreach (var pair in broadcastsToSend)
                 {
-                    Ref.QuickServer.Send(pair.Item1, pair.Item2, false); // unsafe mode (over raw UDP)
+                    Ref<QuickServer>().Send(pair.Item1, pair.Item2, false); // unsafe mode (over raw UDP)
                 }
 
                 UpdateCounter++;
@@ -184,7 +180,7 @@ namespace Larnix.Server.Entities
 
         public void CreatePlayerController(string nickname)
         {
-            EntityAbstraction playerController = new(nickname);
+            EntityAbstraction playerController = new(this, nickname);
             PlayerControllers.Add(nickname, playerController);
             EntityControllers.Add(playerController.uID, playerController);
 
@@ -194,7 +190,7 @@ namespace Larnix.Server.Entities
                 playerController.uID,
                 LastSentFixedCounter
             );
-            Ref.QuickServer.Send(nickname, packet);
+            Ref<QuickServer>().Send(nickname, packet);
         }
 
         public EntityAbstraction GetPlayerController(string nickname)
@@ -227,16 +223,16 @@ namespace Larnix.Server.Entities
 
         public void SummonEntity(EntityData entityData)
         {
-            EntityAbstraction entityController = new(entityData);
+            EntityAbstraction entityController = new(this, entityData);
             EntityControllers.Add(entityController.uID, entityController);
         }
 
         public void LoadEntitiesByChunk(Vector2Int chunkCoords)
         {
-            Dictionary<ulong, EntityData> entities = Ref.EntityDataManager.GetUnloadedEntitiesByChunk(chunkCoords);
+            Dictionary<ulong, EntityData> entities = Ref<EntityDataManager>().GetUnloadedEntitiesByChunk(chunkCoords);
             foreach (var kvp in entities)
             {
-                EntityAbstraction entityController = new(kvp.Value, kvp.Key);
+                EntityAbstraction entityController = new(this, kvp.Value, kvp.Key);
                 EntityControllers.Add(entityController.uID, entityController);
             }
         }
@@ -260,7 +256,7 @@ namespace Larnix.Server.Entities
                         PlayerControllers.Remove(nickname);
 
                         CodeInfo packet = new CodeInfo(CodeInfo.Info.YouDie);
-                        Ref.QuickServer.Send(nickname, packet);
+                        Ref<QuickServer>().Send(nickname, packet);
 
                         break;
                     }
@@ -294,7 +290,7 @@ namespace Larnix.Server.Entities
             }
             else
             {
-                nextUID = (ulong)(Ref.Database.GetMinUID() - 1);
+                nextUID = (ulong)(Ref<Database>().GetMinUID() - 1);
                 return GetNextUID();
             }
         }

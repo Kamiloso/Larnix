@@ -6,16 +6,17 @@ using Larnix.Entities;
 using Larnix.Socket.Packets;
 using Larnix.Core.Vectors;
 using Larnix.Socket.Structs;
+using Larnix.Socket.Backend;
+using Larnix.Server.References;
 
 namespace Larnix.Server.Entities
 {
-    internal class PlayerManager
+    internal class PlayerManager : ServerSingleton
     {
-        public readonly Dictionary<string, ulong> PlayerUID = new();
-
-        public readonly Dictionary<string, PlayerUpdate> RecentPlayerUpdates = new(); // valid even for dead players, invalid for inactive players
-        public readonly Dictionary<string, HashSet<ulong>> NearbyUIDs = new();
-        public readonly Dictionary<string, HashSet<Vector2Int>> ClientChunks = new();
+        private readonly Dictionary<string, ulong> PlayerUID = new();
+        private readonly Dictionary<string, PlayerUpdate> RecentPlayerUpdates = new(); // present for alive and dead players
+        private readonly Dictionary<string, HashSet<ulong>> NearbyUIDs = new();
+        private readonly Dictionary<string, HashSet<Vector2Int>> ClientChunks = new();
 
         public enum PlayerState : byte
         {
@@ -25,9 +26,11 @@ namespace Larnix.Server.Entities
             Dead // player entity doesn't exist, but player is connected
         }
 
+        public PlayerManager(Server server) : base(server) {}
+
         public void JoinPlayer(string nickname)
         {
-            ulong uid = (ulong)Ref.QuickServer.UserManager.GetUserID(nickname);
+            ulong uid = (ulong)Ref<QuickServer>().UserManager.GetUserID(nickname);
             PlayerUID[nickname] = uid;
             NearbyUIDs[nickname] = new();
             ClientChunks[nickname] = new();
@@ -37,7 +40,7 @@ namespace Larnix.Server.Entities
 
         public void CreatePlayerInstance(string nickname)
         {
-            Ref.EntityManager.CreatePlayerController(nickname);
+            Ref<EntityManager>().CreatePlayerController(nickname);
             
             // Set to PlayerState.Inactive
             if(RecentPlayerUpdates.ContainsKey(nickname))
@@ -46,7 +49,7 @@ namespace Larnix.Server.Entities
 
         public void UpdatePlayerDataIfHasController(string nickname, PlayerUpdate msg)
         {
-            EntityAbstraction playerController = Ref.EntityManager.GetPlayerController(nickname);
+            EntityAbstraction playerController = Ref<EntityManager>().GetPlayerController(nickname);
             if (playerController != null) // Player is either PlayerState.Inactive or PlayerState.Alive
             {
                 // Activate controller if not active
@@ -62,10 +65,17 @@ namespace Larnix.Server.Entities
             }
         }
 
+        public PlayerUpdate GetRecentPlayerUpdate(string nickname)
+        {
+            if (RecentPlayerUpdates.TryGetValue(nickname, out PlayerUpdate lastPacket))
+                return lastPacket;
+            return null;
+        }
+
         public void DisconnectPlayer(string nickname)
         {
-            if(Ref.EntityManager.GetPlayerController(nickname) != null)
-                Ref.EntityManager.UnloadPlayerController(nickname);
+            if(Ref<EntityManager>().GetPlayerController(nickname) != null)
+                Ref<EntityManager>().UnloadPlayerController(nickname);
 
             PlayerUID.Remove(nickname);
 
@@ -94,23 +104,41 @@ namespace Larnix.Server.Entities
             {
                 foreach(Payload packet in packets)
                 {
-                    Ref.QuickServer.Send(nickname, packet);
+                    Ref<QuickServer>().Send(nickname, packet);
                 }
             }
             else
             {
                 if (sendAtLeastOne)
                 {
-                    Ref.QuickServer.Send(nickname, new NearbyEntities(fixedFrame, null, null));
+                    Ref<QuickServer>().Send(nickname, new NearbyEntities(fixedFrame, null, null));
                 }
             }
 
             NearbyUIDs[nickname] = newUIDs;
         }
 
+        public void UpdateClientChunks(string nickname, HashSet<Vector2Int> chunks)
+        {
+            if (ClientChunks.ContainsKey(nickname))
+                ClientChunks[nickname] = chunks;
+        }
+
+        public HashSet<Vector2Int> LoadedChunksCopy(string nickname)
+        {
+            if (!ClientChunks.ContainsKey(nickname))
+                return new HashSet<Vector2Int>();
+
+            return new HashSet<Vector2Int>(ClientChunks[nickname]);
+        }
+
         public bool PlayerHasChunk(string nickname, Vector2Int chunk)
         {
-            return ClientChunks.ContainsKey(nickname);
+            if (ClientChunks.TryGetValue(nickname, out var chunks))
+            {
+                return chunks.Contains(chunk);
+            }
+            return false;
         }
 
         public PlayerState GetPlayerState(string nickname)
@@ -121,7 +149,7 @@ namespace Larnix.Server.Entities
             if (!RecentPlayerUpdates.ContainsKey(nickname))
                 return PlayerState.Inactive;
 
-            if (Ref.EntityManager.GetPlayerController(nickname) != null)
+            if (Ref<EntityManager>().GetPlayerController(nickname) != null)
                 return PlayerState.Alive;
 
             return PlayerState.Dead;
@@ -146,7 +174,7 @@ namespace Larnix.Server.Entities
             {
                 case PlayerState.Inactive:
                 case PlayerState.Alive:
-                    return Ref.EntityManager.GetPlayerController(nickname).EntityData.Position;
+                    return Ref<EntityManager>().GetPlayerController(nickname).EntityData.Position;
 
                 case PlayerState.Dead:
                     return RecentPlayerUpdates[nickname].Position;
@@ -165,6 +193,19 @@ namespace Larnix.Server.Entities
                     returns[PlayerUID[nickname]] = RecentPlayerUpdates[nickname].FixedFrame;
             }
             return returns;
+        }
+
+        public IEnumerable<string> GetAllPlayerNicknames()
+        {
+            return PlayerUID.Keys;
+        }
+
+        public ulong GetPlayerUID(string nickname)
+        {
+            if (PlayerUID.TryGetValue(nickname, out ulong uid))
+                return uid;
+                
+            throw new System.InvalidOperationException("Player " + nickname + " is not connected!");
         }
     }
 }

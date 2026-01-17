@@ -6,18 +6,18 @@ using Larnix.Core.Files;
 
 namespace Larnix.Core
 {
-    public struct MetadataSGP
+    public struct WorldMeta
     {
         public Version version;
         public string nickname;
 
-        public MetadataSGP(Version version, string nickname)
+        public WorldMeta(Version version, string nickname)
         {
             this.version = version;
             this.nickname = nickname;
         }
 
-        public MetadataSGP(string text)
+        public WorldMeta(string text)
         {
             string[] arg = text.Split('\n');
             version = new Version(uint.Parse(arg[0]));
@@ -29,25 +29,25 @@ namespace Larnix.Core
             return version.ID + "\n" + nickname;
         }
 
-        public static void SaveMetadataSGP(string worldName, MetadataSGP metadataSGP, bool fullPath = false)
+        public static void SaveData(string worldName, WorldMeta mdata, bool fullPath = false)
         {
             string path = fullPath ? worldName : Path.Combine(Common.SavesPath, worldName);
-            FileManager.Write(path, "metadata.txt", metadataSGP.GetString());
+            FileManager.Write(path, "metadata.txt", mdata.GetString());
         }
 
-        public static MetadataSGP ReadMetadataSGP(string worldName, bool fullPath = false)
+        public static WorldMeta ReadData(string worldName, bool fullPath = false)
         {
             string path = fullPath ? worldName : Path.Combine(Common.SavesPath, worldName);
             string contents = FileManager.Read(path, "metadata.txt");
 
             try
             {
-                return new MetadataSGP(contents);
+                return new WorldMeta(contents);
             }
             catch
             {
-                MetadataSGP mdata = new MetadataSGP(Version.Current, "Player");
-                SaveMetadataSGP(path, mdata);
+                WorldMeta mdata = new WorldMeta(Version.Current, "Player");
+                SaveData(path, mdata);
                 return mdata;
             }
         }

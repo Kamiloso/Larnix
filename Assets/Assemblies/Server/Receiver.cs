@@ -6,26 +6,29 @@ using Larnix.Server.Entities;
 using Larnix.Server.Terrain;
 using Larnix.Core.Utils;
 using Larnix.Socket.Backend;
+using Larnix.Server.References;
 
 namespace Larnix.Server
 {
-    internal class Receiver
+    internal class Receiver : ServerSingleton
     {
-        private WorldAPI WorldAPI => Ref.ChunkLoading.WorldAPI;
+        private WorldAPI WorldAPI => Ref<ChunkLoading>().WorldAPI;
 
-        public Receiver(QuickServer server)
+        public Receiver(Server server) : base(server)
         {
-            server.Subscribe<AllowConnection>(_AllowConnection);
-            server.Subscribe<Stop>(_Stop);
-            server.Subscribe<PlayerUpdate>(_PlayerUpdate);
-            server.Subscribe<CodeInfo>(_CodeInfo);
-            server.Subscribe<BlockChange>(_BlockChange);
+            QuickServer quickServer = Ref<QuickServer>();
+
+            quickServer.Subscribe<AllowConnection>(_AllowConnection);
+            quickServer.Subscribe<Stop>(_Stop);
+            quickServer.Subscribe<PlayerUpdate>(_PlayerUpdate);
+            quickServer.Subscribe<CodeInfo>(_CodeInfo);
+            quickServer.Subscribe<BlockChange>(_BlockChange);
         }
 
         private void _AllowConnection(AllowConnection msg, string owner)
         {
             // Create player connection
-            Ref.PlayerManager.JoinPlayer(owner);
+            Ref<PlayerManager>().JoinPlayer(owner);
 
             // Info to console
             Core.Debug.Log(owner + " joined the game.");
@@ -34,7 +37,7 @@ namespace Larnix.Server
         private void _Stop(Stop msg, string owner)
         {
             // Remove player connection
-            Ref.PlayerManager.DisconnectPlayer(owner);
+            Ref<PlayerManager>().DisconnectPlayer(owner);
 
             // Info to console
             Core.Debug.Log(owner + " disconnected.");
@@ -43,11 +46,10 @@ namespace Larnix.Server
         private void _PlayerUpdate(PlayerUpdate msg, string owner)
         {
             // check if most recent data (fast mode receiving - over raw udp)
-            Dictionary<string, PlayerUpdate> RecentPlayerUpdates = Ref.PlayerManager.RecentPlayerUpdates;
-            if (!RecentPlayerUpdates.ContainsKey(owner) || RecentPlayerUpdates[owner].FixedFrame < msg.FixedFrame)
+            PlayerUpdate lastPacket = Ref<PlayerManager>().GetRecentPlayerUpdate(owner);
+            if (lastPacket == null || lastPacket.FixedFrame < msg.FixedFrame)
             {
-                // Update player data
-                Ref.PlayerManager.UpdatePlayerDataIfHasController(owner, msg);
+                Ref<PlayerManager>().UpdatePlayerDataIfHasController(owner, msg);
             }
         }
 
@@ -57,8 +59,8 @@ namespace Larnix.Server
 
             if (code == CodeInfo.Info.RespawnMe)
             {
-                if (Ref.PlayerManager.GetPlayerState(owner) == PlayerManager.PlayerState.Dead)
-                    Ref.PlayerManager.CreatePlayerInstance(owner);
+                if (Ref<PlayerManager>().GetPlayerState(owner) == PlayerManager.PlayerState.Dead)
+                    Ref<PlayerManager>().CreatePlayerInstance(owner);
             }
         }
 
@@ -72,7 +74,7 @@ namespace Larnix.Server
             if (code == 0) // place item
             {
                 bool has_item = true;
-                bool in_chunk = Ref.PlayerManager.PlayerHasChunk(owner, chunk);
+                bool in_chunk = Ref<PlayerManager>().PlayerHasChunk(owner, chunk);
                 bool can_place = WorldAPI.CanPlaceBlock(POS, front, msg.Item);
 
                 bool success = has_item && in_chunk && can_place;
@@ -82,13 +84,13 @@ namespace Larnix.Server
                     WorldAPI.PlaceBlockWithEffects(POS, front, msg.Item);
                 }
 
-                Ref.BlockSender.AddRetBlockChange(owner, msg.Operation, POS, front, success);
+                Ref<BlockSender>().AddRetBlockChange(owner, msg.Operation, POS, front, success);
             }
 
             else if (code == 1) // break using item
             {
                 bool has_tool = true;
-                bool in_chunk = Ref.PlayerManager.PlayerHasChunk(owner, chunk);
+                bool in_chunk = Ref<PlayerManager>().PlayerHasChunk(owner, chunk);
                 bool can_break = WorldAPI.CanBreakBlock(POS, front, msg.Item, msg.Tool);
 
                 bool success = has_tool && in_chunk && can_break;
@@ -98,7 +100,7 @@ namespace Larnix.Server
                     WorldAPI.BreakBlockWithEffects(POS, front, msg.Tool);
                 }
 
-                Ref.BlockSender.AddRetBlockChange(owner, msg.Operation, POS, front, success);
+                Ref<BlockSender>().AddRetBlockChange(owner, msg.Operation, POS, front, success);
             }
         }
     }

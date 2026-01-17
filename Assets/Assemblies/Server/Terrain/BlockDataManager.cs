@@ -4,15 +4,20 @@ using UnityEngine;
 using Larnix.Blocks;
 using Larnix.Blocks.Structs;
 using System.Linq;
+using Larnix.Server.Data;
+using Larnix.Worldgen;
+using Larnix.Server.References;
 
 namespace Larnix.Server.Terrain
 {
-    internal class BlockDataManager
+    internal class BlockDataManager : ServerSingleton
     {
         private readonly Dictionary<Vector2Int, BlockData2[,]> ChunkCache = new();
         private readonly HashSet<Vector2Int> ReferencedChunks = new();
 
         private bool DebugUnlinkDatabase = false;
+
+        public BlockDataManager(Server server) : base(server) {}
 
         /// <summary>
         /// Modify this reference during FixedUpdate time and it will automatically update in this script.
@@ -29,7 +34,7 @@ namespace Larnix.Server.Terrain
             {
                 return ChunkCache[chunk];
             }
-            else if(!DebugUnlinkDatabase && Ref.Database.TryGetChunk(chunk.x, chunk.y, out byte[] bytes)) // Get from database
+            else if(!DebugUnlinkDatabase && Ref<Database>().TryGetChunk(chunk.x, chunk.y, out byte[] bytes)) // Get from database
             {
                 //BlockData2[,] blocks = BytesToChunk(bytes);
                 BlockData2[,] blocks = ChunkMethods.DeserializeChunk(bytes);
@@ -38,7 +43,7 @@ namespace Larnix.Server.Terrain
             }
             else // Generate a new chunk
             {
-                BlockData2[,] blocks = Ref.Generator.GenerateChunk(chunk);
+                BlockData2[,] blocks = Ref<Generator>().GenerateChunk(chunk);
                 ChunkCache[chunk] = blocks;
                 return blocks;
             }
@@ -65,7 +70,7 @@ namespace Larnix.Server.Terrain
                 // Flush data
 
                 byte[] bytes = ChunkMethods.SerializeChunk(data);
-                Ref.Database.SetChunk(chunk.x, chunk.y, bytes);
+                Ref<Database>().SetChunk(chunk.x, chunk.y, bytes);
 
                 // Remove disabled chunks from cache
 

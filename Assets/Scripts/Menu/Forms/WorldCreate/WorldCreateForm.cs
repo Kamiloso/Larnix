@@ -64,7 +64,7 @@ namespace Larnix.Menu.Forms
                 seedSuggestion = Common.GetSeedFromString(seedStr);
             }
 
-            MetadataSGP.SaveMetadataSGP(worldName, new MetadataSGP(Version.Current, nickname));
+            WorldMeta.SaveData(worldName, new WorldMeta(Version.Current, nickname));
             WorldSelect.PlayWorldByName(worldName, seedSuggestion);
         }
     }

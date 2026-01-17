@@ -49,7 +49,7 @@ namespace Larnix.Menu.Worlds
             {
                 if (!versionChecked)
                 {
-                    MetadataSGP mdata = MetadataSGP.ReadMetadataSGP(Name);
+                    WorldMeta mdata = WorldMeta.ReadData(Name);
                     PlayButton.interactable = mdata.version <= Version.Current;
                     versionChecked = true;
                 }

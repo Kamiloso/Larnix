@@ -4,13 +4,16 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Blocks.Structs;
+using Larnix.Server.References;
 
 namespace Larnix.Server.Terrain
 {
-    internal class WorldAPI : IWorldAPI
+    internal class WorldAPI : ServerSingleton, IWorldAPI
     {
-        private ChunkLoading Chunks => Ref.ChunkLoading;
-        public uint FramesSinceServerStart() => Ref.Server.FixedFrame;
+        private ChunkLoading Chunks => Ref<ChunkLoading>();
+        public uint FramesSinceServerStart() => Ref<Server>().FixedFrame;
+
+        public WorldAPI(Server server) : base(server) { }
 
         public BlockServer GetBlock(Vector2Int POS, bool isFront)
         {

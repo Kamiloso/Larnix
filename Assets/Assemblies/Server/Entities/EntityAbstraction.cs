@@ -3,16 +3,19 @@ using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Entities;
 using Larnix.Entities.Structs;
+using Larnix.Socket.Backend;
+using Larnix.Core.Physics;
+using Larnix.Server.References;
 
 namespace Larnix.Server.Entities
 {
-    internal class EntityAbstraction
+    internal class EntityAbstraction : RefObject
     {
         // Player constructor
-        public EntityAbstraction(string nickname)
+        public EntityAbstraction(RefObject reff, string nickname) : base(reff)
         {
-            ulong uid = (ulong)Ref.QuickServer.UserManager.GetUserID(nickname);
-            EntityData entityData = Ref.EntityDataManager.TryFindEntityData(uid);
+            ulong uid = (ulong)Ref<QuickServer>().UserManager.GetUserID(nickname);
+            EntityData entityData = Ref<EntityDataManager>().TryFindEntityData(uid);
 
             if (entityData == null)
             {
@@ -26,12 +29,12 @@ namespace Larnix.Server.Entities
         }
 
         // Entity constructor
-        public EntityAbstraction(EntityData entityData, ulong? uid = null)
+        public EntityAbstraction(RefObject reff, EntityData entityData, ulong? uid = null) : base(reff)
         {
             if (entityData.ID == EntityID.Player)
                 throw new System.ArgumentException("Cannot create player instance as a generic entity!");
 
-            ulong resolvedUid = uid ?? Ref.EntityManager.GetNextUID();
+            ulong resolvedUid = uid ?? Ref<EntityManager>().GetNextUID();
             Initialize(resolvedUid, entityData);
         }
 
@@ -41,7 +44,7 @@ namespace Larnix.Server.Entities
             storedEntityData = entityData;
 
             // flushing data to EntityDataManager
-            Ref.EntityDataManager.SetEntityData(storedUID, storedEntityData);
+            Ref<EntityDataManager>().SetEntityData(storedUID, storedEntityData);
         }
 
         private EntityServer controller;
@@ -57,7 +60,7 @@ namespace Larnix.Server.Entities
             if (IsActive)
                 throw new System.InvalidOperationException("Entity abstraction is already active!");
 
-            controller = EntityFactory.ConstructEntityObject(storedUID, storedEntityData, Ref.PhysicsManager);
+            controller = EntityFactory.ConstructEntityObject(storedUID, storedEntityData, Ref<PhysicsManager>());
         }
 
         public EntityServer GetRealController()
@@ -67,12 +70,12 @@ namespace Larnix.Server.Entities
 
         public void DeleteEntityInstant()
         {
-            Ref.EntityDataManager.DeleteEntityData(uID);
+            Ref<EntityDataManager>().DeleteEntityData(uID);
         }
 
         public void UnloadEntityInstant()
         {
-            Ref.EntityDataManager.UnloadEntityData(uID);
+            Ref<EntityDataManager>().UnloadEntityData(uID);
         }
 
         public void FromFixedUpdate()
