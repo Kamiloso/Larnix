@@ -98,11 +98,11 @@ namespace Larnix.Server
                     maskIPv6: Ref<Config>().ClientIdentityPrefixSizeIPv6
                     )));
 
-                // Readonly classes in this file
+                // Around-server managers
                 AddRef(new Receiver(this));
                 AddRef(new Commands(this));
 
-                // Configure for client
+                // Configure data for client
                 LocalAddress = "localhost:" + Ref<QuickServer>().Config.Port;
                 Authcode = Ref<QuickServer>().Authcode;
 
@@ -175,7 +175,7 @@ namespace Larnix.Server
 
         public async Task<string> EstablishRelayAsync(string relayAddress)
         {
-            ushort? relayPort = await Ref<QuickServer>().ConfigureRelayAsync(relayAddress);
+            ushort? relayPort = await Ref<QuickServer>()?.ConfigureRelayAsync(relayAddress);
 
             if (relayPort != null)
             {
