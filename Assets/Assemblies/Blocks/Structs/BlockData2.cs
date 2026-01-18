@@ -1,7 +1,6 @@
 using System.Collections;
 using Larnix.Core.Utils;
-using Larnix.Core;
-using Larnix.Blocks;
+using Larnix.Core.Binary;
 
 namespace Larnix.Blocks.Structs
 {

@@ -3,7 +3,7 @@ using System.Net.Sockets;
 using System.Collections.Concurrent;
 using System;
 using System.Threading.Tasks;
-using Larnix.Socket.Structs;
+using Larnix.Packets;
 using System.Threading;
 
 namespace Larnix.Socket.Channel

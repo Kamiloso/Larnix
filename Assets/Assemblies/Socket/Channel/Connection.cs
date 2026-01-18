@@ -2,11 +2,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using Larnix.Socket.Packets;
+using Larnix.Packets;
 using System;
 using Larnix.Core.Utils;
-using Larnix.Socket.Structs;
 using Larnix.Socket.Security.Keys;
+using Larnix.Packets.Control;
 
 namespace Larnix.Socket.Channel
 {

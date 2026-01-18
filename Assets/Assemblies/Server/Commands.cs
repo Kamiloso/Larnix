@@ -7,7 +7,7 @@ using Larnix.Server.Entities;
 using System;
 using Larnix.Server.Terrain;
 using System.Text;
-using Larnix.Socket.Packets;
+using Larnix.Packets.Game;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
 using Larnix.Entities.Structs;

@@ -6,5 +6,6 @@
   <Project Path="Larnix.Core.csproj" />
   <Project Path="Larnix.Socket.csproj" />
   <Project Path="Larnix.Server.csproj" />
+  <Project Path="Larnix.Packets.csproj" />
   <Project Path="Assembly-CSharp-Editor.csproj" />
 </Solution>

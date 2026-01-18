@@ -4,7 +4,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using Larnix.Socket.Frontend;
-using Larnix.Socket.Structs;
+using Larnix.Packets;
 
 namespace Larnix.Socket.Channel
 {

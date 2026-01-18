@@ -1,7 +1,7 @@
 using System;
 using System.Collections;
 using Larnix.Core.Vectors;
-using Larnix.Core;
+using Larnix.Core.Binary;
 using Larnix.Core.Utils;
 
 namespace Larnix.Entities.Structs
@@ -28,8 +28,7 @@ namespace Larnix.Entities.Structs
         {
             return ArrayUtils.MegaConcat(
                 EndianUnsafe.GetBytes(ID),
-                EndianUnsafe.GetBytes(Position.x),
-                EndianUnsafe.GetBytes(Position.y),
+                Position.Serialize(),
                 EndianUnsafe.GetBytes(Rotation)
                 );
         }
@@ -39,10 +38,7 @@ namespace Larnix.Entities.Structs
             return new EntityData
             {
                 ID = EndianUnsafe.FromBytes<EntityID>(bytes, 0 + offset),
-                Position = new Vec2(
-                    EndianUnsafe.FromBytes<double>(bytes, 2 + offset),
-                    EndianUnsafe.FromBytes<double>(bytes, 10 + offset)
-                ),
+                Position = IFixedBinary<Vec2>.Create(bytes, 8 + offset),
                 Rotation = EndianUnsafe.FromBytes<float>(bytes, 18 + offset),
                 NBT = null,
             };

@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
-using Larnix.Core;
+using Larnix.Core.Binary;
 
 namespace Larnix.Core.Utils
 {

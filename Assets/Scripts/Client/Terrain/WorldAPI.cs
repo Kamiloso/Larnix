@@ -2,9 +2,9 @@ using Larnix.Blocks;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Larnix.Socket.Packets;
+using Larnix.Packets;
 using Larnix.Blocks.Structs;
-using Larnix.Socket.Structs;
+using Larnix.Packets.Game;
 
 namespace Larnix.Client.Terrain
 {

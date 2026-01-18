@@ -4,11 +4,11 @@ using System.Collections;
 using System.Collections.Generic;
 using Org.BouncyCastle.Crypto.Generators;
 using System.Text;
-using Larnix.Core;
+using Larnix.Core.Binary;
 
 namespace Larnix.Socket.Security
 {
-    internal static class Authcode
+    public static class Authcode
     {
         private const string Base64 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz#&";
 
@@ -17,7 +17,7 @@ namespace Larnix.Socket.Security
         private const int TOTAL_LENGTH = VERIFY_PART_LENGTH + SECRET_PART_LENGTH + 1 /* +checksum */;
         private const int SEGMENT_SIZE = 6;
 
-        public static long ObtainSecret(string path, string filename)
+        internal static long ObtainSecret(string path, string filename)
         {
             string data = FileManager.Read(path, filename);
             if (data != null)
@@ -31,13 +31,13 @@ namespace Larnix.Socket.Security
             return secret;
         }
 
-        public static string ProduceAuthCodeRSA(byte[] key, long secret)
+        internal static string ProduceAuthCodeRSA(byte[] key, long secret)
         {
             string raw = ProduceRawAuthCodeRSA(key, secret);
             return InsertDashes(raw, SEGMENT_SIZE);
         }
 
-        public static string ProduceRawAuthCodeRSA(byte[] key, long secret)
+        internal static string ProduceRawAuthCodeRSA(byte[] key, long secret)
         {
             byte[] hash = DeriveKeyScrypt(key, EndianUnsafe.GetBytes((long)-7264111368357934733)); // random, hard-coded salt
 
@@ -90,7 +90,7 @@ namespace Larnix.Socket.Security
             return Base64[checksum % 64] == code[TOTAL_LENGTH - 1];
         }
 
-        public static bool VerifyPublicKey(byte[] key, string authCodeRSA)
+        internal static bool VerifyPublicKey(byte[] key, string authCodeRSA)
         {
             string code1 = authCodeRSA.Replace("-", "").Substring(0, VERIFY_PART_LENGTH);
             string code2 = ProduceRawAuthCodeRSA(key, 0).Substring(0, VERIFY_PART_LENGTH);
@@ -98,7 +98,7 @@ namespace Larnix.Socket.Security
             return code1 == code2;
         }
 
-        public static long GetSecretFromAuthCode(string authCodeRSA)
+        internal static long GetSecretFromAuthCode(string authCodeRSA)
         {
             string code1 = authCodeRSA.Replace("-", "").Substring(VERIFY_PART_LENGTH, SECRET_PART_LENGTH);
 

@@ -2,14 +2,13 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using Larnix.Socket.Packets;
+using Larnix.Packets;
 using System.Threading.Tasks;
 using Larnix.Core.Physics;
 using Larnix.ServerRun;
 using Larnix.Socket.Frontend;
 using Larnix.Patches;
-using Larnix.Socket.Structs;
-using Unity.VisualScripting;
+using Larnix.Packets.Game;
 
 namespace Larnix.Client
 {

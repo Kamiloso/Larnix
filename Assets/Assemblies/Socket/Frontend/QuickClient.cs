@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System;
-using Larnix.Socket.Packets;
+using Larnix.Packets;
 using System.Threading.Tasks;
 using Larnix.Socket.Security;
 using Larnix.Socket.Channel;
-using Larnix.Socket.Structs;
 using Larnix.Socket.Security.Keys;
+using Larnix.Packets.Control;
 
 namespace Larnix.Socket.Frontend
 {

@@ -1,14 +1,17 @@
 using UnityEngine;
 using System;
 using Larnix.Core.Utils;
-using Larnix.Core;
+using Larnix.Core.Binary;
 
 namespace Larnix.Core.Vectors
 {
-    public struct Vec2 : IEquatable<Vec2>
+    public struct Vec2 : IEquatable<Vec2>, IFixedBinary<Vec2>
     {
+        public int SIZE => sizeof(double) * 2;
+        public double x { get; private set; }
+        public double y { get; private set; }
+
         public const int ORIGIN_STEP = 16 * 64;
-        public readonly double x, y;
 
         public Vec2(double x, double y)
         {
@@ -65,12 +68,15 @@ namespace Larnix.Core.Vectors
             );
         }
 
-        public static Vec2 Deserialize(byte[] bytes, int offset = 0)
+        public bool Deserialize(byte[] bytes, int offset = 0)
         {
-            return new Vec2(
-                EndianUnsafe.FromBytes<double>(bytes, offset),
-                EndianUnsafe.FromBytes<double>(bytes, offset + 8)
-            );
+            double _x = EndianUnsafe.FromBytes<double>(bytes, offset);
+            double _y = EndianUnsafe.FromBytes<double>(bytes, offset + 8);
+
+            x = double.IsFinite(_x) ? _x : 0.0;
+            y = double.IsFinite(_y) ? _y : 0.0;
+
+            return true;
         }
 
         public static Vec2 Zero => new Vec2(0, 0);
@@ -109,9 +115,7 @@ namespace Larnix.Core.Vectors
         public static bool operator !=(Vec2 a, Vec2 b) => !a.Equals(b);
 
         public override bool Equals(object obj) => obj is Vec2 v && Equals(v);
-
-        public bool Equals(Vec2 other) =>
-            x.Equals(other.x) && y.Equals(other.y);
+        public bool Equals(Vec2 other) => x.Equals(other.x) && y.Equals(other.y);
 
         public override int GetHashCode()
         {

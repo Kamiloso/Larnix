@@ -3,15 +3,15 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using Larnix.Socket.Packets;
+using Larnix.Packets;
 using Larnix.Server.Entities;
 using Larnix.Core.Utils;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
-using Larnix.Socket.Structs;
 using Larnix.Socket.Backend;
 using UnityEditor;
 using Larnix.Server.References;
+using Larnix.Packets.Game;
 
 namespace Larnix.Server.Terrain
 {

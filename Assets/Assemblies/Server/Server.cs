@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 using System.Diagnostics;
 using Larnix.Core.Files;
 using Larnix.Socket.Backend;
-using Larnix.Socket;
+using Larnix.Core.Utils;
 using Larnix.Worldgen;
 using Version = Larnix.Core.Version;
 using Console = Larnix.Core.Console;

@@ -3,17 +3,17 @@ using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Entities;
 using System.Linq;
-using Larnix.Socket.Packets;
+using Larnix.Packets;
 using System.Diagnostics;
 using Larnix.Server.Terrain;
 using Larnix.Core.Vectors;
 using System;
 using Larnix.Core.Utils;
 using Larnix.Entities.Structs;
-using Larnix.Socket.Structs;
 using Larnix.Socket.Backend;
 using Larnix.Server.Data;
 using Larnix.Server.References;
+using Larnix.Packets.Game;
 
 namespace Larnix.Server.Entities
 {

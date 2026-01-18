@@ -4,7 +4,7 @@ using TMPro;
 using UnityEngine;
 using Larnix.Menu.Worlds;
 using System;
-using Larnix.Socket;
+using Larnix.Socket.Security;
 
 namespace Larnix.Menu.Forms
 {
@@ -52,7 +52,7 @@ namespace Larnix.Menu.Forms
             //if ((args[0] == "ADD" || (args[0] == "EDIT" && args[2] != authcode)) && References.ServerSelect.ContainsAuthcode(authcode))
             //    return ErrorCode.AUTHCODE_EXISTS;
 
-            if (!Validation.IsGoodAuthcode(authcode))
+            if (!Authcode.IsGoodAuthcode(authcode))
                 return ErrorCode.AUTHCODE_FORMAT;
 
             return ErrorCode.SUCCESS;

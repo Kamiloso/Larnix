@@ -1,15 +1,15 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Larnix.Socket.Packets;
+using Larnix.Packets;
 using Larnix.Client.Entities;
 using Larnix.Entities;
 using Larnix.Core.Physics;
 using Larnix.Core.Vectors;
 using Larnix.Entities.Structs;
 using Larnix.Core.Utils;
+using Larnix.Packets.Game;
 using IHasCollider = Larnix.Entities.IHasCollider;
-using Larnix.Socket.Structs;
 
 namespace Larnix.Client
 {

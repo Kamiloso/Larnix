@@ -4,6 +4,8 @@ using UnityEngine;
 
 namespace Larnix.Patches
 {
+    public interface IGlobalUnitySingleton { }
+
     public class EternalScript : MonoBehaviour
     {
         private static EternalScript instance;
@@ -26,8 +28,7 @@ namespace Larnix.Patches
 
             var assembliesToSearch = new[]
             {
-                typeof(EternalScript).Assembly, // default assembly
-                typeof(Core.Utils.Common).Assembly // Larnix.Core assembly
+                typeof(EternalScript).Assembly // default assembly
             };
 
             var types = assembliesToSearch
