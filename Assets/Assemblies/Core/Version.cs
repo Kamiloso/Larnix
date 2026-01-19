@@ -2,14 +2,16 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
+using Larnix.Core.Binary;
 
 namespace Larnix.Core
 {
-    public struct Version
+    public struct Version : IFixedBinary<Version>
     {
-        public static readonly Version Current = new Version("0.0.19.2");
-        public readonly uint ID;
+        public static readonly Version Current = new Version("0.0.19.3");
+
+        public int SIZE => sizeof(uint);
+        public uint ID { get; private set; }
 
         public Version(uint id)
         {
@@ -48,6 +50,17 @@ namespace Larnix.Core
         public bool CompatibleWith(Version version)
         {
             return ID >> 8 == version.ID >> 8;
+        }
+
+        public byte[] Serialize()
+        {
+            return EndianUnsafe.GetBytes(ID);
+        }
+
+        public bool Deserialize(byte[] bytes, int offset = 0)
+        {
+            ID = EndianUnsafe.FromBytes<uint>(bytes, offset);
+            return true;
         }
 
         public static bool operator <(Version a, Version b) => a.ID < b.ID;

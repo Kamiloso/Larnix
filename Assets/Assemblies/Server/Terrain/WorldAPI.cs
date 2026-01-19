@@ -2,7 +2,7 @@ using Larnix.Blocks;
 using Larnix.Core.Utils;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
+using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
 using Larnix.Server.References;
 
@@ -15,30 +15,30 @@ namespace Larnix.Server.Terrain
 
         public WorldAPI(Server server) : base(server) { }
 
-        public BlockServer GetBlock(Vector2Int POS, bool isFront)
+        public BlockServer GetBlock(Vec2Int POS, bool isFront)
         {
-            Vector2Int chunk = BlockUtils.CoordsToChunk(POS);
+            Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
             if (Chunks.TryGetChunk(chunk, out var chunkObject))
             {
-                Vector2Int pos = BlockUtils.LocalBlockCoords(POS);
+                Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
                 return chunkObject.GetBlock(pos, isFront);
             }
             return null;
         }
 
-        public BlockServer ReplaceBlock(Vector2Int POS, bool isFront, BlockData1 blockData)
+        public BlockServer ReplaceBlock(Vec2Int POS, bool isFront, BlockData1 blockData)
         {
-            Vector2Int chunk = BlockUtils.CoordsToChunk(POS);
+            Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
             if (Chunks.TryGetChunk(chunk, out var chunkObject))
             {
-                Vector2Int pos = BlockUtils.LocalBlockCoords(POS);
+                Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
                 return chunkObject.UpdateBlock(pos, isFront, blockData);
             }
             return null;
 
         }
 
-        public BlockServer SetBlockVariant(Vector2Int POS, bool isFront, byte Variant)
+        public BlockServer SetBlockVariant(Vec2Int POS, bool isFront, byte Variant)
         {
             BlockServer oldBlock = GetBlock(POS, isFront);
             if (oldBlock != null)
@@ -50,7 +50,7 @@ namespace Larnix.Server.Terrain
             return null;
         }
 
-        public BlockServer SetBlockNBT(Vector2Int POS, bool isFront, string NBT)
+        public BlockServer SetBlockNBT(Vec2Int POS, bool isFront, string NBT)
         {
             BlockServer oldBlock = GetBlock(POS, isFront);
             if (oldBlock != null)
@@ -62,7 +62,7 @@ namespace Larnix.Server.Terrain
             return null;
         }
 
-        public bool CanPlaceBlock(Vector2Int POS, bool front, BlockData1 item)
+        public bool CanPlaceBlock(Vec2Int POS, bool front, BlockData1 item)
         {
             BlockServer frontBlock = GetBlock(POS, true);
             BlockServer backBlock = GetBlock(POS, false);
@@ -81,7 +81,7 @@ namespace Larnix.Server.Terrain
             else return false;
         }
 
-        public bool CanBreakBlock(Vector2Int POS, bool front, BlockData1 item, BlockData1 tool)
+        public bool CanBreakBlock(Vec2Int POS, bool front, BlockData1 item, BlockData1 tool)
         {
             BlockServer frontBlock = GetBlock(POS, true);
             BlockServer backBlock = GetBlock(POS, false);
@@ -103,12 +103,12 @@ namespace Larnix.Server.Terrain
             else return false;
         }
 
-        public void PlaceBlockWithEffects(Vector2Int POS, bool front, BlockData1 item)
+        public void PlaceBlockWithEffects(Vec2Int POS, bool front, BlockData1 item)
         {
             ReplaceBlock(POS, front, item);
         }
 
-        public void BreakBlockWithEffects(Vector2Int POS, bool front, BlockData1 tool)
+        public void BreakBlockWithEffects(Vec2Int POS, bool front, BlockData1 tool)
         {
             ReplaceBlock(POS, front, new BlockData1 { });
         }

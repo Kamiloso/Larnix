@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using Larnix.Blocks;
 using Larnix.Packets;
 using System.Linq;
@@ -10,6 +9,7 @@ using Larnix.Server.Entities;
 using Larnix.Socket.Backend;
 using Larnix.Server.References;
 using Larnix.Packets.Game;
+using Larnix.Core.Vectors;
 
 namespace Larnix.Server.Terrain
 {
@@ -17,17 +17,17 @@ namespace Larnix.Server.Terrain
     {
         private WorldAPI WorldAPI => Ref<ChunkLoading>().WorldAPI;
 
-        private readonly Queue<(Vector2Int block, BlockData2 data)> _blockUpdates = new();
-        private readonly Queue<(string owner, long operation, Vector2Int POS, bool front, bool success)> _blockChanges = new();
+        private readonly Queue<(Vec2Int block, BlockData2 data)> _blockUpdates = new();
+        private readonly Queue<(string owner, long operation, Vec2Int POS, bool front, bool success)> _blockChanges = new();
 
         public BlockSender(Server server) : base(server) {}
 
-        public void AddBlockUpdate((Vector2Int, BlockData2) element)
+        public void AddBlockUpdate((Vec2Int, BlockData2) element)
         {
             _blockUpdates.Enqueue(element);
         }
 
-        public void AddRetBlockChange(string owner, long operation, Vector2Int POS, bool front, bool success)
+        public void AddRetBlockChange(string owner, long operation, Vec2Int POS, bool front, bool success)
         {
             _blockChanges.Enqueue((owner, operation, POS, front, success));
         }
@@ -40,7 +40,7 @@ namespace Larnix.Server.Terrain
 
         private void SendBlockUpdate()
         {
-            Dictionary<string, Queue<(Vector2Int block, BlockData2 data)>> IndividualUpdates = new();
+            Dictionary<string, Queue<(Vec2Int block, BlockData2 data)>> IndividualUpdates = new();
 
             foreach (string nickname in Ref<PlayerManager>().GetAllPlayerNicknames())
             {
@@ -50,7 +50,7 @@ namespace Larnix.Server.Terrain
             while (_blockUpdates.Count > 0)
             {
                 var element = _blockUpdates.Dequeue();
-                Vector2Int chunk = BlockUtils.CoordsToChunk(element.block);
+                Vec2Int chunk = BlockUtils.CoordsToChunk(element.block);
 
                 foreach (string nickname in Ref<PlayerManager>().GetAllPlayerNicknames())
                 {
@@ -61,7 +61,7 @@ namespace Larnix.Server.Terrain
 
             foreach (string nickname in Ref<PlayerManager>().GetAllPlayerNicknames())
             {
-                Queue<(Vector2Int block, BlockData2 data)> changes = IndividualUpdates[nickname];
+                Queue<(Vec2Int block, BlockData2 data)> changes = IndividualUpdates[nickname];
                 BlockUpdate.Record[] records = changes.Select(ch => new BlockUpdate.Record
                 {
                     POS = ch.block,
@@ -83,8 +83,8 @@ namespace Larnix.Server.Terrain
                 var element = _blockChanges.Dequeue();
 
                 string nickname = element.owner;
-                Vector2Int POS = element.POS;
-                Vector2Int chunk = BlockUtils.CoordsToChunk(POS);
+                Vec2Int POS = element.POS;
+                Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
                 bool front = element.front;
                 bool success = element.success;
                 long operation = element.operation;

@@ -11,6 +11,7 @@ using System.Reflection;
 using System.Text;
 using Larnix.Core.Utils;
 using Larnix.Blocks.Structs;
+using Larnix.Core.Vectors;
 using Random = System.Random;
 
 namespace Larnix.Worldgen
@@ -113,7 +114,7 @@ namespace Larnix.Worldgen
             return new Color32(105, 165, 255, 0);
         }
 
-        public BlockData2[,] GenerateChunk(Vector2Int chunk)
+        public BlockData2[,] GenerateChunk(Vec2Int chunk)
         {
             ProtoBlock[,] protoBlocks = new ProtoBlock[16, 16];
 
@@ -128,12 +129,12 @@ namespace Larnix.Worldgen
             return blocks;
         }
 
-        private void Build_BaseTerrain(ProtoBlock[,] protoBlocks, Vector2Int chunk)
+        private void Build_BaseTerrain(ProtoBlock[,] protoBlocks, Vec2Int chunk)
         {
             for (int x = 0; x < 16; x++)
                 for (int y = 0; y < 16; y++)
                 {
-                    Vector2Int POS = BlockUtils.GlobalBlockCoords(chunk, new Vector2Int(x, y));
+                    Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, new Vec2Int(x, y));
 
                     const int SOIL_LAYER_SIZE = 3;
 
@@ -157,12 +158,12 @@ namespace Larnix.Worldgen
                 }
         }
 
-        private void Build_Caves(ProtoBlock[,] protoBlocks, Vector2Int chunk)
+        private void Build_Caves(ProtoBlock[,] protoBlocks, Vec2Int chunk)
         {
             for (int x = 0; x < 16; x++)
                 for (int y = 0; y < 16; y++)
                 {
-                    Vector2Int POS = BlockUtils.GlobalBlockCoords(chunk, new Vector2Int(x, y));
+                    Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, new Vec2Int(x, y));
 
                     const double CAVE_NOISE_WIDTH = 0.2f;
                     double cave_value = ProviderCave.GetValue(POS.x, POS.y);
@@ -180,14 +181,14 @@ namespace Larnix.Worldgen
                 }
         }
 
-        private BlockData2[,] ConvertToBlockArray(ProtoBlock[,] protoBlocks, Vector2Int chunk)
+        private BlockData2[,] ConvertToBlockArray(ProtoBlock[,] protoBlocks, Vec2Int chunk)
         {
             BlockData2[,] blocks = new BlockData2[16, 16];
 
             for (int x = 0; x < 16; x++)
                 for (int y = 0; y < 16; y++)
                 {
-                    Vector2Int POS = BlockUtils.GlobalBlockCoords(chunk, new Vector2Int(x, y));
+                    Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, new Vec2Int(x, y));
 
                     BiomeID biomeID = BiomeID.Empty;
                     double temperature = NoiseTemperature.GetValue(POS.x, POS.y);
@@ -230,7 +231,7 @@ namespace Larnix.Worldgen
             return roll < gradient ? value2 : value1;
         }
 
-        private long BlockHash(Vector2Int POS, long salt)
+        private long BlockHash(Vec2Int POS, long salt)
         {
             Span<byte> buffer = stackalloc byte[8 + 4 + 4 + 8];
 
@@ -258,7 +259,7 @@ namespace Larnix.Worldgen
             return BinaryPrimitives.ReadInt64BigEndian(hash.AsSpan(0, 8));
         }
 
-        public string GetNoiseInfo(Vector2Int position)
+        public string GetNoiseInfo(Vec2Int position)
         {
             var sb = new StringBuilder();
 

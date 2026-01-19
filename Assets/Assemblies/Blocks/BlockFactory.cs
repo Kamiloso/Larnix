@@ -4,7 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.Serialization;
-using UnityEngine;
+using Larnix.Core.Vectors;
 using Larnix.Core;
 using Larnix.Blocks.Structs;
 
@@ -22,7 +22,7 @@ namespace Larnix.Blocks
         {
             public string Name;
             public Type Type;
-            public Func<Vector2Int, BlockData1, bool, BlockServer> Constructor;
+            public Func<Vec2Int, BlockData1, bool, BlockServer> Constructor;
             public List<Action<BlockServer>> Inits = new();
 
             public BlockServer SlaveInstance { get; private set; }
@@ -32,7 +32,7 @@ namespace Larnix.Blocks
                 Name = ID.ToString();
                 Type = Type.GetType(Namespace + "." + Name + ", " + AsmName);
 
-                var ctorInfo = Type?.GetConstructor(new Type[] { typeof(Vector2Int), typeof(BlockData1), typeof(bool) });
+                var ctorInfo = Type?.GetConstructor(new Type[] { typeof(Vec2Int), typeof(BlockData1), typeof(bool) });
                 var ctor = Type != null ? RuntimeCompilation.CompileConstructor(ctorInfo) : null;
                 if (ctor != null && typeof(BlockServer).IsAssignableFrom(Type))
                 {
@@ -56,7 +56,7 @@ namespace Larnix.Blocks
                 else
                 {
                     Core.Debug.LogWarning($"Class {Namespace}.{Name} must exist and have a constructor " +
-                        $"with arguments: (Vector2Int, BlockData1, bool). Loading base class instead...");
+                        $"with arguments: (Vec2Int, BlockData1, bool). Loading base class instead...");
 
                     Constructor = (a, b, c) => new BlockServer(a, b, c);
                     SlaveInstance = (BlockServer)FormatterServices.GetUninitializedObject(typeof(BlockServer));
@@ -81,7 +81,7 @@ namespace Larnix.Blocks
             }
         }
 
-        public static BlockServer ConstructBlockObject(Vector2Int POS, BlockData1 block, bool isFront, IWorldAPI worldAPI)
+        public static BlockServer ConstructBlockObject(Vec2Int POS, BlockData1 block, bool isFront, IWorldAPI worldAPI)
         {
             BlockInfo info = GetBlockInfo(block.ID);
             BlockServer blockserv = info.Constructor(POS, block, isFront);

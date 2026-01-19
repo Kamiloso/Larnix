@@ -4,7 +4,7 @@ using System;
 
 namespace Larnix.Server.References
 {
-    public abstract class ServerSingleton : RefObject
+    internal abstract class ServerSingleton : RefObject
     {
         protected ServerSingleton(Server server) : base(server) {}
 

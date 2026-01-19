@@ -6,6 +6,7 @@ using System;
 using System.Linq;
 using UnityEngine.Profiling;
 using Larnix.Core.Vectors;
+using Larnix.Core;
 
 namespace Larnix.Client
 {

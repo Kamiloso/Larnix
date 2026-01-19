@@ -31,13 +31,13 @@ namespace Larnix.Core
 
         public static void SaveData(string worldName, WorldMeta mdata, bool fullPath = false)
         {
-            string path = fullPath ? worldName : Path.Combine(Common.SavesPath, worldName);
+            string path = fullPath ? worldName : Path.Combine(GamePath.SavesPath, worldName);
             FileManager.Write(path, "metadata.txt", mdata.GetString());
         }
 
         public static WorldMeta ReadData(string worldName, bool fullPath = false)
         {
-            string path = fullPath ? worldName : Path.Combine(Common.SavesPath, worldName);
+            string path = fullPath ? worldName : Path.Combine(GamePath.SavesPath, worldName);
             string contents = FileManager.Read(path, "metadata.txt");
 
             try

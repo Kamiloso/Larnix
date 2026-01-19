@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using Larnix.Blocks;
 using Larnix.Entities;
 using Larnix.Server.Entities;
@@ -219,7 +218,7 @@ namespace Larnix.Server
                 if (Enum.TryParse(blockname, ignoreCase: true, out BlockID blockID) &&
                     Enum.IsDefined(typeof(BlockID), blockID))
                 {
-                    var result = WorldAPI.ReplaceBlock(new Vector2Int(x, y), front, new BlockData1
+                    var result = WorldAPI.ReplaceBlock(new Vec2Int(x, y), front, new BlockData1
                     {
                         ID = blockID,
                         Variant = variant

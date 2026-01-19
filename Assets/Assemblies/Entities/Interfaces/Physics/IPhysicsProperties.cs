@@ -1,7 +1,6 @@
 using Larnix.Core.Physics;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace Larnix.Entities
 {

@@ -15,7 +15,7 @@ namespace Larnix.Menu.Worlds
 {
     public class WorldSelect : UniversalSelect
     {
-        public static string SavesPath => Common.SavesPath;
+        public static string SavesPath => GamePath.SavesPath;
 
         [SerializeField] Image TitleImage;
         [SerializeField] TextMeshProUGUI DescriptionText;

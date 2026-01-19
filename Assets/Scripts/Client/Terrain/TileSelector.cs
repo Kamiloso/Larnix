@@ -55,9 +55,9 @@ namespace Larnix.Client.Terrain
 
             bool pointsRight = cursor_pos.x >= player_pos.x;
 
-            List<Vector2Int> grids = old_cursor_pos != null ?
+            List<Vec2Int> grids = old_cursor_pos != null ?
                 GetCellsIntersectedByLine((Vec2)old_cursor_pos, cursor_pos) :
-                new List<Vector2Int> { BlockUtils.CoordsToBlock(cursor_pos) };
+                new List<Vec2Int> { BlockUtils.CoordsToBlock(cursor_pos) };
 
             if (!Ref.Debug.SpectatorMode)
                 grids.RemoveAll(grid => (new Vec2(grid.x, grid.y) - player_pos).Magnitude > INTERACTION_RANGE);
@@ -67,7 +67,7 @@ namespace Larnix.Client.Terrain
                 Selector.transform.localRotation = Quaternion.identity; // rotation may change during DoActionOn(grid)
                 Selector.transform.localScale = Vector3.one; // scale may change during DoActionOn(grid)
 
-                foreach (Vector2Int grid in grids)
+                foreach (Vec2Int grid in grids)
                 {
                     Selector.transform.position = Ref.MainPlayer.ToUnityPos(new Vec2(grid.x, grid.y));
                     DoActionOn(grid, pointsRight);
@@ -83,7 +83,7 @@ namespace Larnix.Client.Terrain
             }
         }
 
-        private void DoActionOn(Vector2Int pointed_block, bool pointsRight)
+        private void DoActionOn(Vec2Int pointed_block, bool pointsRight)
         {
             bool hold_0 = Input.GetMouseButton(0);
             bool hold_1 = Input.GetMouseButton(1);
@@ -145,7 +145,7 @@ namespace Larnix.Client.Terrain
             }
         }
 
-        public static List<Vector2Int> GetCellsIntersectedByLine(Vec2 start, Vec2 end)
+        public static List<Vec2Int> GetCellsIntersectedByLine(Vec2 start, Vec2 end)
         {
             double magnitude = (start - end).Magnitude;
             if (magnitude > 256.0) return new();
@@ -156,10 +156,10 @@ namespace Larnix.Client.Terrain
             Vec2 difference = end - start;
             Vec2 roadpart = difference / segments;
 
-            HashSet<Vector2Int> tiles = new();
+            HashSet<Vec2Int> tiles = new();
             for (int i = 0; i <= segments; i++)
             {
-                Vector2Int block = BlockUtils.CoordsToBlock(start + i * roadpart);
+                Vec2Int block = BlockUtils.CoordsToBlock(start + i * roadpart);
                 tiles.Add(block);
             }
 

@@ -1,5 +1,4 @@
 using Larnix;
-using UnityEngine;
 using Larnix.Core.Vectors;
 
 namespace Larnix.Core.Physics
@@ -15,7 +14,7 @@ namespace Larnix.Core.Physics
             Size = size;
         }
 
-        public static StaticCollider Create(Vec2 size, Vec2 offset, Vector2Int POS)
+        public static StaticCollider Create(Vec2 size, Vec2 offset, Vec2Int POS)
         {
             return new StaticCollider(
                 new Vec2(POS.x + offset.x, POS.y + offset.y),

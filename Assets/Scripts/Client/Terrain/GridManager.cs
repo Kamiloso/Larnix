@@ -15,20 +15,20 @@ namespace Larnix.Client.Terrain
     {
         [SerializeField] ChunkedTilemap ChunkedTilemap;
 
-        private readonly Dictionary<Vector2Int, BlockData2[,]> Chunks = new();
-        private readonly HashSet<Vector2Int> DirtyChunks = new();
-        private readonly HashSet<Vector2Int> VisibleChunks = new();
+        private readonly Dictionary<Vec2Int, BlockData2[,]> Chunks = new();
+        private readonly HashSet<Vec2Int> DirtyChunks = new();
+        private readonly HashSet<Vec2Int> VisibleChunks = new();
 
         private readonly List<BlockLock> LockedBlocks = new();
         private const double BLOCK_LOCK_TIMEOUT = 5.0; // seconds
 
-        private Dictionary<Vector2Int, StaticCollider> BlockColliders = new();
+        private Dictionary<Vec2Int, StaticCollider> BlockColliders = new();
 
         private bool isMenu;
 
         private class BlockLock
         {
-            public Vector2Int POS;
+            public Vec2Int POS;
             public long operation;
             public double timeout = BLOCK_LOCK_TIMEOUT;
         }
@@ -52,7 +52,7 @@ namespace Larnix.Client.Terrain
             RedrawGrid();
         }
 
-        public void AddChunk(Vector2Int chunk, BlockData2[,] BlockArray, bool instantLoad = false)
+        public void AddChunk(Vec2Int chunk, BlockData2[,] BlockArray, bool instantLoad = false)
         {
             Chunks[chunk] = BlockArray;
             UpdateChunkColliders(chunk);
@@ -62,7 +62,7 @@ namespace Larnix.Client.Terrain
                 RedrawGrid(true);
         }
 
-        public void RemoveChunk(Vector2Int chunk)
+        public void RemoveChunk(Vec2Int chunk)
         {
             if (!Chunks.ContainsKey(chunk))
                 return;
@@ -74,15 +74,15 @@ namespace Larnix.Client.Terrain
             UnlockChunk(chunk);
         }
 
-        public bool ChunkLoaded(Vector2Int chunk)
+        public bool ChunkLoaded(Vec2Int chunk)
         {
             return Chunks.Keys.Contains(chunk);
         }
 
-        public void UpdateBlock(Vector2Int POS, BlockData2 data, long? unlock = null)
+        public void UpdateBlock(Vec2Int POS, BlockData2 data, long? unlock = null)
         {
-            Vector2Int chunk = BlockUtils.CoordsToChunk(POS);
-            Vector2Int pos = BlockUtils.LocalBlockCoords(POS);
+            Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
+            Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
 
             if (unlock != null)
                 UnlockBlock((long)unlock);
@@ -94,8 +94,8 @@ namespace Larnix.Client.Terrain
         public void RedrawGrid(bool instantLoad = false)
         {
             // Ascending - ADD
-            List<Vector2Int> addChunks = DirtyChunks.Where(c => Chunks.ContainsKey(c)).ToList();
-            addChunks.Sort((Vector2Int a, Vector2Int b) => ChunkDistance(a) - ChunkDistance(b));
+            List<Vec2Int> addChunks = DirtyChunks.Where(c => Chunks.ContainsKey(c)).ToList();
+            addChunks.Sort((Vec2Int a, Vec2Int b) => ChunkDistance(a) - ChunkDistance(b));
             foreach (var chunk in addChunks)
             {
                 RedrawChunk(chunk, true);
@@ -104,8 +104,8 @@ namespace Larnix.Client.Terrain
             }
 
             // Descending - REMOVE
-            List<Vector2Int> removeChunks = DirtyChunks.Where(c => !Chunks.ContainsKey(c)).ToList();
-            removeChunks.Sort((Vector2Int a, Vector2Int b) => ChunkDistance(b) - ChunkDistance(a));
+            List<Vec2Int> removeChunks = DirtyChunks.Where(c => !Chunks.ContainsKey(c)).ToList();
+            removeChunks.Sort((Vec2Int a, Vec2Int b) => ChunkDistance(b) - ChunkDistance(a));
             foreach (var chunk in removeChunks)
             {
                 RedrawChunk(chunk, false);
@@ -114,7 +114,7 @@ namespace Larnix.Client.Terrain
             }
         }
 
-        private void RedrawChunk(Vector2Int chunk, bool active)
+        private void RedrawChunk(Vec2Int chunk, bool active)
         {
             ChunkedTilemap.RedrawChunk(chunk, active ? Chunks[chunk] : null);
 
@@ -122,7 +122,7 @@ namespace Larnix.Client.Terrain
             else VisibleChunks.Remove(chunk);
         }
 
-        private int ChunkDistance(Vector2Int chunk)
+        private int ChunkDistance(Vec2Int chunk)
         {
             return GeometryUtils.ManhattanDistance(
                 BlockUtils.CoordsToChunk(!isMenu ? Ref.MainPlayer.Position : new Vec2(0, 0)),
@@ -135,7 +135,7 @@ namespace Larnix.Client.Terrain
             if (isMenu)
                 return false;
 
-            HashSet<Vector2Int> nearbyChunks = BlockUtils.GetNearbyChunks(
+            HashSet<Vec2Int> nearbyChunks = BlockUtils.GetNearbyChunks(
                 BlockUtils.CoordsToChunk(Ref.MainPlayer.Position),
                 BlockUtils.LOADING_DISTANCE
                 );
@@ -147,24 +147,24 @@ namespace Larnix.Client.Terrain
         /// <summary>
         /// Warning: Can be null if can't find a block!
         /// </summary>
-        public BlockData2 BlockDataAtPOS(Vector2Int POS)
+        public BlockData2 BlockDataAtPOS(Vec2Int POS)
         {
-            Vector2Int chunk = BlockUtils.CoordsToChunk(POS);
+            Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
             if (!Chunks.ContainsKey(chunk))
                 return null;
             
-            Vector2Int pos = BlockUtils.LocalBlockCoords(POS);
+            Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
             return Chunks[chunk][pos.x, pos.y];
         }
 
-        public long PlaceBlockClient(Vector2Int POS, BlockData1 block, bool front)
+        public long PlaceBlockClient(Vec2Int POS, BlockData1 block, bool front)
         {
             BlockData2 oldblock = BlockDataAtPOS(POS);
             if (oldblock == null)
                 throw new InvalidOperationException($"Cannot place block at {POS}");
 
-            Vector2Int chunk = BlockUtils.CoordsToChunk(POS);
-            Vector2Int pos = BlockUtils.LocalBlockCoords(POS);
+            Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
+            Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
 
             BlockData2 blockdata = new BlockData2(
                 front ? block : oldblock.Front.DeepCopy(),
@@ -176,14 +176,14 @@ namespace Larnix.Client.Terrain
             return operation;
         }
 
-        public long BreakBlockClient(Vector2Int POS, bool front)
+        public long BreakBlockClient(Vec2Int POS, bool front)
         {
             BlockData2 oldblock = BlockDataAtPOS(POS);
             if (oldblock == null)
                 throw new InvalidOperationException($"Cannot break block at {POS}");
 
-            Vector2Int chunk = BlockUtils.CoordsToChunk(POS);
-            Vector2Int pos = BlockUtils.LocalBlockCoords(POS);
+            Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
+            Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
 
             BlockData2 blockdata = new BlockData2(
                 front ? new BlockData1 { } : oldblock.Front.DeepCopy(),
@@ -195,23 +195,23 @@ namespace Larnix.Client.Terrain
             return operation;
         }
 
-        private void ChangeBlockData(Vector2Int POS, BlockData2 block)
+        private void ChangeBlockData(Vec2Int POS, BlockData2 block)
         {
-            Vector2Int chunk = BlockUtils.CoordsToChunk(POS);
-            Vector2Int pos = BlockUtils.LocalBlockCoords(POS);
+            Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
+            Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
 
             Chunks[chunk][pos.x, pos.y] = block;
             RedrawTileChecked(chunk, pos, block);
             UpdateBlockCollider(POS, block);
         }
 
-        private void RedrawTileChecked(Vector2Int chunk, Vector2Int pos, BlockData2 block)
+        private void RedrawTileChecked(Vec2Int chunk, Vec2Int pos, BlockData2 block)
         {
             if(VisibleChunks.Contains(chunk))
                 ChunkedTilemap.RedrawExistingTile(chunk, pos, block);
         }
 
-        private void UpdateChunkColliders(Vector2Int chunk)
+        private void UpdateChunkColliders(Vec2Int chunk)
         {
             if (!Chunks.TryGetValue(chunk, out BlockData2[,] chunkBlocks))
                 chunkBlocks = null;
@@ -219,14 +219,14 @@ namespace Larnix.Client.Terrain
             for (int x = 0; x < 16; x++)
                 for (int y = 0; y < 16; y++)
                 {
-                    Vector2Int POS = BlockUtils.GlobalBlockCoords(chunk, new Vector2Int(x, y));
+                    Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, new Vec2Int(x, y));
                     UpdateBlockCollider(POS, chunkBlocks != null ? chunkBlocks[x, y] : null);
                 }
 
             if(!isMenu) Ref.PhysicsManager.SetChunkActive(chunk, chunkBlocks != null);
         }
 
-        private void UpdateBlockCollider(Vector2Int POS, BlockData2 block)
+        private void UpdateBlockCollider(Vec2Int POS, BlockData2 block)
         {
             if (BlockColliders.TryGetValue(POS, out var statCollider))
             {
@@ -250,12 +250,12 @@ namespace Larnix.Client.Terrain
             }
         }
 
-        public bool IsBlockLocked(Vector2Int POS)
+        public bool IsBlockLocked(Vec2Int POS)
         {
             return LockedBlocks.Any(l => l.POS == POS);
         }
 
-        private long LockBlock(Vector2Int POS)
+        private long LockBlock(Vec2Int POS)
         {
             System.Random Rand = Common.Rand();
             long operation = ((long)Rand.Next(int.MinValue, int.MaxValue) << 32) | (uint)Rand.Next(int.MinValue, int.MaxValue);
@@ -272,7 +272,7 @@ namespace Larnix.Client.Terrain
             LockedBlocks.RemoveAll(l => l.operation == operation);
         }
 
-        private void UnlockChunk(Vector2Int chunk)
+        private void UnlockChunk(Vec2Int chunk)
         {
             LockedBlocks.RemoveAll(l => BlockUtils.InChunk(chunk, l.POS));
         }

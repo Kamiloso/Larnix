@@ -2,14 +2,12 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 using Larnix.Packets;
 using Larnix.Server.Entities;
 using Larnix.Core.Utils;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
 using Larnix.Socket.Backend;
-using UnityEditor;
 using Larnix.Server.References;
 using Larnix.Packets.Game;
 
@@ -20,7 +18,7 @@ namespace Larnix.Server.Terrain
         public const float UNLOADING_TIME = 4f; // seconds
 
         public WorldAPI WorldAPI { get; private set; } = null;
-        private readonly Dictionary<Vector2Int, ChunkContainer> Chunks = new();
+        private readonly Dictionary<Vec2Int, ChunkContainer> Chunks = new();
 
         private readonly BlockData2[,] PreAllocatedChunkArray = new BlockData2[16, 16];
 
@@ -128,18 +126,18 @@ namespace Larnix.Server.Terrain
 
             foreach (string nickname in Ref<PlayerManager>().GetAllPlayerNicknames())
             {
-                Vector2Int chunkpos = BlockUtils.CoordsToChunk(Ref<PlayerManager>().GetPlayerRenderingPosition(nickname));
+                Vec2Int chunkpos = BlockUtils.CoordsToChunk(Ref<PlayerManager>().GetPlayerRenderingPosition(nickname));
                 var player_state = Ref<PlayerManager>().GetPlayerState(nickname);
 
-                HashSet<Vector2Int> chunksMemory = Ref<PlayerManager>().LoadedChunksCopy(nickname);
-                HashSet<Vector2Int> chunksNearby = BlockUtils.GetNearbyChunks(chunkpos, BlockUtils.LOADING_DISTANCE)
+                HashSet<Vec2Int> chunksMemory = Ref<PlayerManager>().LoadedChunksCopy(nickname);
+                HashSet<Vec2Int> chunksNearby = BlockUtils.GetNearbyChunks(chunkpos, BlockUtils.LOADING_DISTANCE)
                     .Where(c => ChunkState(c) == LoadState.Active)
                     .ToHashSet();
 
-                HashSet<Vector2Int> added = new(chunksNearby);
+                HashSet<Vec2Int> added = new(chunksNearby);
                 added.ExceptWith(chunksMemory);
 
-                HashSet<Vector2Int> removed = new(chunksMemory);
+                HashSet<Vec2Int> removed = new(chunksMemory);
                 removed.ExceptWith(chunksNearby);
 
                 // send added
@@ -161,7 +159,7 @@ namespace Larnix.Server.Terrain
             }
         }
 
-        public LoadState ChunkState(Vector2Int chunk)
+        public LoadState ChunkState(Vec2Int chunk)
         {
             if(Chunks.TryGetValue(chunk, out var container))
                 return container.State;
@@ -170,11 +168,11 @@ namespace Larnix.Server.Terrain
 
         public bool IsEntityInZone(EntityAbstraction entity, LoadState state)
         {
-            Vector2Int chunk = BlockUtils.CoordsToChunk(entity.EntityData.Position);
+            Vec2Int chunk = BlockUtils.CoordsToChunk(entity.EntityData.Position);
             return ChunkState(chunk) == state;
         }
 
-        public bool TryGetChunk(Vector2Int chunk, out ChunkServer chunkObject)
+        public bool TryGetChunk(Vec2Int chunk, out ChunkServer chunkObject)
         {
             var state = ChunkState(chunk);
             switch (state)
@@ -193,7 +191,7 @@ namespace Larnix.Server.Terrain
             }
         }
 
-        public bool TryForceLoadChunk(Vector2Int chunk)
+        public bool TryForceLoadChunk(Vec2Int chunk)
         {
             if (BlockUtils.GetNearbyChunks(chunk, 0).Count == 0)
                 return false;
@@ -207,7 +205,7 @@ namespace Larnix.Server.Terrain
             return true;
         }
 
-        private void ChunkStimulate(Vector2Int chunk)
+        private void ChunkStimulate(Vec2Int chunk)
         {
             LoadState state = ChunkState(chunk);
             switch(state)
@@ -231,7 +229,7 @@ namespace Larnix.Server.Terrain
             }
         }
 
-        private void ChunkActivate(Vector2Int chunk)
+        private void ChunkActivate(Vec2Int chunk)
         {
             // Check if loading
 
@@ -244,7 +242,7 @@ namespace Larnix.Server.Terrain
             Chunks[chunk].Instance = new ChunkServer(this, chunk);
         }
 
-        private void ChunkUnload(Vector2Int chunk)
+        private void ChunkUnload(Vec2Int chunk)
         {
             // Remove chunks entry
 
@@ -269,9 +267,9 @@ namespace Larnix.Server.Terrain
             // --- entities will unload from EntityManager just after chunk update ---
         }
 
-        private List<Vector2Int> SortByPriority(List<Vector2Int> chunkList)
+        private List<Vec2Int> SortByPriority(List<Vec2Int> chunkList)
         {
-            List<(Vector2Int chunk, int distance)> pairs = new();
+            List<(Vec2Int chunk, int distance)> pairs = new();
 
             foreach(var chunk in chunkList)
             {
@@ -295,15 +293,15 @@ namespace Larnix.Server.Terrain
             return pairs.Select(c => c.chunk).ToList();
         }
 
-        private HashSet<Vector2Int> GetStimulatedChunks()
+        private HashSet<Vec2Int> GetStimulatedChunks()
         {
-            HashSet<Vector2Int> targetLoads = new();
+            HashSet<Vec2Int> targetLoads = new();
 
             List<Vec2> positions = new();
             foreach (string nickname in Ref<PlayerManager>().GetAllPlayerNicknames())
                 positions.Add(Ref<PlayerManager>().GetPlayerRenderingPosition(nickname));
 
-            foreach (Vector2Int center in BlockUtils.GetCenterChunks(positions))
+            foreach (Vec2Int center in BlockUtils.GetCenterChunks(positions))
             {
                 targetLoads.UnionWith(BlockUtils.GetNearbyChunks(center, BlockUtils.LOADING_DISTANCE));
             }

@@ -7,7 +7,6 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
-using UnityEngine;
 
 namespace Larnix.Core.Utils
 {
@@ -18,7 +17,6 @@ namespace Larnix.Core.Utils
         public const string LoopbackOnlyNickname = "Player";
         public const string LoopbackOnlyPassword = "SGP_PASSWORD\x01";
 
-        public static string SavesPath => Path.Combine(Application.persistentDataPath, "Saves");
         public const float FIXED_TIME = 0.02f;
 
         private static List<string> reservedFolders = new List<string>

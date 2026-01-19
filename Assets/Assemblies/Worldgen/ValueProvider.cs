@@ -3,7 +3,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 
 namespace Larnix.Worldgen
 {
@@ -93,10 +92,10 @@ namespace Larnix.Worldgen
             return provider;
         }
 
-        public ValueProvider Offset(Vector3 offset)
+        public ValueProvider Offset(double off_x, double off_y, double off_z)
         {
             ValueProvider provider = new ValueProvider(Type);
-            provider.Value = (x, y, z) => GetValue(x - offset.x, y - offset.y, z - offset.z);
+            provider.Value = (x, y, z) => GetValue(x - off_x, y - off_y, z - off_z);
             return provider;
         }
 

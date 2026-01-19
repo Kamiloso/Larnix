@@ -1,9 +1,9 @@
 using System;
-using UnityEngine;
 using Larnix.Core;
 using Larnix.Core.Utils;
 using Larnix.Blocks.Structs;
 using Larnix.Core.Binary;
+using Larnix.Core.Vectors;
 
 namespace Larnix.Packets.Game
 {
@@ -11,7 +11,7 @@ namespace Larnix.Packets.Game
     {
         private const int SIZE = (4 + 4) + 5 + 8 + 1;
 
-        public Vector2Int BlockPosition => new Vector2Int(
+        public Vec2Int BlockPosition => new Vec2Int(
             EndianUnsafe.FromBytes<int>(Bytes, 0),  // 4B
             EndianUnsafe.FromBytes<int>(Bytes, 4)); // 4B
         public BlockData1 Item => BlockData2.Deserialize(Bytes, 8).Front; // 2.5B
@@ -21,7 +21,7 @@ namespace Larnix.Packets.Game
 
 
         public BlockChange() { }
-        public BlockChange(Vector2Int blockPosition, BlockData1 item, BlockData1 tool, long operation, bool front, byte code = 0)
+        public BlockChange(Vec2Int blockPosition, BlockData1 item, BlockData1 tool, long operation, bool front, byte code = 0)
         {
             if (item == null) throw new ArgumentNullException(nameof(item));
             if (tool == null) throw new ArgumentNullException(nameof(tool));

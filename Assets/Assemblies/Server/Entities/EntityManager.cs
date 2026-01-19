@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using Larnix.Entities;
 using System.Linq;
 using Larnix.Packets;
@@ -223,7 +222,7 @@ namespace Larnix.Server.Entities
             entityControllers.Add(entityController.uID, entityController);
         }
 
-        public void LoadEntitiesByChunk(Vector2Int chunkCoords)
+        public void LoadEntitiesByChunk(Vec2Int chunkCoords)
         {
             Dictionary<ulong, EntityData> entities = Ref<EntityDataManager>().GetUnloadedEntitiesByChunk(chunkCoords);
             foreach (var kvp in entities)

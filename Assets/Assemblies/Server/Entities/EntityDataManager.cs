@@ -1,12 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using Larnix.Entities;
 using Larnix.Blocks;
 using Larnix.Core.Utils;
 using Larnix.Entities.Structs;
 using Larnix.Server.Data;
 using Larnix.Server.References;
+using Larnix.Core.Vectors;
 
 namespace Larnix.Server.Entities
 {
@@ -32,7 +32,7 @@ namespace Larnix.Server.Entities
             return Ref<Database>().FindEntity(uid);
         }
 
-        public Dictionary<ulong, EntityData> GetUnloadedEntitiesByChunk(Vector2Int chunkCoords)
+        public Dictionary<ulong, EntityData> GetUnloadedEntitiesByChunk(Vec2Int chunkCoords)
         {
             Dictionary<ulong, EntityData> entityList = Ref<Database>().GetEntitiesByChunkNoPlayers(chunkCoords);
 
@@ -51,7 +51,7 @@ namespace Larnix.Server.Entities
             foreach (var vkp in unloadedEntityData)
             {
                 EntityData newData = vkp.Value;
-                Vector2Int newChunkCoords = BlockUtils.CoordsToChunk(newData.Position);
+                Vec2Int newChunkCoords = BlockUtils.CoordsToChunk(newData.Position);
                 bool in_the_chunk = newChunkCoords == chunkCoords;
 
                 if (entityList.ContainsKey(vkp.Key))

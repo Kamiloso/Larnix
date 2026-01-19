@@ -1,7 +1,7 @@
 using Larnix.Blocks;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
+using Larnix.Core.Vectors;
 using Larnix.Core.Utils;
 
 namespace Larnix.Blocks
@@ -66,8 +66,8 @@ namespace Larnix.Blocks
 
         private bool? IsSuppressed()
         {
-            Vector2Int localpos = This.Position;
-            Vector2Int remotpos = This.Position + new Vector2Int(0, 1);
+            Vec2Int localpos = This.Position;
+            Vec2Int remotpos = This.Position + new Vec2Int(0, 1);
 
             BlockServer blockserv = WorldAPI.GetBlock(remotpos, This.IsFront);
             if (blockserv == null)

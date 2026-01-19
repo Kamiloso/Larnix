@@ -21,9 +21,9 @@ namespace Larnix.Core.Vectors
             return new Vec2(x, y);
         }
 
-        public int Manhattan(Vec2Int other)
+        public int ManhattanDistance(Vec2Int other)
         {
-            return Math.Abs(x - other.x) + Math.Abs(y - other.y);
+            return GeometryUtils.ManhattanDistance(this, other);
         }
 
         public byte[] Serialize()
@@ -58,8 +58,9 @@ namespace Larnix.Core.Vectors
         public static Vec2Int operator +(Vec2Int a, Vec2Int b) => new Vec2Int(a.x + b.x, a.y + b.y);
         public static Vec2Int operator -(Vec2Int a, Vec2Int b) => new Vec2Int(a.x - b.x, a.y - b.y);
         public static Vec2Int operator *(Vec2Int a, int scalar) => new Vec2Int(a.x * scalar, a.y * scalar);
+        public static Vec2Int operator *(int scalar, Vec2Int a) => new Vec2Int(a.x * scalar, a.y * scalar);
         public static Vec2Int operator /(Vec2Int a, int scalar) => new Vec2Int(a.x / scalar, a.y / scalar);
-
+        public static Vec2Int operator -(Vec2Int a) => new Vec2Int(-a.x, -a.y);
         public static bool operator ==(Vec2Int lhs, Vec2Int rhs) => lhs.x == rhs.x && lhs.y == rhs.y;
         public static bool operator !=(Vec2Int lhs, Vec2Int rhs) => !(lhs == rhs);
 

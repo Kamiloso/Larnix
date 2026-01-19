@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using System.Linq;
 using Larnix.Entities;
 using Larnix.Packets;
@@ -16,7 +15,7 @@ namespace Larnix.Server.Entities
         private readonly Dictionary<string, ulong> PlayerUID = new();
         private readonly Dictionary<string, PlayerUpdate> RecentPlayerUpdates = new(); // present for alive and dead players
         private readonly Dictionary<string, HashSet<ulong>> NearbyUIDs = new();
-        private readonly Dictionary<string, HashSet<Vector2Int>> ClientChunks = new();
+        private readonly Dictionary<string, HashSet<Vec2Int>> ClientChunks = new();
 
         public enum PlayerState : byte
         {
@@ -118,21 +117,21 @@ namespace Larnix.Server.Entities
             NearbyUIDs[nickname] = newUIDs;
         }
 
-        public void UpdateClientChunks(string nickname, HashSet<Vector2Int> chunks)
+        public void UpdateClientChunks(string nickname, HashSet<Vec2Int> chunks)
         {
             if (ClientChunks.ContainsKey(nickname))
                 ClientChunks[nickname] = chunks;
         }
 
-        public HashSet<Vector2Int> LoadedChunksCopy(string nickname)
+        public HashSet<Vec2Int> LoadedChunksCopy(string nickname)
         {
             if (!ClientChunks.ContainsKey(nickname))
-                return new HashSet<Vector2Int>();
+                return new HashSet<Vec2Int>();
 
-            return new HashSet<Vector2Int>(ClientChunks[nickname]);
+            return new HashSet<Vec2Int>(ClientChunks[nickname]);
         }
 
-        public bool PlayerHasChunk(string nickname, Vector2Int chunk)
+        public bool PlayerHasChunk(string nickname, Vec2Int chunk)
         {
             if (ClientChunks.TryGetValue(nickname, out var chunks))
             {

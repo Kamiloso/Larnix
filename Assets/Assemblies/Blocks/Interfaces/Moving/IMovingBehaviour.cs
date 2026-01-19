@@ -1,12 +1,12 @@
 using Larnix.Blocks;
-using UnityEngine;
+using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
 
 namespace Larnix.Blocks
 {
     public interface IMovingBehaviour : IBlockInterface
     {
-        public bool CanMove(Vector2Int POS_source, Vector2Int POS_destin, bool isFront)
+        public bool CanMove(Vec2Int POS_source, Vec2Int POS_destin, bool isFront)
         {
             BlockServer block1 = WorldAPI.GetBlock(POS_source, isFront);
             BlockServer block2 = WorldAPI.GetBlock(POS_destin, isFront);
@@ -17,7 +17,7 @@ namespace Larnix.Blocks
             return weight1 > weight2;
         }
 
-        public void Move(Vector2Int POS_source, Vector2Int POS_destin, bool isFront, byte? sourceNewVariant = null)
+        public void Move(Vec2Int POS_source, Vec2Int POS_destin, bool isFront, byte? sourceNewVariant = null)
         {
             BlockServer block1 = WorldAPI.GetBlock(POS_source, isFront);
             BlockServer block2 = WorldAPI.GetBlock(POS_destin, isFront);

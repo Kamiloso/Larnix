@@ -1,8 +1,8 @@
-using UnityEngine;
+using System;
 
 namespace Larnix.Server.References
 {
-    public abstract class RefObject
+    internal abstract class RefObject
     {
         protected readonly Server ThisServer;
 

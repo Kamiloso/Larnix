@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 using Larnix.Core.Vectors;
 using Larnix.Core.Utils;
 
@@ -10,7 +9,7 @@ namespace Larnix.Core.Physics
     public class SpatialDictionary<T> where T : class
     {
         public readonly double SectorSize;
-        private readonly Dictionary<Vector2Int, List<(Vec2, T)>> InternalDictionary = new();
+        private readonly Dictionary<Vec2Int, List<(Vec2, T)>> InternalDictionary = new();
 
         public SpatialDictionary(double sectorSize)
         {
@@ -46,7 +45,7 @@ namespace Larnix.Core.Physics
             for (int dx = -1; dx <= 1; dx++)
                 for (int dy = -1; dy <= 1; dy++)
                 {
-                    var sector = center + new Vector2Int(dx, dy);
+                    var sector = center + new Vec2Int(dx, dy);
                     if (InternalDictionary.TryGetValue(sector, out var list))
                     {
                         returns.AddRange(list.Select(p => p.Item2));
@@ -56,7 +55,7 @@ namespace Larnix.Core.Physics
             return returns;
         }
 
-        private List<(Vec2, T)> GetSectorList(Vec2 pos, out Vector2Int sector)
+        private List<(Vec2, T)> GetSectorList(Vec2 pos, out Vec2Int sector)
         {
             var _sector = ConvertToSector(pos);
             if (!InternalDictionary.TryGetValue(_sector, out var list))
@@ -69,7 +68,7 @@ namespace Larnix.Core.Physics
             return list;
         }
 
-        private Vector2Int ConvertToSector(Vec2 pos)
+        private Vec2Int ConvertToSector(Vec2 pos)
         {
             return BlockUtils.CoordsToBlock(pos, SectorSize);
         }

@@ -1,4 +1,4 @@
-using UnityEngine;
+using Larnix.Core.Vectors;
 
 namespace Larnix.Blocks
 {
@@ -16,8 +16,8 @@ namespace Larnix.Blocks
             if (WorldAPI.FramesSinceServerStart() % FALL_PERIOD() != 0)
                 return;
 
-            Vector2Int localpos = This.Position;
-            Vector2Int downpos = localpos - new Vector2Int(0, 1);
+            Vec2Int localpos = This.Position;
+            Vec2Int downpos = localpos - new Vec2Int(0, 1);
 
             if (CanMove(localpos, downpos, This.IsFront))
             {

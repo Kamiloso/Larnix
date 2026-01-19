@@ -7,7 +7,7 @@ using UnityEngine.UI;
 using Larnix.Menu.Worlds;
 using Larnix.ServerRun;
 using System.Threading.Tasks;
-using Larnix.Core.Utils;
+using Larnix.Core;
 
 namespace Larnix.Menu.Forms
 {
@@ -79,7 +79,7 @@ namespace Larnix.Menu.Forms
         {
             if (state == 0)
             {
-                string path = Path.Combine(Common.SavesPath, IF_WorldName.text);
+                string path = Path.Combine(GamePath.SavesPath, IF_WorldName.text);
                 serverTuple = ServerRunner.Instance.StartServer(Server.ServerType.Host, path, null);
                 OF_ServerAddress.text = serverTuple.address;
                 OF_Authcode.text = serverTuple.authcode;

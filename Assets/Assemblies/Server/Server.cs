@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using System;
 using Larnix.Server.Data;
 using Larnix.Core;
@@ -34,7 +33,7 @@ namespace Larnix.Server
         public readonly string WorldPath;
         public readonly string LocalAddress;
         public readonly string Authcode;
-        public uint FixedFrame { get; private set; } = 0;
+        internal uint FixedFrame { get; private set; } = 0;
 
         private WorldMeta _mdata;
         private readonly Stopwatch _stopwatch = Stopwatch.StartNew();
@@ -44,7 +43,7 @@ namespace Larnix.Server
         private readonly Dictionary<Type, Object> _registeredRefs = new();
         private object _refLock = new();
 
-        public readonly Action CloseServer;
+        internal readonly Action CloseServer;
         private bool _disposed = false;
 
         public Server(ServerType type, string worldPath, long? seedSuggestion, Action closeServer)
@@ -229,7 +228,7 @@ namespace Larnix.Server
                 SaveAllNow();
         }
 
-        public void AddRef(Object obj)
+        internal void AddRef(Object obj)
         {
             Type type = obj.GetType();
             lock (_refLock)
@@ -242,7 +241,7 @@ namespace Larnix.Server
             }
         }
 
-        public T Ref<T>() where T : class
+        internal T Ref<T>() where T : class
         {
             lock (_refLock)
             {

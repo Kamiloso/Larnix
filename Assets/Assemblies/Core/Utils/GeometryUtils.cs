@@ -1,20 +1,19 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
+using Larnix.Core.Vectors;
 
 namespace Larnix.Core.Utils
 {
     public static class GeometryUtils
     {
-        public static int ManhattanDistance(Vector2Int v1, Vector2Int v2)
+        public static int ManhattanDistance(Vec2Int v1, Vec2Int v2)
         {
-            return Math.Abs(v1.x - v2.x) + Math.Abs(v1.y - v2.y);
-        }
-
-        public static float InSquareDistance(Vector2 v1, Vector2 v2)
-        {
-            return Math.Max(Math.Abs(v1.x - v2.x), Math.Abs(v1.y - v2.y));
+            long a = Math.Abs(v1.x - v2.x);
+            long b = Math.Abs(v1.y - v2.y);
+            long result = a + b;
+            
+            return (int)Math.Min(result, int.MaxValue);
         }
     }
 }

@@ -1,6 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
+using Larnix.Core.Vectors;
 using Larnix.Core.Utils;
 
 namespace Larnix.Blocks
@@ -26,8 +26,8 @@ namespace Larnix.Blocks
             if (WorldAPI.FramesSinceServerStart() % FLOW_PERIOD() != 0)
                 return;
 
-            Vector2Int localpos = This.Position;
-            Vector2Int downpos = localpos - new Vector2Int(0, 1);
+            Vec2Int localpos = This.Position;
+            Vec2Int downpos = localpos - new Vec2Int(0, 1);
 
             int mem_direction = 
                 ((This.BlockData.Variant & MEMORY_RIGHT()) != 0 ? 1 : 0) -
@@ -42,10 +42,10 @@ namespace Larnix.Blocks
             }
             else // go to side
             {
-                Vector2Int leftpos = localpos - new Vector2Int(1, 0);
-                Vector2Int rightpos = localpos + new Vector2Int(1, 0);
-                Vector2Int leftpos_up = leftpos + new Vector2Int(0, 1);
-                Vector2Int rightpos_up = rightpos + new Vector2Int(0, 1);
+                Vec2Int leftpos = localpos - new Vec2Int(1, 0);
+                Vec2Int rightpos = localpos + new Vec2Int(1, 0);
+                Vec2Int leftpos_up = leftpos + new Vec2Int(0, 1);
+                Vec2Int rightpos_up = rightpos + new Vec2Int(0, 1);
 
                 bool can_left = CanMove(localpos, leftpos, This.IsFront);
                 bool can_right = CanMove(localpos, rightpos, This.IsFront);

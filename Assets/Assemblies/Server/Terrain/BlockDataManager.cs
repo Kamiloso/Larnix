@@ -1,19 +1,19 @@
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using Larnix.Blocks;
 using Larnix.Blocks.Structs;
 using System.Linq;
 using Larnix.Server.Data;
 using Larnix.Worldgen;
 using Larnix.Server.References;
+using Larnix.Core.Vectors;
 
 namespace Larnix.Server.Terrain
 {
     internal class BlockDataManager : ServerSingleton
     {
-        private readonly Dictionary<Vector2Int, BlockData2[,]> chunkCache = new();
-        private readonly HashSet<Vector2Int> referencedChunks = new();
+        private readonly Dictionary<Vec2Int, BlockData2[,]> chunkCache = new();
+        private readonly HashSet<Vec2Int> referencedChunks = new();
         private bool DEBUG_UNLINK_DATABASE = false;
 
         public BlockDataManager(Server server) : base(server) {}
@@ -22,7 +22,7 @@ namespace Larnix.Server.Terrain
         /// Modify this reference during FixedUpdate time and it will automatically update in this script.
         /// Don't forget to DisableChunkReference(...) when unloading chunk!
         /// </summary>
-        public BlockData2[,] GetChunkReference(Vector2Int chunk)
+        public BlockData2[,] GetChunkReference(Vec2Int chunk)
         {
             if (referencedChunks.Contains(chunk))
                 throw new System.InvalidOperationException($"Cannot get more than one reference to chunk {chunk}!");
@@ -48,7 +48,7 @@ namespace Larnix.Server.Terrain
             }
         }
 
-        public void DisableChunkReference(Vector2Int chunk)
+        public void DisableChunkReference(Vec2Int chunk)
         {
             if (!referencedChunks.Contains(chunk))
                 throw new System.InvalidOperationException($"Reference to chunk {chunk} is not marked as active!");
@@ -63,7 +63,7 @@ namespace Larnix.Server.Terrain
 
             foreach(var vkp in chunkCache.ToList())
             {
-                Vector2Int chunk = vkp.Key;
+                Vec2Int chunk = vkp.Key;
                 BlockData2[,] data = vkp.Value;
 
                 // Flush data

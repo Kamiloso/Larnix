@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using Larnix.Packets.Game;
 using Larnix.Server.Entities;
 using Larnix.Server.Terrain;
@@ -8,6 +7,7 @@ using Larnix.Core.Utils;
 using Larnix.Socket.Backend;
 using Larnix.Server.References;
 using Larnix.Packets.Control;
+using Larnix.Core.Vectors;
 
 namespace Larnix.Server
 {
@@ -67,8 +67,8 @@ namespace Larnix.Server
 
         private void _BlockChange(BlockChange msg, string owner)
         {
-            Vector2Int POS = msg.BlockPosition;
-            Vector2Int chunk = BlockUtils.CoordsToChunk(POS);
+            Vec2Int POS = msg.BlockPosition;
+            Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
             bool front = msg.Front;
             byte code = msg.Code;
 

@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using Microsoft.Data.Sqlite;
 using System.IO;
 using System;
@@ -169,7 +168,7 @@ namespace Larnix.Server.Data
             return null;
         }
 
-        public Dictionary<ulong, EntityData> GetEntitiesByChunkNoPlayers(Vector2Int chunkCoords)
+        public Dictionary<ulong, EntityData> GetEntitiesByChunkNoPlayers(Vec2Int chunkCoords)
         {
             using (var cmd = CreateCommand())
             {
@@ -219,7 +218,7 @@ namespace Larnix.Server.Data
                 foreach (var vkp in entities)
                 {
                     EntityData entity = vkp.Value;
-                    Vector2Int chunkCoords = BlockUtils.CoordsToChunk(entity.Position);
+                    Vec2Int chunkCoords = BlockUtils.CoordsToChunk(entity.Position);
 
                     paramUid.Value = (long)vkp.Key;
                     paramType.Value = (long)entity.ID;

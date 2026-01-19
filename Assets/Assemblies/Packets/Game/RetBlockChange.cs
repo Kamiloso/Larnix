@@ -1,8 +1,7 @@
 using System;
 using System.Collections;
 using Larnix.Blocks;
-using UnityEngine;
-using Larnix.Core;
+using Larnix.Core.Vectors;
 using Larnix.Core.Utils;
 using Larnix.Blocks.Structs;
 using Larnix.Core.Binary;
@@ -13,7 +12,7 @@ namespace Larnix.Packets.Game
     {
         private const int SIZE = (4 + 4) + 8 + 5 + 1;
 
-        public Vector2Int BlockPosition => new Vector2Int(
+        public Vec2Int BlockPosition => new Vec2Int(
             EndianUnsafe.FromBytes<int>(Bytes, 0),  // 4B
             EndianUnsafe.FromBytes<int>(Bytes, 4)); // 4B
         public long Operation => EndianUnsafe.FromBytes<long>(Bytes, 8); // 8B
@@ -22,7 +21,7 @@ namespace Larnix.Packets.Game
         public bool Success => (Bytes[21] & 0b10) != 0; // flag
 
         public RetBlockChange() { }
-        public RetBlockChange(Vector2Int blockPosition, long operation, BlockData2 currentBlock, bool front, bool success, byte code = 0)
+        public RetBlockChange(Vec2Int blockPosition, long operation, BlockData2 currentBlock, bool front, bool success, byte code = 0)
         {
             InitializePayload(ArrayUtils.MegaConcat(
                 EndianUnsafe.GetBytes(blockPosition.x),

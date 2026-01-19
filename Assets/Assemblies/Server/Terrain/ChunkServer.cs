@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using Larnix.Blocks;
 using System;
 using System.Linq;
@@ -16,14 +15,14 @@ namespace Larnix.Server.Terrain
     {
         private WorldAPI WorldAPI => Ref<ChunkLoading>().WorldAPI;
 
-        public Vector2Int Chunkpos { get; private set; }
+        public Vec2Int Chunkpos { get; private set; }
         private readonly BlockServer[,] BlocksFront = new BlockServer[16, 16];
         private readonly BlockServer[,] BlocksBack = new BlockServer[16, 16];
-        private readonly Dictionary<Vector2Int, StaticCollider> StaticColliders = new();
+        private readonly Dictionary<Vec2Int, StaticCollider> StaticColliders = new();
 
         private readonly BlockData2[,] ActiveChunkReference;
 
-        public ChunkServer(RefObject reff, Vector2Int chunkpos) : base(reff)
+        public ChunkServer(RefObject reff, Vec2Int chunkpos) : base(reff)
         {
             Chunkpos = chunkpos;
             ActiveChunkReference = Ref<BlockDataManager>().GetChunkReference(Chunkpos);
@@ -31,7 +30,7 @@ namespace Larnix.Server.Terrain
             for (int x = 0; x < 16; x++)
                 for (int y = 0; y < 16; y++)
                 {
-                    CreateBlock(new Vector2Int(x, y), ActiveChunkReference[x, y]);
+                    CreateBlock(new Vec2Int(x, y), ActiveChunkReference[x, y]);
                 }
 
             Ref<PhysicsManager>().SetChunkActive(Chunkpos, true);
@@ -83,12 +82,12 @@ namespace Larnix.Server.Terrain
                 }
         }
 
-        public BlockServer GetBlock(Vector2Int pos, bool isFront)
+        public BlockServer GetBlock(Vec2Int pos, bool isFront)
         {
             return isFront ? BlocksFront[pos.x, pos.y] : BlocksBack[pos.x, pos.y];
         }
 
-        public BlockServer UpdateBlock(Vector2Int pos, bool isFront, BlockData1 block)
+        public BlockServer UpdateBlock(Vec2Int pos, bool isFront, BlockData1 block)
         {
             BlockServer ret = null;
 
@@ -145,7 +144,7 @@ namespace Larnix.Server.Terrain
             }
         }
 
-        private void CreateBlock(Vector2Int pos, BlockData2 blockData)
+        private void CreateBlock(Vec2Int pos, BlockData2 blockData)
         {
             BlockServer frontBlock = ConstructAndBindBlockObject(BlockUtils.GlobalBlockCoords(Chunkpos, pos), blockData.Front, true);
             BlocksFront[pos.x, pos.y] = frontBlock;
@@ -156,13 +155,13 @@ namespace Larnix.Server.Terrain
             RefreshCollider(pos);
         }
 
-        private BlockServer ConstructAndBindBlockObject(Vector2Int POS, BlockData1 block, bool front)
+        private BlockServer ConstructAndBindBlockObject(Vec2Int POS, BlockData1 block, bool front)
         {
             BlockServer blockServer = BlockFactory.ConstructBlockObject(POS, block, front, WorldAPI);
             return blockServer;
         }
 
-        private void RefreshCollider(Vector2Int pos)
+        private void RefreshCollider(Vec2Int pos)
         {
             if(StaticColliders.TryGetValue(pos, out var statCollider))
             {

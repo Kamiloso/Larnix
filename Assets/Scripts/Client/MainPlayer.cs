@@ -61,7 +61,7 @@ namespace Larnix.Client
             OutputData? odata = null;
             if (!Ref.Debug.SpectatorMode)
             {
-                Vector2Int chunk = BlockUtils.CoordsToChunk(Position);
+                Vec2Int chunk = BlockUtils.CoordsToChunk(Position);
                 if (Ref.GridManager.ChunkLoaded(chunk))
                 {
                     odata = DynamicCollider.PhysicsUpdate(new InputData
@@ -194,7 +194,7 @@ namespace Larnix.Client
         public Vec2 ToLarnixPos(Vector2 position)
         {
             Vec2 origin = GetOriginOffset();
-            return new Vec2(position, origin);
+            return VectorExtensions.ConstructVec2(position, origin);
         }
     }
 }

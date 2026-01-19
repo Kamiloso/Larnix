@@ -2,7 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Larnix.Blocks.Structs;
-using UnityEngine;
+using Larnix.Core.Vectors;
 using Larnix.Core;
 using Larnix.Core.Utils;
 using Larnix.Core.Binary;
@@ -13,7 +13,7 @@ namespace Larnix.Packets.Game
     {
         public class Record
         {
-            public Vector2Int POS;
+            public Vec2Int POS;
             public BlockData2 Block;
 
             public byte[] Serialize()
@@ -29,7 +29,7 @@ namespace Larnix.Packets.Game
             {
                 return new Record
                 {
-                    POS = new Vector2Int(
+                    POS = new Vec2Int(
                         EndianUnsafe.FromBytes<int>(bytes, 0 + offset),
                         EndianUnsafe.FromBytes<int>(bytes, 4 + offset)),
 

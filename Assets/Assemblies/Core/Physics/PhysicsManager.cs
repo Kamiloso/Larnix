@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using Larnix.Core.Vectors;
 using Larnix.Core.Utils;
 
@@ -9,9 +8,9 @@ namespace Larnix.Core.Physics
     public class PhysicsManager
     {
         private readonly SpatialDictionary<StaticCollider> StaticColliders = new(3f);
-        private readonly HashSet<Vector2Int> ActiveChunks = new();
+        private readonly HashSet<Vec2Int> ActiveChunks = new();
 
-        public void SetChunkActive(Vector2Int chunk, bool active)
+        public void SetChunkActive(Vec2Int chunk, bool active)
         {
             if(active) ActiveChunks.Add(chunk);
             else ActiveChunks.Remove(chunk);
@@ -32,11 +31,11 @@ namespace Larnix.Core.Physics
             OutputData totalReport = new OutputData { Position = dynCollider.Center };
             var list = StaticColliders.Get3x3SectorList(dynCollider.Center);
 
-            Vector2Int middleChunk = BlockUtils.CoordsToBlock(dynCollider.Center, 16.0);
+            Vec2Int middleChunk = BlockUtils.CoordsToBlock(dynCollider.Center, 16.0);
             for (int dx = -1; dx <= 1 ; dx++)
                 for (int dy = -1; dy <= 1; dy++)
                 {
-                    Vector2Int chunk = middleChunk + new Vector2Int(dx, dy);
+                    Vec2Int chunk = middleChunk + new Vec2Int(dx, dy);
                     if(!ActiveChunks.Contains(chunk))
                     {
                         list.Add(new StaticCollider(

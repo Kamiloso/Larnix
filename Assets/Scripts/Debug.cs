@@ -142,6 +142,7 @@ namespace Larnix
         {
             MainThread = Thread.CurrentThread;
             Core.Debug.InitLogs(Log, LogWarning, LogError, LogSuccess, LogRawConsole);
+            Core.GamePath.InitPath(Application.persistentDataPath);
         }
     }
 }

@@ -1,7 +1,7 @@
 using System;
 using System.Collections;
 using Larnix.Blocks;
-using UnityEngine;
+using Larnix.Core.Vectors;
 using Larnix.Core;
 using Larnix.Core.Utils;
 using Larnix.Blocks.Structs;
@@ -14,13 +14,13 @@ namespace Larnix.Packets.Game
         private const int MIN_SIZE = 4 + 4;
         private const int MAX_SIZE = 4 + 4 + 16 * 16 * 5;
 
-        public Vector2Int Chunkpos => new Vector2Int(
+        public Vec2Int Chunkpos => new Vec2Int(
             EndianUnsafe.FromBytes<int>(Bytes, 0),  // 4B
             EndianUnsafe.FromBytes<int>(Bytes, 4)); // 4B
         public BlockData2[,] Blocks => Bytes.Length != MIN_SIZE ? ChunkMethods.DeserializeChunk(Bytes, 8) : null; // 0B - 1280B
 
         public ChunkInfo() { }
-        public ChunkInfo(Vector2Int chunkpos, BlockData2[,] blocks, byte code = 0)
+        public ChunkInfo(Vec2Int chunkpos, BlockData2[,] blocks, byte code = 0)
         {
             InitializePayload(ArrayUtils.MegaConcat(
                 EndianUnsafe.GetBytes(chunkpos.x),

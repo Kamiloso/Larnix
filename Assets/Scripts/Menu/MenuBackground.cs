@@ -17,7 +17,7 @@ namespace Larnix.Menu
 
         private Generator Generator;
 
-        private HashSet<Vector2Int> ActiveChunks = new();
+        private HashSet<Vec2Int> ActiveChunks = new();
         private bool firstGeneration = true;
 
         private void Start()
@@ -27,13 +27,13 @@ namespace Larnix.Menu
 
         private void Update()
         {
-            HashSet<Vector2Int> NearbyChunks = BlockUtils.GetNearbyChunks(
-                BlockUtils.CoordsToChunk(new Vec2(Camera.transform.position, default)), 2);
+            HashSet<Vec2Int> NearbyChunks = BlockUtils.GetNearbyChunks(
+                BlockUtils.CoordsToChunk(VectorExtensions.ConstructVec2(Camera.transform.position, Vec2.Zero)), 2);
 
-            HashSet<Vector2Int> ToAdd = new HashSet<Vector2Int>(NearbyChunks);
+            HashSet<Vec2Int> ToAdd = new HashSet<Vec2Int>(NearbyChunks);
             ToAdd.ExceptWith(ActiveChunks);
 
-            HashSet<Vector2Int> ToRemove = new HashSet<Vector2Int>(ActiveChunks);
+            HashSet<Vec2Int> ToRemove = new HashSet<Vec2Int>(ActiveChunks);
             ToRemove.ExceptWith(NearbyChunks);
 
             foreach(var chunk in ToAdd)

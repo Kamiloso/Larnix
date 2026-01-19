@@ -1,15 +1,15 @@
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using Larnix.Blocks;
 using System;
 using Larnix.Blocks.Structs;
+using Larnix.Core.Vectors;
 
 namespace Larnix.Blocks
 {
     public class BlockServer
     {
-        public readonly Vector2Int Position;
+        public readonly Vec2Int Position;
         public readonly bool IsFront;
         public BlockData1 BlockData;
 
@@ -21,7 +21,7 @@ namespace Larnix.Blocks
         public event EventHandler FrameEventRandom;
         public event EventHandler FrameEventSequential;
 
-        public BlockServer(Vector2Int position, BlockData1 blockData, bool isFront)
+        public BlockServer(Vec2Int position, BlockData1 blockData, bool isFront)
         {
             Position = position;
             BlockData = blockData;
