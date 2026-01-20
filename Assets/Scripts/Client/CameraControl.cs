@@ -46,7 +46,7 @@ namespace Larnix.Client
             );
 
             // Camera zoom
-            float zoomValue = !Ref.Debug.SpectatorMode ?
+            float zoomValue = !Ref.Debugger.SpectatorMode ?
                 (ZoomBase + ZoomSteps * ZoomStep) :
                 (ZoomBase_SPECT + ZoomSteps * ZoomStep_SPECT);
             MainCamera.orthographicSize = zoomValue;

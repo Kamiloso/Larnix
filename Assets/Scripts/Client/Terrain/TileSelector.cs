@@ -59,7 +59,7 @@ namespace Larnix.Client.Terrain
                 GetCellsIntersectedByLine((Vec2)old_cursor_pos, cursor_pos) :
                 new List<Vec2Int> { BlockUtils.CoordsToBlock(cursor_pos) };
 
-            if (!Ref.Debug.SpectatorMode)
+            if (!Ref.Debugger.SpectatorMode)
                 grids.RemoveAll(grid => (new Vec2(grid.x, grid.y) - player_pos).Magnitude > INTERACTION_RANGE);
 
             if (active && isGameFocused && grids.Count > 0) // ENABLED CURSOR

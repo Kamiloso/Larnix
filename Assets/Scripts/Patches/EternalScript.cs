@@ -52,11 +52,5 @@ namespace Larnix.Patches
                 obj.AddComponent(type);
             }
         }
-
-        private void Update()
-        {
-            Debug.FlushLogs();
-        }
     }
-
 }

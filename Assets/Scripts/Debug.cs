@@ -7,10 +7,11 @@ using System.Diagnostics;
 using System.Text;
 using System.IO;
 using Console = Larnix.Core.Console;
+using Larnix.Patches;
 
 namespace Larnix
 {
-    public static class Debug
+    public class Debug : MonoBehaviour, IGlobalUnitySingleton
     {
         private static readonly ConcurrentQueue<Action> actionQueue = new();
         private static object _locker = new();
@@ -29,12 +30,9 @@ namespace Larnix
             {
                 switch (logType)
                 {
-                    case LogType.Log:
-                    case LogType.Success:
-                    case LogType.RawConsole:
-                        UnityEngine.Debug.Log(msg);
-                        break;
-
+                    case LogType.Log: UnityEngine.Debug.Log(msg); break;
+                    case LogType.Success: UnityEngine.Debug.Log(msg); break;
+                    case LogType.RawConsole: UnityEngine.Debug.Log(msg); break;
                     case LogType.Warning: UnityEngine.Debug.LogWarning(msg); break;
                     case LogType.Error: UnityEngine.Debug.LogError(msg); break;
                 }
@@ -143,6 +141,11 @@ namespace Larnix
             MainThread = Thread.CurrentThread;
             Core.Debug.InitLogs(Log, LogWarning, LogError, LogSuccess, LogRawConsole);
             Core.GamePath.InitPath(Application.persistentDataPath);
+        }
+
+        private void Update()
+        {
+            FlushLogs();
         }
     }
 }

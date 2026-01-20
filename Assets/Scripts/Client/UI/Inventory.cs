@@ -48,7 +48,7 @@ namespace Larnix.Client.UI
             if (SelectedSlot > MAX_SELECTABLE)
                 SelectedSlot = MIN_SELECTABLE;
 
-            if (Ref.Debug.ClientBlockSwap)
+            if (Ref.Debugger.ClientBlockSwap)
             {
                 int deltaBlock = (Input.GetKeyDown(KeyCode.P) ? 1 : 0) - (Input.GetKeyDown(KeyCode.O) ? 1 : 0);
                 int deltaVariant = (Input.GetKeyDown(KeyCode.L) ? 1 : 0) - (Input.GetKeyDown(KeyCode.K) ? 1 : 0);

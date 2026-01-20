@@ -59,7 +59,7 @@ namespace Larnix.Client
 
             // Movement
             OutputData? odata = null;
-            if (!Ref.Debug.SpectatorMode)
+            if (!Ref.Debugger.SpectatorMode)
             {
                 Vec2Int chunk = BlockUtils.CoordsToChunk(Position);
                 if (Ref.GridManager.ChunkLoaded(chunk))

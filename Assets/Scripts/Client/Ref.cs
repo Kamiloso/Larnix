@@ -20,7 +20,7 @@ namespace Larnix.Client
         public static TileSelector TileSelector;
         public static Inventory Inventory;
         public static Screenshots Screenshots;
-        public static Debug Debug;
+        public static Debugger Debugger;
 
         // Normal Classes
         public static PhysicsManager PhysicsManager;

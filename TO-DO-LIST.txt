@@ -1,10 +1,9 @@
 === Larnix TO-DO-LIST ===
 
-- Repait client build
-- Vec2Int struct & disconnect from Unity
 - Socket finish refactor: server, ticketing
-- Structs rework, better serialization
+- All structs rework, better serialization
 
+- Disconnect from Unity
 - QuickNet relay system
 
 - NBT system: Internal / Visual

@@ -10,7 +10,7 @@ using Larnix.Core;
 
 namespace Larnix.Client
 {
-    public class Debug : MonoBehaviour
+    public class Debugger : MonoBehaviour
     {
         [SerializeField] public bool ShowDebugInfo;
         [SerializeField] public bool AdvancedDebugKeys;
@@ -26,12 +26,12 @@ namespace Larnix.Client
 
         private void Awake()
         {
-            Ref.Debug = this;
+            Ref.Debugger = this;
         }
 
         private void OnDestroy()
         {
-            Ref.Debug = null;
+            Ref.Debugger = null;
         }
 
         private void FixedUpdate()
