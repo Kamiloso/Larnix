@@ -30,6 +30,7 @@ public class BuildAutomation
             scenes = clientScenes,
             locationPathName = path,
             target = target,
+            subtarget = (int)StandaloneBuildSubtarget.Player,
             options = BuildOptions.None
         };
 

@@ -1,21 +1,12 @@
-using System.Collections;
-using System.Collections.Generic;
 using System.IO;
 using Larnix.Core.Files;
 using Larnix.Core.Utils;
-using UnityEngine;
+using SimpleJSON;
 
 namespace Larnix.Server.Data
 {
-    [System.Serializable]
     internal class Config
     {
-        /*
-        Default remote server values are default class parameters.
-        Local server values are constructed by modifying default values in a constructor.
-        Server (local / host / remote) can store its values into JSON file and load them on start.
-        */
-
         public ushort ConfigVersion = 5;
         public ushort MaxPlayers = 10;
         public ushort Port = Common.LarnixPort;
@@ -32,21 +23,24 @@ namespace Larnix.Server.Data
         public static Config Obtain(string path)
         {
             string data = FileManager.Read(path, "config.json");
-            
+
             try
             {
-                if (data != null)
+                if (!string.IsNullOrEmpty(data))
                 {
-                    Config readConfig = JsonUtility.FromJson<Config>(data);
-                    readConfig.UpdateConfig();
-                    return readConfig;
+                    JSONNode json = JSON.Parse(data);
+                    Config cfg = FromJson(json);
+                    cfg.UpdateConfig();
+                    return cfg;
                 }
             }
             catch
             {
-                Core.Debug.LogWarning("File " + Path.Combine(path, "config.json") + " was broken! Generating new...");
+                Core.Debug.LogWarning(
+                    "File " + Path.Combine(path, "config.json") + " was broken! Generating new..."
+                );
             }
-            
+
             Config newConfig = new Config();
             newConfig.Save(path);
             return newConfig;
@@ -54,37 +48,67 @@ namespace Larnix.Server.Data
 
         public void Save(string path)
         {
-            string data = JsonUtility.ToJson(this, true);
-            FileManager.Write(path, "config.json", data);
+            JSONNode json = ToJson();
+            FileManager.Write(path, "config.json", json.ToString(2));
+        }
+
+        private static Config FromJson(JSONNode json)
+        {
+            Config cfg = new Config();
+
+            cfg.ConfigVersion = (ushort)json["ConfigVersion"].AsInt;
+            cfg.MaxPlayers = (ushort)json["MaxPlayers"].AsInt;
+            cfg.Port = (ushort)json["Port"].AsInt;
+            cfg.Motd = json["Motd"];
+            cfg.DataSavingPeriodFrames = json["DataSavingPeriodFrames"].AsInt;
+            cfg.EntityBroadcastPeriodFrames = json["EntityBroadcastPeriodFrames"].AsInt;
+            cfg.ClientIdentityPrefixSizeIPv4 = json["ClientIdentityPrefixSizeIPv4"].AsInt;
+            cfg.ClientIdentityPrefixSizeIPv6 = json["ClientIdentityPrefixSizeIPv6"].AsInt;
+            cfg.UseRelay = json["UseRelay"].AsBool;
+            cfg.RelayAddress = json["RelayAddress"];
+
+            return cfg;
+        }
+
+        private JSONNode ToJson()
+        {
+            JSONObject json = new JSONObject();
+
+            json["ConfigVersion"] = (int)ConfigVersion;
+            json["MaxPlayers"] = (int)MaxPlayers;
+            json["Port"] = (int)Port;
+            json["Motd"] = Motd;
+            json["DataSavingPeriodFrames"] = DataSavingPeriodFrames;
+            json["EntityBroadcastPeriodFrames"] = EntityBroadcastPeriodFrames;
+            json["ClientIdentityPrefixSizeIPv4"] = ClientIdentityPrefixSizeIPv4;
+            json["ClientIdentityPrefixSizeIPv6"] = ClientIdentityPrefixSizeIPv6;
+            json["UseRelay"] = UseRelay;
+            json["RelayAddress"] = RelayAddress;
+
+            return json;
         }
 
         private void UpdateConfig()
         {
-            Config defaultConfig = new Config();
-            
+            Config defaults = new Config();
+
             if (ConfigVersion < 2)
             {
-                ClientIdentityPrefixSizeIPv4 = defaultConfig.ClientIdentityPrefixSizeIPv4;
-                ClientIdentityPrefixSizeIPv6 = defaultConfig.ClientIdentityPrefixSizeIPv6;
+                ClientIdentityPrefixSizeIPv4 = defaults.ClientIdentityPrefixSizeIPv4;
+                ClientIdentityPrefixSizeIPv6 = defaults.ClientIdentityPrefixSizeIPv6;
             }
             if (ConfigVersion < 4)
             {
-                UseRelay = defaultConfig.UseRelay;
-                RelayAddress = defaultConfig.RelayAddress;
+                UseRelay = defaults.UseRelay;
+                RelayAddress = defaults.RelayAddress;
             }
             if (ConfigVersion < 5)
             {
-                DataSavingPeriodFrames = defaultConfig.DataSavingPeriodFrames;
-                EntityBroadcastPeriodFrames = defaultConfig.EntityBroadcastPeriodFrames;
+                DataSavingPeriodFrames = defaults.DataSavingPeriodFrames;
+                EntityBroadcastPeriodFrames = defaults.EntityBroadcastPeriodFrames;
             }
-            // if(oldConfig.ConfigVersion < 6)
-            // {
-            //     UPDATE MORE VARIABLES
-            // }
 
-            // Add more if(s) when updating config.
-
-            ConfigVersion = defaultConfig.ConfigVersion;
+            ConfigVersion = defaults.ConfigVersion;
         }
     }
 }

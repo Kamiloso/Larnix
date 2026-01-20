@@ -9,16 +9,16 @@ namespace Larnix.Socket
     {
         private const long Window = 6_000; // miliseconds
         private static Dictionary<string, long> TimestampDifferences = new();
-        private static object _locker1 = new();
+        private static object _lock1 = new();
 
         private static bool _initialized = false;
         private static long startingTimestamp = 0;
         private static Stopwatch stopwatch = new();
-        private static object _locker2 = new();
+        private static object _lock2 = new();
 
         public static long GetTimestamp()
         {
-            lock (_locker2)
+            lock (_lock2)
             {
                 long timestampNow = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeMilliseconds();
                 if (!_initialized)
@@ -39,7 +39,7 @@ namespace Larnix.Socket
 
         public static void SetServerTimestamp(string address, long timestamp)
         {
-            lock (_locker1)
+            lock (_lock1)
             {
                 TimestampDifferences[address] = timestamp - GetTimestamp();
             }
@@ -47,7 +47,7 @@ namespace Larnix.Socket
 
         public static long GetServerTimestamp(string address)
         {
-            lock (_locker1)
+            lock (_lock1)
             {
                 if (TimestampDifferences.TryGetValue(address, out long difference))
                     return difference + GetTimestamp();

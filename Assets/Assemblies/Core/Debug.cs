@@ -6,7 +6,7 @@ namespace Larnix.Core
 {
     public static class Debug
     {
-        private static readonly object _lock = new();
+        private static object _lock = new();
         private static bool _initialized;
 
         public static Action<string> Log { get; private set; } = _ => {};

@@ -22,7 +22,7 @@ namespace Larnix.Socket.Frontend
             _udpClient = udpClient;
         }
 
-        public static async Task<TAnswer> PromptAsync<TAnswer>(string address, Payload prompt, int timeoutMiliseconds = 1500, KeyRSA publicKey = null) where TAnswer : Payload, new()
+        public static async Task<TAnswer> PromptAsync<TAnswer>(string address, Payload prompt, int timeoutMiliseconds = 3000, KeyRSA publicKey = null) where TAnswer : Payload, new()
         {
             IPEndPoint target = await Resolver.ResolveStringAsync(address);
             if (target == null) return null;
