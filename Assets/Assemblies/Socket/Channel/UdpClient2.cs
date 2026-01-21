@@ -123,7 +123,10 @@ namespace Larnix.Socket.Channel
                     IPEndPoint remoteEP = result.RemoteEndPoint;
                     byte[] bytes = result.Buffer;
 
-                    _recvQueue.Enqueue(new DataBox(remoteEP, bytes));
+                    if (_destination == null || _destination.Equals(remoteEP))
+                    {
+                        _recvQueue.Enqueue(new DataBox(remoteEP, bytes));
+                    }
                 }
                 catch (Exception ex)
                 {
