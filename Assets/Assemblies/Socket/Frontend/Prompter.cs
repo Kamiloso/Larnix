@@ -3,7 +3,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using Larnix.Socket.Security.Keys;
-using Larnix.Socket.Channel;
+using Larnix.Socket.Channel.Networking;
 using Larnix.Packets;
 using Larnix.Core.Utils;
 

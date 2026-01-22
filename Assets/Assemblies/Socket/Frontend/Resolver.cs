@@ -73,7 +73,14 @@ namespace Larnix.Socket.Frontend
             }
         }
 
-        public static async Task<(A_ServerInfo info, ResolverError error)> DownloadServerInfoAsync(
+        public static async Task<(ServerInfo info, ResolverError error)> DownloadServerInfoAsync(
+            string address, string authcode, string nickname, bool ignoreCache = false)
+        {
+            (A_ServerInfo info, ResolverError error) recv = await _DownloadServerInfoAsync(address, authcode, nickname, ignoreCache);
+            return (recv.info != null ? new ServerInfo(recv.info) : null, recv.error);
+        }
+
+        private static async Task<(A_ServerInfo info, ResolverError error)> _DownloadServerInfoAsync(
             string address, string authcode, string nickname, bool ignoreCache = false)
         {
             try
@@ -101,7 +108,7 @@ namespace Larnix.Socket.Frontend
 
         public static async Task<(bool? hasAccount, ResolverError error)> HasAccountAsync(string address, string authcode, string nickname)
         {
-            var (info, error) = await DownloadServerInfoAsync(address, authcode, nickname);
+            var (info, error) = await _DownloadServerInfoAsync(address, authcode, nickname);
             if (info == null) return (null, error);
             return (info.ChallengeID != 0, ResolverError.None);
         }
@@ -125,7 +132,7 @@ namespace Larnix.Socket.Frontend
         {
             try
             {
-                var (info, err) = await DownloadServerInfoAsync(address, authcode, nickname);
+                var (info, err) = await _DownloadServerInfoAsync(address, authcode, nickname);
                 if (info == null) return (null, err);
 
                 if (!isRegistration && info.ChallengeID == 0)
@@ -154,7 +161,7 @@ namespace Larnix.Socket.Frontend
 
         internal static async Task<(EntryTicket ticket, ResolverError error)> GetEntryTicketAsync(string address, string authcode, string nickname)
         {
-            var (info, error) = await DownloadServerInfoAsync(address, authcode, nickname);
+            var (info, error) = await _DownloadServerInfoAsync(address, authcode, nickname);
             if (info == null) return (null, error);
 
             return (new EntryTicket(info), ResolverError.None);

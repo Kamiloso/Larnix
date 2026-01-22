@@ -1,7 +1,7 @@
 using Larnix.Packets;
 using System.Net;
 
-namespace Larnix.Socket.Channel
+namespace Larnix.Socket.Channel.Networking
 {
     internal interface INetworkInteractions
     {

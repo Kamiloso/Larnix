@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
 using Larnix.Socket.Frontend;
-using Larnix.Packets.Control;
+using Larnix.Packets;
 using Version = Larnix.Core.Version;
 
 namespace Larnix.Menu.Worlds
@@ -40,7 +40,7 @@ namespace Larnix.Menu.Worlds
     {
         public ThinkerState State { get; private set; } = ThinkerState.None;
         public ServerData serverData = new(); // input
-        public A_ServerInfo serverInfo = null; // output
+        public ServerInfo serverInfo = null; // output
 
         Coroutine loginCoroutine = null;
         public bool? LoginSuccess { get; private set; } = null;

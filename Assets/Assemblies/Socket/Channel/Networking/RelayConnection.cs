@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Larnix.Socket.Frontend;
 using Larnix.Packets;
 
-namespace Larnix.Socket.Channel
+namespace Larnix.Socket.Channel.Networking
 {
     internal class RelayConnection : INetworkInteractions, IDisposable
     {

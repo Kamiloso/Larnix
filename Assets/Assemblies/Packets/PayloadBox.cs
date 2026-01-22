@@ -12,7 +12,7 @@ namespace Larnix.Packets
         SYN = 1 << 0, // start connection (client -> server)
         FIN = 1 << 1, // end connection
         FAS = 1 << 2, // fast message / raw acknowledgement
-        RSA = 1 << 3, // encrypted RSA
+        RSA = 1 << 3, // encrypted with RSA
         NCN = 1 << 4, // no connection
     }
 
@@ -61,8 +61,10 @@ namespace Larnix.Packets
 
                         if (box.Bytes.Length >= Payload.BASE_HEADER_SIZE)
                         {
-                            int secureSeq = EndianUnsafe.FromBytes<int>(box.Bytes, 3); // extract encrypted signature
+                            // extract encrypted signature
+                            int secureSeq = EndianUnsafe.FromBytes<int>(box.Bytes, 3);
 
+                            // check integrity
                             if (secureSeq == box.SeqNum)
                             {
                                 output = box;

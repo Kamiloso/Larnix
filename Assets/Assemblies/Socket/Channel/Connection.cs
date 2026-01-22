@@ -7,167 +7,153 @@ using System;
 using Larnix.Core.Utils;
 using Larnix.Socket.Security.Keys;
 using Larnix.Packets.Control;
+using Larnix.Socket.Channel.Networking;
+using Larnix.Socket.Channel.Helpers;
+using Larnix.Core;
 
 namespace Larnix.Socket.Channel
 {
     internal class Connection
     {
-        public const uint MaxStayingPackets = 128;
-        private const int MaxSeqTolerance = 128;
+        // --- Constants ---
+        public const uint BUFFER_LIMIT = 128;
+        private const int SEQ_TOLERANCE_FAST = 128;
+        private const int SEQ_TOLERANCE_SAFE = 128;
+        private const float DEBUG_DROP_RATE = 0.0f;
 
-        private const float AckCycleTime = 0.1f;
-        private float currentAckCycleTime = 0.0f;
+        // --- Role ---
+        public enum ConnectionRole { Client, Server }
+        public readonly ConnectionRole Role;
 
-        private const float SafeCycleTime = 0.5f;
-        private float currentSafeCycleTime = 0.0f;
+        // --- Public properties ---
+        public IPEndPoint EndPoint => new IPEndPoint(endPoint.Address, endPoint.Port);
+        public bool IsDead { get; private set; } = false; // blocks socket
+        public float AvgRTT => rttTracker.AvgRTT; // ping basically
 
-        private const float DebugDropChance = 0.0f;
+        // --- References ---
+        private readonly IPEndPoint endPoint;
+        private readonly Action<byte[]> sendBytes;
+        private readonly Retransmitter retransmitter;
+        private readonly RTTTracker rttTracker;
+        private readonly AckTimer ackTimer, safeAckTimer;
 
-        // -------------------------------------------
+        // --- Buffers ---
+        private List<PayloadBox> _sendBuffer = new();
+        private Dictionary<int, PayloadBox> _recvBuffer = new();
+        private Queue<HeaderSpan> _readyPackets = new();
 
-        private readonly Retransmitter _retransmitter = new Retransmitter(8);
-
-        public readonly IPEndPoint EndPoint;
-        public readonly bool IsClient;
-
-        private readonly Action<byte[]> SendBytes;
+        // --- Encryption keys ---
         private readonly KeyRSA _rsaKey;
         private readonly KeyAES _aesKey;
 
+        // --- Sequence numbers ---
         private int SeqNum = 0; // last sent message ID
         private int AckNum = 0; // last acknowledged message ID
         private int GetNum = 0; // last received message ID
 
-        public bool IsDead { get; private set; } = false; // blocks socket
-        public bool IsError { get; private set; } = false; // communiactes that an error occured
-
-        private List<PayloadBox> sendingBoxes = new();
-        private List<PayloadBox> receivedBoxes = new();
-        private Queue<HeaderSpan> readyPackets = new();
-
-        private readonly LinkedList<(int seq, long time)> PacketTimestamps = new();
-        private readonly LinkedList<long> PacketRTTs = new();
-        private readonly HashSet<int> _RetransmittedNow = new(); // local
-
-        private const int MaxRTTs = 10;
-        private const float OffsetRTT = 0.050f; // 50 ms
-        private const float DefaultAvgRTT = 0.6f; // assumes 600 ms for safety
-
-        public float AvgRTT { get; private set; } = DefaultAvgRTT;
-
-        public Connection(INetworkInteractions udp, IPEndPoint target, KeyAES aesKey, Payload synPacket = null, KeyRSA rsaKey = null)
+        private Connection(INetworkInteractions udp, IPEndPoint target, KeyAES aesKey, ConnectionRole role, Payload synPacket = null, KeyRSA rsaKey = null)
         {
-            EndPoint = target;
-            IsClient = synPacket != null;
+            endPoint = target;
+            sendBytes = b => udp.Send(target, b);
 
-            SendBytes = b => udp.Send(target, b);
-            _rsaKey = rsaKey;
-            _aesKey = aesKey;
+            retransmitter = new Retransmitter(8);
+            rttTracker = new RTTTracker(600, 50);
+            _rsaKey = rsaKey; _aesKey = aesKey;
+            Role = role;
 
-            if (synPacket != null) // send SYN packet (encrypted or not)
+            ackTimer = new AckTimer(0.1f, () => Send(new None(0), false));
+            safeAckTimer = new AckTimer(0.5f, () => Send(new None(0), true));
+
+            if (Role == ConnectionRole.Client)
             {
                 PayloadBox synBox = new PayloadBox(
                     seqNum: ++SeqNum,
                     ackNum: GetNum,
-                    flags: (byte)(PacketFlag.SYN | (rsaKey != null ? PacketFlag.RSA : 0)),
+                    flags: (byte)(PacketFlag.SYN | PacketFlag.RSA),
                     payload: synPacket
                     );
 
-                SendSafePacket(synBox);
+                SendSafe(synBox);
             }
+        }
+
+        public static Connection CreateClient(INetworkInteractions udp, IPEndPoint target, KeyAES aesKey, KeyRSA rsaKey, Payload synPacket)
+        {
+            return new Connection(udp, target, aesKey, ConnectionRole.Client,
+                synPacket ?? throw new ArgumentNullException(nameof(synPacket)),
+                rsaKey ?? throw new ArgumentNullException(nameof(rsaKey)));
+        }
+
+        public static Connection CreateServer(INetworkInteractions udp, IPEndPoint target, KeyAES aesKey)
+        {
+            return new Connection(udp, target, aesKey, ConnectionRole.Server, null, null);
         }
 
         public void Tick(float deltaTime)
         {
             if (IsDead) return;
 
-            // Make sequential queue out of received packets
+            // received dict --> ready queue
+            FlushReceivedIntoReady();
+
+            // retransmissions
+            HashSet<int> retransmitted = RetransmitAll();
+            if (retransmitted == null) return; // abort info
+            rttTracker.ForgetSequences(retransmitted);
+
+            // frequent & safe ACK send
+            ackTimer.Tick(deltaTime);
+            safeAckTimer.Tick(deltaTime);
+        }
+
+        private void FlushReceivedIntoReady()
+        {
             while (true)
             {
-                bool foundNextPacket = false;
-                for (int i = 0; i < receivedBoxes.Count; i++)
+                int nextSeq = GetNum + 1;
+                if (_recvBuffer.TryGetValue(nextSeq, out PayloadBox box))
                 {
-                    PayloadBox box = receivedBoxes[i];
-                    if (box.SeqNum == GetNum + 1)
-                    {
-                        foundNextPacket = true;
-                        try
-                        {
-                            ReadyPacketTryEnqueue(box, true);
-                        }
-                        catch (FormatException)
-                        {
-                            FinishConnection();
-                            IsError = true;
-                            return;
-                        }
-                        break;
-                    }
+                    ReadyPacketTryEnqueue(box);
+                    _recvBuffer.Remove(nextSeq);
+                    GetNum++;
                 }
-                if (foundNextPacket) GetNum++;
                 else break;
             }
 
-            // Delete packets that are no longer needed
-            receivedBoxes.RemoveAll(p => (p.SeqNum - GetNum <= 0));
+            // remove old
+            _recvBuffer.Keys.Where(k => k - GetNum <= 0).ToList().ForEach(k => _recvBuffer.Remove(k));
+        }
 
-            // Check for retransmissions
-            AvgRTT = (float)AverageRTT();
-            _RetransmittedNow.Clear();
-            for (int i = 0; i < sendingBoxes.Count; i++)
+        private HashSet<int> RetransmitAll()
+        {
+            HashSet<int> report = new();
+
+            for (int i = 0; i < _sendBuffer.Count; i++)
             {
-                PayloadBox box = sendingBoxes[i];
+                PayloadBox box = _sendBuffer[i];
 
-                try
+                if (box.SeqNum - AckNum <= 0)
                 {
-                    if (box.SeqNum - AckNum <= 0)
+                    _sendBuffer.RemoveAt(i--);
+                    retransmitter.Discard(box);
+                }
+                else
+                {
+                    if (retransmitter.AllowRetransmission(box, rttTracker.WaitingTimeMs(), out bool isTimeout))
                     {
-                        sendingBoxes.RemoveAt(i--);
-                        _retransmitter.Discard(box);
+                        Transmit(box);
+                        report.Add(box.SeqNum);
                     }
-                    else
+
+                    if (isTimeout)
                     {
-                        if (_retransmitter.AllowRetransmission(box, (long)Math.Round((AvgRTT + OffsetRTT) * 1000f)))
-                        {
-                            Transmit(box);
-                            _RetransmittedNow.Add(box.SeqNum);
-                        }
+                        FinishConnection();
+                        return null; // abort signal
                     }
                 }
-                catch (TimeoutException)
-                {
-                    FinishConnection();
-                    return;
-                }
             }
 
-            // Ignore retransmitted when calculating RTT
-            if (_RetransmittedNow.Count > 0)
-            {
-                PacketTimestamps.ForEachRemove(tuple => _RetransmittedNow.Contains(tuple.seq));
-            }
-
-            // Acknowledgements send
-            currentAckCycleTime += deltaTime;
-            bool ackSent = false;
-            while (currentAckCycleTime >= AckCycleTime)
-            {
-                if (!ackSent)
-                {
-                    Send(new None(0), false); // ACK packet (empty packet using fast mode)
-                    ackSent = true;
-                }
-                currentAckCycleTime -= AckCycleTime;
-            }
-
-            // Safe empty packet send
-            currentSafeCycleTime += deltaTime;
-            if(currentSafeCycleTime > SafeCycleTime)
-            {
-                // Send safe packets to ensure that the other side is constantly alive
-                Send(new None(0), true);
-                currentSafeCycleTime = 0f;
-            }
+            return report;
         }
 
         public void Send(Payload packet, bool safemode = true)
@@ -180,10 +166,9 @@ namespace Larnix.Socket.Channel
                     seqNum: ++SeqNum,
                     ackNum: GetNum,
                     flags: 0,
-                    payload: packet
-                    );
+                    payload: packet);
 
-                SendSafePacket(box);
+                SendSafe(box);
             }
             else
             {
@@ -191,73 +176,100 @@ namespace Larnix.Socket.Channel
                     seqNum: SeqNum,
                     ackNum: GetNum,
                     flags: (byte)PacketFlag.FAS,
-                    payload: packet
-                    );
+                    payload: packet);
 
                 Transmit(box);
             }
         }
 
-        public Queue<HeaderSpan> Receive()
+        private void SendSafe(PayloadBox box)
         {
-            if (IsDead) return new();
+            Transmit(box);
 
-            var ready = readyPackets;
-            readyPackets = new();
-            return ready;
+            _sendBuffer.Add(box); // remember box
+            retransmitter.Add(box, rttTracker.WaitingTimeMs()); // track time
+
+            rttTracker.Ping(box.SeqNum);
+        }
+
+        private void Transmit(PayloadBox box)
+        {
+            bool isSyn = box.HasFlag(PacketFlag.SYN);
+            bool isRsa = box.HasFlag(PacketFlag.RSA);
+
+            if (isSyn != isRsa) throw new ArgumentException("Unsupported flag combination!");
+
+            if (DEBUG_DROP_RATE > 0f && Common.Rand().NextDouble() < DEBUG_DROP_RATE)
+                return; // simulate network problems
+            
+            byte[] payload = box.Serialize(isSyn ? _rsaKey : _aesKey);
+            sendBytes(payload);
         }
 
         public void PushFromWeb(byte[] networkBytes, bool hasSYN = false)
         {
             if (IsDead) return;
 
-            // Drop packets if too many
-            if (receivedBoxes.Count >= MaxStayingPackets ||
-                readyPackets.Count >= MaxStayingPackets)
-                return;
+            if (_recvBuffer.Count >= BUFFER_LIMIT ||
+                _readyPackets.Count >= BUFFER_LIMIT)
+                return; // too many -> drop
 
-            if (PayloadBox.TryDeserialize(networkBytes, !hasSYN ? _aesKey : KeyEmpty.GetInstance(), out PayloadBox box))
+            IEncryptionKey key = hasSYN ? KeyEmpty.GetInstance() : _aesKey;
+            if (PayloadBox.TryDeserialize(networkBytes, key, out PayloadBox box))
             {
                 int diff = box.SeqNum - GetNum;
 
                 if (!box.HasFlag(PacketFlag.FAS))
                 {
-                    if (diff <= 0 || diff > MaxSeqTolerance) // range drop
-                        return;
+                    if (diff <= 0 || diff > SEQ_TOLERANCE_SAFE)
+                        return; // wrong range -> drop
 
-                    if (receivedBoxes.Any(p => p.SeqNum == box.SeqNum)) // duplication drop
-                        return;
-
-                    receivedBoxes.Add(box);
+                    _recvBuffer.TryAdd(box.SeqNum, box);
                 }
                 else
                 {
-                    if (diff < -MaxSeqTolerance || diff > MaxSeqTolerance) // range drop
-                        return;
+                    if (diff < -SEQ_TOLERANCE_FAST || diff > SEQ_TOLERANCE_FAST)
+                        return; // wrong range -> drop
 
-                    try
-                    {
-                        ReadyPacketTryEnqueue(box, false);
-                    }
-                    catch (FormatException)
-                    {
-                        FinishConnection();
-                        IsError = true;
-                        return;
-                    }
+                    ReadyPacketTryEnqueue(box);
                 }
 
-                // best received acknowledgement get
                 if (box.AckNum - AckNum > 0)
                 {
                     AckNum = box.AckNum;
-                    PongRTT(box.AckNum);
+                    rttTracker.Pong(box.AckNum);
                 }
 
-                // end connection
                 if (box.HasFlag(PacketFlag.FIN))
+                {
                     IsDead = true;
+                }
             }
+        }
+
+        private bool ReadyPacketTryEnqueue(PayloadBox box)
+        {
+            // AllowConnection packets only with SYN flag allowed
+            if (Payload.TryConstructPayload<AllowConnection>(box.Bytes, out _) &&
+                !box.HasFlag(PacketFlag.SYN))
+                return false;
+
+            // Stop packets generate on server side, they cannot be sent through network
+            if (Payload.TryConstructPayload<Stop>(box.Bytes, out _))
+                return false;
+
+            // Enqueue if everything ok
+            _readyPackets.Enqueue(new HeaderSpan(box.Bytes));
+            return true;
+        }
+
+        public Queue<HeaderSpan> Receive()
+        {
+            if (IsDead) return new();
+
+            Queue<HeaderSpan> ready = _readyPackets;
+            _readyPackets = new Queue<HeaderSpan>();
+            return ready;
         }
 
         public void FinishConnection()
@@ -274,91 +286,11 @@ namespace Larnix.Socket.Channel
                 payload: new None(0)
                 );
 
-            const int Retries = 3;
-            for (int i = 0; i < Retries; i++)
+            const int REPEATS = 3;
+            for (int i = 0; i < REPEATS; i++)
                 Transmit(box);
 
             IsDead = true;
-        }
-
-        private void SendSafePacket(PayloadBox box)
-        {
-            Transmit(box);
-            PingRTT(box.SeqNum);
-            sendingBoxes.Add(box);
-
-            _retransmitter.Add(box, (long)Math.Round((AvgRTT + OffsetRTT) * 1000f));
-        }
-
-        private void Transmit(PayloadBox box)
-        {
-            byte[] payload;
-
-            if (!box.HasFlag(PacketFlag.SYN))
-            {
-                payload = box.Serialize(_aesKey);
-            }
-            else
-            {
-                if (box.HasFlag(PacketFlag.RSA))
-                {
-                    payload = box.Serialize(_rsaKey);
-                    Core.Debug.Log("Transmiting RSA-encrypted SYN.");
-                }
-                else
-                {
-                    payload = box.Serialize(KeyEmpty.GetInstance());
-                    Core.Debug.LogWarning("Transmiting unencrypted SYN!");
-                }
-            }
-
-            // Drop simulate
-            if (DebugDropChance != 0f && Common.Rand().NextDouble() < DebugDropChance)
-                return;
-
-            SendBytes(payload);
-        }
-
-        private bool ReadyPacketTryEnqueue(PayloadBox box, bool isSafe)
-        {
-            // AllowConnection packets only with SYN flag allowed
-            if (Payload.TryConstructPayload<AllowConnection>(box.Bytes, out _) &&
-                !box.HasFlag(PacketFlag.SYN))
-                return false;
-
-            // Stop packets generate on server side, they cannot be sent through network
-            if (Payload.TryConstructPayload<Stop>(box.Bytes, out _))
-                return false;
-
-            // Enqueue if everything ok
-            readyPackets.Enqueue(new HeaderSpan(box.Bytes));
-            return true;
-        }
-
-        private void PingRTT(int seq)
-        {
-            PacketTimestamps.ForEachRemove(tuple => !Timestamp.InTimestamp(tuple.time));
-            PacketTimestamps.AddLast((seq, Timestamp.GetTimestamp()));
-        }
-
-        private void PongRTT(int seq)
-        {
-            PacketTimestamps.ForEachRemove(tuple => tuple.seq - seq <= 0, tuple =>
-            {
-                long delta = Timestamp.GetTimestamp() - tuple.time;
-
-                PacketRTTs.AddLast(delta);
-                if (PacketRTTs.Count > MaxRTTs)
-                    PacketRTTs.RemoveFirst();
-            });
-        }
-
-        private double AverageRTT()
-        {
-            if (PacketRTTs.Count == 0)
-                return DefaultAvgRTT; // not enough data
-
-            return PacketRTTs.Median() / 1000.0;
         }
     }
 }

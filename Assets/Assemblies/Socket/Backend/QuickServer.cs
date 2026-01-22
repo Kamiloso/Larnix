@@ -11,6 +11,7 @@ using Larnix.Socket.Security.Keys;
 using Larnix.Socket.Channel;
 using Larnix.Socket.Security;
 using Larnix.Packets.Control;
+using Larnix.Socket.Channel.Networking;
 
 namespace Larnix.Socket.Backend
 {
@@ -142,11 +143,7 @@ namespace Larnix.Socket.Backend
             }
 
             KeyAES localAES = new KeyAES(allowConnection.KeyAES);
-            Connection connection = new Connection(
-                _udpSocket,
-                target,
-                localAES
-                );
+            Connection connection = Connection.CreateServer(_udpSocket, target, localAES);
 
             RememberConnection(nickname, connection);
             _preLoginBuffers.Remove(target);
@@ -243,7 +240,9 @@ namespace Larnix.Socket.Backend
                 string owner = element.Item2;
 
                 if (Subscriptions.TryGetValue(headerSpan.ID, out var Execute))
+                {
                     Execute(headerSpan, owner);
+                }
             }
         }
 
@@ -291,29 +290,22 @@ namespace Larnix.Socket.Backend
                 {
                     if (header.HasFlag(PacketFlag.SYN)) // start connection
                     {
-                        if (PayloadBox.TryDeserialize(bytes, KeyEmpty.GetInstance(), out var synBox))
+                        if (PayloadBox.TryDeserialize(bytes, KeyEmpty.GetInstance(), out var synBox) &&
+                            Payload.TryConstructPayload<AllowConnection>(synBox.Bytes, out var allowcon) &&
+                            !_preLoginBuffers.ContainsKey(target) &&
+                            CanAcceptSYN(target, allowcon.Nickname))
                         {
-                            if (Payload.TryConstructPayload<AllowConnection>(synBox.Bytes, out var allowcon))
-                            {
-                                string nickname = allowcon.Nickname;
-                                string password = allowcon.Password;
-                                long serverSecret = allowcon.ServerSecret;
-                                long challengeID = allowcon.ChallengeID;
-                                long timestamp = allowcon.Timestamp;
-                                long runID = allowcon.RunID;
+                            PreLoginBuffer preLoginBuffer = new PreLoginBuffer(allowcon);
+                            preLoginBuffer.Push(bytes);
+                            _preLoginBuffers.Add(target, preLoginBuffer);
 
-                                if (!_preLoginBuffers.ContainsKey(target))
-                                {
-                                    if (CanAcceptSYN(target, nickname))
-                                    {
-                                        PreLoginBuffer preLoginBuffer = new PreLoginBuffer(allowcon);
-                                        preLoginBuffer.Push(bytes);
-                                        _preLoginBuffers.Add(target, preLoginBuffer);
-
-                                        TryLogin(target, nickname, password, serverSecret, challengeID, timestamp, runID);
-                                    }
-                                }
-                            }
+                            TryLogin(target,
+                                username: allowcon.Nickname,
+                                password: allowcon.Password,
+                                serverSecret: allowcon.ServerSecret,
+                                challengeID: allowcon.ChallengeID,
+                                timestamp: allowcon.Timestamp,
+                                runID: allowcon.RunID);
                         }
                     }
                     else // receive connection packet
@@ -355,9 +347,7 @@ namespace Larnix.Socket.Backend
         public void Broadcast(Payload packet, bool safemode = true)
         {
             foreach (var conn in _connections.Values.ToList())
-            {
                 conn.Send(packet, safemode);
-            }
         }
 
         public void FinishConnection(string nickname)
