@@ -1,4 +1,4 @@
-using Larnix.Packets;
+using Larnix.Socket.Packets;
 using System.Net;
 
 namespace Larnix.Socket.Channel.Networking

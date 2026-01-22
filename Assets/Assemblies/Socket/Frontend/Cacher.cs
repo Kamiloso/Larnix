@@ -2,7 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using Larnix.Packets.Control;
+using Larnix.Socket.Packets.Control;
 
 namespace Larnix.Socket.Frontend
 {

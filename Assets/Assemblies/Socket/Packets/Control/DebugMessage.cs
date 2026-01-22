@@ -4,7 +4,7 @@ using Larnix.Core;
 using Larnix.Core.Utils;
 using Larnix.Core.Binary;
 
-namespace Larnix.Packets.Control
+namespace Larnix.Socket.Packets.Control
 {
     public class DebugMessage : Payload
     {

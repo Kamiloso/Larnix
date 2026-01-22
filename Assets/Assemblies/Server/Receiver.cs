@@ -1,12 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
-using Larnix.Packets.Game;
+using Larnix.Socket.Packets.Game;
 using Larnix.Server.Entities;
 using Larnix.Server.Terrain;
 using Larnix.Core.Utils;
 using Larnix.Socket.Backend;
 using Larnix.Server.References;
-using Larnix.Packets.Control;
+using Larnix.Socket.Packets.Control;
 using Larnix.Core.Vectors;
 
 namespace Larnix.Server

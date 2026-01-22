@@ -1,9 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
-using Larnix.Packets;
+using Larnix.Socket.Packets;
 using Larnix.Core.Vectors;
 using Larnix.Socket.Frontend;
-using Larnix.Packets.Game;
+using Larnix.Socket.Packets.Game;
 
 namespace Larnix.Client
 {

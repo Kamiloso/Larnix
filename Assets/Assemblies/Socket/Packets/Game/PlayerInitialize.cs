@@ -3,9 +3,9 @@ using System.Collections;
 using Larnix.Core.Vectors;
 using Larnix.Core.Binary;
 using Larnix.Core.Utils;
-using Larnix.Packets;
+using Larnix.Socket.Packets;
 
-namespace Larnix.Packets.Game
+namespace Larnix.Socket.Packets.Game
 {
     public class PlayerInitialize : Payload
     {

@@ -5,11 +5,11 @@ using Larnix.Core;
 using Larnix.Core.Utils;
 using Larnix.Core.Binary;
 
-namespace Larnix.Packets.Game
+namespace Larnix.Socket.Packets.Game
 {
     public class Teleport : Payload
     {
-        private const int SIZE = (8 + 8);
+        private const int SIZE = 8 + 8;
 
         public Vec2 TargetPosition => new Vec2(
             EndianUnsafe.FromBytes<double>(Bytes, 0),  // 8B

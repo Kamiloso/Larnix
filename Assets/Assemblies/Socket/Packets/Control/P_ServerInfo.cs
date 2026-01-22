@@ -4,9 +4,9 @@ using Larnix.Core;
 using Larnix.Core.Utils;
 using Larnix.Core.Binary;
 
-namespace Larnix.Packets.Control
+namespace Larnix.Socket.Packets.Control
 {
-    public class P_ServerInfo : Payload
+    internal class P_ServerInfo : Payload
     {
         private const int SIZE = 32;
         public String32 Nickname => EndianUnsafe.FromBytes<String32>(Bytes, 0);

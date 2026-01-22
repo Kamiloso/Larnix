@@ -5,9 +5,9 @@ using Larnix.Core;
 using Larnix.Core.Utils;
 using Larnix.Core.Binary;
 
-namespace Larnix.Packets
+namespace Larnix.Socket.Packets
 {
-    public enum PacketFlag : byte
+    internal enum PacketFlag : byte
     {
         SYN = 1 << 0, // start connection (client -> server)
         FIN = 1 << 1, // end connection
@@ -16,7 +16,7 @@ namespace Larnix.Packets
         NCN = 1 << 4, // no connection
     }
 
-    public class PayloadBox
+    internal class PayloadBox
     {
         private const int HEADER_SIZE = 2 + 2 + 4 + 4 + 1;
         private const ushort PROTOCOL_VERSION = 4;

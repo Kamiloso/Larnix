@@ -1,10 +1,10 @@
 using System.Collections;
 using System.Collections.Generic;
-using Larnix.Packets;
+using Larnix.Socket.Packets;
 
-namespace Larnix.Packets.Control
+namespace Larnix.Socket.Packets.Control
 {
-    public class A_LoginTry : Payload
+    internal class A_LoginTry : Payload
     {
         private const int SIZE = 0;
 

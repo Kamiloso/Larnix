@@ -3,14 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Net;
-using Larnix.Packets;
+using Larnix.Socket.Packets;
 using System.Threading.Tasks;
 using System;
 using Larnix.Core.Utils;
 using Larnix.Socket.Security.Keys;
 using Larnix.Socket.Channel;
 using Larnix.Socket.Security;
-using Larnix.Packets.Control;
+using Larnix.Socket.Packets.Control;
 using Larnix.Socket.Channel.Networking;
 
 namespace Larnix.Socket.Backend

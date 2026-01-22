@@ -5,7 +5,7 @@ using Larnix.Core;
 using Larnix.Core.Utils;
 using Larnix.Core.Binary;
 
-namespace Larnix.Packets.Game
+namespace Larnix.Socket.Packets.Game
 {
     public class PlayerUpdate : Payload
     {

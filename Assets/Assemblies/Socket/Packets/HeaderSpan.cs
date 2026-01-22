@@ -3,9 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using Larnix.Core.Binary;
 
-namespace Larnix.Packets
+namespace Larnix.Socket.Packets
 {
-    public class HeaderSpan
+    internal class HeaderSpan
     {
         public byte[] AllBytes { get; private set; }
 

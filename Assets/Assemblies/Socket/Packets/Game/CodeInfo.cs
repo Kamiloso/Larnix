@@ -1,9 +1,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using Larnix.Packets;
+using Larnix.Socket.Packets;
 
-namespace Larnix.Packets.Game
+namespace Larnix.Socket.Packets.Game
 {
     public class CodeInfo : Payload
     {

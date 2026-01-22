@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Larnix.Entities;
 using System.Linq;
-using Larnix.Packets;
+using Larnix.Socket.Packets;
 using System.Diagnostics;
 using Larnix.Server.Terrain;
 using Larnix.Core.Vectors;
@@ -12,7 +12,7 @@ using Larnix.Entities.Structs;
 using Larnix.Socket.Backend;
 using Larnix.Server.Data;
 using Larnix.Server.References;
-using Larnix.Packets.Game;
+using Larnix.Socket.Packets.Game;
 
 namespace Larnix.Server.Entities
 {
@@ -134,30 +134,9 @@ namespace Larnix.Server.Entities
                         _updateCounter % 6 == 0
                         );
 
-                    const int MAX_RECORDS = EntityBroadcast.MAX_RECORDS;
-                    List<ulong> sendUIDs = EntityList.Keys.ToList();
-                    for (int pos = 0; true; pos += MAX_RECORDS)
+                    var fragments = EntityBroadcast.CreateList(Ref<Server>().FixedFrame, EntityList, PlayerFixedIndexes);
+                    foreach (var brdcst in fragments)
                     {
-                        int sizeEnt = Math.Clamp(sendUIDs.Count - pos, 0, MAX_RECORDS);
-                        if (sizeEnt == 0) break;
-
-                        HashSet<ulong> fragmentedUIDs = sendUIDs.GetRange(pos, sizeEnt).ToHashSet();
-
-                        Dictionary<ulong, EntityData> fragmentEntities = new();
-                        foreach (ulong uid in fragmentedUIDs)
-                        {
-                            if (EntityList.TryGetValue(uid, out EntityData data))
-                                fragmentEntities[uid] = data;
-                        }
-
-                        Dictionary<ulong, uint> fragmentFixed = new();
-                        foreach (ulong uid in fragmentedUIDs)
-                        {
-                            if (PlayerFixedIndexes.TryGetValue(uid, out uint fixedIndex))
-                                fragmentFixed[uid] = fixedIndex;
-                        }
-
-                        EntityBroadcast brdcst = new EntityBroadcast(Ref<Server>().FixedFrame, fragmentEntities, fragmentFixed);
                         broadcastsToSend.Add((nickname, brdcst));
                     }
                 }

@@ -1,14 +1,14 @@
 using System.Collections;
 using System.Collections.Generic;
 using Larnix.Blocks;
-using Larnix.Packets;
+using Larnix.Socket.Packets;
 using System.Linq;
 using Larnix.Core.Utils;
 using Larnix.Blocks.Structs;
 using Larnix.Server.Entities;
 using Larnix.Socket.Backend;
 using Larnix.Server.References;
-using Larnix.Packets.Game;
+using Larnix.Socket.Packets.Game;
 using Larnix.Core.Vectors;
 
 namespace Larnix.Server.Terrain

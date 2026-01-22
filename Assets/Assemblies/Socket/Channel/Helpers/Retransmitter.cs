@@ -1,4 +1,4 @@
-using Larnix.Packets;
+using Larnix.Socket.Packets;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;

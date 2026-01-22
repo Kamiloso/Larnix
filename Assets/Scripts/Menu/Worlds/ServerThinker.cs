@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
 using Larnix.Socket.Frontend;
-using Larnix.Packets;
+using Larnix.Socket.Packets;
 using Version = Larnix.Core.Version;
 
 namespace Larnix.Menu.Worlds

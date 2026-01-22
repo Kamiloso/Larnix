@@ -3,12 +3,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
-using Larnix.Packets.Control;
-using Larnix.Packets;
+using Larnix.Socket.Packets.Control;
 using Larnix.Core.Utils;
 using Larnix.Core.Binary;
 
-namespace Larnix.Packets
+namespace Larnix.Socket.Packets
 {
     public enum CmdID : ushort { None = 0 }
 
@@ -23,12 +22,12 @@ namespace Larnix.Packets
         protected virtual bool WarningSuppress => false;
         protected abstract bool IsValid();
 
-        public static bool TryConstructPayload<T>(HeaderSpan headerSpan, out T output) where T : Payload, new()
+        internal static bool TryConstructPayload<T>(HeaderSpan headerSpan, out T output) where T : Payload, new()
         {
             return TryConstructPayload(headerSpan.AllBytes, out output);
         }
 
-        public static bool TryConstructPayload<T>(byte[] rawBytes, out T output) where T : Payload, new()
+        internal static bool TryConstructPayload<T>(byte[] rawBytes, out T output) where T : Payload, new()
         {
             if (rawBytes.Length >= BASE_HEADER_SIZE)
             {

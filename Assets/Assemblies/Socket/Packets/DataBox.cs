@@ -2,9 +2,9 @@ using Larnix.Core.Utils;
 using System;
 using System.Net;
 
-namespace Larnix.Packets
+namespace Larnix.Socket.Packets
 {
-    public class DataBox
+    internal class DataBox
     {
         public readonly IPEndPoint target;
         public readonly byte[] data;

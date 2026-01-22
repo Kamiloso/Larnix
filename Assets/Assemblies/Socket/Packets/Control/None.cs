@@ -1,15 +1,15 @@
 using System.Collections;
 using System.Collections.Generic;
-using Larnix.Packets;
+using Larnix.Socket.Packets;
 
-namespace Larnix.Packets.Control
+namespace Larnix.Socket.Packets.Control
 {
-    public class Stop : Payload
+    public class None : Payload
     {
         private const int SIZE = 0;
 
-        public Stop() { }
-        public Stop(byte code)
+        public None() { }
+        public None(byte code)
         {
             InitializePayload(new byte[0], code);
         }

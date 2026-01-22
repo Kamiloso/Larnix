@@ -7,7 +7,7 @@ using Larnix.Core.Utils;
 using Larnix.Blocks.Structs;
 using Larnix.Core.Binary;
 
-namespace Larnix.Packets.Game
+namespace Larnix.Socket.Packets.Game
 {
     public class ChunkInfo : Payload
     {
@@ -31,7 +31,7 @@ namespace Larnix.Packets.Game
 
         protected override bool IsValid()
         {
-            return Bytes?.Length >= MIN_SIZE && Bytes?.Length <= MAX_SIZE &&
+            return Bytes.Length >= MIN_SIZE && Bytes.Length <= MAX_SIZE &&
                 Chunkpos.x >= BlockUtils.MIN_CHUNK && Chunkpos.x <= BlockUtils.MAX_CHUNK &&
                 Chunkpos.y >= BlockUtils.MIN_CHUNK && Chunkpos.y <= BlockUtils.MAX_CHUNK;
         }

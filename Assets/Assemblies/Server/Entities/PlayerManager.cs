@@ -2,11 +2,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Larnix.Entities;
-using Larnix.Packets;
+using Larnix.Socket.Packets;
 using Larnix.Core.Vectors;
 using Larnix.Socket.Backend;
 using Larnix.Server.References;
-using Larnix.Packets.Game;
+using Larnix.Socket.Packets.Game;
 
 namespace Larnix.Server.Entities
 {
@@ -110,7 +110,7 @@ namespace Larnix.Server.Entities
             {
                 if (sendAtLeastOne)
                 {
-                    Ref<QuickServer>().Send(nickname, new NearbyEntities(fixedFrame, null, null));
+                    Ref<QuickServer>().Send(nickname, NearbyEntities.CreateBootstrap(fixedFrame));
                 }
             }
 

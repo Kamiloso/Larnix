@@ -7,7 +7,7 @@ using Larnix.Core;
 using Larnix.Core.Utils;
 using Larnix.Core.Binary;
 
-namespace Larnix.Packets.Game
+namespace Larnix.Socket.Packets.Game
 {
     public class BlockUpdate : Payload
     {
@@ -44,7 +44,7 @@ namespace Larnix.Packets.Game
         public Record[] BlockUpdates => GetRecords(); // n * 13B
 
         public BlockUpdate() { }
-        public BlockUpdate(Record[] records, byte code = 0)
+        private BlockUpdate(Record[] records, byte code = 0)
         {
             if (records == null) records = new Record[0];
 

@@ -5,7 +5,7 @@ using Larnix.Core;
 using Larnix.Core.Utils;
 using Larnix.Core.Binary;
 
-namespace Larnix.Packets.Game
+namespace Larnix.Socket.Packets.Game
 {
     public class NearbyEntities : Payload
     {
@@ -20,7 +20,7 @@ namespace Larnix.Packets.Game
         public ulong[] RemoveEntities => EndianUnsafe.ArrayFromBytes<ulong>(Bytes, RemoveLength, HEADER_SIZE + AddLength * ENTRY_SIZE); // n * 8B
 
         public NearbyEntities() { }
-        public NearbyEntities(uint fixedFrame, ulong[] addEntities, ulong[] removeEntities, byte code = 0)
+        private NearbyEntities(uint fixedFrame, ulong[] addEntities, ulong[] removeEntities, byte code = 0)
         {
             if (addEntities == null) addEntities = new ulong[0];
             if (removeEntities == null) removeEntities = new ulong[0];
@@ -58,6 +58,11 @@ namespace Larnix.Packets.Game
             }
 
             return result;
+        }
+
+        public static NearbyEntities CreateBootstrap(uint fixedFrame)
+        {
+            return new NearbyEntities(fixedFrame, new ulong[0], new ulong[0]);
         }
 
         protected override bool IsValid()

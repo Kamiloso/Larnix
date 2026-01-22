@@ -1,7 +1,7 @@
-using Larnix.Packets.Control;
+using Larnix.Socket.Packets.Control;
 using Version = Larnix.Core.Version;
 
-namespace Larnix.Packets
+namespace Larnix.Socket.Packets
 {
     public class ServerInfo
     {

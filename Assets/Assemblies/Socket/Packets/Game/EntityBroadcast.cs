@@ -7,14 +7,14 @@ using Larnix.Core.Utils;
 using Larnix.Entities.Structs;
 using Larnix.Core.Binary;
 
-namespace Larnix.Packets.Game
+namespace Larnix.Socket.Packets.Game
 {
     public class EntityBroadcast : Payload
     {
         private const int HEADER_SIZE = 4 + 2 + 2;
         private const int ENTRY_A_SIZE = 8 + 22; // entity transforms entry
         private const int ENTRY_B_SIZE = 8 + 4; // player fixed indexes entry
-        public const int MAX_RECORDS = 32;
+        private const int MAX_RECORDS = 32;
 
         public uint PacketFixedIndex => EndianUnsafe.FromBytes<uint>(Bytes, 0); // 4B
         public ushort EntityLength => EndianUnsafe.FromBytes<ushort>(Bytes, 4); // 2B
@@ -24,10 +24,7 @@ namespace Larnix.Packets.Game
 
         public EntityBroadcast() { }
 
-        /// <summary>
-        /// Warning: Fragmentation not supported! Must be done by hand.
-        /// </summary>
-        public EntityBroadcast(uint packetFixedIndex, Dictionary<ulong, EntityData> entityTransforms, Dictionary<ulong, uint> playerFixedIndexes, byte code = 0)
+        private EntityBroadcast(uint packetFixedIndex, Dictionary<ulong, EntityData> entityTransforms, Dictionary<ulong, uint> playerFixedIndexes, byte code = 0)
         {
             if (entityTransforms == null) entityTransforms = new();
             if (playerFixedIndexes == null) playerFixedIndexes = new();
@@ -39,6 +36,39 @@ namespace Larnix.Packets.Game
                 SerializeDictionaryA(entityTransforms),
                 SerializeDictionaryB(playerFixedIndexes)
                 ), code);
+        }
+
+        public static List<EntityBroadcast> CreateList(uint packetFixedIndex, Dictionary<ulong, EntityData> entityTransforms, Dictionary<ulong, uint> playerFixedIndexes, byte code = 0)
+        {
+            if (entityTransforms == null) entityTransforms = new();
+            if (playerFixedIndexes == null) playerFixedIndexes = new();
+
+            List<EntityBroadcast> result = new();
+            List<ulong> sendUIDs = entityTransforms.Keys.ToList();
+            for (int pos = 0; pos < sendUIDs.Count; pos += MAX_RECORDS)
+            {
+                int sizeEnt = Math.Clamp(sendUIDs.Count - pos, 0, MAX_RECORDS);
+                if (sizeEnt == 0) break;
+                var fragmentedUIDs = sendUIDs.GetRange(pos, sizeEnt).ToHashSet();
+
+                Dictionary<ulong, EntityData> fragmentEntities = new();
+                foreach (ulong uid in fragmentedUIDs)
+                {
+                    if (entityTransforms.TryGetValue(uid, out EntityData data))
+                        fragmentEntities[uid] = data;
+                }
+
+                Dictionary<ulong, uint> fragmentFixed = new();
+                foreach (ulong uid in fragmentedUIDs)
+                {
+                    if (playerFixedIndexes.TryGetValue(uid, out uint fixedIndex))
+                        fragmentFixed[uid] = fixedIndex;
+                }
+
+                result.Add(new EntityBroadcast(packetFixedIndex, fragmentEntities, fragmentFixed, code));
+            }
+
+            return result;
         }
 
         private static Dictionary<ulong, EntityData> GetDictionaryA(byte[] bytes, int count, int offset = 0)

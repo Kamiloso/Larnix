@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Net;
-using Larnix.Packets.Control;
+using Larnix.Socket.Packets.Control;
 
 namespace Larnix.Socket.Backend
 {

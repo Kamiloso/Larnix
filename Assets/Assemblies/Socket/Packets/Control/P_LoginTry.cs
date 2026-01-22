@@ -5,9 +5,9 @@ using Larnix.Core;
 using Larnix.Core.Utils;
 using Larnix.Core.Binary;
 
-namespace Larnix.Packets.Control
+namespace Larnix.Socket.Packets.Control
 {
-    public class P_LoginTry : Payload
+    internal class P_LoginTry : Payload
     {
         private const int SIZE = 32 + 64 + 64 + 8 + 8 + 8 + 8;
 

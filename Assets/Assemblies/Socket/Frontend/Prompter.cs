@@ -4,7 +4,7 @@ using System.Net.Sockets;
 using System.Threading.Tasks;
 using Larnix.Socket.Security.Keys;
 using Larnix.Socket.Channel.Networking;
-using Larnix.Packets;
+using Larnix.Socket.Packets;
 using Larnix.Core.Utils;
 
 namespace Larnix.Socket.Frontend

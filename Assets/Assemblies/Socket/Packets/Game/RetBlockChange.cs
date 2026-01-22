@@ -6,7 +6,7 @@ using Larnix.Core.Utils;
 using Larnix.Blocks.Structs;
 using Larnix.Core.Binary;
 
-namespace Larnix.Packets.Game
+namespace Larnix.Socket.Packets.Game
 {
     public class RetBlockChange : Payload
     {

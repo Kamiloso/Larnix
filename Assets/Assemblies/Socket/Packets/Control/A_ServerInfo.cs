@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System;
 using Larnix.Core.Binary;
 using Larnix.Core.Utils;
-using Larnix.Packets;
+using Larnix.Socket.Packets;
 using Version = Larnix.Core.Version;
 
-namespace Larnix.Packets.Control
+namespace Larnix.Socket.Packets.Control
 {
-    public class A_ServerInfo : Payload
+    internal class A_ServerInfo : Payload
     {
         private const int SIZE = 264 + 2 + 2 + 4 + 8 + 8 + 8 + 256 + 32;
 
