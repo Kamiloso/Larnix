@@ -6,6 +6,10 @@ namespace Larnix
 {
     public static class VectorExtensions
     {
+        // === Col32 extenstions ===
+        public static Col32 ToLarnix(this Color32 c) => new Col32(c.r, c.g, c.b, c.a);
+        public static Color32 ToUnity(this Col32 c) => new Color32(c.r, c.g, c.b, c.a);
+
         // === Vec2Int extensions ===
 
         public static Vec2Int ToLarnix(this Vector2Int v) => new Vec2Int(v.x, v.y);

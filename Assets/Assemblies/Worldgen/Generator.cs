@@ -1,9 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
-using UnityEngine;
-using LibNoise;
-using LibNoise.Generator;
 using System.Security.Cryptography;
 using System;
 using System.Buffers.Binary;
@@ -12,6 +9,7 @@ using System.Text;
 using Larnix.Core.Utils;
 using Larnix.Blocks.Structs;
 using Larnix.Core.Vectors;
+using Larnix.Worldgen.Noise;
 using Random = System.Random;
 
 namespace Larnix.Worldgen
@@ -29,7 +27,8 @@ namespace Larnix.Worldgen
     public class Generator
     {
         // Variables
-        public readonly long Seed;
+        internal readonly Seed _seed;
+        public long Seed => _seed.Value;
 
         // Raw noise
         private readonly ValueProvider NoiseSurface;
@@ -49,43 +48,46 @@ namespace Larnix.Worldgen
 
         public Generator(long seed)
         {
-            Seed = seed;
+            _seed = new Seed(seed);
 
             // ------ BASE NOISES ------
 
-            NoiseSurface = ValueProvider.CreatePerlin(new Perlin(
-                frequency: 0.01,
-                lacunarity: 2.0,
-                persistence: 0.5,
-                octaves: 4,
-                seed: (int)SaltedSeed(1),
-                quality: QualityMode.High
-            ), -20.0, 30.0, 1);
+            NoiseSurface = ValueProvider.CreatePerlin(
+                new Perlin(seed: (int)_seed.Hash("noise_surface"))
+                {
+                    Octaves = 4,
+                    Frequency = 0.01,
+                    Lacunarity = 2.0,
+                    Persistence = 0.4,
+                },
+                min: -20.0, max: 30.0, dim: 1);
 
-            NoiseCave = ValueProvider.CreatePerlin(new Perlin(
-                frequency: 0.02,
-                lacunarity: 1.8,
-                persistence: 0.4,
-                octaves: 3,
-                seed: (int)SaltedSeed(2),
-                quality: QualityMode.High
-            ), -1.0, 1.0, 2).Stretch(1.25, 0.75);
+            NoiseCave = ValueProvider.CreatePerlin(
+                new Perlin(seed: (int)_seed.Hash("noise_cave"))
+                {
+                    Octaves = 3,
+                    Frequency = 0.02,
+                    Lacunarity = 1.8,
+                    Persistence = 0.4,
+                },
+                min: -1.0, max: 1.0, dim: 2).Stretch(1.25, 0.75);
 
-            NoiseTemperature = ValueProvider.CreatePerlin(new Perlin(
-                frequency: 0.0015,
-                lacunarity: 1.8,
-                persistence: 0.4,
-                octaves: 1,
-                seed: (int)SaltedSeed(3),
-                quality: QualityMode.High
-            ), -1.0, 1.0, 2);
+            NoiseTemperature = ValueProvider.CreatePerlin(
+                new Perlin(seed: (int)_seed.Hash("noise_temperature"))
+                {
+                    Octaves = 1,
+                    Frequency = 0.0015,
+                    Lacunarity = 1.8,
+                    Persistence = 0.4,
+                },
+                min: -1.0, max: 1.0, dim: 2);
 
             // ------ SURFACE PROVIDER ------
 
             ProviderSurface = ValueProvider.CreateFunction((x, y, z) =>
             {
                 double val = NoiseSurface.GetValue(x, y, z);
-                return val > 0.0 ? val : val / 2.0;
+                return val > 0.0 ? val : val * 2.0 / 3.0;
             });
 
             ValueProvider _SurfaceRelative = ValueProvider.CreateFunction((x, y, z) =>
@@ -109,9 +111,9 @@ namespace Larnix.Worldgen
             //    _SurfaceRelative.GetValue(x, y, z));
         }
 
-        public Color SkyColorAt(Vector2 position)
+        public Col32 SkyColorAt(Vec2 position)
         {
-            return new Color32(105, 165, 255, 0);
+            return new Col32(105, 165, 255, 0);
         }
 
         public BlockData2[,] GenerateChunk(Vec2Int chunk)
@@ -138,7 +140,7 @@ namespace Larnix.Worldgen
 
                     const int SOIL_LAYER_SIZE = 3;
 
-                    int surface_level = Mathf.FloorToInt((float)ProviderSurface.GetValue(POS.x));
+                    int surface_level = (int)Math.Floor(ProviderSurface.GetValue(POS.x));
                     int stone_level = surface_level - SOIL_LAYER_SIZE;
 
                     if (POS.y > surface_level) // air
@@ -188,6 +190,7 @@ namespace Larnix.Worldgen
             for (int x = 0; x < 16; x++)
                 for (int y = 0; y < 16; y++)
                 {
+                    const string PHRASE = "block_hash";
                     Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, new Vec2Int(x, y));
 
                     BiomeID biomeID = BiomeID.Empty;
@@ -199,7 +202,7 @@ namespace Larnix.Worldgen
                     else if (temperature < -0.21 )
                     {
                         double gradient = (temperature - (-0.22)) / 0.01;
-                        biomeID = ValueFromGradient(BiomeID.Arctic, BiomeID.Plains, gradient, BlockHash(POS, 1));
+                        biomeID = ValueFromGradient(BiomeID.Arctic, BiomeID.Plains, gradient, _seed.BlockHash(POS, PHRASE));
                     }
 
                     else if (temperature < 0.21)
@@ -208,10 +211,10 @@ namespace Larnix.Worldgen
                     else if (temperature < 0.22)
                     {
                         double gradient = (temperature - 0.21) / 0.01;
-                        biomeID = ValueFromGradient(BiomeID.Plains, BiomeID.Desert, gradient, BlockHash(POS, 1));
+                        biomeID = ValueFromGradient(BiomeID.Plains, BiomeID.Desert, gradient, _seed.BlockHash(POS, PHRASE));
                     }
 
-                    else if(true)
+                    else
                         biomeID = BiomeID.Desert;
 
                     Biome biome = Biomes[biomeID];
@@ -229,34 +232,6 @@ namespace Larnix.Worldgen
             double roll = rng.NextDouble();
 
             return roll < gradient ? value2 : value1;
-        }
-
-        private long BlockHash(Vec2Int POS, long salt)
-        {
-            Span<byte> buffer = stackalloc byte[8 + 4 + 4 + 8];
-
-            BinaryPrimitives.WriteInt64BigEndian(buffer.Slice(0, 8), Seed);
-            BinaryPrimitives.WriteInt32BigEndian(buffer.Slice(8, 4), POS.x);
-            BinaryPrimitives.WriteInt32BigEndian(buffer.Slice(12, 4), POS.y);
-            BinaryPrimitives.WriteInt64BigEndian(buffer.Slice(16, 8), salt);
-
-            using SHA256 sha = SHA256.Create();
-            byte[] hash = sha.ComputeHash(buffer.ToArray());
-
-            return BinaryPrimitives.ReadInt64BigEndian(hash.AsSpan(0, 8));
-        }
-
-        private long SaltedSeed(long salt)
-        {
-            Span<byte> buffer = stackalloc byte[8 + 8];
-
-            BinaryPrimitives.WriteInt64BigEndian(buffer.Slice(0, 8), Seed);
-            BinaryPrimitives.WriteInt64BigEndian(buffer.Slice(8, 8), salt);
-
-            using SHA256 sha = SHA256.Create();
-            byte[] hash = sha.ComputeHash(buffer.ToArray());
-
-            return BinaryPrimitives.ReadInt64BigEndian(hash.AsSpan(0, 8));
         }
 
         public string GetNoiseInfo(Vec2Int position)

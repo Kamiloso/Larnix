@@ -6,6 +6,7 @@ using Larnix.Client.Terrain;
 using Larnix.Blocks;
 using Larnix.Core.Utils;
 using Larnix.Core.Vectors;
+using Larnix;
 
 namespace Larnix.Menu
 {
@@ -48,7 +49,10 @@ namespace Larnix.Menu
                 ActiveChunks.Remove(chunk);
             }
 
-            Camera.backgroundColor = Generator.SkyColorAt((Vector2)Camera.transform.position);
+            Vector2 camPos = (Vector2)Camera.transform.position;
+            Camera.backgroundColor = Generator.SkyColorAt(
+                VectorExtensions.ConstructVec2(camPos, Vec2.Zero)
+                ).ToUnity();
 
             firstGeneration = false;
         }

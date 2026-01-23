@@ -1,8 +1,8 @@
-using LibNoise.Generator;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Larnix.Worldgen.Noise;
 
 namespace Larnix.Worldgen
 {
@@ -34,7 +34,7 @@ namespace Larnix.Worldgen
                 throw new ArgumentException("You cannot have a 3 or higher dimensional noise provider! Third axis must be used to remove zeros.");
 
             ValueProvider provider = new ValueProvider(ProviderType.Perlin);
-            provider.Value = (x, y, z) => (perlin.GetValue(
+            provider.Value = (x, y, z) => (perlin.Sample(
                 dim >= 1 ? x : 0,
                 dim >= 2 ? y : 0,
                 1.0 / perlin.Frequency / 2.0) + 1.0) / 2.0 * (max - min) + min;
