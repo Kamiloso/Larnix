@@ -56,19 +56,19 @@ namespace Larnix.Worldgen
                 new Perlin(seed: (int)_seed.Hash("noise_surface"))
                 {
                     Octaves = 4,
-                    Frequency = 0.01,
+                    Frequency = 0.013,
                     Lacunarity = 2.0,
-                    Persistence = 0.4,
+                    Persistence = 0.3,
                 },
-                min: -20.0, max: 30.0, dim: 1);
+                min: -25.0, max: 40.0, dim: 1);
 
             NoiseCave = ValueProvider.CreatePerlin(
                 new Perlin(seed: (int)_seed.Hash("noise_cave"))
                 {
                     Octaves = 3,
-                    Frequency = 0.02,
+                    Frequency = 0.025,
                     Lacunarity = 1.8,
-                    Persistence = 0.4,
+                    Persistence = 0.3,
                 },
                 min: -1.0, max: 1.0, dim: 2).Stretch(1.25, 0.75);
 
