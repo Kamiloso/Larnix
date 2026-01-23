@@ -25,6 +25,8 @@ def get_ignored_directories(dir_path):
     """Sprawdza obecność line_abort.txt i zwraca zestaw katalogów do pominięcia."""
     abort_file = os.path.join(dir_path, "line_abort.txt")
     ignored = set()
+
+    ignored.add("Libs") # Libs ignorujemy zawsze
     
     if os.path.exists(abort_file):
         try:

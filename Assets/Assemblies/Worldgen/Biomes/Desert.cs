@@ -8,6 +8,8 @@ namespace Larnix.Worldgen.Biomes
 {
     public class Desert : Biome
     {
+        private Desert() {}
+
         public override BlockData2 TranslateProtoBlock(ProtoBlock protoBlock)
         {
             switch (protoBlock)

@@ -27,7 +27,8 @@ namespace Larnix.Worldgen
     public class Generator
     {
         // Variables
-        internal readonly Seed _seed;
+        private readonly Seed _seed;
+        private readonly Dictionary<BiomeID, Biome> _biomes;
         public long Seed => _seed.Value;
 
         // Raw noise
@@ -40,14 +41,12 @@ namespace Larnix.Worldgen
         private readonly ValueProvider ProviderCave;
         private readonly ValueProvider ProviderTemperature;
 
-        // Data structures
-        private static readonly ConcurrentDictionary<BiomeID, Biome> Biomes = Biome.CreateBiomeInstances();
-
         // Constants
         const int WATER_LEVEL = -1;
 
         public Generator(long seed)
         {
+            _biomes = Biome.GetBiomes();
             _seed = new Seed(seed);
 
             // ------ BASE NOISES ------
@@ -217,7 +216,7 @@ namespace Larnix.Worldgen
                     else
                         biomeID = BiomeID.Desert;
 
-                    Biome biome = Biomes[biomeID];
+                    Biome biome = _biomes[biomeID];
                     blocks[x, y] = biome.TranslateProtoBlock(protoBlocks[x, y]);
                 }
 

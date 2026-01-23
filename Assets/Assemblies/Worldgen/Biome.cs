@@ -1,6 +1,6 @@
 using Larnix.Blocks;
 using System.Collections;
-using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System;
 using System.Reflection;
 using System.Linq;
@@ -12,40 +12,53 @@ namespace Larnix.Worldgen
     {
         public abstract BlockData2 TranslateProtoBlock(ProtoBlock protoBlock);
 
-        public static ConcurrentDictionary<BiomeID, Biome> CreateBiomeInstances()
+        // --- Factory ---
+        private static Dictionary<BiomeID, Biome> _allBiomes;
+        private static readonly object _lock = new();
+
+        internal static Dictionary<BiomeID, Biome> GetBiomes()
         {
-            var baseType = typeof(Biome);
-            var assembly = Assembly.GetAssembly(baseType);
-
-            var biomeInstances = assembly.GetTypes()
-            .Where(t =>
-                t.IsClass &&
-                !t.IsAbstract &&
-                baseType.IsAssignableFrom(t) &&
-                t.GetConstructor(Type.EmptyTypes) != null
-            )
-            .Select(t => (Biome)Activator.CreateInstance(t))
-            .ToList();
-
-            ConcurrentDictionary<BiomeID, Biome> targetDictionary = new();
-
-            foreach (var biome in biomeInstances)
+            lock (_lock)
             {
-                string biomeName = biome.GetType().Name;
-                if (Enum.TryParse<BiomeID>(biomeName, out var biomeID))
+                if (_allBiomes != null)
                 {
-                    targetDictionary[biomeID] = biome;
+                    return new(_allBiomes);
                 }
-                else
+
+                var baseType = typeof(Biome);
+                var assembly = Assembly.GetAssembly(baseType);
+
+                var biomeInstances = assembly.GetTypes()
+                .Where(t =>
+                    t.IsClass &&
+                    !t.IsAbstract &&
+                    baseType.IsAssignableFrom(t) &&
+                    t.GetConstructor(Type.EmptyTypes) != null
+                )
+                .Select(t => (Biome)Activator.CreateInstance(t))
+                .ToList();
+
+                Dictionary<BiomeID, Biome> targetDictionary = new();
+
+                foreach (var biome in biomeInstances)
                 {
-                    Core.Debug.LogError($"Biome '{biomeName}' is not defined in the BiomeList enum!");
+                    string biomeName = biome.GetType().Name;
+                    if (Enum.TryParse<BiomeID>(biomeName, out var biomeID))
+                    {
+                        targetDictionary[biomeID] = biome;
+                    }
+                    else
+                    {
+                        Core.Debug.LogError($"Biome '{biomeName}' is not defined in the BiomeList enum!");
+                    }
                 }
+
+                if (Enum.GetNames(typeof(BiomeID)).Length != targetDictionary.Count)
+                    throw new Exception("Biome class count and entry count in BiomeList enum don't match!");
+
+                _allBiomes = targetDictionary;
+                return targetDictionary;
             }
-
-            if (Enum.GetNames(typeof(BiomeID)).Length != targetDictionary.Count)
-                throw new Exception("Biome class count and entry count in BiomeList enum don't match!");
-
-            return targetDictionary;
         }
     }
 }

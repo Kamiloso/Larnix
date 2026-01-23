@@ -8,6 +8,8 @@ namespace Larnix.Worldgen.Biomes
 {
     public class Plains : Biome
     {
+        private Plains() {}
+
         public override BlockData2 TranslateProtoBlock(ProtoBlock protoBlock)
         {
             switch (protoBlock)

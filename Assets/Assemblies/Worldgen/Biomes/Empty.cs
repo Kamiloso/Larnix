@@ -8,6 +8,8 @@ namespace Larnix.Worldgen.Biomes
 {
     public class Empty : Biome
     {
+        private Empty() {}
+        
         public override BlockData2 TranslateProtoBlock(ProtoBlock protoBlock)
         {
             return new BlockData2(new(), new());
