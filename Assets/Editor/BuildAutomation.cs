@@ -147,7 +147,7 @@ public class BuildAutomation
 
 #if UNITY_EDITOR_WIN
 
-    [MenuItem("Build/Client/Windows")]
+    [MenuItem("Automation/Build/Client/Windows")]
     public static void BuildClientWindows()
     {
         ExecuteClientBuild(BuildMode.Windows);
@@ -155,7 +155,7 @@ public class BuildAutomation
         RevealBuilds();
     }
 
-    [MenuItem("Build/Client/Linux")]
+    [MenuItem("Automation/Build/Client/Linux")]
     public static void BuildClientLinux()
     {
         ExecuteClientBuild(BuildMode.Linux);
@@ -163,7 +163,7 @@ public class BuildAutomation
         RevealBuilds();
     }
 
-    [MenuItem("Build/Client/Mac/Intel")]
+    [MenuItem("Automation/Build/Client/Mac/Intel")]
     public static void BuildClientMacIntel()
     {
         ExecuteClientBuild(BuildMode.MacIntel);
@@ -171,7 +171,7 @@ public class BuildAutomation
         RevealBuilds();
     }
 
-    [MenuItem("Build/Client/Mac/Silicon")]
+    [MenuItem("Automation/Build/Client/Mac/Silicon")]
     public static void BuildClientMacSilicon()
     {
         ExecuteClientBuild(BuildMode.MacSilicon);
@@ -179,7 +179,7 @@ public class BuildAutomation
         RevealBuilds();
     }
 
-    [MenuItem("Build/Client + Server/Windows")]
+    [MenuItem("Automation/Build/Client + Server/Windows")]
     public static void BuildClientServerWindows()
     {
         bool win = ExecuteClientBuild(BuildMode.Windows);
@@ -198,7 +198,7 @@ public class BuildAutomation
         RevealBuilds();
     }
 
-    [MenuItem("Build/Client + Server/Linux")]
+    [MenuItem("Automation/Build/Client + Server/Linux")]
     public static void BuildClientServerLinux()
     {
         bool lin = ExecuteClientBuild(BuildMode.Linux);
@@ -217,7 +217,7 @@ public class BuildAutomation
         RevealBuilds();
     }
 
-    [MenuItem("Build/Client + Server/Mac/Intel")]
+    [MenuItem("Automation/Build/Client + Server/Mac/Intel")]
     public static void BuildClientServerMacIntel()
     {
         bool mac = ExecuteClientBuild(BuildMode.MacIntel);
@@ -236,7 +236,7 @@ public class BuildAutomation
         RevealBuilds();
     }
 
-    [MenuItem("Build/Client + Server/Mac/Silicon")]
+    [MenuItem("Automation/Build/Client + Server/Mac/Silicon")]
     public static void BuildClientServerMacSilicon()
     {
         bool mac = ExecuteClientBuild(BuildMode.MacSilicon);
@@ -255,7 +255,7 @@ public class BuildAutomation
         RevealBuilds();
     }
 
-    [MenuItem("Build/All")]
+    [MenuItem("Automation/Build/All")]
     public static void BuildAll()
     {
         bool win = ExecuteClientBuild(BuildMode.Windows);
@@ -282,7 +282,7 @@ public class BuildAutomation
 
 #else
 
-    [MenuItem("Build/Details")]
+    [MenuItem("Automation/Build/Details")]
     public static void ShowPlatformWarning()
     {
         EditorUtility.DisplayDialog(
@@ -303,16 +303,10 @@ public class BuildAutomation
         }
     }
 
-    [MenuItem("Build/Tools/Open Folder")]
+    [MenuItem("Automation/Tools/Open Build Folder")]
     public static void OpenBuildFolder()
     {
         UnityEditor.EditorUtility.RevealInFinder(BuildRoot + "any-file");
-    }
-
-    [MenuItem("Build/Tools/Delete")]
-    public static void DeleteBuilds()
-    {
-        DeleteBuildsWindow.ShowWindow();
     }
 
     private static void RevealBuilds()
