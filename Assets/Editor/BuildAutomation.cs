@@ -303,9 +303,21 @@ public class BuildAutomation
         }
     }
 
+    [MenuItem("Build/Tools/Open Folder")]
+    public static void OpenBuildFolder()
+    {
+        UnityEditor.EditorUtility.RevealInFinder(BuildRoot + "any-file");
+    }
+
+    [MenuItem("Build/Tools/Delete")]
+    public static void DeleteBuilds()
+    {
+        DeleteBuildsWindow.ShowWindow();
+    }
+
     private static void RevealBuilds()
     {
         RunBatchScript(BuildRoot + "../cleanbuilds.bat", "");
-        UnityEditor.EditorUtility.RevealInFinder(BuildRoot + "any-file");
+        OpenBuildFolder();
     }
 }
