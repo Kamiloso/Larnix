@@ -5,7 +5,7 @@ using UnityEngine.SceneManagement;
 using Larnix.Socket.Packets;
 using System.Threading.Tasks;
 using Larnix.Core.Physics;
-using Larnix.ServerRun;
+using Larnix.Server;
 using Larnix.Socket.Frontend;
 using Larnix.Patches;
 using Larnix.Socket.Packets.Game;
@@ -153,7 +153,7 @@ namespace Larnix.Client
             EarlyUpdateInjector.ClearEarlyUpdate();
 
             // Close server if running any
-            ServerRunner.Instance.StopServerSync();
+            ServerRunner.Instance.Stop();
         }
     }
 }

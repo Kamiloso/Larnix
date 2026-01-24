@@ -1,6 +1,0 @@
-<linker>
-	<assembly fullname="Larnix.Socket">
-		<namespace fullname="Larnix.Socket.Packets.Game" preserve="all"/>
-		<namespace fullname="Larnix.Socket.Packets.Control" preserve="all"/>
-	</assembly>
-</linker>

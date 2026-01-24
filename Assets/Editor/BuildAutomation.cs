@@ -1,31 +1,40 @@
 using UnityEditor;
-using System.IO;
-using System.Diagnostics;
 using UnityEditor.Build.Reporting;
+using UnityEngine;
+using System.IO;
 using System.Collections.Generic;
+using System;
+using System.Diagnostics;
+
+public enum BuildMode { Windows, Linux, MacIntel, MacSilicon }
 
 public class BuildAutomation
 {
-    private static string buildRoot = "Builds/";
+    public static string BuildRoot => "Builds/";
+    public static string ServerProjectPath => ".sbuild/LarnixServer/";
 
-    private static string[] clientScenes = new string[]
+    private static string[] clientScenes =
     {
         "Assets/Scenes/Menu.unity",
-        "Assets/Scenes/Client.unity",
-        "Assets/Scenes/Server.unity"
+        "Assets/Scenes/Client.unity"
     };
 
-    private static string[] serverScenes = new string[]
-    {
-        "Assets/Scenes/Server.unity"
-    };
+    private static Queue<Action> delayedActions = new();
 
-    private static List<string> successfulBuildFolders = new List<string>();
-    private static List<string> failedBuilds = new List<string>();
+    // ---------------- BUILD CORE ----------------
 
-    private static void BuildClient(BuildTarget target, string path)
+    private static bool BuildClient(BuildTarget target, string path, bool silent = false)
     {
-        BuildPlayerOptions options = new BuildPlayerOptions
+        if (!BuildPipeline.IsBuildTargetSupported(BuildTargetGroup.Standalone, target))
+        {
+            if (!silent) delayedActions.Enqueue(() =>
+            {
+                UnityEngine.Debug.LogError("Client build unsupported: " + path);
+            });
+            return false;
+        }
+
+        var options = new BuildPlayerOptions
         {
             scenes = clientScenes,
             locationPathName = path,
@@ -34,175 +43,269 @@ public class BuildAutomation
             options = BuildOptions.None
         };
 
-        BuildReport report = BuildPipeline.BuildPlayer(options);
-        ProcessBuildReport(report);
-    }
+        var report = BuildPipeline.BuildPlayer(options);
 
-    private static void BuildServer(BuildTarget target, string path)
-    {
-        BuildPlayerOptions options = new BuildPlayerOptions
-        {
-            scenes = serverScenes,
-            locationPathName = path,
-            target = target,
-            subtarget = (int)StandaloneBuildSubtarget.Server,
-            options = BuildOptions.None
-        };
-
-        BuildReport report = BuildPipeline.BuildPlayer(options);
-        ProcessBuildReport(report);
-    }
-
-    private static void ProcessBuildReport(BuildReport report)
-    {
         if (report.summary.result == BuildResult.Succeeded)
         {
-            string folder = Path.GetDirectoryName(report.summary.outputPath);
-            if (!successfulBuildFolders.Contains(folder))
-                successfulBuildFolders.Add(folder);
+            if (!silent) delayedActions.Enqueue(() =>
+            {
+                UnityEngine.Debug.Log("Client build success: " + path);
+            });
+            return true;
         }
         else
         {
-            failedBuilds.Add(report.summary.outputPath);
+            if (!silent) delayedActions.Enqueue(() =>
+            {
+                UnityEngine.Debug.LogError("Client build failed: " + path);
+            });
+            return false;
         }
     }
 
-    private static void OpenAllSuccessfulFolders()
+    private static string GetArgument(BuildMode mode)
     {
-        foreach (var folder in successfulBuildFolders)
+        return mode switch
         {
-            if (Directory.Exists(folder))
+            BuildMode.Windows => "windows",
+            BuildMode.Linux => "linux",
+            BuildMode.MacSilicon => "mac-silicon",
+            BuildMode.MacIntel => "mac-intel",
+            _ => throw new InvalidOperationException("Unknown platform: " + mode)
+        };
+    }
+
+    private static bool BuildServer(BuildMode mode)
+    {
+        if (RunBatchScript(ServerProjectPath + "build.bat", GetArgument(mode)) &&
+            RunBatchScript(ServerProjectPath + "move.bat", GetArgument(mode)))
+        {
+            UnityEngine.Debug.Log("Server build for platform '" + mode + "' complete.");
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool RunBatchScript(string scriptPath, string arguments)
+    {
+        string fullPath = Path.GetFullPath(scriptPath);
+        string workingDirectory = Path.GetDirectoryName(fullPath);
+        string fileName = Path.GetFileName(fullPath);
+
+        ProcessStartInfo psi = new ProcessStartInfo
+        {
+            FileName = fullPath,
+            Arguments = arguments,
+            WorkingDirectory = workingDirectory,
+            UseShellExecute = false,
+            RedirectStandardOutput = false,
+            RedirectStandardError = false,
+            CreateNoWindow = true,
+            WindowStyle = ProcessWindowStyle.Hidden
+        };
+
+        try
+        {
+            using (Process process = Process.Start(psi))
             {
-                Process.Start(new ProcessStartInfo()
+                process.WaitForExit();
+
+                if (process.ExitCode == 0)
                 {
-                    FileName = folder,
-                    UseShellExecute = true
-                });
+                    return true;
+                }
+                else
+                {
+                    UnityEngine.Debug.LogError($"Script {scriptPath} finished with an error. Exit code: {process.ExitCode}");
+                    return false;
+                }
             }
         }
+        catch (Exception ex)
+        {
+            UnityEngine.Debug.LogError($"Failed to run process: {ex.Message}");
+            return false;
+        }
     }
 
-    private static void ClearBuildData()
+    // ---------------- BUILD EXECUTION ----------------
+    private static bool ExecuteClientBuild(BuildMode mode)
     {
-        successfulBuildFolders.Clear();
-        failedBuilds.Clear();
+        switch (mode)
+        {
+            case BuildMode.Windows: return BuildClient(BuildTarget.StandaloneWindows64, BuildRoot + "Windows/Client/Larnix.exe");
+            case BuildMode.Linux: return BuildClient(BuildTarget.StandaloneLinux64, BuildRoot + "Linux/Client/Larnix.x86_64");
+            case BuildMode.MacIntel: return BuildClient(BuildTarget.StandaloneOSX, BuildRoot + "Mac_Intel/Client/Larnix.app");
+            case BuildMode.MacSilicon: return BuildClient(BuildTarget.StandaloneOSX, BuildRoot + "Mac_Silicon/Client/Larnix.app");
+        }
+
+        throw new ArgumentException("Unsupported client build: " + mode);
     }
 
-    // --- Menu methods ---
+    // ---------------- MENU ----------------
+
+#if UNITY_EDITOR_WIN
 
     [MenuItem("Build/Client/Windows")]
     public static void BuildClientWindows()
     {
-        string path = buildRoot + "Windows/Client/Larnix.exe";
-        ClearBuildData();
-        BuildClient(BuildTarget.StandaloneWindows64, path);
-        LogBuildSummaryAndOpenFolders();
+        ExecuteClientBuild(BuildMode.Windows);
+        ShowClientSummary();
+        RevealBuilds();
     }
 
     [MenuItem("Build/Client/Linux")]
     public static void BuildClientLinux()
     {
-        string path = buildRoot + "Linux/Client/Larnix.x86_64";
-        ClearBuildData();
-        BuildClient(BuildTarget.StandaloneLinux64, path);
-        LogBuildSummaryAndOpenFolders();
+        ExecuteClientBuild(BuildMode.Linux);
+        ShowClientSummary();
+        RevealBuilds();
     }
 
-    [MenuItem("Build/Client/Mac")]
-    public static void BuildClientMac()
+    [MenuItem("Build/Client/Mac/Intel")]
+    public static void BuildClientMacIntel()
     {
-        string path = buildRoot + "Mac/Client/Larnix.app";
-        ClearBuildData();
-        BuildClient(BuildTarget.StandaloneOSX, path);
-        LogBuildSummaryAndOpenFolders();
+        ExecuteClientBuild(BuildMode.MacIntel);
+        ShowClientSummary();
+        RevealBuilds();
     }
 
-    [MenuItem("Build/Server/Windows")]
-    public static void BuildServerWindows()
+    [MenuItem("Build/Client/Mac/Silicon")]
+    public static void BuildClientMacSilicon()
     {
-        string path = buildRoot + "Windows/Server/LarnixServer.exe";
-        ClearBuildData();
-        BuildServer(BuildTarget.StandaloneWindows64, path);
-        LogBuildSummaryAndOpenFolders();
+        ExecuteClientBuild(BuildMode.MacSilicon);
+        ShowClientSummary();
+        RevealBuilds();
     }
 
-    [MenuItem("Build/Server/Linux")]
-    public static void BuildServerLinux()
-    {
-        string path = buildRoot + "Linux/Server/LarnixServer.x86_64";
-        ClearBuildData();
-        BuildServer(BuildTarget.StandaloneLinux64, path);
-        LogBuildSummaryAndOpenFolders();
-    }
-
-    [MenuItem("Build/Server/Mac")]
-    public static void BuildServerMac()
-    {
-        string path = buildRoot + "Mac/Server/LarnixServer.app";
-        ClearBuildData();
-        BuildServer(BuildTarget.StandaloneOSX, path);
-        LogBuildSummaryAndOpenFolders();
-    }
-
-    [MenuItem("Build/Client+Server/Windows")]
+    [MenuItem("Build/Client + Server/Windows")]
     public static void BuildClientServerWindows()
     {
-        ClearBuildData();
-        BuildClient(BuildTarget.StandaloneWindows64, buildRoot + "Windows/Client/Larnix.exe");
-        BuildServer(BuildTarget.StandaloneWindows64, buildRoot + "Windows/Server/LarnixServer.exe");
-        LogBuildSummaryAndOpenFolders();
-    }
+        bool win = ExecuteClientBuild(BuildMode.Windows);
+        ShowClientSummary();
 
-    [MenuItem("Build/Client+Server/Linux")]
-    public static void BuildClientServerLinux()
-    {
-        ClearBuildData();
-        BuildClient(BuildTarget.StandaloneLinux64, buildRoot + "Linux/Client/Larnix.x86_64");
-        BuildServer(BuildTarget.StandaloneLinux64, buildRoot + "Linux/Server/LarnixServer.x86_64");
-        LogBuildSummaryAndOpenFolders();
-    }
-
-    [MenuItem("Build/Client+Server/Mac")]
-    public static void BuildClientServerMac()
-    {
-        ClearBuildData();
-        BuildClient(BuildTarget.StandaloneOSX, buildRoot + "Mac/Client/Larnix.app");
-        BuildServer(BuildTarget.StandaloneOSX, buildRoot + "Mac/Server/LarnixServer.app");
-        LogBuildSummaryAndOpenFolders();
-    }
-
-    [MenuItem("Build/Build All")]
-    public static void BuildAll()
-    {
-        ClearBuildData();
-
-        BuildClient(BuildTarget.StandaloneWindows64, buildRoot + "Windows/Client/Larnix.exe");
-        BuildServer(BuildTarget.StandaloneWindows64, buildRoot + "Windows/Server/LarnixServer.exe");
-
-        BuildClient(BuildTarget.StandaloneLinux64, buildRoot + "Linux/Client/Larnix.x86_64");
-        BuildServer(BuildTarget.StandaloneLinux64, buildRoot + "Linux/Server/LarnixServer.x86_64");
-
-        BuildClient(BuildTarget.StandaloneOSX, buildRoot + "Mac/Client/Larnix.app");
-        BuildServer(BuildTarget.StandaloneOSX, buildRoot + "Mac/Server/LarnixServer.app");
-
-        LogBuildSummaryAndOpenFolders();
-    }
-
-    private static void LogBuildSummaryAndOpenFolders()
-    {
-        if (failedBuilds.Count == 0)
+        if (win)
         {
-            UnityEngine.Debug.Log("All builds succeeded.");
+            ServerDllCopier.CopyServerWithDependencies(BuildMode.Windows);
+            BuildServer(BuildMode.Windows);
         }
         else
         {
-            foreach (var failPath in failedBuilds)
-            {
-                UnityEngine.Debug.LogError($"Build failed: {failPath}");
-            }
-            UnityEngine.Debug.Log($"{failedBuilds.Count} builds failed, {successfulBuildFolders.Count} builds succeeded.");
+            UnityEngine.Debug.LogWarning("Cannot build server when there is no client present.");
         }
 
-        OpenAllSuccessfulFolders();
+        RevealBuilds();
+    }
+
+    [MenuItem("Build/Client + Server/Linux")]
+    public static void BuildClientServerLinux()
+    {
+        bool lin = ExecuteClientBuild(BuildMode.Linux);
+        ShowClientSummary();
+
+        if (lin)
+        {
+            ServerDllCopier.CopyServerWithDependencies(BuildMode.Linux);
+            BuildServer(BuildMode.Linux);
+        }
+        else
+        {
+            UnityEngine.Debug.LogWarning("Cannot build server when there is no client present.");
+        }
+
+        RevealBuilds();
+    }
+
+    [MenuItem("Build/Client + Server/Mac/Intel")]
+    public static void BuildClientServerMacIntel()
+    {
+        bool mac = ExecuteClientBuild(BuildMode.MacIntel);
+        ShowClientSummary();
+
+        if (mac)
+        {
+            ServerDllCopier.CopyServerWithDependencies(BuildMode.MacIntel);
+            BuildServer(BuildMode.MacIntel);
+        }
+        else
+        {
+            UnityEngine.Debug.LogWarning("Cannot build server when there is no client present.");
+        }
+
+        RevealBuilds();
+    }
+
+    [MenuItem("Build/Client + Server/Mac/Silicon")]
+    public static void BuildClientServerMacSilicon()
+    {
+        bool mac = ExecuteClientBuild(BuildMode.MacSilicon);
+        ShowClientSummary();
+
+        if (mac)
+        {
+            ServerDllCopier.CopyServerWithDependencies(BuildMode.MacSilicon);
+            BuildServer(BuildMode.MacSilicon);
+        }
+        else
+        {
+            UnityEngine.Debug.LogWarning("Cannot build server when there is no client present.");
+        }
+
+        RevealBuilds();
+    }
+
+    [MenuItem("Build/All")]
+    public static void BuildAll()
+    {
+        bool win = ExecuteClientBuild(BuildMode.Windows);
+        bool lin = ExecuteClientBuild(BuildMode.Linux);
+        bool maci = ExecuteClientBuild(BuildMode.MacIntel);
+        bool macs = ExecuteClientBuild(BuildMode.MacSilicon);
+        ShowClientSummary();
+
+        if (win || lin || maci || macs)
+        {
+            ServerDllCopier.CopyServerWithDependencies(win ? BuildMode.Windows : (lin ? BuildMode.Linux : (macs ? BuildMode.MacSilicon : BuildMode.MacIntel)));
+            BuildServer(BuildMode.Windows);
+            BuildServer(BuildMode.Linux);
+            BuildServer(BuildMode.MacIntel);
+            BuildServer(BuildMode.MacSilicon);
+        }
+        else
+        {
+            UnityEngine.Debug.LogWarning("Cannot build server when there is no client present.");
+        }
+
+        RevealBuilds();
+    }
+
+#else
+
+    [MenuItem("Build/Details")]
+    public static void ShowPlatformWarning()
+    {
+        EditorUtility.DisplayDialog(
+            "Wrong Platform",
+            "This project requires Windows to perform builds (dependency on batch scripts).\n\nPlease switch to a Windows machine.",
+            "OK"
+        );
+    }
+
+#endif
+
+    private static void ShowClientSummary()
+    {
+        while (delayedActions.Count > 0)
+        {
+            Action action = delayedActions.Dequeue();
+            action();
+        }
+    }
+
+    private static void RevealBuilds()
+    {
+        RunBatchScript(BuildRoot + "../cleanbuilds.bat", "");
+        UnityEditor.EditorUtility.RevealInFinder(BuildRoot + "any-file");
     }
 }

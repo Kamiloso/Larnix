@@ -11,12 +11,12 @@ namespace Larnix.ServerRun
         private void Start()
         {
             string worldPath = Path.Combine(".", "World");
-            ServerRunner.Instance.StartServer(ServerType.Remote, worldPath, null);
+            Server.ServerRunner.Instance.Start(ServerType.Remote, worldPath, null);
         }
 
         private void Update()
         {
-            if (!ServerRunner.Instance.IsRunning)
+            if (!Server.ServerRunner.Instance.IsRunning)
             {
                 Application.Quit();
             }

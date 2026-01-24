@@ -15,12 +15,12 @@ namespace Larnix.Core
             var path = _persistentDataPath;
             if (path == null)
                 throw new InvalidOperationException(
-                    "GamePath not initialized. Call GamePath.InitPath() first.");
+                    "Appdata path not initialized. Call 'Larnix.Core.GamePath.InitAppdata(...)' to be able to access it.");
 
             return path;
         }
 
-        public static void InitPath(string persistentDataPath)
+        public static void InitAppdata(string persistentDataPath)
         {
             if (persistentDataPath == null)
                 throw new ArgumentNullException(nameof(persistentDataPath));
@@ -28,7 +28,7 @@ namespace Larnix.Core
             lock (_lock)
             {
                 if (_persistentDataPath != null)
-                    throw new InvalidOperationException("GamePath already initialized.");
+                    throw new InvalidOperationException("Appdata path already initialized.");
 
                 _persistentDataPath = persistentDataPath;
             }

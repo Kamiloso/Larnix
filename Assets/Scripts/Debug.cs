@@ -15,14 +15,9 @@ namespace Larnix
     {
         private static readonly ConcurrentQueue<Action> actionQueue = new();
         private static object _locker = new();
-
         private static Thread MainThread = null;
 
-        private enum LogType
-        {
-            Log, Success, Warning,
-            Error, RawConsole
-        }
+        private enum LogType { Log, Success, Warning, Error, Raw }
 
         private static void _Log(string msg, LogType logType)
         {
@@ -32,7 +27,7 @@ namespace Larnix
                 {
                     case LogType.Log: UnityEngine.Debug.Log(msg); break;
                     case LogType.Success: UnityEngine.Debug.Log(msg); break;
-                    case LogType.RawConsole: UnityEngine.Debug.Log(msg); break;
+                    case LogType.Raw: UnityEngine.Debug.Log(msg); break;
                     case LogType.Warning: UnityEngine.Debug.LogWarning(msg); break;
                     case LogType.Error: UnityEngine.Debug.LogError(msg); break;
                 }
@@ -43,9 +38,9 @@ namespace Larnix
                 {
                     case LogType.Log: Console.Log(msg); break;
                     case LogType.Success: Console.LogSuccess(msg); break;
+                    case LogType.Raw: Console.LogRaw(msg); break;
                     case LogType.Warning: Console.LogWarning(msg); break;
                     case LogType.Error: Console.LogError(msg); break;
-                    case LogType.RawConsole: Console.LogRaw(msg); break;
                 }
             }
         }
@@ -64,32 +59,6 @@ namespace Larnix
             {
                 // From weird thread - stack trace custom
                 actionQueue.Enqueue(() => _Log(msg, logType));
-            }
-        }
-
-        public static void Log(string msg) =>
-            _LogOrEnqueue(msg, LogType.Log);
-
-        public static void LogSuccess(string msg) =>
-            _LogOrEnqueue(msg, LogType.Success);
-
-        public static void LogWarning(string msg) =>
-            _LogOrEnqueue(msg, LogType.Warning);
-
-        public static void LogError(string msg) =>
-            _LogOrEnqueue(msg, LogType.Error);
-
-        public static void LogRawConsole(string msg) =>
-            _LogOrEnqueue(msg, LogType.RawConsole);
-
-        public static void FlushLogs()
-        {
-            lock (_locker)
-            {
-                while (actionQueue.TryDequeue(out var action))
-                {
-                    action();
-                }
             }
         }
 
@@ -139,13 +108,27 @@ namespace Larnix
         private static void Init()
         {
             MainThread = Thread.CurrentThread;
-            Core.Debug.InitLogs(Log, LogWarning, LogError, LogSuccess, LogRawConsole);
-            Core.GamePath.InitPath(Application.persistentDataPath);
+
+            Core.Debug.RedirectLogs(
+                log: msg => _LogOrEnqueue(msg, LogType.Log),
+                logWarning: msg => _LogOrEnqueue(msg, LogType.Warning),
+                logError: msg => _LogOrEnqueue(msg, LogType.Error),
+                logSuccess: msg => _LogOrEnqueue(msg, LogType.Success),
+                logRaw: msg => _LogOrEnqueue(msg, LogType.Raw)
+                );
+            Core.GamePath.InitAppdata(Application.persistentDataPath);
         }
 
         private void Update()
         {
-            FlushLogs();
+            lock (_locker)
+            {
+                // flush logs
+                while (actionQueue.TryDequeue(out var action))
+                {
+                    action();
+                }
+            }
         }
     }
 }

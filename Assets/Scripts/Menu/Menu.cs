@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Menu.Worlds;
 using TMPro;
-using Larnix.ServerRun;
+using Larnix.Server;
 using Ver = Larnix.Core.Version;
 
 namespace Larnix.Menu
@@ -88,7 +88,7 @@ namespace Larnix.Menu
             }
 
             // close server if running
-            ServerRunner.Instance.StopServerSync();
+            ServerRunner.Instance.Stop();
         }
 
         public void LockScreen()

@@ -20,20 +20,13 @@ using Larnix.Server.References;
 
 namespace Larnix.Server
 {
-    public enum ServerType
-    {
-        Local, // pure singleplayer
-        Host, // singleplayer published for remote hosts
-        Remote, // multiplayer console server
-    }
-
-    public class Server
+    internal class Server
     {
         public readonly ServerType Type;
         public readonly string WorldPath;
         public readonly string LocalAddress;
         public readonly string Authcode;
-        internal uint FixedFrame { get; private set; } = 0;
+        public uint FixedFrame { get; private set; } = 0;
 
         private WorldMeta _mdata;
         private readonly Stopwatch _stopwatch = Stopwatch.StartNew();
@@ -43,7 +36,7 @@ namespace Larnix.Server
         private readonly Dictionary<Type, Object> _registeredRefs = new();
         private object _refLock = new();
 
-        internal readonly Action CloseServer;
+        public readonly Action CloseServer;
         private bool _disposed = false;
 
         public Server(ServerType type, string worldPath, long? seedSuggestion, Action closeServer)
@@ -169,7 +162,7 @@ namespace Larnix.Server
             Core.Debug.LogRaw(new string('-', 60) + "\n");
 
             // Input thread start
-            Console.StartInputThread();
+            Console.EnableInputThread();
         }
 
         public async Task<string> EstablishRelayAsync(string relayAddress)
@@ -228,7 +221,7 @@ namespace Larnix.Server
                 SaveAllNow();
         }
 
-        internal void AddRef(Object obj)
+        public void AddRef(Object obj)
         {
             Type type = obj.GetType();
             lock (_refLock)
@@ -241,7 +234,7 @@ namespace Larnix.Server
             }
         }
 
-        internal T Ref<T>() where T : class
+        public T Ref<T>() where T : class
         {
             lock (_refLock)
             {

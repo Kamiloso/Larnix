@@ -316,7 +316,7 @@ namespace Larnix.Menu.Worlds
                 else
                 {
                     Directory.Delete(path, true);
-                    Larnix.Debug.LogWarning("Detected and removed saved server name conflict. Address: " + arg[0]);
+                    Core.Debug.LogWarning("Detected and removed saved server name conflict. Address: " + arg[0]);
                 }
             }
 

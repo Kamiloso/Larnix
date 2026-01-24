@@ -47,7 +47,7 @@ namespace Larnix.Core
             catch
             {
                 WorldMeta mdata = new WorldMeta(Version.Current, "Player");
-                SaveData(path, mdata);
+                SaveData(path, mdata, fullPath);
                 return mdata;
             }
         }

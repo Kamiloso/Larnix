@@ -66,6 +66,7 @@ sysinfo.txt
 
 # Unity Builds
 Build/
+.sbuild/Artifacts/
 
 # Crashlytics generated file
 crashlytics-build.properties

@@ -33,9 +33,11 @@ namespace Larnix.Worldgen
                     t.IsClass &&
                     !t.IsAbstract &&
                     baseType.IsAssignableFrom(t) &&
-                    t.GetConstructor(Type.EmptyTypes) != null
+                    t.GetConstructor(
+                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, 
+                        null, Type.EmptyTypes, null) != null
                 )
-                .Select(t => (Biome)Activator.CreateInstance(t))
+                .Select(t => (Biome)Activator.CreateInstance(t, true))
                 .ToList();
 
                 Dictionary<BiomeID, Biome> targetDictionary = new();
@@ -53,8 +55,11 @@ namespace Larnix.Worldgen
                     }
                 }
 
-                if (Enum.GetNames(typeof(BiomeID)).Length != targetDictionary.Count)
-                    throw new Exception("Biome class count and entry count in BiomeList enum don't match!");
+                int classCount = Enum.GetNames(typeof(BiomeID)).Length;
+                int dictCount = targetDictionary.Count;
+
+                if (classCount != dictCount)
+                    throw new Exception($"Biome class count and entry count in BiomeList enum don't match! Classes: {classCount}; In dict: {dictCount}.");
 
                 _allBiomes = targetDictionary;
                 return targetDictionary;

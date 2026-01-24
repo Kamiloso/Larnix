@@ -7,8 +7,8 @@ namespace Larnix.Core
 {
     public static class Console
     {
-        private static Thread InputThread = null;
-        private static Queue<string> CommandBuffer = new();
+        private static Thread _inputThread = null;
+        private static Queue<string> _cmdBuffer = new();
         private static object _lock = new();
 
         public static void Log(string msg, ConsoleColor color = ConsoleColor.Gray)
@@ -74,16 +74,16 @@ namespace Larnix.Core
             return DateTime.Now.ToString("[yyyy-MM-dd HH:mm:ss]");
         }
 
-        public static void StartInputThread()
+        public static void EnableInputThread()
         {
             lock (_lock)
             {
-                if (InputThread != null)
+                if (_inputThread != null)
                     return;
 
-                InputThread = new Thread(InputLoop);
-                InputThread.IsBackground = true;
-                InputThread.Start();
+                _inputThread = new Thread(InputLoop);
+                _inputThread.IsBackground = true;
+                _inputThread.Start();
             }
         }
 
@@ -91,8 +91,8 @@ namespace Larnix.Core
         {
             lock (_lock)
             {
-                if(CommandBuffer.Count > 0)
-                    return CommandBuffer.Dequeue();
+                if(_cmdBuffer.Count > 0)
+                    return _cmdBuffer.Dequeue();
             }
             return null;
         }
@@ -104,7 +104,7 @@ namespace Larnix.Core
 
             lock (_lock)
             {
-                CommandBuffer.Enqueue(cmd);
+                _cmdBuffer.Enqueue(cmd);
             }
         }
 
@@ -117,7 +117,7 @@ namespace Larnix.Core
 
                 lock (_lock)
                 {
-                    CommandBuffer.Enqueue(input);
+                    _cmdBuffer.Enqueue(input);
                 }
             }
         }

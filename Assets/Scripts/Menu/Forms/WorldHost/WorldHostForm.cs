@@ -5,7 +5,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using Larnix.Menu.Worlds;
-using Larnix.ServerRun;
+using Larnix.Server;
 using System.Threading.Tasks;
 using Larnix.Core;
 
@@ -80,7 +80,7 @@ namespace Larnix.Menu.Forms
             if (state == 0)
             {
                 string path = Path.Combine(GamePath.SavesPath, IF_WorldName.text);
-                serverTuple = ServerRunner.Instance.StartServer(Server.ServerType.Host, path, null);
+                serverTuple = ServerRunner.Instance.Start(Server.ServerType.Host, path, null);
                 OF_ServerAddress.text = serverTuple.address;
                 OF_Authcode.text = serverTuple.authcode;
                 OF_ServerAddress.interactable = true;
@@ -94,7 +94,7 @@ namespace Larnix.Menu.Forms
 
                 if (IF_RelayAddress.text != "")
                 {
-                    RelayEstablishment = Task.Run(() => ServerRunner.Instance.ConnectToRelay(IF_RelayAddress.text));
+                    RelayEstablishment = Task.Run(() => ServerRunner.Instance.ConnectToRelayAsync(IF_RelayAddress.text));
                 }
                 SaveRelayString();
 

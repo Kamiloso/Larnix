@@ -2,8 +2,7 @@ using UnityEditor;
 using UnityEngine.SceneManagement;
 using System.IO;
 using Larnix.Menu.Worlds;
-using Larnix.ServerRun;
-using Larnix.Socket.Backend;
+using Larnix.Server;
 using Larnix.Core.Utils;
 using ServerType = Larnix.Server.ServerType;
 
@@ -31,7 +30,7 @@ namespace Larnix
             PlayedAlready = true;
 
             // Load server
-            var tuple = ServerRunner.Instance.StartServer(ServerType.Local, WorldPath, seedSuggestion);
+            var tuple = ServerRunner.Instance.Start(ServerType.Local, WorldPath, seedSuggestion);
 
             // Configure client
             Address = tuple.address;
