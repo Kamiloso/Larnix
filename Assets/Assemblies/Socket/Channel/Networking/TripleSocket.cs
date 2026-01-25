@@ -89,7 +89,7 @@ namespace Larnix.Socket.Channel.Networking
             return true;
         }
 
-        public async Task<ushort?> StartRelay(string address)
+        public async Task<ushort?> StartRelayAsync(string address)
         {
             if (Interlocked.CompareExchange(ref _relayEnabled, 1, 0) == 0)
             {

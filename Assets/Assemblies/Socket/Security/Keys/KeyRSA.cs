@@ -151,23 +151,39 @@ namespace Larnix.Socket.Security.Keys
 
         private static RSA BouncyToRSA(AsymmetricCipherKeyPair keyPair)
         {
-            var privateKeyParams = (RsaPrivateCrtKeyParameters)keyPair.Private;
+            var priv = (RsaPrivateCrtKeyParameters)keyPair.Private;
+
+            int modulusSize = (priv.Modulus.BitLength + 7) / 8;
+            int halfSize = (modulusSize + 1) / 2;
 
             var rsaParams = new RSAParameters
             {
-                Modulus = privateKeyParams.Modulus.ToByteArrayUnsigned(),
-                Exponent = privateKeyParams.PublicExponent.ToByteArrayUnsigned(),
-                D = privateKeyParams.Exponent.ToByteArrayUnsigned(),
-                P = privateKeyParams.P.ToByteArrayUnsigned(),
-                Q = privateKeyParams.Q.ToByteArrayUnsigned(),
-                DP = privateKeyParams.DP.ToByteArrayUnsigned(),
-                DQ = privateKeyParams.DQ.ToByteArrayUnsigned(),
-                InverseQ = privateKeyParams.QInv.ToByteArrayUnsigned()
+                Modulus = Pad(priv.Modulus.ToByteArrayUnsigned(), modulusSize),
+                Exponent = priv.PublicExponent.ToByteArrayUnsigned(),
+                D = Pad(priv.Exponent.ToByteArrayUnsigned(), modulusSize),
+                P = Pad(priv.P.ToByteArrayUnsigned(), halfSize),
+                Q = Pad(priv.Q.ToByteArrayUnsigned(), halfSize),
+                DP = Pad(priv.DP.ToByteArrayUnsigned(), halfSize),
+                DQ = Pad(priv.DQ.ToByteArrayUnsigned(), halfSize),
+                InverseQ = Pad(priv.QInv.ToByteArrayUnsigned(), halfSize)
             };
 
             var rsa = RSA.Create();
             rsa.ImportParameters(rsaParams);
             return rsa;
+        }
+
+        private static byte[] Pad(byte[] input, int size)
+        {
+            if (input.Length == size)
+                return input;
+
+            if (input.Length > size)
+                throw new CryptographicException("RSA parameter larger than expected.");
+
+            var padded = new byte[size];
+            Buffer.BlockCopy(input, 0, padded, size - input.Length, input.Length);
+            return padded;
         }
     }
 }

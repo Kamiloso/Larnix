@@ -21,7 +21,7 @@ namespace Larnix.Server.Entities
         // === Player constructor ===
         public EntityAbstraction(RefObject reff, string nickname) : base(reff)
         {
-            ulong uid = (ulong)Ref<QuickServer>().UserManager.GetUserID(nickname);
+            ulong uid = (ulong)Ref<UserManager>().GetUserID(nickname);
             EntityData entityData = Ref<EntityDataManager>().TryFindEntityData(uid);
 
             if (entityData == null)

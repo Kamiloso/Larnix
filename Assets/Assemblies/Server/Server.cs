@@ -78,7 +78,7 @@ namespace Larnix.Server
                 WorldMeta.SaveData(WorldPath, _mdata, true);
 
                 // QuickServer
-                AddRef(new QuickServer(new QuickServerConfig(
+                AddRef(new QuickServer(new QuickConfig(
                     port: Type == ServerType.Remote ? Ref<Config>().Port : (ushort)0,
                     maxClients: Ref<Config>().MaxPlayers,
                     isLoopback: Type == ServerType.Local,
@@ -91,6 +91,7 @@ namespace Larnix.Server
                     )));
 
                 // Around-server managers
+                AddRef(Ref<QuickServer>().UserManager);
                 AddRef(new Receiver(this));
                 AddRef(new Commands(this));
 
@@ -140,7 +141,7 @@ namespace Larnix.Server
                     string password = Console.GetInputSync();
                     if (Validation.IsGoodPassword(password))
                     {
-                        Ref<QuickServer>().UserManager.ChangePasswordSync(_mdata.nickname, password);
+                        Ref<UserManager>().ChangePasswordSync(_mdata.nickname, password);
                         _mdata = new WorldMeta(Version.Current, "Player");
                         WorldMeta.SaveData(WorldPath, _mdata, true);
                         changeSuccess = true;
@@ -167,7 +168,8 @@ namespace Larnix.Server
 
         public async Task<string> EstablishRelayAsync(string relayAddress)
         {
-            ushort? relayPort = await Ref<QuickServer>()?.ConfigureRelayAsync(relayAddress);
+            QuickServer server = Ref<QuickServer>();
+            ushort? relayPort = await server?.ConfigureRelayAsync(relayAddress);
 
             if (relayPort != null)
             {

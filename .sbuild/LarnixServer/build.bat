@@ -26,22 +26,29 @@ if defined _a (
 if defined windows (
 	if exist "%_DIR_%\Windows\" rmdir /s /q "%_DIR_%\Windows"
 	dotnet publish -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:PublishTrimmed=true -o "%_DIR_%\Windows"
+	if errorlevel 1 goto :error
 	del /f /q "%_DIR_%\Windows\*.pdb"
 )
 if defined linux (
 	if exist "%_DIR_%\Linux\" rmdir /s /q "%_DIR_%\Linux"
 	dotnet publish -c Release -r linux-x64 --self-contained -p:PublishSingleFile=true -p:PublishTrimmed=true -o "%_DIR_%\Linux"
+	if errorlevel 1 goto :error
 	del /f /q "%_DIR_%\Linux\*.pdb"
 )
 if defined mac-intel (
 	if exist "%_DIR_%\Mac_Intel\" rmdir /s /q "%_DIR_%\Mac_Intel"
 	dotnet publish -c Release -r osx-x64 --self-contained -p:PublishSingleFile=true -p:PublishTrimmed=true -o "%_DIR_%\Mac_Intel"
+	if errorlevel 1 goto :error
 	del /f /q "%_DIR_%\Mac_Intel\*.pdb"
 )
 if defined mac-silicon (
 	if exist "%_DIR_%\Mac_Silicon\" rmdir /s /q "%_DIR_%\Mac_Silicon"
 	dotnet publish -c Release -r osx-arm64 --self-contained -p:PublishSingleFile=true -p:PublishTrimmed=true -o "%_DIR_%\Mac_Silicon"
+	if errorlevel 1 goto :error
 	del /f /q "%_DIR_%\Mac_Silicon\*.pdb"
 )
 
-exit/b
+exit/b 0
+
+:error
+exit/b 1

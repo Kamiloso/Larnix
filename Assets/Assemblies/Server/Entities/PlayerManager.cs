@@ -29,7 +29,7 @@ namespace Larnix.Server.Entities
 
         public void JoinPlayer(string nickname)
         {
-            ulong uid = (ulong)Ref<QuickServer>().UserManager.GetUserID(nickname);
+            ulong uid = (ulong)Ref<UserManager>().GetUserID(nickname);
             PlayerUID[nickname] = uid;
             NearbyUIDs[nickname] = new();
             ClientChunks[nickname] = new();

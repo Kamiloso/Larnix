@@ -12,97 +12,82 @@ using Larnix.Socket.Channel;
 using Larnix.Socket.Security;
 using Larnix.Socket.Packets.Control;
 using Larnix.Socket.Channel.Networking;
+using Larnix.Socket.Channel.Helpers;
 
 namespace Larnix.Socket.Backend
 {
-    public struct QuickServerConfig
-    {
-        public readonly ushort Port;
-        public readonly ushort MaxClients;
-        public readonly bool IsLoopback;
-        public readonly string DataPath;
-        public readonly String256 Motd;
-        public readonly String32 HostUser;
-        public readonly int MaskIPv4;
-        public readonly int MaskIPv6;
-        public readonly IUserAPI UserAPI;
-
-        public QuickServerConfig(ushort port, ushort maxClients, bool isLoopback, string dataPath,
-            String256 motd, String32 hostUser, int maskIPv4, int maskIPv6, IUserAPI userAPI)
-        {
-            Port = port;
-            MaxClients = maxClients;
-            IsLoopback = isLoopback;
-            DataPath = dataPath;
-            Motd = motd;
-            HostUser = hostUser;
-            MaskIPv4 = maskIPv4;
-            MaskIPv6 = maskIPv6;
-            UserAPI = userAPI;
-        }
-
-        public QuickServerConfig WithPort(ushort realPort)
-        {
-            return new QuickServerConfig(
-                port: realPort,
-                maxClients: MaxClients,
-                isLoopback: IsLoopback,
-                dataPath: DataPath,
-                motd: Motd,
-                hostUser: HostUser,
-                maskIPv4: MaskIPv4,
-                maskIPv6: MaskIPv6,
-                userAPI: UserAPI
-                );
-        }
-    }
-
     public class QuickServer : IDisposable
     {
-        public readonly QuickServerConfig Config;
-        public readonly UserManager UserManager;
+        // --- Server properties ---
+        public readonly long Secret;
         public readonly string Authcode;
+        public readonly long RunID;
 
-        private readonly long Secret;
-        private readonly long RunID;
+        // --- Public classes ---
+        public readonly QuickConfig Config;
+        public readonly UserManager UserManager;
+
+        // --- Private classes ---
         private readonly KeyRSA _keyRSA;
         private readonly TripleSocket _udpSocket;
+
+        // --- Timers ---
+        private readonly AckTimer _packetLimiterReset;
+        private readonly AckTimer _relayKeepAlive;
 
         private readonly Dictionary<string, Connection> _connections = new();
         private readonly Dictionary<IPEndPoint, Connection> _connectionsByEndPoint = new();
         private readonly Dictionary<IPEndPoint, PreLoginBuffer> _preLoginBuffers = new();
 
+        private uint HEAVY_LOCAL_LIMIT = 5;
+        private Dictionary<InternetID, uint> localHeavyCounter = new();
+        
+        private uint HEAVY_GLOBAL_LIMIT = 50;
+        private uint _globalHeavyCounter = 0;
+
+        private const uint HASH_LOCAL_LIMIT = 6; // per minute per client
+        private readonly Dictionary<InternetID, uint> _localHashCounter = new();
+
+        private const uint MAX_PARALLEL_HASHINGS = 6; // at the time globally
+        private uint _currentHashings = 0;
+
+        private float MinuteCounter = 0f;
+        private readonly List<IEnumerator> coroutines = new();
+
+        // --- Other ---
         private readonly Dictionary<CmdID, Action<HeaderSpan, string>> Subscriptions = new();
-
-        private const float CON_RESET_TIME = 1f; // seconds
-        private float timeToResetCon = CON_RESET_TIME;
-        private uint MAX_CON = 5; // limit heavy packets per IP mask (internetID)
-        private uint MAX_GLOBAL_CON = 50; // limit heavy packets globally
-        private Dictionary<InternetID, uint> recentConCount = new();
-        private uint globalConCount = 0;
-
-        private const float KEEP_ALIVE_PERIOD = 5f;
-        private float relayTimeToKeepAlive = KEEP_ALIVE_PERIOD;
-
         private bool _disposed;
 
-        public QuickServer(QuickServerConfig serverConfig)
+        public QuickServer(QuickConfig serverConfig)
         {
-            // managed objects
-            UserManager = new UserManager(serverConfig.UserAPI);
+            // classes
             _udpSocket = new TripleSocket(serverConfig.Port, serverConfig.IsLoopback);
             _keyRSA = new KeyRSA(serverConfig.DataPath, "private_key.pem");
+
+            // public API
+            UserManager = new UserManager(serverConfig.UserAPI);
             Config = serverConfig.WithPort(_udpSocket.Port);
 
-            // dynamic generated readonlys
             Secret = Security.Authcode.ObtainSecret(serverConfig.DataPath, "server_secret.txt");
             Authcode = Security.Authcode.ProduceAuthCodeRSA(_keyRSA.ExportPublicKey(), Secret);
             RunID = Common.GetSecureLong();
+
+            // cyclic objects
+            _packetLimiterReset = new AckTimer(1f, () =>
+            {
+                localHeavyCounter.Clear();
+                _globalHeavyCounter = 0;
+            });
+
+            _relayKeepAlive = new AckTimer(5f, () =>
+            {
+                _udpSocket?.KeepAlive();
+            });
         }
 
         public async Task<ushort?> ConfigureRelayAsync(string relayAddress)
         {
-            return await _udpSocket.StartRelay(relayAddress);
+            return await _udpSocket.StartRelayAsync(relayAddress);
         }
 
         private void RememberConnection(string nickname, Connection conn)
@@ -168,7 +153,14 @@ namespace Larnix.Socket.Backend
         public void ServerTick(float deltaTime)
         {
             // Tick database
-            Tick(deltaTime);
+            RunEveryTick();
+
+            MinuteCounter += deltaTime;
+            if (MinuteCounter > 60f)
+            {
+                MinuteCounter %= 60f;
+                RunEveryMinute();
+            }
 
             // Interpret bytes from socket
             while (_udpSocket.TryReceive(out var item))
@@ -215,22 +207,9 @@ namespace Larnix.Socket.Backend
                 }
             }
 
-            // Reset RSA counter
-            timeToResetCon -= deltaTime;
-            if(timeToResetCon < 0)
-            {
-                timeToResetCon = CON_RESET_TIME;
-                recentConCount.Clear();
-                globalConCount = 0;
-            }
-
-            // Relay keep alive
-            relayTimeToKeepAlive -= deltaTime;
-            if (relayTimeToKeepAlive < 0)
-            {
-                relayTimeToKeepAlive = KEEP_ALIVE_PERIOD;
-                _udpSocket?.KeepAlive();
-            }
+            // AckTimers tick
+            _packetLimiterReset.Tick(deltaTime);
+            _relayKeepAlive.Tick(deltaTime);
 
             // Interpret packets
             while (packetList.Count > 0)
@@ -254,24 +233,24 @@ namespace Larnix.Socket.Backend
                     target.Address,
                     target.AddressFamily == AddressFamily.InterNetwork ? Config.MaskIPv4 : Config.MaskIPv6
                     );
-                uint conCount = recentConCount.ContainsKey(internetID) ? recentConCount[internetID] : 0;
+                uint conCount = localHeavyCounter.ContainsKey(internetID) ? localHeavyCounter[internetID] : 0;
 
                 // Limit packets with specific flags
                 if (header.HasFlag(PacketFlag.SYN) ||
                     header.HasFlag(PacketFlag.RSA) ||
                     header.HasFlag(PacketFlag.NCN))
                 {
-                    if (conCount < MAX_CON) recentConCount[internetID] = ++conCount;
+                    if (conCount < HEAVY_LOCAL_LIMIT) localHeavyCounter[internetID] = ++conCount;
                     else return;
 
-                    if (globalConCount < MAX_GLOBAL_CON) globalConCount++;
+                    if (_globalHeavyCounter < HEAVY_GLOBAL_LIMIT) _globalHeavyCounter++;
                     else return;
                 }
 
                 if (header.HasFlag(PacketFlag.RSA)) // encrypted with RSA
                 {
                     // Deserialize with decryption and serialize without encryption
-                    if (_keyRSA != null && PayloadBox.TryDeserialize(bytes, _keyRSA, out var decrypted))
+                    if (PayloadBox.TryDeserialize(bytes, _keyRSA, out var decrypted))
                     {
                         bytes = decrypted.Serialize(KeyEmpty.GetInstance());
                     }
@@ -399,27 +378,6 @@ namespace Larnix.Socket.Backend
             return 0.0f;
         }
 
-        private float MinuteCounter = 0f;
-
-        private readonly List<IEnumerator> coroutines = new();
-
-        private readonly Dictionary<InternetID, uint> LoginAmount = new();
-        private const uint MAX_HASHING_AMOUNT = 6; // max hashing amount per minute per client
-        private const uint MAX_PARALLEL_HASHINGS = 6; // max hashing amount at the time globally
-        private uint CurrentHashingAmount = 0;
-
-        public void Tick(float deltaTime)
-        {
-            RunEveryTick();
-
-            MinuteCounter += deltaTime;
-            if (MinuteCounter > 60f)
-            {
-                MinuteCounter %= 60f;
-                RunEveryMinute();
-            }
-        }
-
         private void RunEveryTick()
         {
             for (int i = coroutines.Count - 1; i >= 0; i--)
@@ -435,7 +393,7 @@ namespace Larnix.Socket.Backend
 
         private void RunEveryMinute()
         {
-            LoginAmount.Clear();
+            _localHashCounter.Clear();
         }
 
         private void StartCoroutine(IEnumerator coroutine)
@@ -448,18 +406,17 @@ namespace Larnix.Socket.Backend
             if (Payload.TryConstructPayload<P_ServerInfo>(headerSpan, out var infoask))
             {
                 string checkNickname = infoask.Nickname;
-                KeyRSA publicKey = _keyRSA;
 
                 SendNCN(remoteEP, ncnID, new A_ServerInfo(
-                    publicKey.ExportPublicKey(),
-                    CountPlayers(),
-                    Config.MaxClients,
-                    Core.Version.Current,
-                    UserManager.GetChallengeID(checkNickname),
-                    Timestamp.GetTimestamp(),
-                    RunID,
-                    Config.Motd,
-                    Config.HostUser
+                    publicKey: _keyRSA.ExportPublicKey(),
+                    currentPlayers: CountPlayers(),
+                    maxPlayers: Config.MaxClients,
+                    gameVersion: Core.Version.Current,
+                    challengeID: UserManager.GetChallengeID(checkNickname),
+                    timestamp: Timestamp.GetTimestamp(),
+                    runID: RunID,
+                    motd: Config.Motd,
+                    hostUser: Config.HostUser
                     ));
             }
 
@@ -530,7 +487,7 @@ namespace Larnix.Socket.Backend
                 serverSecret != Secret || // wrong server secret
                 runID != RunID || // wrong runID
                 !Timestamp.InTimestamp(timestamp) || // login message is outdated
-                CurrentHashingAmount + hashCost > MAX_PARALLEL_HASHINGS || // hashing slots full
+                _currentHashings + hashCost > MAX_PARALLEL_HASHINGS || // hashing slots full
                 (username == Common.LoopbackOnlyNickname && !isLoopback) || // loopback-only nickname
                 (password == Common.LoopbackOnlyPassword && !isLoopback)) // loopback-only password
             {
@@ -544,10 +501,10 @@ namespace Larnix.Socket.Backend
                     Config.MaskIPv4 : Config.MaskIPv6
                 );
 
-            if (!LoginAmount.ContainsKey(internetID))
-                LoginAmount[internetID] = 0;
+            if (!_localHashCounter.ContainsKey(internetID))
+                _localHashCounter[internetID] = 0;
 
-            if (LoginAmount[internetID] + hashCost > MAX_HASHING_AMOUNT || // too many hashing tries in this minute
+            if (_localHashCounter[internetID] + hashCost > HASH_LOCAL_LIMIT || // too many hashing tries in this minute
                 challengeID != UserManager.GetChallengeID(username)) // wrong challengeID
             {
                 ExecuteFailed();
@@ -555,20 +512,20 @@ namespace Larnix.Socket.Backend
             }
 
             if (isPasswordChange) // no-matter-what incrementation
-                LoginAmount[internetID]++;
+                _localHashCounter[internetID]++;
 
             if (UserManager.UserExists(username))
             {
                 string password_hash = UserManager.GetPasswordHash(username);
 
                 if (!Hasher.InCache(password, password_hash))
-                    LoginAmount[internetID]++; // hash will be calculated
+                    _localHashCounter[internetID]++; // hash will be calculated
 
                 Task<bool> verifyTask = Hasher.VerifyPasswordAsync(password, password_hash);
 
-                CurrentHashingAmount++;
+                _currentHashings++;
                 while (!verifyTask.IsCompleted) yield return null;
-                CurrentHashingAmount--;
+                _currentHashings--;
 
                 if (verifyTask.Result)
                 {
@@ -585,11 +542,11 @@ namespace Larnix.Socket.Backend
             {
                 Task<string> hashing = Hasher.HashPasswordAsync(password);
 
-                LoginAmount[internetID]++; // hash will be calculated
+                _localHashCounter[internetID]++; // hash will be calculated
 
-                CurrentHashingAmount++;
+                _currentHashings++;
                 while (!hashing.IsCompleted) yield return null;
-                CurrentHashingAmount--;
+                _currentHashings--;
 
                 string hashed_password = hashing.Result;
                 UserManager.AddUser(username, hashed_password);
@@ -604,9 +561,9 @@ namespace Larnix.Socket.Backend
         {
             Task<string> hashing = Hasher.HashPasswordAsync(newPassword);
 
-            CurrentHashingAmount++;
+            _currentHashings++;
             while (!hashing.IsCompleted) yield return null;
-            CurrentHashingAmount--;
+            _currentHashings--;
 
             string hash = hashing.Result;
             UserManager.SetPasswordHash(username, hash);
@@ -621,8 +578,8 @@ namespace Larnix.Socket.Backend
                 _disposed = true;
 
                 FinishAllConnections();
-                _udpSocket?.Dispose();
-                _keyRSA?.Dispose();
+                _udpSocket.Dispose();
+                _keyRSA.Dispose();
             }
         }
     }

@@ -1,10 +1,10 @@
 using UnityEditor;
 using UnityEditor.Build.Reporting;
-using UnityEngine;
 using System.IO;
 using System.Collections.Generic;
 using System;
 using System.Diagnostics;
+using UnityEngine;
 
 public enum BuildMode { Windows, Linux, MacIntel, MacSilicon }
 
@@ -12,6 +12,9 @@ public class BuildAutomation
 {
     public static string BuildRoot => "Builds/";
     public static string ServerProjectPath => ".sbuild/LarnixServer/";
+
+    private static string _batchBuild = ServerProjectPath + "build.bat";
+    private static string _batchMove = ServerProjectPath + "move.bat";
 
     private static string[] clientScenes =
     {
@@ -77,8 +80,8 @@ public class BuildAutomation
 
     private static bool BuildServer(BuildMode mode)
     {
-        if (RunBatchScript(ServerProjectPath + "build.bat", GetArgument(mode)) &&
-            RunBatchScript(ServerProjectPath + "move.bat", GetArgument(mode)))
+        if (RunBatchScript(_batchBuild, GetArgument(mode)) &&
+            RunBatchScript(_batchMove, GetArgument(mode)))
         {
             UnityEngine.Debug.Log("Server build for platform '" + mode + "' complete.");
             return true;
@@ -145,8 +148,6 @@ public class BuildAutomation
 
     // ---------------- MENU ----------------
 
-#if UNITY_EDITOR_WIN
-
     [MenuItem("Automation/Build/Client/Windows")]
     public static void BuildClientWindows()
     {
@@ -182,6 +183,12 @@ public class BuildAutomation
     [MenuItem("Automation/Build/Client + Server/Windows")]
     public static void BuildClientServerWindows()
     {
+        if (Application.platform != RuntimePlatform.WindowsEditor)
+        {
+            ShowPlatformWarning();
+            return;
+        }
+
         bool win = ExecuteClientBuild(BuildMode.Windows);
         ShowClientSummary();
 
@@ -201,6 +208,12 @@ public class BuildAutomation
     [MenuItem("Automation/Build/Client + Server/Linux")]
     public static void BuildClientServerLinux()
     {
+        if (Application.platform != RuntimePlatform.WindowsEditor)
+        {
+            ShowPlatformWarning();
+            return;
+        }
+
         bool lin = ExecuteClientBuild(BuildMode.Linux);
         ShowClientSummary();
 
@@ -220,6 +233,12 @@ public class BuildAutomation
     [MenuItem("Automation/Build/Client + Server/Mac/Intel")]
     public static void BuildClientServerMacIntel()
     {
+        if (Application.platform != RuntimePlatform.WindowsEditor)
+        {
+            ShowPlatformWarning();
+            return;
+        }
+
         bool mac = ExecuteClientBuild(BuildMode.MacIntel);
         ShowClientSummary();
 
@@ -239,6 +258,12 @@ public class BuildAutomation
     [MenuItem("Automation/Build/Client + Server/Mac/Silicon")]
     public static void BuildClientServerMacSilicon()
     {
+        if (Application.platform != RuntimePlatform.WindowsEditor)
+        {
+            ShowPlatformWarning();
+            return;
+        }
+
         bool mac = ExecuteClientBuild(BuildMode.MacSilicon);
         ShowClientSummary();
 
@@ -258,6 +283,12 @@ public class BuildAutomation
     [MenuItem("Automation/Build/All")]
     public static void BuildAll()
     {
+        if (Application.platform != RuntimePlatform.WindowsEditor)
+        {
+            ShowPlatformWarning();
+            return;
+        }
+
         bool win = ExecuteClientBuild(BuildMode.Windows);
         bool lin = ExecuteClientBuild(BuildMode.Linux);
         bool maci = ExecuteClientBuild(BuildMode.MacIntel);
@@ -280,19 +311,44 @@ public class BuildAutomation
         RevealBuilds();
     }
 
-#else
+    [MenuItem("Automation/Tools/Open Build Folder")]
+    public static void OpenBuildFolder()
+    {
+        UnityEditor.EditorUtility.RevealInFinder(BuildRoot + "any-file");
+    }
 
-    [MenuItem("Automation/Build/Details")]
+    public static void RemoveBurstDebugDirectories(string rootPath)
+    {
+        if (!Directory.Exists(rootPath))
+        {
+            UnityEngine.Debug.LogError($"Directory does not exist: {rootPath}");
+            return;
+        }
+
+        foreach (var dir in Directory.EnumerateDirectories(
+                     rootPath,
+                     "Larnix_BurstDebugInformation_DoNotShip",
+                     SearchOption.AllDirectories))
+        {
+            try
+            {
+                Directory.Delete(dir, true);
+            }
+            catch (Exception ex)
+            {
+                UnityEngine.Debug.LogError($"Failed to remove {dir}\n{ex}");
+            }
+        }
+    }
+
     public static void ShowPlatformWarning()
     {
         EditorUtility.DisplayDialog(
             "Wrong Platform",
-            "This project requires Windows to perform builds (dependency on batch scripts).\n\nPlease switch to a Windows machine.",
+            "This project requires Windows to perform server builds (dependency on batch scripts).\n\nPlease switch to a Windows machine.",
             "OK"
         );
     }
-
-#endif
 
     private static void ShowClientSummary()
     {
@@ -303,15 +359,9 @@ public class BuildAutomation
         }
     }
 
-    [MenuItem("Automation/Tools/Open Build Folder")]
-    public static void OpenBuildFolder()
-    {
-        UnityEditor.EditorUtility.RevealInFinder(BuildRoot + "any-file");
-    }
-
     private static void RevealBuilds()
     {
-        RunBatchScript(BuildRoot + "../cleanbuilds.bat", "");
+        RemoveBurstDebugDirectories(BuildRoot);
         OpenBuildFolder();
     }
 }
