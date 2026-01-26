@@ -6,9 +6,5 @@
   <Project Path="Larnix.Core.csproj" />
   <Project Path="Larnix.Server.csproj" />
   <Project Path="Larnix.Worldgen.csproj" />
-  <Project Path="Unity.Toolchain.Win-x86_64-Linux.csproj" />
-  <Project Path="Unity.Sysroot.Linux_x86_64.EditorTests.csproj" />
   <Project Path="Assembly-CSharp-Editor.csproj" />
-  <Project Path="Unity.Toolchain.Win-x86_64-Linux.EditorTests.csproj" />
-  <Project Path="Unity.Sysroot.Linux_x86_64.csproj" />
 </Solution>

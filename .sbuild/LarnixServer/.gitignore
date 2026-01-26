@@ -6,3 +6,5 @@ unity/
 .vs/
 
 *.log
+
+!LarnixServer.csproj
