@@ -5,8 +5,8 @@ namespace Larnix.Entities
 {
     public enum EntityID : ushort
     {
-        None,
-        Player,
-        Wildpig,
+        None = 0,
+        Player = 1,
+        Wildpig = 2,
     }
 }

@@ -1,8 +1,8 @@
 using System;
 
-namespace Larnix.Socket.Channel.Helpers
+namespace Larnix.Socket.Helpers
 {
-    internal class AckTimer
+    internal class CycleTimer
     {
         private readonly float PERIOD_SECONDS;
         private float _accumulator;
@@ -10,7 +10,7 @@ namespace Larnix.Socket.Channel.Helpers
 
         public bool Enabled { get; set; } = true;
 
-        public AckTimer(float periodSeconds, Action onTick)
+        public CycleTimer(float periodSeconds, Action onTick)
         {
             PERIOD_SECONDS = periodSeconds > 0f ?
                 periodSeconds : throw new ArgumentException(nameof(periodSeconds));

@@ -19,17 +19,14 @@ namespace Larnix.Server
 {
     internal class Commands : ServerSingleton
     {
+        private QuickServer QuickServer => Ref<QuickServer>();
+        private PlayerManager PlayerManager => Ref<PlayerManager>();
+        private EntityManager EntityManager => Ref<EntityManager>();
+        private Generator Generator => Ref<Generator>();
+        private Server Server => Ref<Server>();
         private WorldAPI WorldAPI => Ref<ChunkLoading>().WorldAPI;
 
-        public enum CommandResultType
-        {
-            Raw,
-            Log,
-            Success,
-            Warning,
-            Error,
-            Ignore
-        }
+        public enum CommandResultType { Raw, Log, Success, Warning, Error, Ignore }
 
         public Commands(Server server) : base(server) { }
 
@@ -109,7 +106,7 @@ namespace Larnix.Server
 
         private (CommandResultType, string) Stop()
         {
-            Ref<Server>().CloseServer();
+            Server.CloseServer();
             return (CommandResultType.Ignore, string.Empty);
         }
 
@@ -117,13 +114,13 @@ namespace Larnix.Server
         {
             StringBuilder sb = new();
             sb.Append("\n");
-            sb.Append($" | ------ PLAYER LIST [ {Ref<QuickServer>().CountPlayers()} / {Ref<QuickServer>().Config.MaxClients} ] ------\n");
+            sb.Append($" | ------ PLAYER LIST [ {QuickServer.PlayerCount} / {QuickServer.Config.MaxClients} ] ------\n");
             sb.Append(" |\n");
 
-            foreach (string nickname in Ref<PlayerManager>().GetAllPlayerNicknames())
+            foreach (string nickname in PlayerManager.GetAllPlayerNicknames())
             {
-                sb.Append($" | {nickname} from {Ref<QuickServer>().GetClientEndPoint(nickname)}" +
-                          $" is {Ref<PlayerManager>().GetPlayerState(nickname).ToString().ToUpper()}\n");
+                sb.Append($" | {nickname} from {QuickServer.GetClientEndPoint(nickname)}" +
+                          $" is {PlayerManager.GetPlayerState(nickname).ToString().ToUpper()}\n");
             }
 
             sb.Append("\n");
@@ -133,15 +130,15 @@ namespace Larnix.Server
 
         private (CommandResultType, string) Tp(string nickname, string xt, string yt)
         {
-            if (Ref<PlayerManager>().GetPlayerState(nickname) == PlayerManager.PlayerState.Alive)
+            if (PlayerManager.GetPlayerState(nickname) == PlayerManager.PlayerState.Alive)
             {
                 if (double.TryParse(xt, out double x) && double.TryParse(yt, out double y))
                 {
                     Vec2 targetPos = new Vec2(x, y);
                     Vec2 normalOffset = new Vec2(0.00, 0.01);
                     Vec2 fullTargetPos = targetPos + normalOffset;
-                    Ref<QuickServer>().Send(nickname, new Teleport(fullTargetPos));
-                    ((Player)Ref<EntityManager>().GetPlayerController(nickname).GetRealController()).AcceptTeleport(fullTargetPos);
+                    QuickServer.Send(nickname, new Teleport(fullTargetPos));
+                    ((Player)EntityManager.GetPlayerController(nickname).GetRealController()).AcceptTeleport(fullTargetPos);
                     return (CommandResultType.Success, "Player " + nickname + " has been teleported to " + targetPos);
                 }
                 else return (CommandResultType.Error, "Cannot parse coordinates!");
@@ -154,9 +151,9 @@ namespace Larnix.Server
 
         private (CommandResultType, string) Kick(string nickname)
         {
-            if (Ref<PlayerManager>().GetPlayerState(nickname) != PlayerManager.PlayerState.None)
+            if (PlayerManager.GetPlayerState(nickname) != PlayerManager.PlayerState.None)
             {
-                Ref<QuickServer>().FinishConnection(nickname);
+                QuickServer.FinishConnection(nickname);
                 return (CommandResultType.Success, "Player " + nickname + " has been kicked.");
             }
             else
@@ -167,10 +164,10 @@ namespace Larnix.Server
 
         private (CommandResultType, string) Kill(string nickname)
         {
-            if (Ref<PlayerManager>().GetPlayerState(nickname) == PlayerManager.PlayerState.Alive)
+            if (PlayerManager.GetPlayerState(nickname) == PlayerManager.PlayerState.Alive)
             {
-                ulong uid = Ref<PlayerManager>().GetPlayerUID(nickname);
-                Ref<EntityManager>().KillEntity(uid);
+                ulong uid = PlayerManager.GetPlayerUID(nickname);
+                EntityManager.KillEntity(uid);
                 return (CommandResultType.Success, "Player " + nickname + " has been killed.");
             }
             else
@@ -187,7 +184,7 @@ namespace Larnix.Server
             {
                 if (double.TryParse(xs, out double x) && double.TryParse(ys, out double y))
                 {
-                    Ref<EntityManager>().SummonEntity(new EntityData
+                    EntityManager.SummonEntity(new EntityData
                     {
                         ID = entityID,
                         Position = new Vec2(x, y)
@@ -237,7 +234,7 @@ namespace Larnix.Server
 
         private (CommandResultType, string) Seed()
         {
-            long seed = Ref<Generator>().Seed;
+            long seed = Generator.Seed;
             return (CommandResultType.Log, "Seed: " + seed);
         }
     }

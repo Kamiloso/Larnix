@@ -40,6 +40,16 @@ namespace Larnix.Socket.Packets
             return (Flags & (byte)flag) != 0;
         }
 
+        public void SetFlag(PacketFlag flag)
+        {
+            Flags |= (byte)flag;
+        }
+
+        public void UnsetFlag(PacketFlag flag)
+        {
+            Flags &= (byte)~flag;
+        }
+
         public static bool TryDeserialize(byte[] networkBytes, IEncryptionKey key, out PayloadBox output)
         {
             if (networkBytes.Length >= HEADER_SIZE)
@@ -84,7 +94,7 @@ namespace Larnix.Socket.Packets
             return false;
         }
 
-        public static bool TryDeserializeOnlyHeader(byte[] networkBytes, out PayloadBox output)
+        public static bool TryDeserializeHeader(byte[] networkBytes, out PayloadBox output)
         {
             return TryDeserialize(networkBytes, null, out output);
         }

@@ -102,7 +102,7 @@ namespace Larnix.Socket.Frontend
         }
 
         public void Send(Payload packet, bool safemode = true) => _connection.Send(packet, safemode);
-        public void FinishConnection() => _connection.FinishConnection();
+        public void FinishConnection() => _connection.Dispose();
         public bool IsDead() => _connection.IsDead;
         public float GetPing() => _connection.AvgRTT * 1000f; // ms
 

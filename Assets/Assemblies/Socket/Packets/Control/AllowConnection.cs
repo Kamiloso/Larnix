@@ -11,15 +11,15 @@ namespace Larnix.Socket.Packets.Control
         private const int SIZE = 32 + 64 + 32 + 8 + 8 + 8 + 8;
 
         public String32 Nickname => EndianUnsafe.FromBytes<String32>(Bytes, 0); // 32B
-        public String64 Password => EndianUnsafe.FromBytes<String64>(Bytes, 32); // 64B
-        public byte[] KeyAES => new Span<byte>(Bytes, 96, 32).ToArray(); // 32B = constant AES key size
-        public long ServerSecret => EndianUnsafe.FromBytes<long>(Bytes, 128); // 8B
-        public long ChallengeID => EndianUnsafe.FromBytes<long>(Bytes, 136); // 8B
-        public long Timestamp => EndianUnsafe.FromBytes<long>(Bytes, 144); // 8B
-        public long RunID => EndianUnsafe.FromBytes<long>(Bytes, 152); // 8B
+        internal String64 Password => EndianUnsafe.FromBytes<String64>(Bytes, 32); // 64B
+        internal byte[] KeyAES => new Span<byte>(Bytes, 96, 32).ToArray(); // 32B = constant AES key size
+        internal long ServerSecret => EndianUnsafe.FromBytes<long>(Bytes, 128); // 8B
+        internal long ChallengeID => EndianUnsafe.FromBytes<long>(Bytes, 136); // 8B
+        internal long Timestamp => EndianUnsafe.FromBytes<long>(Bytes, 144); // 8B
+        internal long RunID => EndianUnsafe.FromBytes<long>(Bytes, 152); // 8B
 
         public AllowConnection() { }
-        public AllowConnection(string nickname, string password, byte[] keyAES, long serverSecret, long challengeID, long timestamp, long runID, byte code = 0)
+        internal AllowConnection(string nickname, string password, byte[] keyAES, long serverSecret, long challengeID, long timestamp, long runID, byte code = 0)
         {
             InitializePayload(ArrayUtils.MegaConcat(
                 EndianUnsafe.GetBytes<String32>(nickname),
@@ -30,6 +30,18 @@ namespace Larnix.Socket.Packets.Control
                 EndianUnsafe.GetBytes(timestamp),
                 EndianUnsafe.GetBytes(runID)
                 ), code);
+        }
+
+        internal P_LoginTry ToLoginTry()
+        {
+            return new P_LoginTry(
+                nickname: Nickname,
+                password: Password,
+                serverSecret: ServerSecret,
+                challengeID: ChallengeID,
+                timestamp: Timestamp,
+                runID: RunID
+                );
         }
 
         protected override bool IsValid()

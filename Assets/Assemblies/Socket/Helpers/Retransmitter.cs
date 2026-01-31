@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System;
 
-namespace Larnix.Socket.Channel.Helpers
+namespace Larnix.Socket.Helpers
 {
     internal class Retransmitter
     {

@@ -52,7 +52,7 @@ namespace Larnix.Socket.Packets
             return false;
         }
 
-        public byte[] Serialize(int seqSecure)
+        internal byte[] Serialize(int seqSecure)
         {
             return ArrayUtils.MegaConcat(
                 EndianUnsafe.GetBytes(ID),

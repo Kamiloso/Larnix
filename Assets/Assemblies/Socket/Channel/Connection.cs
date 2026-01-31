@@ -8,12 +8,12 @@ using Larnix.Core.Utils;
 using Larnix.Socket.Security.Keys;
 using Larnix.Socket.Packets.Control;
 using Larnix.Socket.Channel.Networking;
-using Larnix.Socket.Channel.Helpers;
+using Larnix.Socket.Helpers;
 using Larnix.Core;
 
 namespace Larnix.Socket.Channel
 {
-    internal class Connection
+    internal class Connection : IDisposable
     {
         // --- Constants ---
         public const uint BUFFER_LIMIT = 128;
@@ -35,7 +35,7 @@ namespace Larnix.Socket.Channel
         private readonly Action<byte[]> sendBytes;
         private readonly Retransmitter retransmitter;
         private readonly RTTTracker rttTracker;
-        private readonly AckTimer ackTimer, safeAckTimer;
+        private readonly CycleTimer ackTimer, safeAckTimer;
 
         // --- Buffers ---
         private List<PayloadBox> _sendBuffer = new();
@@ -47,9 +47,9 @@ namespace Larnix.Socket.Channel
         private readonly KeyAES _aesKey;
 
         // --- Sequence numbers ---
-        private int SeqNum = 0; // last sent message ID
-        private int AckNum = 0; // last acknowledged message ID
-        private int GetNum = 0; // last received message ID
+        public int SeqNum { get; private set; } = 0; // last sent message ID
+        public int AckNum { get; private set; } = 0; // last acknowledged message ID
+        public int GetNum { get; private set; } = 0; // last received message ID
 
         private Connection(INetworkInteractions udp, IPEndPoint target, KeyAES aesKey, ConnectionRole role, Payload synPacket = null, KeyRSA rsaKey = null)
         {
@@ -61,8 +61,8 @@ namespace Larnix.Socket.Channel
             _rsaKey = rsaKey; _aesKey = aesKey;
             Role = role;
 
-            ackTimer = new AckTimer(0.1f, () => Send(new None(0), false));
-            safeAckTimer = new AckTimer(0.5f, () => Send(new None(0), true));
+            ackTimer = new CycleTimer(0.1f, () => Send(new None(0), false));
+            safeAckTimer = new CycleTimer(0.5f, () => Send(new None(0), true));
 
             if (Role == ConnectionRole.Client)
             {
@@ -147,7 +147,7 @@ namespace Larnix.Socket.Channel
 
                     if (isTimeout)
                     {
-                        FinishConnection();
+                        Dispose();
                         return null; // abort signal
                     }
                 }
@@ -272,7 +272,15 @@ namespace Larnix.Socket.Channel
             return ready;
         }
 
-        public void FinishConnection()
+        public HeaderSpan GenerateStop()
+        {
+            var nextGetNum = GetNum + 1;
+            var payload = new Stop(0);
+
+            return new HeaderSpan(payload.Serialize(nextGetNum));
+        }
+
+        public void Dispose()
         {
             if(IsDead) return;
 

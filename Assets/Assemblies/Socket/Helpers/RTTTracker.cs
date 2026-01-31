@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Larnix.Core.Utils;
 
-namespace Larnix.Socket.Channel.Helpers
+namespace Larnix.Socket.Helpers
 {
     internal class RTTTracker
     {

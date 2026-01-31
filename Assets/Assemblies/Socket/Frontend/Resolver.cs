@@ -106,29 +106,34 @@ namespace Larnix.Socket.Frontend
             }
         }
 
-        public static async Task<(bool? hasAccount, ResolverError error)> HasAccountAsync(string address, string authcode, string nickname)
+        public static async Task<(bool? hasAccount, ResolverError error)> HasAccountAsync(
+            string address, string authcode, string nickname)
         {
             var (info, error) = await _DownloadServerInfoAsync(address, authcode, nickname);
             if (info == null) return (null, error);
             return (info.ChallengeID != 0, ResolverError.None);
         }
 
-        public static async Task<(bool? success, ResolverError error)> TryLoginAsync(string address, string authcode, string nickname, string password)
+        public static async Task<(bool? success, ResolverError error)> TryLoginAsync(
+            string address, string authcode, string nickname, string password)
         {
             return await _TryLoginUniversal(address, authcode, nickname, password, false);
         }
 
-        public static async Task<(bool? success, ResolverError error)> TryRegisterAsync(string address, string authcode, string nickname, string password)
+        public static async Task<(bool? success, ResolverError error)> TryRegisterAsync(
+            string address, string authcode, string nickname, string password)
         {
             return await _TryLoginUniversal(address, authcode, nickname, password, true);
         }
 
-        public static async Task<(bool? success, ResolverError error)> TryChangePasswordAsync(string address, string authcode, string nickname, string password, string newPassword)
+        public static async Task<(bool? success, ResolverError error)> TryChangePasswordAsync(
+            string address, string authcode, string nickname, string password, string newPassword)
         {
             return await _TryLoginUniversal(address, authcode, nickname, password, false, newPassword);
         }
 
-        private static async Task<(bool? success, ResolverError error)> _TryLoginUniversal(string address, string authcode, string nickname, string password, bool isRegistration, string newPassword = null)
+        private static async Task<(bool? success, ResolverError error)> _TryLoginUniversal(
+            string address, string authcode, string nickname, string password, bool isRegistration, string newPassword = null)
         {
             try
             {
@@ -159,7 +164,8 @@ namespace Larnix.Socket.Frontend
             }
         }
 
-        internal static async Task<(EntryTicket ticket, ResolverError error)> GetEntryTicketAsync(string address, string authcode, string nickname)
+        internal static async Task<(EntryTicket ticket, ResolverError error)> GetEntryTicketAsync(
+            string address, string authcode, string nickname)
         {
             var (info, error) = await _DownloadServerInfoAsync(address, authcode, nickname);
             if (info == null) return (null, error);
