@@ -1,35 +1,36 @@
 using System.Collections;
 using System.Collections.Generic;
-using Larnix.Socket.Packets.Game;
+using Larnix.Packets;
 using Larnix.Server.Entities;
 using Larnix.Server.Terrain;
 using Larnix.Core.Utils;
 using Larnix.Socket.Backend;
-using Larnix.Server.References;
+using Larnix.Core.References;
 using Larnix.Socket.Packets.Control;
 using Larnix.Core.Vectors;
 
 namespace Larnix.Server
 {
-    internal class Receiver : ServerSingleton
+    internal class Receiver : Singleton
     {
         private WorldAPI WorldAPI => Ref<ChunkLoading>().WorldAPI;
+        private QuickServer QuickServer => Ref<QuickServer>();
+        private PlayerManager PlayerManager => Ref<PlayerManager>();
+        private BlockSender BlockSender => Ref<BlockSender>();
 
         public Receiver(Server server) : base(server)
         {
-            QuickServer quickServer = Ref<QuickServer>();
-
-            quickServer.Subscribe<AllowConnection>(_AllowConnection);
-            quickServer.Subscribe<Stop>(_Stop);
-            quickServer.Subscribe<PlayerUpdate>(_PlayerUpdate);
-            quickServer.Subscribe<CodeInfo>(_CodeInfo);
-            quickServer.Subscribe<BlockChange>(_BlockChange);
+            QuickServer.Subscribe<AllowConnection>(_AllowConnection);
+            QuickServer.Subscribe<Stop>(_Stop);
+            QuickServer.Subscribe<PlayerUpdate>(_PlayerUpdate);
+            QuickServer.Subscribe<CodeInfo>(_CodeInfo);
+            QuickServer.Subscribe<BlockChange>(_BlockChange);
         }
 
         private void _AllowConnection(AllowConnection msg, string owner)
         {
             // Create player connection
-            Ref<PlayerManager>().JoinPlayer(owner);
+            PlayerManager.JoinPlayer(owner);
 
             // Info to console
             Core.Debug.Log(owner + " joined the game.");
@@ -38,7 +39,7 @@ namespace Larnix.Server
         private void _Stop(Stop msg, string owner)
         {
             // Remove player connection
-            Ref<PlayerManager>().DisconnectPlayer(owner);
+            PlayerManager.DisconnectPlayer(owner);
 
             // Info to console
             Core.Debug.Log(owner + " disconnected.");
@@ -47,10 +48,10 @@ namespace Larnix.Server
         private void _PlayerUpdate(PlayerUpdate msg, string owner)
         {
             // check if most recent data (fast mode receiving - over raw udp)
-            PlayerUpdate lastPacket = Ref<PlayerManager>().GetRecentPlayerUpdate(owner);
+            PlayerUpdate lastPacket = PlayerManager.GetRecentPlayerUpdate(owner);
             if (lastPacket == null || lastPacket.FixedFrame < msg.FixedFrame)
             {
-                Ref<PlayerManager>().UpdatePlayerDataIfHasController(owner, msg);
+                PlayerManager.UpdatePlayerDataIfHasController(owner, msg);
             }
         }
 
@@ -60,8 +61,8 @@ namespace Larnix.Server
 
             if (code == CodeInfo.Info.RespawnMe)
             {
-                if (Ref<PlayerManager>().GetPlayerState(owner) == PlayerManager.PlayerState.Dead)
-                    Ref<PlayerManager>().CreatePlayerInstance(owner);
+                if (PlayerManager.GetPlayerState(owner) == PlayerManager.PlayerState.Dead)
+                    PlayerManager.CreatePlayerInstance(owner);
             }
         }
 
@@ -75,7 +76,7 @@ namespace Larnix.Server
             if (code == 0) // place item
             {
                 bool has_item = true;
-                bool in_chunk = Ref<PlayerManager>().PlayerHasChunk(owner, chunk);
+                bool in_chunk = PlayerManager.PlayerHasChunk(owner, chunk);
                 bool can_place = WorldAPI.CanPlaceBlock(POS, front, msg.Item);
 
                 bool success = has_item && in_chunk && can_place;
@@ -85,13 +86,13 @@ namespace Larnix.Server
                     WorldAPI.PlaceBlockWithEffects(POS, front, msg.Item);
                 }
 
-                Ref<BlockSender>().AddRetBlockChange(owner, msg.Operation, POS, front, success);
+                BlockSender.AddRetBlockChange(owner, msg.Operation, POS, front, success);
             }
 
             else if (code == 1) // break using item
             {
                 bool has_tool = true;
-                bool in_chunk = Ref<PlayerManager>().PlayerHasChunk(owner, chunk);
+                bool in_chunk = PlayerManager.PlayerHasChunk(owner, chunk);
                 bool can_break = WorldAPI.CanBreakBlock(POS, front, msg.Item, msg.Tool);
 
                 bool success = has_tool && in_chunk && can_break;
@@ -101,7 +102,7 @@ namespace Larnix.Server
                     WorldAPI.BreakBlockWithEffects(POS, front, msg.Tool);
                 }
 
-                Ref<BlockSender>().AddRetBlockChange(owner, msg.Operation, POS, front, success);
+                BlockSender.AddRetBlockChange(owner, msg.Operation, POS, front, success);
             }
         }
     }

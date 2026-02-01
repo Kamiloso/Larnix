@@ -4,7 +4,7 @@ using Larnix.Socket.Packets;
 
 namespace Larnix.Socket.Packets.Control
 {
-    internal class A_LoginTry : Payload
+    internal sealed class A_LoginTry : Payload
     {
         private const int SIZE = 0;
 

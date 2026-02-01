@@ -4,10 +4,11 @@ using System.Collections.Generic;
 using Larnix.Core;
 using Larnix.Core.Utils;
 using Larnix.Core.Binary;
+using Larnix.Socket.Packets;
 
-namespace Larnix.Socket.Packets.Game
+namespace Larnix.Packets
 {
-    public class NearbyEntities : Payload
+    public sealed class NearbyEntities : Payload
     {
         private const int HEADER_SIZE = 4 + 2 + 2;
         private const int ENTRY_SIZE = 8;

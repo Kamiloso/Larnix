@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 using System.Diagnostics;
-using Larnix.Socket.Packets.Game;
+using Larnix.Packets;
 using Larnix.Entities.Structs;
 
 namespace Larnix.Client.Entities

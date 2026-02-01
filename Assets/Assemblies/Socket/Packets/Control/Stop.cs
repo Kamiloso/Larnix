@@ -4,7 +4,7 @@ using Larnix.Socket.Packets;
 
 namespace Larnix.Socket.Packets.Control
 {
-    public class Stop : Payload
+    public sealed class Stop : Payload
     {
         private const int SIZE = 0;
 

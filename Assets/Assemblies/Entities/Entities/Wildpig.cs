@@ -6,7 +6,7 @@ using Larnix.Entities.Structs;
 
 namespace Larnix.Entities
 {
-    public class Wildpig : EntityServer, IWalkingCreature
+    public sealed class Wildpig : EntityServer, IWalkingCreature
     {
         public Wildpig(ulong uid, EntityData entityData)
             : base(uid, entityData) { }

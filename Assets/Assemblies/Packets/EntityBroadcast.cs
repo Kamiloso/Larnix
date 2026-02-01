@@ -2,14 +2,14 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using Larnix.Core;
 using Larnix.Core.Utils;
 using Larnix.Entities.Structs;
 using Larnix.Core.Binary;
+using Larnix.Socket.Packets;
 
-namespace Larnix.Socket.Packets.Game
+namespace Larnix.Packets
 {
-    public class EntityBroadcast : Payload
+    public sealed class EntityBroadcast : Payload
     {
         private const int HEADER_SIZE = 4 + 2 + 2;
         private const int ENTRY_A_SIZE = 8 + 22; // entity transforms entry

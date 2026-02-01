@@ -6,7 +6,7 @@ using Larnix.Core.Binary;
 
 namespace Larnix.Socket.Packets.Control
 {
-    public class AllowConnection : Payload
+    public sealed class AllowConnection : Payload
     {
         private const int SIZE = 32 + 64 + 32 + 8 + 8 + 8 + 8;
 

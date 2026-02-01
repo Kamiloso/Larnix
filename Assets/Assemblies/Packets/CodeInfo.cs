@@ -3,9 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using Larnix.Socket.Packets;
 
-namespace Larnix.Socket.Packets.Game
+namespace Larnix.Packets
 {
-    public class CodeInfo : Payload
+    public sealed class CodeInfo : Payload
     {
         private const int SIZE = 0;
 
@@ -25,7 +25,7 @@ namespace Larnix.Socket.Packets.Game
 
         protected override bool IsValid()
         {
-            return Bytes?.Length == SIZE;
+            return Bytes.Length == SIZE;
         }
     }
 }

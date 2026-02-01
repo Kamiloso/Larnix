@@ -4,11 +4,11 @@ using System.Collections;
 using System.Collections.Generic;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
-using Larnix.Server.References;
+using Larnix.Core.References;
 
 namespace Larnix.Server.Terrain
 {
-    internal class WorldAPI : ServerSingleton, IWorldAPI
+    internal class WorldAPI : Singleton, IWorldAPI
     {
         private ChunkLoading Chunks => Ref<ChunkLoading>();
         public uint FramesSinceServerStart() => Ref<Server>().FixedFrame;

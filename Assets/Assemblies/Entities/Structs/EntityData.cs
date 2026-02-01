@@ -38,7 +38,7 @@ namespace Larnix.Entities.Structs
             return new EntityData
             {
                 ID = EndianUnsafe.FromBytes<EntityID>(bytes, 0 + offset),
-                Position = IFixedBinary<Vec2>.Create(bytes, 2 + offset),
+                Position = IBinaryStruct<Vec2>.Create(bytes, 2 + offset),
                 Rotation = EndianUnsafe.FromBytes<float>(bytes, 18 + offset),
                 NBT = null,
             };

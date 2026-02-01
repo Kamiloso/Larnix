@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Socket.Packets;
 using Larnix.Blocks.Structs;
-using Larnix.Socket.Packets.Game;
+using Larnix.Packets;
 using Larnix.Core.Vectors;
 
 namespace Larnix.Client.Terrain

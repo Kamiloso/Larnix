@@ -5,7 +5,7 @@ using Larnix.Entities.Structs;
 
 namespace Larnix.Entities
 {
-    public class Player : EntityServer, IHasCollider, IPhysicsProperties
+    public sealed class Player : EntityServer, IHasCollider, IPhysicsProperties
     {
         public Player(ulong uid, EntityData entityData)
             : base(uid, entityData) { }

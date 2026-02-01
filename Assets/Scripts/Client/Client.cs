@@ -8,7 +8,7 @@ using Larnix.Core.Physics;
 using Larnix.Server;
 using Larnix.Socket.Frontend;
 using Larnix.Patches;
-using Larnix.Socket.Packets.Game;
+using Larnix.Packets;
 
 namespace Larnix.Client
 {

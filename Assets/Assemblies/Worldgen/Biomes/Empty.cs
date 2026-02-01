@@ -6,7 +6,7 @@ using Larnix.Blocks.Structs;
 
 namespace Larnix.Worldgen.Biomes
 {
-    public class Empty : Biome
+    public sealed class Empty : Biome
     {
         private Empty() {}
         

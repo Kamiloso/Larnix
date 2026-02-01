@@ -4,10 +4,11 @@ using Larnix.Core.Utils;
 using Larnix.Blocks.Structs;
 using Larnix.Core.Binary;
 using Larnix.Core.Vectors;
+using Larnix.Socket.Packets;
 
-namespace Larnix.Socket.Packets.Game
+namespace Larnix.Packets
 {
-    public class BlockChange : Payload
+    public sealed class BlockChange : Payload
     {
         private const int SIZE = (4 + 4) + 5 + 8 + 1;
 

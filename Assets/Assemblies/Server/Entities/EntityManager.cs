@@ -11,15 +11,22 @@ using Larnix.Core.Utils;
 using Larnix.Entities.Structs;
 using Larnix.Socket.Backend;
 using Larnix.Server.Data;
-using Larnix.Server.References;
-using Larnix.Socket.Packets.Game;
+using Larnix.Core.References;
+using Larnix.Packets;
 
 namespace Larnix.Server.Entities
 {
-    internal class EntityManager : ServerSingleton
+    internal class EntityManager : Singleton
     {
         private readonly Dictionary<string, EntityAbstraction> playerControllers = new();
         private readonly Dictionary<ulong, EntityAbstraction> entityControllers = new();
+
+        private Server Server => Ref<Server>();
+        private PlayerManager PlayerManager => Ref<PlayerManager>();
+        private QuickServer QuickServer => Ref<QuickServer>();
+        private EntityDataManager EntityDataManager => Ref<EntityDataManager>();
+        private Database Database => Ref<Database>();
+        private ChunkLoading ChunkLoading => Ref<ChunkLoading>();
 
         private uint _lastFixedFrame = 0;
         private uint _updateCounter = 0; // just to check modulo when sending NearbyEntities packet
@@ -54,7 +61,7 @@ namespace Larnix.Server.Entities
                 EntityAbstraction controller = entityControllers[uid];
                 if (controller.IsActive && controller.EntityData.ID != EntityID.Player)
                 {
-                    if (Ref<ChunkLoading>().IsEntityInZone(controller, ChunkLoading.LoadState.None))
+                    if (ChunkLoading.IsEntityInZone(controller, ChunkLoading.LoadState.None))
                         UnloadEntity(uid);
                 }
             }
@@ -68,7 +75,7 @@ namespace Larnix.Server.Entities
                 EntityAbstraction controller = entityControllers[uid];
                 if (!controller.IsActive && controller.EntityData.ID != EntityID.Player)
                 {
-                    if(Ref<ChunkLoading>().IsEntityInZone(controller, ChunkLoading.LoadState.Active))
+                    if(ChunkLoading.IsEntityInZone(controller, ChunkLoading.LoadState.Active))
                     {
                         if (timer.Elapsed.TotalMilliseconds < MAX_ACTIVATING_MS)
                             controller.Activate();
@@ -82,14 +89,14 @@ namespace Larnix.Server.Entities
 
         public void SendEntityBroadcast() // It works, better don't touch it
         {
-            if(Ref<Server>().FixedFrame != _lastFixedFrame)
+            if(Server.FixedFrame != _lastFixedFrame)
             {
-                Dictionary<ulong, uint> FixedFrames = Ref<PlayerManager>().GetFixedFramesByUID();
+                Dictionary<ulong, uint> FixedFrames = PlayerManager.GetFixedFramesByUID();
                 List<(string, EntityBroadcast)> broadcastsToSend = new();
 
-                foreach (string nickname in Ref<PlayerManager>().GetAllPlayerNicknames())
+                foreach (string nickname in PlayerManager.GetAllPlayerNicknames())
                 {
-                    Vec2 playerPos = Ref<PlayerManager>().GetPlayerRenderingPosition(nickname);
+                    Vec2 playerPos = PlayerManager.GetPlayerRenderingPosition(nickname);
 
                     Dictionary<ulong, EntityData> EntityList = new();
                     Dictionary<ulong, uint> PlayerFixedIndexes = new();
@@ -127,14 +134,14 @@ namespace Larnix.Server.Entities
                         }
                     }
 
-                    Ref<PlayerManager>().UpdateNearbyUIDs(
+                    PlayerManager.UpdateNearbyUIDs(
                         nickname,
                         EntitiesWithInactive,
-                        Ref<Server>().FixedFrame,
+                        Server.FixedFrame,
                         _updateCounter % 6 == 0
                         );
 
-                    var fragments = EntityBroadcast.CreateList(Ref<Server>().FixedFrame, EntityList, PlayerFixedIndexes);
+                    var fragments = EntityBroadcast.CreateList(Server.FixedFrame, EntityList, PlayerFixedIndexes);
                     foreach (var brdcst in fragments)
                     {
                         broadcastsToSend.Add((nickname, brdcst));
@@ -144,11 +151,11 @@ namespace Larnix.Server.Entities
                 broadcastsToSend = broadcastsToSend.OrderBy(x => Common.Rand().Next()).ToList();
                 foreach (var pair in broadcastsToSend)
                 {
-                    Ref<QuickServer>().Send(pair.Item1, pair.Item2, false); // unsafe mode (over raw UDP)
+                    QuickServer.Send(pair.Item1, pair.Item2, false); // unsafe mode (over raw UDP)
                 }
 
                 _updateCounter++;
-                _lastFixedFrame = Ref<Server>().FixedFrame;
+                _lastFixedFrame = Server.FixedFrame;
             }
         }
 
@@ -164,7 +171,7 @@ namespace Larnix.Server.Entities
                 playerController.uID,
                 _lastFixedFrame
             );
-            Ref<QuickServer>().Send(nickname, packet);
+            QuickServer.Send(nickname, packet);
         }
 
         public EntityAbstraction GetPlayerController(string nickname)
@@ -203,7 +210,7 @@ namespace Larnix.Server.Entities
 
         public void LoadEntitiesByChunk(Vec2Int chunkCoords)
         {
-            Dictionary<ulong, EntityData> entities = Ref<EntityDataManager>().GetUnloadedEntitiesByChunk(chunkCoords);
+            Dictionary<ulong, EntityData> entities = EntityDataManager.GetUnloadedEntitiesByChunk(chunkCoords);
             foreach (var kvp in entities)
             {
                 EntityAbstraction entityController = new(this, kvp.Value, kvp.Key);
@@ -230,7 +237,7 @@ namespace Larnix.Server.Entities
                         playerControllers.Remove(nickname);
 
                         CodeInfo packet = new CodeInfo(CodeInfo.Info.YouDie);
-                        Ref<QuickServer>().Send(nickname, packet);
+                        QuickServer.Send(nickname, packet);
 
                         break;
                     }
@@ -264,7 +271,7 @@ namespace Larnix.Server.Entities
             }
             else
             {
-                _nextUID = (ulong)(Ref<Database>().GetMinUID() - 1);
+                _nextUID = (ulong)(Database.GetMinUID() - 1);
                 return GetNextUID();
             }
         }

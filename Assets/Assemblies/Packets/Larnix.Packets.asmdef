@@ -1,8 +1,11 @@
 {
-    "name": "Larnix.Socket",
-    "rootNamespace": "Larnix.Socket",
+    "name": "Larnix.Packets",
+    "rootNamespace": "Larnix.Packets",
     "references": [
-        "GUID:b9668968ef3fc7d40adac0aa4237498e"
+        "GUID:b9668968ef3fc7d40adac0aa4237498e",
+        "GUID:e47ec16989832dc49bbccde857433a2f",
+        "GUID:0c28fbad8b5c3054db7f3764ad782c12",
+        "GUID:9296d445484bbf741aad5477610d2921"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

@@ -8,7 +8,7 @@ using Version = Larnix.Core.Version;
 
 namespace Larnix.Socket.Packets.Control
 {
-    internal class A_ServerInfo : Payload
+    internal sealed class A_ServerInfo : Payload
     {
         private const int SIZE = 264 + 2 + 2 + 4 + 8 + 8 + 8 + 256 + 32;
 

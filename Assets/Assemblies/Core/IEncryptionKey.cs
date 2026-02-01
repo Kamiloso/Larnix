@@ -5,7 +5,7 @@ namespace Larnix.Core
 {
     public interface IEncryptionKey
     {
-        public abstract byte[] Encrypt(byte[] plaintext);
-        public abstract byte[] Decrypt(byte[] ciphertext);
+        byte[] Encrypt(byte[] plaintext);
+        byte[] Decrypt(byte[] ciphertext);
     }
 }

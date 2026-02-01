@@ -6,7 +6,7 @@ using Larnix.Core.Vectors;
 
 namespace Larnix.Blocks
 {
-    public class Air : BlockServer, IReplaceable, ITool
+    public sealed class Air : BlockServer, IReplaceable, ITool
     {
         public Air(Vec2Int POS, BlockData1 block, bool isFront) : base(POS, block, isFront) { }
 

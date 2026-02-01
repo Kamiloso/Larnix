@@ -13,14 +13,14 @@ using Larnix.Core.Files;
 using Larnix.Socket.Backend;
 using Larnix.Core.Utils;
 using Larnix.Worldgen;
+using Larnix.Core.References;
 using Version = Larnix.Core.Version;
 using Console = Larnix.Core.Console;
 using Object = System.Object;
-using Larnix.Server.References;
 
 namespace Larnix.Server
 {
-    internal class Server
+    internal class Server : RefRoot
     {
         public readonly ServerType Type;
         public readonly string WorldPath;
@@ -32,9 +32,14 @@ namespace Larnix.Server
         private readonly Stopwatch _stopwatch = Stopwatch.StartNew();
         private double _lastTickTime = 0;
 
-        private readonly LinkedList<Type> _refOrder = new();
-        private readonly Dictionary<Type, Object> _registeredRefs = new();
-        private object _refLock = new();
+        private readonly QuickServer _quickServer;
+
+        private Config Config => Ref<Config>();
+        private Database Database => Ref<Database>();
+        private EntityManager EntityManager => Ref<EntityManager>();
+        private EntityDataManager EntityDataManager => Ref<EntityDataManager>();
+        private BlockDataManager BlockDataManager => Ref<BlockDataManager>();
+        private UserManager UserManager => Ref<UserManager>();
 
         public readonly Action CloseServer;
         private bool _disposed = false;
@@ -70,7 +75,7 @@ namespace Larnix.Server
                 // Satelite classes
                 AddRef(Config.Obtain(WorldPath));
                 AddRef(new Database(WorldPath, "database.sqlite"));
-                AddRef(new Generator(Ref<Database>().GetSeed(seedSuggestion)));
+                AddRef(new Generator(Database.GetSeed(seedSuggestion)));
 
                 // World metadata
                 _mdata = WorldMeta.ReadData(WorldPath, true);
@@ -78,26 +83,27 @@ namespace Larnix.Server
                 WorldMeta.SaveData(WorldPath, _mdata, true);
 
                 // QuickServer
-                AddRef(new QuickServer(new QuickConfig(
-                    port: Type == ServerType.Remote ? Ref<Config>().Port : (ushort)0,
-                    maxClients: Ref<Config>().MaxPlayers,
+                _quickServer = new QuickServer(new QuickConfig(
+                    port: Type == ServerType.Remote ? Config.Port : (ushort)0,
+                    maxClients: Config.MaxPlayers,
                     isLoopback: Type == ServerType.Local,
                     dataPath: Path.Combine(WorldPath, "Socket"),
-                    userAPI: Ref<Database>(),
-                    motd: Ref<Config>().Motd,
+                    userAPI: Database,
+                    motd: Config.Motd,
                     hostUser: Type == ServerType.Remote ? "Player" : _mdata.nickname, // server owner ("Player" => detached)
-                    maskIPv4: Ref<Config>().ClientIdentityPrefixSizeIPv4,
-                    maskIPv6: Ref<Config>().ClientIdentityPrefixSizeIPv6
-                    )));
+                    maskIPv4: Config.ClientIdentityPrefixSizeIPv4,
+                    maskIPv6: Config.ClientIdentityPrefixSizeIPv6
+                    ));
+                AddRef(_quickServer);
 
                 // Around-server managers
-                AddRef(Ref<QuickServer>().UserManager);
+                AddRef(_quickServer.UserManager);
                 AddRef(new Receiver(this));
                 AddRef(new Commands(this));
 
                 // Configure data for client
-                LocalAddress = "localhost:" + Ref<QuickServer>().Config.Port;
-                Authcode = Ref<QuickServer>().Authcode;
+                LocalAddress = "localhost:" + _quickServer.Config.Port;
+                Authcode = _quickServer.Authcode;
 
                 // Configure console
                 if (Type == ServerType.Remote)
@@ -106,14 +112,14 @@ namespace Larnix.Server
                 }
                 else
                 {
-                    Core.Debug.Log("Port: " + Ref<QuickServer>().Config.Port + " | Authcode: " + Ref<QuickServer>().Authcode);
+                    Core.Debug.Log("Port: " + _quickServer.Config.Port + " | Authcode: " + _quickServer.Authcode);
                 }
 
                 // Try establish relay
                 if (Type == ServerType.Remote)
                 {
-                    if (Ref<Config>().UseRelay)
-                        _ = Task.Run(() => EstablishRelayAsync(Ref<Config>().RelayAddress));
+                    if (Config.UseRelay)
+                        _ = Task.Run(() => EstablishRelayAsync(Config.RelayAddress));
                 }
 
                 // Info success
@@ -141,7 +147,7 @@ namespace Larnix.Server
                     string password = Console.GetInputSync();
                     if (Validation.IsGoodPassword(password))
                     {
-                        Ref<UserManager>().ChangePasswordSync(_mdata.nickname, password);
+                        UserManager.ChangePasswordSync(_mdata.nickname, password);
                         _mdata = new WorldMeta(Version.Current, "Player");
                         WorldMeta.SaveData(WorldPath, _mdata, true);
                         changeSuccess = true;
@@ -158,8 +164,8 @@ namespace Larnix.Server
             }
 
             // Socket information
-            Core.Debug.LogRaw("Socket created on port " + Ref<QuickServer>().Config.Port + "\n");
-            Core.Debug.LogRaw("Authcode: " + Ref<QuickServer>().Authcode + "\n");
+            Core.Debug.LogRaw("Socket created on port " + _quickServer.Config.Port + "\n");
+            Core.Debug.LogRaw("Authcode: " + _quickServer.Authcode + "\n");
             Core.Debug.LogRaw(new string('-', 60) + "\n");
 
             // Input thread start
@@ -168,8 +174,7 @@ namespace Larnix.Server
 
         public async Task<string> EstablishRelayAsync(string relayAddress)
         {
-            QuickServer server = Ref<QuickServer>();
-            ushort? relayPort = await server?.ConfigureRelayAsync(relayAddress);
+            ushort? relayPort = await _quickServer.ConfigureRelayAsync(relayAddress);
 
             if (relayPort != null)
             {
@@ -188,6 +193,15 @@ namespace Larnix.Server
             }
         }
 
+        private float GetTimeElapsed()
+        {
+            double currentTime = _stopwatch.Elapsed.TotalSeconds;
+            double elapsedTime = currentTime - _lastTickTime;
+            _lastTickTime = currentTime;
+
+            return (float)elapsedTime;
+        }
+
         public void TickFixed()
         {
             FixedFrame++;
@@ -195,7 +209,7 @@ namespace Larnix.Server
             // Refresh QuickServer & process packets (with callbacks)
 
             float realTimeElapsed = GetTimeElapsed();
-            Ref<QuickServer>().ServerTick(realTimeElapsed);
+            _quickServer.ServerTick(realTimeElapsed);
 
             // Process server logic
 
@@ -203,7 +217,7 @@ namespace Larnix.Server
             {
                 foreach (Object obj in TakeRefSnapshot())
                 {
-                    if (obj is ServerSingleton singleton)
+                    if (obj is Singleton singleton)
                     {
                         if (i == 1) singleton.EarlyFrameUpdate();
                         if (i == 2) singleton.PostEarlyFrameUpdate();
@@ -216,75 +230,32 @@ namespace Larnix.Server
 
             // Cyclic actions
 
-            if (FixedFrame % Ref<Config>().EntityBroadcastPeriodFrames == 0)
-                Ref<EntityManager>().SendEntityBroadcast();
+            if (FixedFrame % Config.EntityBroadcastPeriodFrames == 0)
+                EntityManager.SendEntityBroadcast();
 
-            if (FixedFrame % Ref<Config>().DataSavingPeriodFrames == 0)
+            if (FixedFrame % Config.DataSavingPeriodFrames == 0)
                 SaveAllNow();
-        }
-
-        public void AddRef(Object obj)
-        {
-            Type type = obj.GetType();
-            lock (_refLock)
-            {
-                if (!_registeredRefs.ContainsKey(type))
-                {
-                    _registeredRefs[type] = obj;
-                    _refOrder.AddLast(type);
-                }
-            }
-        }
-
-        public T Ref<T>() where T : class
-        {
-            lock (_refLock)
-            {
-                return _registeredRefs.TryGetValue(typeof(T), out Object obj) ? (T)obj : null;
-            }
-        }
-
-        private LinkedList<Object> TakeRefSnapshot()
-        {
-            LinkedList<Object> snapshot = new();
-            lock (_refLock)
-            {
-                foreach (Type t in _refOrder)
-                {
-                    snapshot.AddLast(_registeredRefs[t]);
-                }
-            }
-            return snapshot;
-        }
-
-        private float GetTimeElapsed()
-        {
-            double currentTime = _stopwatch.Elapsed.TotalSeconds;
-            double elapsedTime = currentTime - _lastTickTime;
-            _lastTickTime = currentTime;
-
-            return (float)elapsedTime;
         }
 
         private void SaveAllNow()
         {
-            if (Ref<Database>() != null)
+            if (Database != null)
             {
-                Ref<Database>().BeginTransaction();
+                Database.BeginTransaction();
                 try
                 {
-                    Ref<EntityDataManager>().FlushIntoDatabase();
-                    Ref<BlockDataManager>().FlushIntoDatabase();
-                    Ref<Database>().CommitTransaction();
+                    EntityDataManager.FlushIntoDatabase();
+                    BlockDataManager.FlushIntoDatabase();
+                    Database.CommitTransaction();
                 }
                 catch
                 {
-                    Ref<Database>().RollbackTransaction();
+                    Database.RollbackTransaction();
                     throw;
                 }
             }
 
-            Ref<Config>().Save(WorldPath);
+            Config.Save(WorldPath);
         }
 
         public void Dispose(bool emergency)

@@ -5,9 +5,9 @@ using Larnix.Core.Binary;
 using Larnix.Core.Utils;
 using Larnix.Socket.Packets;
 
-namespace Larnix.Socket.Packets.Game
+namespace Larnix.Packets
 {
-    public class PlayerInitialize : Payload
+    public sealed class PlayerInitialize : Payload
     {
         private const int SIZE = (8 + 8) + 8 + 4;
 

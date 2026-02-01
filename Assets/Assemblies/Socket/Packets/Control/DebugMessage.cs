@@ -6,7 +6,7 @@ using Larnix.Core.Binary;
 
 namespace Larnix.Socket.Packets.Control
 {
-    public class DebugMessage : Payload
+    public sealed class DebugMessage : Payload
     {
         private const int SIZE = 512;
         public String512 Message => EndianUnsafe.FromBytes<String512>(Bytes, 0);

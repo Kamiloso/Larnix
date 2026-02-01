@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Larnix.Socket.Packets;
 using Larnix.Core.Vectors;
 using Larnix.Socket.Frontend;
-using Larnix.Socket.Packets.Game;
+using Larnix.Packets;
 
 namespace Larnix.Client
 {

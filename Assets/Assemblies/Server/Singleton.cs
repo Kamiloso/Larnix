@@ -1,12 +1,14 @@
 using System.Collections;
 using System.Collections.Generic;
 using System;
+using Larnix.Core.References;
 
-namespace Larnix.Server.References
+namespace Larnix.Server
 {
-    internal abstract class ServerSingleton : RefObject
+    internal abstract class Singleton : RefObject<Server>
     {
-        protected ServerSingleton(Server server) : base(server) {}
+        protected Singleton(Server root) : base(root) {}
+        protected Singleton(RefObject<Server> reff) : base(reff) {}
 
         public virtual void EarlyFrameUpdate() {}
         public virtual void PostEarlyFrameUpdate() {}

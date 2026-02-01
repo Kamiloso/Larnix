@@ -24,14 +24,16 @@ namespace Larnix.Socket.Backend
         public ushort PlayerCount => (ushort)_connections.Count;
 
         // --- Public classes ---
-        public readonly QuickConfig Config;
-        public readonly UserManager UserManager;
+        public QuickConfig Config => _config;
+        public UserManager UserManager => _userManager;
 
         // --- Private classes ---
         private readonly KeyRSA _keyRSA;
         private readonly TripleSocket _udpSocket;
         private readonly ConnDict _connections;
         private readonly CoroutineRunner _coroutineRunner;
+        private readonly QuickConfig _config;
+        private readonly UserManager _userManager;
 
         // --- Limiters ---
         private readonly TrafficLimiter<InternetID> _heavyPacketLimiter;
@@ -56,8 +58,8 @@ namespace Larnix.Socket.Backend
             _coroutineRunner = new CoroutineRunner(); // 4
 
             // public API
-            UserManager = new UserManager(serverConfig.UserAPI);
-            Config = serverConfig.WithPort(_udpSocket.Port);
+            _userManager = new UserManager(serverConfig.UserAPI);
+            _config = serverConfig.WithPort(_udpSocket.Port);
 
             Secret = Security.Authcode.ObtainSecret(serverConfig.DataPath, "server_secret.txt");
             Authcode = Security.Authcode.ProduceAuthCodeRSA(_keyRSA.ExportPublicKey(), Secret);
@@ -131,10 +133,7 @@ namespace Larnix.Socket.Backend
         {
             if (PayloadBox.TryDeserializeHeader(bytes, out var header))
             {
-                InternetID internetID = new InternetID(
-                    target.Address,
-                    target.AddressFamily == AddressFamily.InterNetwork ? Config.MaskIPv4 : Config.MaskIPv6
-                    );
+                InternetID internetID = MakeInternetID(target);
 
                 // heavy packet limiter
                 if (header.HasFlag(PacketFlag.SYN) ||
@@ -276,7 +275,7 @@ namespace Larnix.Socket.Backend
                     ExecuteSuccess: () =>
                     {
                         if (_connections.TryPromoteConnection(target))
-                            UserManager.IncrementChallengeID(nickname);
+                            _userManager.IncrementChallengeID(nickname);
                         else
                             _connections.Disconnect(target);
                     },
@@ -296,7 +295,7 @@ namespace Larnix.Socket.Backend
                     LoginCoroutine(target, logtry,
                     ExecuteSuccess: () =>
                     {
-                        UserManager.IncrementChallengeID(nickname);
+                        _userManager.IncrementChallengeID(nickname);
                         SendAnswer(true);
                     },
                     ExecuteFailed: () =>
@@ -317,7 +316,7 @@ namespace Larnix.Socket.Backend
                     LoginCoroutine(target, logtry,
                     ExecuteSuccess: () =>
                     {
-                        UserManager.IncrementChallengeID(nickname);
+                        _userManager.IncrementChallengeID(nickname);
 
                         _coroutineRunner.Start(
                             ChangePasswordCoroutine(target, nickname, newPassword,
@@ -360,15 +359,15 @@ namespace Larnix.Socket.Backend
                 !Timestamp.InTimestamp(timestamp) || // login message is outdated
                 (!isLoopback && nickname == Common.LoopbackOnlyNickname) || // loopback-only nickname
                 (!isLoopback && password == Common.LoopbackOnlyPassword) || // loopback-only password
-                challengeID != UserManager.GetChallengeID(nickname)) // wrong challengeID
+                challengeID != _userManager.GetChallengeID(nickname)) // wrong challengeID
             {
                 ExecuteFailed(); // invalid login data
                 yield break;
             }
 
-            if (UserManager.UserExists(nickname))
+            if (_userManager.UserExists(nickname))
             {
-                string hashedPassword = UserManager.GetPasswordHash(nickname);
+                string hashedPassword = _userManager.GetPasswordHash(nickname);
 
                 bool limiterDone = false;
                 if (Hasher.InCache(password, hashedPassword) || (limiterDone = _hashLimiter.TryIncrease(internetID)))
@@ -403,7 +402,7 @@ namespace Larnix.Socket.Backend
                     _hashLimiter.DecreaseGlobal();
 
                     string hashedPassword = hashing.Result;
-                    UserManager.AddUser(nickname, hashedPassword);
+                    _userManager.AddUser(nickname, hashedPassword);
                     Core.Debug.Log($"{nickname} created an account from {target}");
 
                     ExecuteSuccess(); // new user created
@@ -429,7 +428,7 @@ namespace Larnix.Socket.Backend
                 _hashLimiter.DecreaseGlobal();
 
                 string hash = hashing.Result;
-                UserManager.SetPasswordHash(username, hash);
+                _userManager.SetPasswordHash(username, hash);
 
                 ExecuteSuccess(); // password changed
                 yield break;
@@ -446,13 +445,13 @@ namespace Larnix.Socket.Backend
             return new A_ServerInfo(
                 publicKey: _keyRSA.ExportPublicKey(),
                 currentPlayers: PlayerCount,
-                maxPlayers: Config.MaxClients,
+                maxPlayers: _config.MaxClients,
                 gameVersion: Core.Version.Current,
-                challengeID: UserManager.GetChallengeID(nickname),
+                challengeID: _userManager.GetChallengeID(nickname),
                 timestamp: Timestamp.GetTimestamp(),
                 runID: RunID,
-                motd: Config.Motd,
-                hostUser: Config.HostUser
+                motd: _config.Motd,
+                hostUser: _config.HostUser
                 );
         }
 
@@ -461,7 +460,7 @@ namespace Larnix.Socket.Backend
             return new InternetID(
                 endPoint.Address,
                 endPoint.AddressFamily == AddressFamily.InterNetwork ?
-                    Config.MaskIPv4 : Config.MaskIPv6
+                    _config.MaskIPv4 : _config.MaskIPv6
                 );
         }
 

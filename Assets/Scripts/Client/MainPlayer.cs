@@ -8,7 +8,7 @@ using Larnix.Core.Physics;
 using Larnix.Core.Vectors;
 using Larnix.Entities.Structs;
 using Larnix.Core.Utils;
-using Larnix.Socket.Packets.Game;
+using Larnix.Packets;
 using IHasCollider = Larnix.Entities.IHasCollider;
 
 namespace Larnix.Client

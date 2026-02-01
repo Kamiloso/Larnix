@@ -5,16 +5,18 @@ using Larnix.Blocks;
 using Larnix.Core.Utils;
 using Larnix.Entities.Structs;
 using Larnix.Server.Data;
-using Larnix.Server.References;
+using Larnix.Core.References;
 using Larnix.Core.Vectors;
 
 namespace Larnix.Server.Entities
 {
-    internal class EntityDataManager : ServerSingleton
+    internal class EntityDataManager : Singleton
     {
         private readonly Dictionary<ulong, EntityData> entityData = new Dictionary<ulong, EntityData>();
         private readonly Dictionary<ulong, EntityData> unloadedEntityData = new Dictionary<ulong, EntityData>();
         private readonly Dictionary<ulong, EntityData> deletedEntityData = new Dictionary<ulong, EntityData>();
+
+        private Database Database => Ref<Database>();
 
         public EntityDataManager(Server server) : base(server) { }
 
@@ -29,12 +31,12 @@ namespace Larnix.Server.Entities
             if(entityData.ContainsKey(uid))
                 return entityData[uid];
 
-            return Ref<Database>().FindEntity(uid);
+            return Database.FindEntity(uid);
         }
 
         public Dictionary<ulong, EntityData> GetUnloadedEntitiesByChunk(Vec2Int chunkCoords)
         {
-            Dictionary<ulong, EntityData> entityList = Ref<Database>().GetEntitiesByChunkNoPlayers(chunkCoords);
+            Dictionary<ulong, EntityData> entityList = Database.GetEntitiesByChunkNoPlayers(chunkCoords);
 
             foreach(var vkp in entityData)
             {
@@ -106,10 +108,10 @@ namespace Larnix.Server.Entities
 
         public void FlushIntoDatabase()
         {
-            Ref<Database>().DeleteEntities(GetKeyList(deletedEntityData));
+            Database.DeleteEntities(GetKeyList(deletedEntityData));
             deletedEntityData.Clear();
 
-            Ref<Database>().FlushEntities(MergeDictionaries(entityData, unloadedEntityData));
+            Database.FlushEntities(MergeDictionaries(entityData, unloadedEntityData));
             unloadedEntityData.Clear();
         }
 

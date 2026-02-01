@@ -6,7 +6,7 @@ using Larnix.Blocks.Structs;
 
 namespace Larnix.Blocks
 {
-    public class MiningTool : BlockServer, ITool
+    public sealed class MiningTool : BlockServer, ITool
     {
         public MiningTool(Vec2Int POS, BlockData1 block, bool isFront) : base(POS, block, isFront) { }
 

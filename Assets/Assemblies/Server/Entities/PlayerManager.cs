@@ -5,17 +5,21 @@ using Larnix.Entities;
 using Larnix.Socket.Packets;
 using Larnix.Core.Vectors;
 using Larnix.Socket.Backend;
-using Larnix.Server.References;
-using Larnix.Socket.Packets.Game;
+using Larnix.Core.References;
+using Larnix.Packets;
 
 namespace Larnix.Server.Entities
 {
-    internal class PlayerManager : ServerSingleton
+    internal class PlayerManager : Singleton
     {
         private readonly Dictionary<string, ulong> PlayerUID = new();
         private readonly Dictionary<string, PlayerUpdate> RecentPlayerUpdates = new(); // present for alive and dead players
         private readonly Dictionary<string, HashSet<ulong>> NearbyUIDs = new();
         private readonly Dictionary<string, HashSet<Vec2Int>> ClientChunks = new();
+
+        private UserManager UserManager => Ref<UserManager>();
+        private EntityManager EntityManager => Ref<EntityManager>();
+        private QuickServer QuickServer => Ref<QuickServer>();
 
         public enum PlayerState : byte
         {
@@ -29,7 +33,7 @@ namespace Larnix.Server.Entities
 
         public void JoinPlayer(string nickname)
         {
-            ulong uid = (ulong)Ref<UserManager>().GetUserID(nickname);
+            ulong uid = (ulong)UserManager.GetUserID(nickname);
             PlayerUID[nickname] = uid;
             NearbyUIDs[nickname] = new();
             ClientChunks[nickname] = new();
@@ -39,7 +43,7 @@ namespace Larnix.Server.Entities
 
         public void CreatePlayerInstance(string nickname)
         {
-            Ref<EntityManager>().CreatePlayerController(nickname);
+            EntityManager.CreatePlayerController(nickname);
             
             // Set to PlayerState.Inactive
             if(RecentPlayerUpdates.ContainsKey(nickname))
@@ -48,7 +52,7 @@ namespace Larnix.Server.Entities
 
         public void UpdatePlayerDataIfHasController(string nickname, PlayerUpdate msg)
         {
-            EntityAbstraction playerController = Ref<EntityManager>().GetPlayerController(nickname);
+            EntityAbstraction playerController = EntityManager.GetPlayerController(nickname);
             if (playerController != null) // Player is either PlayerState.Inactive or PlayerState.Alive
             {
                 // Activate controller if not active
@@ -73,8 +77,8 @@ namespace Larnix.Server.Entities
 
         public void DisconnectPlayer(string nickname)
         {
-            if(Ref<EntityManager>().GetPlayerController(nickname) != null)
-                Ref<EntityManager>().UnloadPlayerController(nickname);
+            if(EntityManager.GetPlayerController(nickname) != null)
+                EntityManager.UnloadPlayerController(nickname);
 
             PlayerUID.Remove(nickname);
 
@@ -103,14 +107,14 @@ namespace Larnix.Server.Entities
             {
                 foreach(Payload packet in packets)
                 {
-                    Ref<QuickServer>().Send(nickname, packet);
+                    QuickServer.Send(nickname, packet);
                 }
             }
             else
             {
                 if (sendAtLeastOne)
                 {
-                    Ref<QuickServer>().Send(nickname, NearbyEntities.CreateBootstrap(fixedFrame));
+                    QuickServer.Send(nickname, NearbyEntities.CreateBootstrap(fixedFrame));
                 }
             }
 
@@ -148,7 +152,7 @@ namespace Larnix.Server.Entities
             if (!RecentPlayerUpdates.ContainsKey(nickname))
                 return PlayerState.Inactive;
 
-            if (Ref<EntityManager>().GetPlayerController(nickname) != null)
+            if (EntityManager.GetPlayerController(nickname) != null)
                 return PlayerState.Alive;
 
             return PlayerState.Dead;
@@ -173,7 +177,7 @@ namespace Larnix.Server.Entities
             {
                 case PlayerState.Inactive:
                 case PlayerState.Alive:
-                    return Ref<EntityManager>().GetPlayerController(nickname).EntityData.Position;
+                    return EntityManager.GetPlayerController(nickname).EntityData.Position;
 
                 case PlayerState.Dead:
                     return RecentPlayerUpdates[nickname].Position;

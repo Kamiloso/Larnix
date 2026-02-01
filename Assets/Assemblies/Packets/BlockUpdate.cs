@@ -3,13 +3,13 @@ using System.Collections;
 using System.Collections.Generic;
 using Larnix.Blocks.Structs;
 using Larnix.Core.Vectors;
-using Larnix.Core;
 using Larnix.Core.Utils;
 using Larnix.Core.Binary;
+using Larnix.Socket.Packets;
 
-namespace Larnix.Socket.Packets.Game
+namespace Larnix.Packets
 {
-    public class BlockUpdate : Payload
+    public sealed class BlockUpdate : Payload
     {
         public class Record
         {

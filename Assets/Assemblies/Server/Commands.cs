@@ -6,18 +6,18 @@ using Larnix.Server.Entities;
 using System;
 using Larnix.Server.Terrain;
 using System.Text;
-using Larnix.Socket.Packets.Game;
+using Larnix.Packets;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
 using Larnix.Entities.Structs;
 using Larnix.Socket.Backend;
 using Larnix.Worldgen;
-using Larnix.Server.References;
+using Larnix.Core.References;
 using Console = Larnix.Core.Console;
 
 namespace Larnix.Server
 {
-    internal class Commands : ServerSingleton
+    internal class Commands : Singleton
     {
         private QuickServer QuickServer => Ref<QuickServer>();
         private PlayerManager PlayerManager => Ref<PlayerManager>();
@@ -26,8 +26,7 @@ namespace Larnix.Server
         private Server Server => Ref<Server>();
         private WorldAPI WorldAPI => Ref<ChunkLoading>().WorldAPI;
 
-        public enum CommandResultType { Raw, Log, Success, Warning, Error, Ignore }
-
+        public enum ResultType { Raw, Log, Success, Warning, Error, Ignore }
         public Commands(Server server) : base(server) { }
 
         public override void PostEarlyFrameUpdate()
@@ -49,12 +48,12 @@ namespace Larnix.Server
             {
                 switch (type)
                 {
-                    case CommandResultType.Raw: Console.LogRaw(message); break;
-                    case CommandResultType.Log: Console.Log(message); break;
-                    case CommandResultType.Success: Console.LogSuccess(message); break;
-                    case CommandResultType.Warning: Console.LogWarning(message); break;
-                    case CommandResultType.Error: Console.LogError(message); break;
-                    case CommandResultType.Ignore: break;
+                    case ResultType.Raw: Console.LogRaw(message); break;
+                    case ResultType.Log: Console.Log(message); break;
+                    case ResultType.Success: Console.LogSuccess(message); break;
+                    case ResultType.Warning: Console.LogWarning(message); break;
+                    case ResultType.Error: Console.LogError(message); break;
+                    case ResultType.Ignore: break;
                 }
             }
             else
@@ -63,13 +62,13 @@ namespace Larnix.Server
             }
         }
 
-        private (CommandResultType, string) Execute(string command, string sender = null)
+        private (ResultType, string) Execute(string command, string sender = null)
         {
             string[] arg = command.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             int len = arg.Length;
 
             if (len == 0)
-                return (CommandResultType.Error, "Unknown command! Type 'help' for documentation.");
+                return (ResultType.Error, "Unknown command! Type 'help' for documentation.");
 
             return arg[0] switch
             {
@@ -82,13 +81,13 @@ namespace Larnix.Server
                 "spawn" when len == 4 => Spawn(arg[1], arg[2], arg[3]),
                 "place" when len == 5 || len == 6 => Place(arg),
                 "seed" when len == 1 => Seed(),
-                _ => (CommandResultType.Error, "Unknown command! Type 'help' for documentation.")
+                _ => (ResultType.Error, "Unknown command! Type 'help' for documentation.")
             };
         }
 
-        private (CommandResultType, string) Help()
+        private (ResultType, string) Help()
         {
-            return (CommandResultType.Raw,
+            return (ResultType.Raw,
                 "\n" +
                 " | ------ COMMAND LIST ------\n" +
                 " |\n" +
@@ -104,13 +103,13 @@ namespace Larnix.Server
                 "\n");
         }
 
-        private (CommandResultType, string) Stop()
+        private (ResultType, string) Stop()
         {
             Server.CloseServer();
-            return (CommandResultType.Ignore, string.Empty);
+            return (ResultType.Ignore, string.Empty);
         }
 
-        private (CommandResultType, string) PlayerList()
+        private (ResultType, string) PlayerList()
         {
             StringBuilder sb = new();
             sb.Append("\n");
@@ -125,10 +124,10 @@ namespace Larnix.Server
 
             sb.Append("\n");
 
-            return (CommandResultType.Raw, sb.ToString());
+            return (ResultType.Raw, sb.ToString());
         }
 
-        private (CommandResultType, string) Tp(string nickname, string xt, string yt)
+        private (ResultType, string) Tp(string nickname, string xt, string yt)
         {
             if (PlayerManager.GetPlayerState(nickname) == PlayerManager.PlayerState.Alive)
             {
@@ -139,44 +138,44 @@ namespace Larnix.Server
                     Vec2 fullTargetPos = targetPos + normalOffset;
                     QuickServer.Send(nickname, new Teleport(fullTargetPos));
                     ((Player)EntityManager.GetPlayerController(nickname).GetRealController()).AcceptTeleport(fullTargetPos);
-                    return (CommandResultType.Success, "Player " + nickname + " has been teleported to " + targetPos);
+                    return (ResultType.Success, "Player " + nickname + " has been teleported to " + targetPos);
                 }
-                else return (CommandResultType.Error, "Cannot parse coordinates!");
+                else return (ResultType.Error, "Cannot parse coordinates!");
             }
             else
             {
-                return (CommandResultType.Error, "Player " + nickname + " is not alive!");
+                return (ResultType.Error, "Player " + nickname + " is not alive!");
             }
         }
 
-        private (CommandResultType, string) Kick(string nickname)
+        private (ResultType, string) Kick(string nickname)
         {
             if (PlayerManager.GetPlayerState(nickname) != PlayerManager.PlayerState.None)
             {
                 QuickServer.FinishConnection(nickname);
-                return (CommandResultType.Success, "Player " + nickname + " has been kicked.");
+                return (ResultType.Success, "Player " + nickname + " has been kicked.");
             }
             else
             {
-                return (CommandResultType.Error, "Player " + nickname + " is not online!");
+                return (ResultType.Error, "Player " + nickname + " is not online!");
             }
         }
 
-        private (CommandResultType, string) Kill(string nickname)
+        private (ResultType, string) Kill(string nickname)
         {
             if (PlayerManager.GetPlayerState(nickname) == PlayerManager.PlayerState.Alive)
             {
                 ulong uid = PlayerManager.GetPlayerUID(nickname);
                 EntityManager.KillEntity(uid);
-                return (CommandResultType.Success, "Player " + nickname + " has been killed.");
+                return (ResultType.Success, "Player " + nickname + " has been killed.");
             }
             else
             {
-                return (CommandResultType.Error, "Player " + nickname + " is not alive!");
+                return (ResultType.Error, "Player " + nickname + " is not alive!");
             }
         }
 
-        private (CommandResultType, string) Spawn(string entityname, string xs, string ys)
+        private (ResultType, string) Spawn(string entityname, string xs, string ys)
         {
             if (Enum.TryParse(entityname, ignoreCase: true, out EntityID entityID) &&
                 Enum.IsDefined(typeof(EntityID), entityID) &&
@@ -189,19 +188,19 @@ namespace Larnix.Server
                         ID = entityID,
                         Position = new Vec2(x, y)
                     });
-                    return (CommandResultType.Success, $"Spawned {entityname} at position ({x}, {y}).");
+                    return (ResultType.Success, $"Spawned {entityname} at position ({x}, {y}).");
                 }
-                else return (CommandResultType.Error, "Cannot parse coordinates!");
+                else return (ResultType.Error, "Cannot parse coordinates!");
             }
-            else return (CommandResultType.Error, $"Cannot spawn entity named \"{entityname}\"!");
+            else return (ResultType.Error, $"Cannot spawn entity named \"{entityname}\"!");
         }
 
-        private (CommandResultType, string) Place(string[] arg)
+        private (ResultType, string) Place(string[] arg)
         {
             bool front = arg[1] == "front";
             if (arg[1] != "front" && arg[1] != "back")
             {
-                return (CommandResultType.Error, $"Phrase '{arg[1]}' is not valid in this context.");
+                return (ResultType.Error, $"Phrase '{arg[1]}' is not valid in this context.");
             }
 
             if (int.TryParse(arg[2], out int x) && int.TryParse(arg[3], out int y))
@@ -222,20 +221,20 @@ namespace Larnix.Server
                     });
 
                     if (result != null)
-                        return (CommandResultType.Success,
+                        return (ResultType.Success,
                             $"Block ({x}, {y}) changed to " + blockID.ToString() + (variant == 0 ? "" : "-" + variant));
                     else
-                        return (CommandResultType.Error, $"Position ({x}, {y}) cannot be updated.");
+                        return (ResultType.Error, $"Position ({x}, {y}) cannot be updated.");
                 }
-                else return (CommandResultType.Error, $"Cannot place block named {blockname}!");
+                else return (ResultType.Error, $"Cannot place block named {blockname}!");
             }
-            else return (CommandResultType.Error, "Cannot parse coordinates!");
+            else return (ResultType.Error, "Cannot parse coordinates!");
         }
 
-        private (CommandResultType, string) Seed()
+        private (ResultType, string) Seed()
         {
             long seed = Generator.Seed;
-            return (CommandResultType.Log, "Seed: " + seed);
+            return (ResultType.Log, "Seed: " + seed);
         }
     }
 }

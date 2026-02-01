@@ -2,9 +2,10 @@ using System;
 
 namespace Larnix.Core.Binary
 {
-    public interface IFixedBinary<T> where T : IFixedBinary<T>, new()
+    public interface IBinaryStruct<T> where T : IBinaryStruct<T>, new()
     {
-        public int SIZE { get; }
+        public bool IS_FIXED_SIZE => SIZE > 0;
+        public virtual int SIZE => 0;
 
         public byte[] Serialize();
         public bool Deserialize(byte[] data, int offset = 0);

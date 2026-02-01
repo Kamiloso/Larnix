@@ -4,7 +4,7 @@ using Larnix.Core.Binary;
 
 namespace Larnix.Core.Vectors
 {
-    public struct Col32 : IEquatable<Col32>, IFixedBinary<Col32>
+    public struct Col32 : IEquatable<Col32>, IBinaryStruct<Col32>
     {
         public int SIZE => sizeof(byte) * 4;
         public byte r { get; private set; }

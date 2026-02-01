@@ -6,9 +6,9 @@ using Larnix.Core.Binary;
 
 namespace Larnix.Core
 {
-    public struct Version : IFixedBinary<Version>
+    public struct Version : IBinaryStruct<Version>
     {
-        public static readonly Version Current = new Version("0.0.22.4");
+        public static readonly Version Current = new Version("0.0.22.5");
 
         public int SIZE => sizeof(uint);
         public uint ID { get; private set; }

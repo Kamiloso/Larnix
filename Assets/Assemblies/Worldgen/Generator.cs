@@ -1,9 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.Concurrent;
-using System.Security.Cryptography;
 using System;
-using System.Buffers.Binary;
 using System.Reflection;
 using System.Text;
 using Larnix.Core.Utils;
@@ -14,16 +11,7 @@ using Random = System.Random;
 
 namespace Larnix.Worldgen
 {
-    public enum ProtoBlock : ushort
-    {
-        Air,
-        Stone,
-        Soil,
-        SoilSurface,
-        Cave,
-        Liquid,
-    }
-
+    public enum ProtoBlock { Air, Stone, Soil, SoilSurface, Cave, Liquid }
     public class Generator
     {
         // Variables
@@ -46,7 +34,7 @@ namespace Larnix.Worldgen
 
         public Generator(long seed)
         {
-            _biomes = Biome.GetBiomes();
+            _biomes = BiomeFactory.GetBiomes();
             _seed = new Seed(seed);
 
             // ------ BASE NOISES ------
