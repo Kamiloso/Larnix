@@ -17,7 +17,8 @@ namespace Larnix.Blocks
             return weight1 > weight2;
         }
 
-        public void Move(Vec2Int POS_source, Vec2Int POS_destin, bool isFront, byte? sourceNewVariant = null)
+        public void Move(Vec2Int POS_source, Vec2Int POS_destin, bool isFront,
+            byte? sourceNewVariant = null, bool clone = false)
         {
             BlockServer block1 = WorldAPI.GetBlock(POS_source, isFront);
             BlockServer block2 = WorldAPI.GetBlock(POS_destin, isFront);
@@ -35,14 +36,14 @@ namespace Larnix.Blocks
 
             if (block2 is Air || block2 is ILiquid) // swap
             {
-                WorldAPI.ReplaceBlock(POS_source, isFront, data2);
+                if (!clone) WorldAPI.ReplaceBlock(POS_source, isFront, data2);
                 WorldAPI.ReplaceBlock(POS_destin, isFront, data1);
             }
 
             else if (block2 is IFragile) // break
             {
                 WorldAPI.BreakBlockWithEffects(POS_destin, isFront, new BlockData1());
-                WorldAPI.ReplaceBlock(POS_source, isFront, new BlockData1());
+                if (!clone) WorldAPI.ReplaceBlock(POS_source, isFront, new BlockData1());
                 WorldAPI.ReplaceBlock(POS_destin, isFront, data1);
             }
         }

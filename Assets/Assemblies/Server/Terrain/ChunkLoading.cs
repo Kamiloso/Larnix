@@ -44,23 +44,12 @@ namespace Larnix.Server.Terrain
             var orderedChunks = activeChunks.OrderBy(kv => kv.Key.y).ThenBy(kv => kv.Key.x).ToList();
             var shuffledChunks = activeChunks.OrderBy(_ => Common.Rand().NextDouble()).ToList();
 
-            foreach (var kvp in activeChunks) // pre-frame configure
-            {
-                ChunkContainer container = kvp.Value;
-                container.Instance.PreExecuteFrame();
-            }
-
-            foreach (var kvp in shuffledChunks) // actual frame random
-            {
-                ChunkContainer container = kvp.Value;
-                container.Instance.ExecuteFrameRandom();
-            }
-
-            foreach (var kvp in orderedChunks) // actual frame sequential
-            {
-                ChunkContainer container = kvp.Value;
-                container.Instance.ExecuteFrameSequential();
-            }
+            foreach (var kvp in activeChunks) kvp.Value.Instance.INVOKE_PreFrame(); // START
+            foreach (var kvp in orderedChunks) kvp.Value.Instance.INVOKE_Conway(); // 1
+            foreach (var kvp in orderedChunks) kvp.Value.Instance.INVOKE_SequentialEarly(); // 2
+            foreach (var kvp in shuffledChunks) kvp.Value.Instance.INVOKE_Random(); // 3
+            foreach (var kvp in orderedChunks) kvp.Value.Instance.INVOKE_SequentialLate(); // 4
+            foreach (var kvp in activeChunks) kvp.Value.Instance.INVOKE_PostFrame(); // END
 
             // Chunk changes broadcasting
             const int BROADCAST_FIXED_PERIOD = 8;

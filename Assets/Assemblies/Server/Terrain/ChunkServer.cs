@@ -51,7 +51,7 @@ namespace Larnix.Server.Terrain
             PhysicsManager.SetChunkActive(Chunkpos, true);
         }
 
-        public void PreExecuteFrame() // 1.
+        public void INVOKE_PreFrame() // START
         {
             for (int y = 0; y < 16; y++)
                 for (int x = 0; x < 16; x++)
@@ -61,7 +61,27 @@ namespace Larnix.Server.Terrain
                 }
         }
 
-        public void ExecuteFrameRandom() // 2.
+        public void INVOKE_Conway() // 1
+        {
+            for (int y = 0; y < 16; y++)
+                for (int x = 0; x < 16; x++)
+                {
+                    BlocksBack[x, y].FrameUpdateConway();
+                    BlocksFront[x, y].FrameUpdateConway();
+                }
+        }
+
+        public void INVOKE_SequentialEarly() // 2
+        {
+            for (int y = 0; y < 16; y++)
+                for (int x = 0; x < 16; x++)
+                {
+                    BlocksBack[x, y].FrameUpdateSequentialEarly();
+                    BlocksFront[x, y].FrameUpdateSequentialEarly();
+                }
+        }
+
+        public void INVOKE_Random() // 3
         {
             foreach (var pos in Common.GetShuffledPositions(16, 16))
             {
@@ -70,20 +90,23 @@ namespace Larnix.Server.Terrain
             }
         }
 
-        public void ExecuteFrameSequential() // 3.
+        public void INVOKE_SequentialLate() // 4
         {
-            // Back update
             for (int y = 0; y < 16; y++)
                 for (int x = 0; x < 16; x++)
                 {
-                    BlocksBack[x, y].FrameUpdateSequential();
+                    BlocksBack[x, y].FrameUpdateSequentialLate();
+                    BlocksFront[x, y].FrameUpdateSequentialLate();
                 }
+        }
 
-            // Front update
+        public void INVOKE_PostFrame() // END
+        {
             for (int y = 0; y < 16; y++)
                 for (int x = 0; x < 16; x++)
                 {
-                    BlocksFront[x, y].FrameUpdateSequential();
+                    BlocksBack[x, y].PostFrameTrigger();
+                    BlocksFront[x, y].PostFrameTrigger();
                 }
         }
 

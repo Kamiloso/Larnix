@@ -23,6 +23,6 @@ namespace Larnix.Blocks
         Glass = 14,
         Plastic = 15,
         Sword = 16,
-        Bacon = 17,
+        Conway = 17,
     }
 }
