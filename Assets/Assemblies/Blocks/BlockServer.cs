@@ -11,11 +11,15 @@ namespace Larnix.Blocks
     {
         public readonly Vec2Int Position;
         public readonly bool IsFront;
-        public BlockData1 BlockData;
+        public readonly BlockData1 BlockData; // connected to block-saving system
 
-        public IWorldAPI WorldAPI { get => _WorldAPI ?? throw new InvalidOperationException("Trying to use an uninitialized WorldAPI."); }
-        private IWorldAPI _WorldAPI = null;
-        private bool MarkedToUpdate = false;
+        private IWorldAPI _worldAPI = null;
+        public IWorldAPI WorldAPI
+        {
+            get => _worldAPI ?? throw new InvalidOperationException("Trying to use an uninitialized WorldAPI.");
+        }
+
+        private bool _markedToUpdate = false;
 
         public event EventHandler PreFrameEvent;
         public event EventHandler FrameEventRandom;
@@ -24,39 +28,36 @@ namespace Larnix.Blocks
         public BlockServer(Vec2Int position, BlockData1 blockData, bool isFront)
         {
             Position = position;
-            BlockData = blockData;
+            BlockData = blockData; // should consume a given object
             IsFront = isFront;
         }
 
         public void InitializeWorldAPI(IWorldAPI worldAPI)
         {
-            if (_WorldAPI != null)
+            if (_worldAPI != null)
                 throw new InvalidOperationException("WorldAPI already initialized.");
 
-            _WorldAPI = worldAPI;
+            _worldAPI = worldAPI;
         }
 
         public void PreFrameTrigger()
         {
-            MarkedToUpdate = true;
+            _markedToUpdate = true;
             PreFrameEvent?.Invoke(this, EventArgs.Empty);
         }
 
         public void FrameUpdateRandom()
         {
-            if (MarkedToUpdate)
-            {
+            if (_markedToUpdate)
                 FrameEventRandom?.Invoke(this, EventArgs.Empty);
-            }
         }
 
         public void FrameUpdateSequential()
         {
-            if (MarkedToUpdate)
-            {
+            if (_markedToUpdate)
                 FrameEventSequential?.Invoke(this, EventArgs.Empty);
-            }
-            MarkedToUpdate = false;
+            
+            _markedToUpdate = false;
         }
     }
 }

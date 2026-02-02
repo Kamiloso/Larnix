@@ -5,6 +5,7 @@ using Larnix.Entities.Structs;
 using Larnix.Socket.Backend;
 using Larnix.Core.Physics;
 using Larnix.Core.References;
+using Larnix.Core.Vectors;
 
 namespace Larnix.Server.Entities
 {
@@ -31,10 +32,11 @@ namespace Larnix.Server.Entities
 
             if (entityData == null)
             {
-                entityData = new EntityData
-                {
-                    ID = EntityID.Player
-                };
+                entityData = new EntityData(
+                    id: EntityID.Player,
+                    position: new Vec2(0.0, 0.0),
+                    rotation: 0.0f
+                );
             }
 
             Initialize(uid, entityData);

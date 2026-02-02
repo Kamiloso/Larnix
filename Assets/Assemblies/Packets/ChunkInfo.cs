@@ -11,21 +11,18 @@ namespace Larnix.Packets
 {
     public sealed class ChunkInfo : Payload
     {
-        private const int MIN_SIZE = 4 + 4;
-        private const int MAX_SIZE = 4 + 4 + 16 * 16 * 5;
+        private const int MIN_SIZE = 8;
+        private const int MAX_SIZE = 8 + 16 * 16 * 5;
 
-        public Vec2Int Chunkpos => new Vec2Int(
-            EndianUnsafe.FromBytes<int>(Bytes, 0),  // 4B
-            EndianUnsafe.FromBytes<int>(Bytes, 4)); // 4B
+        public Vec2Int Chunkpos => Structures.FromBytes<Vec2Int>(Bytes, 0); // 8B
         public BlockData2[,] Blocks => Bytes.Length != MIN_SIZE ? ChunkMethods.DeserializeChunk(Bytes, 8) : null; // 0B - 1280B
 
         public ChunkInfo() { }
         public ChunkInfo(Vec2Int chunkpos, BlockData2[,] blocks, byte code = 0)
         {
             InitializePayload(ArrayUtils.MegaConcat(
-                EndianUnsafe.GetBytes(chunkpos.x),
-                EndianUnsafe.GetBytes(chunkpos.y),
-                blocks != null ? ChunkMethods.SerializeChunk(blocks) : new byte[0]
+                Structures.GetBytes(chunkpos),
+                blocks?.SerializeChunk() ?? new byte[0]
                 ), code);
         }
 

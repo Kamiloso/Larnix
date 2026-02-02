@@ -15,46 +15,40 @@ namespace Larnix.Worldgen.Biomes
             switch (protoBlock)
             {
                 case ProtoBlock.Air:
-                    return new BlockData2(
-                    new BlockData1 { },
-                    new BlockData1 { }
-                    );
+                    return new BlockData2();
 
                 case ProtoBlock.Stone:
                     return new BlockData2(
-                    new BlockData1 { ID = BlockID.Stone },
-                    new BlockData1 { ID = BlockID.Stone }
+                        new(BlockID.Stone, 0),
+                        new(BlockID.Stone, 0)
                     );
 
                 case ProtoBlock.Soil:
                     return new BlockData2(
-                    new BlockData1 { ID = BlockID.Soil },
-                    new BlockData1 { }
+                        new(BlockID.Soil, 0),
+                        new()
                     );
 
                 case ProtoBlock.SoilSurface:
                     return new BlockData2(
-                    new BlockData1 { ID = BlockID.Soil, Variant = 1 }, // grass
-                    new BlockData1 { }
+                        new(BlockID.Soil, 1), // grass
+                        new()
                     );
 
                 case ProtoBlock.Cave:
                     return new BlockData2(
-                    new BlockData1 { },
-                    new BlockData1 { ID = BlockID.Stone }
+                        new(),
+                        new(BlockID.Stone, 0)
                     );
 
                 case ProtoBlock.Liquid:
                     return new BlockData2(
-                    new BlockData1 { ID = BlockID.Water },
-                    new BlockData1 { }
+                        new(BlockID.Water, 0),
+                        new()
                     );
 
                 default:
-                    return new BlockData2(
-                    new BlockData1 { },
-                    new BlockData1 { }
-                    );
+                    return new BlockData2();
             }
         }
     }

@@ -3,12 +3,92 @@ using System.Collections;
 using System.Collections.Generic;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
+using Larnix.Core.Binary;
+using SimpleJSON;
+using Larnix.Core.Json;
 
 namespace Larnix.Blocks
 {
     public static class ChunkMethods
     {
-        public static byte[] SerializeChunk(BlockData2[,] blocks)
+        public static void InsertData(this BlockData2[,] chunk, string chunkJson)
+        {
+            if (chunk == null) throw new ArgumentNullException(nameof(chunk));
+            if (chunk.GetLength(0) != 16 || chunk.GetLength(1) != 16) throw new ArgumentException("Blocks array must be 16 x 16.");
+
+            JSONObject root;
+            
+            try
+            {
+                root = !string.IsNullOrEmpty(chunkJson) ?
+                    (JSON.Parse(chunkJson).AsObject ?? new()) : new();
+            }
+            catch
+            {
+                root = new();
+            }
+             
+            for (int x = 0; x < 16; x++)
+                for (int y = 0; y < 16; y++)
+                {
+                    string key;
+                    Storage s1 = null, s2 = null;
+
+                    key = "F_" + x + "_" + y;
+                    if (root[key] is JSONString node1)
+                        s1 = Storage.FromString(node1.Value);
+
+                    key = "B_" + x + "_" + y;
+                    if (root[key] is JSONString node2)
+                        s2 = Storage.FromString(node2.Value);
+                    
+                    BlockData2 old = chunk[x, y];
+                    chunk[x, y] = new BlockData2(
+                        new(old.Front.ID, old.Front.Variant, s1 ?? new()),
+                        new(old.Back.ID, old.Back.Variant, s2 ?? new())
+                    );
+                }
+        }
+
+        public static string ExportData(this BlockData2[,] chunk)
+        {
+            if (chunk == null) throw new ArgumentNullException(nameof(chunk));
+            if (chunk.GetLength(0) != 16 || chunk.GetLength(1) != 16) throw new ArgumentException("Blocks array must be 16 x 16.");
+
+            JSONObject root = new();
+            for (int x = 0; x < 16; x++)
+                for (int y = 0; y < 16; y++)
+                {
+                    string key, value;
+
+                    key = "F_" + x + "_" + y;
+                    value = chunk[x, y].Front.Data.ToString();
+                    if (value != "{}") root[key] = new JSONString(value);
+
+                    key = "B_" + x + "_" + y;
+                    value = chunk[x, y].Back.Data.ToString();
+                    if (value != "{}") root[key] = new JSONString(value);
+                }
+
+            return root.ToString();
+        }
+
+        public static BlockData2[,] DeepCopyChunk(this BlockData2[,] original)
+        {
+            if (original == null) throw new ArgumentNullException(nameof(original));
+            if (original.GetLength(0) != 16 || original.GetLength(1) != 16) throw new ArgumentException("Blocks array must be 16 x 16.");
+
+            BlockData2[,] copy = new BlockData2[16, 16];
+            for (int x = 0; x < 16; x++)
+                for (int y = 0; y < 16; y++)
+                {
+                    copy[x, y] = original[x, y].DeepCopy();
+                }
+
+            return copy;
+        }
+
+        public static byte[] SerializeChunk(this BlockData2[,] blocks)
         {
             if (blocks == null) throw new ArgumentNullException(nameof(blocks));
             if (blocks.GetLength(0) != 16 || blocks.GetLength(1) != 16) throw new ArgumentException("Blocks array must be 16 x 16.");
@@ -34,7 +114,7 @@ namespace Larnix.Blocks
                     if (eyes + 5 >= 1280)
                         goto fallback_to_raw;
 
-                    byte[] blockBytes = bd2.Serialize();
+                    byte[] blockBytes = Structures.GetBytes(bd2);
                     Buffer.BlockCopy(blockBytes, 0, bytes, eyes, 5);
                     eyes += 5;
                     bytes[0]++; // can overflow to 256 = 0
@@ -71,7 +151,7 @@ namespace Larnix.Blocks
             for (int x = 0; x < 16; x++)
                 for (int y = 0; y < 16; y++)
                 {
-                    byte[] arr = blocks[x, y]?.Serialize() ?? throw new NullReferenceException("Array elements cannot be null!");
+                    byte[] arr = Structures.GetBytes(blocks[x, y]);
                     Buffer.BlockCopy(arr, 0, bytes, (16 * x + y) * 5, 5);
                 }
 
@@ -99,7 +179,7 @@ namespace Larnix.Blocks
                 byte ind1 = 0;
                 while (entries > 0)
                 {
-                    blockMap.Add(ind1++, BlockData2.Deserialize(bytes, offset + eyes));
+                    blockMap.Add(ind1++, Structures.FromBytes<BlockData2>(bytes, offset + eyes));
                     eyes += 5;
                     entries--;
                 }
@@ -144,7 +224,7 @@ namespace Larnix.Blocks
                 for (int x = 0; x < 16; x++)
                     for (int y = 0; y < 16; y++)
                     {
-                        blocks[x, y] = BlockData2.Deserialize(bytes, offset + (16 * x + y) * 5);
+                        blocks[x, y] = Structures.FromBytes<BlockData2>(bytes, offset + (16 * x + y) * 5);
                     }
 
                 return blocks;

@@ -95,7 +95,7 @@ namespace Larnix.Client.Terrain
 
             Action HideSelector = () =>
             {
-                Tile tile = Tiles.GetTile(new BlockData1 { }, true);
+                Tile tile = Tiles.GetTile(new BlockData1(), true);
                 Selector.sprite = tile.sprite;
             };
 

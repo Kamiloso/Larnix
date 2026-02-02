@@ -183,11 +183,12 @@ namespace Larnix.Server
             {
                 if (double.TryParse(xs, out double x) && double.TryParse(ys, out double y))
                 {
-                    EntityManager.SummonEntity(new EntityData
-                    {
-                        ID = entityID,
-                        Position = new Vec2(x, y)
-                    });
+                    EntityManager.SummonEntity(new EntityData(
+                        id: entityID,
+                        position: new Vec2(x, y),
+                        rotation: 0.0f,
+                        data: null
+                    ));
                     return (ResultType.Success, $"Spawned {entityname} at position ({x}, {y}).");
                 }
                 else return (ResultType.Error, "Cannot parse coordinates!");
@@ -214,11 +215,11 @@ namespace Larnix.Server
                 if (Enum.TryParse(blockname, ignoreCase: true, out BlockID blockID) &&
                     Enum.IsDefined(typeof(BlockID), blockID))
                 {
-                    var result = WorldAPI.ReplaceBlock(new Vec2Int(x, y), front, new BlockData1
-                    {
-                        ID = blockID,
-                        Variant = variant
-                    });
+                    var result = WorldAPI.ReplaceBlock(new Vec2Int(x, y), front, new BlockData1(
+                        id: blockID,
+                        variant: variant,
+                        data: null
+                    ));
 
                     if (result != null)
                         return (ResultType.Success,

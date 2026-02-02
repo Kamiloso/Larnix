@@ -8,16 +8,17 @@ namespace Larnix.Entities
     public class EntityServer
     {
         public readonly ulong uID;
-        public readonly EntityData EntityData; // Changing doesn't need saving. This is the same object as in EntityDataManager.cs
-        public EventHandler OnFrameUpdate;
+        public readonly EntityData EntityData; // connected to entity-saving system
 
         public PhysicsManager Physics { get => _Physics ?? throw new InvalidOperationException("Trying to use an uninitialized PhysicsManager."); }
         private PhysicsManager _Physics = null;
 
+        public EventHandler OnFrameUpdate;
+
         public EntityServer(ulong uid, EntityData entityData)
         {
             uID = uid;
-            EntityData = entityData;
+            EntityData = entityData; // should consume a given object
         }
 
         public void InitializePhysics(PhysicsManager physics)

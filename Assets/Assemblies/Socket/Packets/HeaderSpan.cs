@@ -9,8 +9,8 @@ namespace Larnix.Socket.Packets
     {
         public byte[] AllBytes { get; private set; }
 
-        public CmdID ID => EndianUnsafe.FromBytes<CmdID>(AllBytes, 0);
-        public byte Code => EndianUnsafe.FromBytes<byte>(AllBytes, 4);
+        public CmdID ID => Primitives.FromBytes<CmdID>(AllBytes, 0);
+        public byte Code => Primitives.FromBytes<byte>(AllBytes, 4);
 
         public HeaderSpan(byte[] packetBytes)
         {

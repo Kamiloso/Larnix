@@ -57,7 +57,7 @@ namespace Larnix.Client.UI
             }
             else
             {
-                Image.sprite = Tiles.GetSprite(Inventory.StaticAirBlock, true);
+                Image.sprite = Tiles.GetSprite(new BlockData1(), true);
                 Title.text = string.Empty;
             }
 

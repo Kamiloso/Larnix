@@ -16,9 +16,9 @@ namespace Larnix.Packets
         private const int ENTRY_B_SIZE = 8 + 4; // player fixed indexes entry
         private const int MAX_RECORDS = 32;
 
-        public uint PacketFixedIndex => EndianUnsafe.FromBytes<uint>(Bytes, 0); // 4B
-        public ushort EntityLength => EndianUnsafe.FromBytes<ushort>(Bytes, 4); // 2B
-        public ushort PlayerFixedLength => EndianUnsafe.FromBytes<ushort>(Bytes, 6); // 2B
+        public uint PacketFixedIndex => Primitives.FromBytes<uint>(Bytes, 0); // 4B
+        public ushort EntityLength => Primitives.FromBytes<ushort>(Bytes, 4); // 2B
+        public ushort PlayerFixedLength => Primitives.FromBytes<ushort>(Bytes, 6); // 2B
         public Dictionary<ulong, EntityData> EntityTransforms => GetDictionaryA(Bytes, EntityLength, HEADER_SIZE); // n * 30B
         public Dictionary<ulong, uint> PlayerFixedIndexes => GetDictionaryB(Bytes, PlayerFixedLength, HEADER_SIZE + EntityLength * ENTRY_A_SIZE); // n * 12B
 
@@ -30,9 +30,9 @@ namespace Larnix.Packets
             if (playerFixedIndexes == null) playerFixedIndexes = new();
 
             InitializePayload(ArrayUtils.MegaConcat(
-                EndianUnsafe.GetBytes(packetFixedIndex),
-                EndianUnsafe.GetBytes((ushort)entityTransforms.Count),
-                EndianUnsafe.GetBytes((ushort)playerFixedIndexes.Count),
+                Primitives.GetBytes(packetFixedIndex),
+                Primitives.GetBytes((ushort)entityTransforms.Count),
+                Primitives.GetBytes((ushort)playerFixedIndexes.Count),
                 SerializeDictionaryA(entityTransforms),
                 SerializeDictionaryB(playerFixedIndexes)
                 ), code);
@@ -76,8 +76,8 @@ namespace Larnix.Packets
             Dictionary<ulong, EntityData> result = new();
             for (int i = 0; i < count; i++)
             {
-                ulong key = EndianUnsafe.FromBytes<ulong>(bytes, i * ENTRY_A_SIZE + 0 + offset);
-                EntityData value = EntityData.Deserialize(bytes, i * ENTRY_A_SIZE + 8 + offset);
+                ulong key = Primitives.FromBytes<ulong>(bytes, i * ENTRY_A_SIZE + 0 + offset);
+                EntityData value = Structures.FromBytes<EntityData>(bytes, i * ENTRY_A_SIZE + 8 + offset);
                 result[key] = value;
             }
             return result;
@@ -88,8 +88,8 @@ namespace Larnix.Packets
             Dictionary<ulong, uint> result = new();
             for (int i = 0; i < count; i++)
             {
-                ulong key = EndianUnsafe.FromBytes<ulong>(bytes, i * ENTRY_B_SIZE + 0 + offset);
-                uint value = EndianUnsafe.FromBytes<uint>(bytes, i * ENTRY_B_SIZE + 8 + offset);
+                ulong key = Primitives.FromBytes<ulong>(bytes, i * ENTRY_B_SIZE + 0 + offset);
+                uint value = Primitives.FromBytes<uint>(bytes, i * ENTRY_B_SIZE + 8 + offset);
                 result[key] = value;
             }
             return result;
@@ -101,8 +101,8 @@ namespace Larnix.Packets
             int i = 0;
             foreach (var vkp in dictA)
             {
-                byte[] keyBytes = EndianUnsafe.GetBytes(vkp.Key);
-                byte[] valueBytes = vkp.Value.Serialize();
+                byte[] keyBytes = Primitives.GetBytes(vkp.Key);
+                byte[] valueBytes = Structures.GetBytes(vkp.Value);
 
                 Buffer.BlockCopy(keyBytes, 0, buffer, 0 + i * ENTRY_A_SIZE, 8);
                 Buffer.BlockCopy(valueBytes, 0, buffer, 8 + i * ENTRY_A_SIZE, 22);
@@ -118,8 +118,8 @@ namespace Larnix.Packets
             int i = 0;
             foreach (var vkp in dictB)
             {
-                byte[] keyBytes = EndianUnsafe.GetBytes(vkp.Key);
-                byte[] valueBytes = EndianUnsafe.GetBytes(vkp.Value);
+                byte[] keyBytes = Primitives.GetBytes(vkp.Key);
+                byte[] valueBytes = Primitives.GetBytes(vkp.Value);
 
                 Buffer.BlockCopy(keyBytes, 0, buffer, 0 + i * ENTRY_B_SIZE, 8);
                 Buffer.BlockCopy(valueBytes, 0, buffer, 8 + i * ENTRY_B_SIZE, 4);
@@ -131,8 +131,7 @@ namespace Larnix.Packets
 
         protected override bool IsValid()
         {
-            return Bytes != null &&
-                   Bytes.Length >= HEADER_SIZE &&
+            return Bytes.Length >= HEADER_SIZE &&
                    Bytes.Length == HEADER_SIZE + EntityLength * ENTRY_A_SIZE + PlayerFixedLength * ENTRY_B_SIZE &&
                    EntityLength <= MAX_RECORDS &&
                    PlayerFixedLength <= MAX_RECORDS;

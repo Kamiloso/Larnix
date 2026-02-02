@@ -8,6 +8,7 @@ using Larnix.Blocks.Structs;
 using Larnix.Core.Vectors;
 using Larnix.Worldgen.Noise;
 using Random = System.Random;
+using Larnix.Blocks;
 
 namespace Larnix.Worldgen
 {
@@ -115,7 +116,7 @@ namespace Larnix.Worldgen
             //Add_Ores();
             //Add_Vegetation();
 
-            return blocks;
+            return blocks.DeepCopyChunk();
         }
 
         private void Build_BaseTerrain(ProtoBlock[,] protoBlocks, Vec2Int chunk)

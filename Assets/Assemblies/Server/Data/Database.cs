@@ -9,6 +9,9 @@ using Larnix.Core.Utils;
 using Larnix.Core.Vectors;
 using Larnix.Entities.Structs;
 using Larnix.Socket.Backend;
+using Larnix.Core.Json;
+using Larnix.Blocks.Structs;
+using Larnix.Blocks;
 
 namespace Larnix.Server.Data
 {
@@ -67,13 +70,27 @@ namespace Larnix.Server.Data
                 CREATE TABLE IF NOT EXISTS seed (
                     value INTEGER
                 );
-
-                UPDATE entities
-                    SET nbt = ''
-                    WHERE nbt = '{}';
                 ";
                 cmd.ExecuteNonQuery();
             }
+
+            EnsureColumnExists("chunks", "nbt", "TEXT NOT NULL DEFAULT ''");
+        }
+
+        private void EnsureColumnExists(string table, string column, string definition)
+        {
+            using var cmd = CreateCommand();
+            cmd.CommandText = $"PRAGMA table_info({table});";
+
+            using (var reader = cmd.ExecuteReader())
+            {
+                while (reader.Read())
+                    if (reader["name"].ToString() == column)
+                        return;
+            }
+
+            cmd.CommandText = $"ALTER TABLE {table} ADD COLUMN {column} {definition};";
+            cmd.ExecuteNonQuery();
         }
 
         public void SaveUserData(UserData userData, bool create)
@@ -154,13 +171,12 @@ namespace Larnix.Server.Data
                 {
                     if(reader.Read())
                     {
-                        EntityData entityData = new EntityData
-                        {
-                            ID = (EntityID)(long)reader["type"],
-                            Position = new Vec2((double)reader["pos_x"], (double)reader["pos_y"]),
-                            Rotation = (float)(double)reader["rotation"],
-                            NBT = new EntityNBT(Convert.FromBase64String((string)reader["nbt"]))
-                        };
+                        EntityData entityData = new EntityData(
+                            id: (EntityID)(long)reader["type"],
+                            position: new Vec2((double)reader["pos_x"], (double)reader["pos_y"]),
+                            rotation: (float)(double)reader["rotation"],
+                            data: Storage.FromString((string)reader["nbt"])
+                        );
                         return entityData;
                     }
                 }
@@ -181,13 +197,12 @@ namespace Larnix.Server.Data
                     Dictionary<ulong, EntityData> returns = new Dictionary<ulong, EntityData>();
                     while (reader.Read())
                     {
-                        returns.Add((ulong)(long)reader["uid"], new EntityData
-                        {
-                            ID = (EntityID)(long)reader["type"],
-                            Position = new Vec2((double)reader["pos_x"], (double)reader["pos_y"]),
-                            Rotation = (float)(double)reader["rotation"],
-                            NBT = new EntityNBT(Convert.FromBase64String((string)reader["nbt"]))
-                        });
+                        returns.Add((ulong)(long)reader["uid"], new EntityData(
+                            id: (EntityID)(long)reader["type"],
+                            position: new Vec2((double)reader["pos_x"], (double)reader["pos_y"]),
+                            rotation: (float)(double)reader["rotation"],
+                            data: Storage.FromString((string)reader["nbt"])
+                        ));
                     }
                     return returns;
                 }
@@ -227,7 +242,7 @@ namespace Larnix.Server.Data
                     paramPosX.Value = entity.Position.x;
                     paramPosY.Value = entity.Position.y;
                     paramRotation.Value = entity.Rotation;
-                    paramNbt.Value = Convert.ToBase64String(entity.NBT.Data);
+                    paramNbt.Value = entity.Data.ToString();
                     cmd.ExecuteNonQuery();
                 }
             }
@@ -310,23 +325,24 @@ namespace Larnix.Server.Data
             return seed;
         }
 
-        public void SetChunk(int x, int y, byte[] block_bytes)
+        public void SetChunk(int x, int y, BlockData2[,] chunk)
         {
             using (var cmd = CreateCommand())
             {
-                cmd.CommandText = "INSERT OR REPLACE INTO chunks (chunk_x, chunk_y, block_bytes) VALUES ($chunk_x, $chunk_y, $block_bytes);";
+                cmd.CommandText = "INSERT OR REPLACE INTO chunks (chunk_x, chunk_y, block_bytes, nbt) VALUES ($chunk_x, $chunk_y, $block_bytes, $nbt);";
                 cmd.Parameters.AddWithValue("$chunk_x", x);
                 cmd.Parameters.AddWithValue("$chunk_y", y);
-                cmd.Parameters.AddWithValue("$block_bytes", block_bytes);
+                cmd.Parameters.AddWithValue("$block_bytes", chunk.SerializeChunk());
+                cmd.Parameters.AddWithValue("$nbt", chunk.ExportData());
                 cmd.ExecuteNonQuery();
             }
         }
 
-        public bool TryGetChunk(int x, int y, out byte[] block_bytes)
+        public bool TryGetChunk(int x, int y, out BlockData2[,] chunk)
         {
             using(var cmd = CreateCommand())
             {
-                cmd.CommandText = "SELECT block_bytes FROM chunks WHERE chunk_x = $chunk_x AND chunk_y = $chunk_y;";
+                cmd.CommandText = "SELECT block_bytes, nbt FROM chunks WHERE chunk_x = $chunk_x AND chunk_y = $chunk_y;";
                 cmd.Parameters.AddWithValue("$chunk_x", x);
                 cmd.Parameters.AddWithValue("$chunk_y", y);
 
@@ -334,12 +350,13 @@ namespace Larnix.Server.Data
                 {
                     if (reader.Read())
                     {
-                        block_bytes = (byte[])reader["block_bytes"];
+                        chunk = ChunkMethods.DeserializeChunk((byte[])reader["block_bytes"]);
+                        chunk.InsertData((string)reader["nbt"]);
                         return true;
                     }
                 }
             }
-            block_bytes = null;
+            chunk = default;
             return false;
         }
 

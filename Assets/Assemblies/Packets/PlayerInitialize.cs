@@ -9,28 +9,25 @@ namespace Larnix.Packets
 {
     public sealed class PlayerInitialize : Payload
     {
-        private const int SIZE = (8 + 8) + 8 + 4;
+        private const int SIZE = 16 + 8 + 4;
 
-        public Vec2 Position => new Vec2(
-            EndianUnsafe.FromBytes<double>(Bytes, 0),  // 8B
-            EndianUnsafe.FromBytes<double>(Bytes, 8)); // 8B
-        public ulong MyUid => EndianUnsafe.FromBytes<ulong>(Bytes, 16); // 8B
-        public uint LastFixedFrame => EndianUnsafe.FromBytes<uint>(Bytes, 24); // 4B
+        public Vec2 Position => Structures.FromBytes<Vec2>(Bytes, 0); // 16B
+        public ulong MyUid => Primitives.FromBytes<ulong>(Bytes, 16); // 8B
+        public uint LastFixedFrame => Primitives.FromBytes<uint>(Bytes, 24); // 4B
 
         public PlayerInitialize() { }
         public PlayerInitialize(Vec2 position, ulong myUid, uint lastFixedFrame, byte code = 0)
         {
             InitializePayload(ArrayUtils.MegaConcat(
-                EndianUnsafe.GetBytes(position.x),
-                EndianUnsafe.GetBytes(position.y),
-                EndianUnsafe.GetBytes(myUid),
-                EndianUnsafe.GetBytes(lastFixedFrame)
+                Structures.GetBytes(position),
+                Primitives.GetBytes(myUid),
+                Primitives.GetBytes(lastFixedFrame)
                 ), code);
         }
 
         protected override bool IsValid()
         {
-            return Bytes?.Length == SIZE;
+            return Bytes.Length == SIZE;
         }
     }
 }

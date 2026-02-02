@@ -25,10 +25,12 @@ namespace Larnix.Blocks
             BlockData1 data1 = block1.BlockData;
             BlockData1 data2 = block2.BlockData;
 
-            if(sourceNewVariant != null)
+            if (sourceNewVariant != null) // optional variant change
             {
-                data1 = data1.DeepCopy();
-                data1.Variant = sourceNewVariant ?? 0;
+                data1 = new BlockData1(
+                    id: data1.ID,
+                    variant: sourceNewVariant.Value,
+                    data: data1.Data);
             }
 
             if (block2 is Air || block2 is ILiquid) // swap
@@ -37,10 +39,10 @@ namespace Larnix.Blocks
                 WorldAPI.ReplaceBlock(POS_destin, isFront, data1);
             }
 
-            else if(block2 is IFragile) // break
+            else if (block2 is IFragile) // break
             {
-                WorldAPI.BreakBlockWithEffects(POS_destin, isFront, new BlockData1 { });
-                WorldAPI.ReplaceBlock(POS_source, isFront, new BlockData1 { });
+                WorldAPI.BreakBlockWithEffects(POS_destin, isFront, new BlockData1());
+                WorldAPI.ReplaceBlock(POS_source, isFront, new BlockData1());
                 WorldAPI.ReplaceBlock(POS_destin, isFront, data1);
             }
         }

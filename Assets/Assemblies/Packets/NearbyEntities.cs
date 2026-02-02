@@ -14,11 +14,11 @@ namespace Larnix.Packets
         private const int ENTRY_SIZE = 8;
         private const int MAX_RECORDS = 85;
 
-        public uint FixedFrame => EndianUnsafe.FromBytes<uint>(Bytes, 0); // 4B
-        public ushort AddLength => EndianUnsafe.FromBytes<ushort>(Bytes, 4); // 2B
-        public ushort RemoveLength => EndianUnsafe.FromBytes<ushort>(Bytes, 6); // 2B
-        public ulong[] AddEntities => EndianUnsafe.ArrayFromBytes<ulong>(Bytes, AddLength, HEADER_SIZE); // n * 8B
-        public ulong[] RemoveEntities => EndianUnsafe.ArrayFromBytes<ulong>(Bytes, RemoveLength, HEADER_SIZE + AddLength * ENTRY_SIZE); // n * 8B
+        public uint FixedFrame => Primitives.FromBytes<uint>(Bytes, 0); // 4B
+        public ushort AddLength => Primitives.FromBytes<ushort>(Bytes, 4); // 2B
+        public ushort RemoveLength => Primitives.FromBytes<ushort>(Bytes, 6); // 2B
+        public ulong[] AddEntities => Primitives.ArrayFromBytes<ulong>(Bytes, AddLength, HEADER_SIZE); // n * 8B
+        public ulong[] RemoveEntities => Primitives.ArrayFromBytes<ulong>(Bytes, RemoveLength, HEADER_SIZE + AddLength * ENTRY_SIZE); // n * 8B
 
         public NearbyEntities() { }
         private NearbyEntities(uint fixedFrame, ulong[] addEntities, ulong[] removeEntities, byte code = 0)
@@ -27,11 +27,11 @@ namespace Larnix.Packets
             if (removeEntities == null) removeEntities = new ulong[0];
 
             InitializePayload(ArrayUtils.MegaConcat(
-                EndianUnsafe.GetBytes(fixedFrame),
-                EndianUnsafe.GetBytes((ushort)addEntities.Length),
-                EndianUnsafe.GetBytes((ushort)removeEntities.Length),
-                EndianUnsafe.ArrayGetBytes(addEntities),
-                EndianUnsafe.ArrayGetBytes(removeEntities)
+                Primitives.GetBytes(fixedFrame),
+                Primitives.GetBytes((ushort)addEntities.Length),
+                Primitives.GetBytes((ushort)removeEntities.Length),
+                Primitives.ArrayGetBytes(addEntities),
+                Primitives.ArrayGetBytes(removeEntities)
                 ), code);
         }
 

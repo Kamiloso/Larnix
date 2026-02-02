@@ -2,11 +2,11 @@ using System;
 
 namespace Larnix.Core.Binary
 {
-    public interface IIgnoresEndianness { }
+    public interface IEndianSafe { }
 
-    public static unsafe class EndianUnsafe
+    public static unsafe class Primitives
     {
-        private const bool LittleEndian = true;
+        private const bool LITTLE_ENDIAN = true;
 
         public static byte[] GetBytes<T>(T value) where T : unmanaged
         {
@@ -21,8 +21,11 @@ namespace Larnix.Core.Binary
                 *(T*)b = value;
             }
 
-            if (BitConverter.IsLittleEndian != LittleEndian && !typeof(IIgnoresEndianness).IsAssignableFrom(typeof(T)))
+            if (BitConverter.IsLittleEndian != LITTLE_ENDIAN &&
+                !typeof(IEndianSafe).IsAssignableFrom(typeof(T)))
+            {
                 Array.Reverse(bytes);
+            }
 
             return bytes;
         }
@@ -39,8 +42,11 @@ namespace Larnix.Core.Binary
             Span<byte> tmp = stackalloc byte[size];
             bytes.AsSpan(startIndex, size).CopyTo(tmp);
 
-            if (BitConverter.IsLittleEndian != LittleEndian && !typeof(IIgnoresEndianness).IsAssignableFrom(typeof(T)))
+            if (BitConverter.IsLittleEndian != LITTLE_ENDIAN &&
+                !typeof(IEndianSafe).IsAssignableFrom(typeof(T)))
+            {
                 tmp.Reverse();
+            }
 
             fixed (byte* b = tmp)
             {
@@ -86,14 +92,14 @@ namespace Larnix.Core.Binary
             return result;
         }
 
-        private static bool IsSupportedType<T>() where T : unmanaged
+        public static bool IsSupportedType<T>() where T : unmanaged
         {
             if (typeof(T) == typeof(bool))
                 return false;
 
             return typeof(T).IsPrimitive ||
                    typeof(T).IsEnum ||
-                   typeof(IIgnoresEndianness).IsAssignableFrom(typeof(T));
+                   typeof(IEndianSafe).IsAssignableFrom(typeof(T));
         }
     }
 }

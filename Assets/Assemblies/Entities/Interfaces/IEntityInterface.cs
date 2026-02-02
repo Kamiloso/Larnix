@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using Larnix.Core.Physics;
+using Larnix.Core.Json;
 
 namespace Larnix.Entities
 {
@@ -8,6 +9,6 @@ namespace Larnix.Entities
     {
         EntityServer This => (EntityServer)this;
         PhysicsManager Physics => This.Physics;
-        EntityNBT NBT => This.EntityData.NBT;
+        Storage Data => This.EntityData.Data;
     }
 }

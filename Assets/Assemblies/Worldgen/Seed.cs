@@ -52,7 +52,7 @@ namespace Larnix.Worldgen
             if (string.IsNullOrEmpty(phrase)) throw new ArgumentException(nameof(phrase));
 
             using SHA256 sha = SHA256.Create();
-            byte[] hash = sha.ComputeHash(EndianUnsafe.GetBytes((String64)phrase));
+            byte[] hash = sha.ComputeHash(Primitives.GetBytes((String64)phrase));
 
             return BinaryPrimitives.ReadInt64BigEndian(hash.AsSpan(0, 8));
         }

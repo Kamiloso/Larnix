@@ -32,19 +32,21 @@ namespace Larnix.Server.Terrain
 
             referencedChunks.Add(chunk);
 
+            BlockData2[,] blocks;
+
             if (chunkCache.ContainsKey(chunk)) // Get from cache
             {
-                return chunkCache[chunk];
+                blocks = chunkCache[chunk];
+                return blocks;
             }
-            else if(!DEBUG_UNLINK_DATABASE && Database.TryGetChunk(chunk.x, chunk.y, out byte[] bytes)) // Get from database
+            else if(!DEBUG_UNLINK_DATABASE && Database.TryGetChunk(chunk.x, chunk.y, out blocks)) // Get from database
             {
-                BlockData2[,] blocks = ChunkMethods.DeserializeChunk(bytes);
                 chunkCache[chunk] = blocks;
                 return blocks;
             }
             else // Generate a new chunk
             {
-                BlockData2[,] blocks = Generator.GenerateChunk(chunk);
+                blocks = Generator.GenerateChunk(chunk);
                 chunkCache[chunk] = blocks;
                 return blocks;
             }
@@ -68,8 +70,7 @@ namespace Larnix.Server.Terrain
                     BlockData2[,] data = vkp.Value;
 
                     // flush data
-                    byte[] bytes = ChunkMethods.SerializeChunk(data);
-                    Database.SetChunk(chunk.x, chunk.y, bytes);
+                    Database.SetChunk(chunk.x, chunk.y, data);
 
                     // remove disabled chunks from cache
                     if (!referencedChunks.Contains(chunk))

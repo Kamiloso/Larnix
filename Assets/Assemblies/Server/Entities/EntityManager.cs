@@ -13,6 +13,8 @@ using Larnix.Socket.Backend;
 using Larnix.Server.Data;
 using Larnix.Core.References;
 using Larnix.Packets;
+using Larnix.Core.Json;
+using Larnix.Core;
 
 namespace Larnix.Server.Entities
 {
@@ -48,8 +50,11 @@ namespace Larnix.Server.Entities
             foreach (ulong uid in entityControllers.Keys.ToList())
                 if (entityControllers[uid].IsActive)
                 {
-                    if (entityControllers[uid].EntityData.NBT.MarkedToKill)
+                    Storage storage = entityControllers[uid].EntityData.Data;
+                    if (Tags.TryConsume(storage, "tags", Tags.TO_BE_KILLED))
+                    {
                         KillEntity(uid);
+                    }
                 }
         }
 
@@ -165,11 +170,10 @@ namespace Larnix.Server.Entities
             playerControllers.Add(nickname, playerController);
             entityControllers.Add(playerController.uID, playerController);
 
-            // Construct and send PlayerInitialize
             Payload packet = new PlayerInitialize(
-                playerController.EntityData.Position,
-                playerController.uID,
-                _lastFixedFrame
+                position: playerController.EntityData.Position,
+                myUid: playerController.uID,
+                lastFixedFrame: _lastFixedFrame
             );
             QuickServer.Send(nickname, packet);
         }
@@ -192,15 +196,8 @@ namespace Larnix.Server.Entities
             else throw new InvalidOperationException($"Controller of player {nickname} is not loaded!");
         }
 
-        public List<EntityAbstraction> GetAllPlayerControllers()
-        {
-            return playerControllers.Values.ToList();
-        }
-
-        public List<EntityAbstraction> GetAllEntityControllers()
-        {
-            return entityControllers.Values.ToList();
-        }
+        public List<EntityAbstraction> GetAllPlayerControllers() => playerControllers.Values.ToList();
+        public List<EntityAbstraction> GetAllEntityControllers() => entityControllers.Values.ToList();
 
         public void SummonEntity(EntityData entityData)
         {
@@ -226,7 +223,7 @@ namespace Larnix.Server.Entities
         public void KillEntity(ulong uid)
         {
             if (!entityControllers.ContainsKey(uid))
-                throw new System.InvalidOperationException("Entity with ID " + uid + " is not loaded!");
+                throw new InvalidOperationException("Entity with ID " + uid + " is not loaded!");
 
             if (entityControllers[uid].EntityData.ID == EntityID.Player)
             {

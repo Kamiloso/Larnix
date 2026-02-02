@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
+using Larnix.Core.Json;
 
 namespace Larnix.Blocks
 {
@@ -9,9 +10,8 @@ namespace Larnix.Blocks
     {
         public uint FramesSinceServerStart();
         public BlockServer GetBlock(Vec2Int POS, bool front);
-        public BlockServer ReplaceBlock(Vec2Int POS, bool front, BlockData1 blockData);
+        public BlockServer ReplaceBlock(Vec2Int POS, bool front, BlockData1 blockTemplate);
         public BlockServer SetBlockVariant(Vec2Int POS, bool front, byte variant);
-        public BlockServer SetBlockNBT(Vec2Int POS, bool front, string NBT);
         public bool CanPlaceBlock(Vec2Int POS, bool front, BlockData1 item);
         public bool CanBreakBlock(Vec2Int POS, bool front, BlockData1 item, BlockData1 tool);
         public void PlaceBlockWithEffects(Vec2Int POS, bool front, BlockData1 item);

@@ -39,7 +39,7 @@ namespace Larnix.Socket.Security
 
         internal static string ProduceRawAuthCodeRSA(byte[] key, long secret)
         {
-            byte[] hash = DeriveKeyScrypt(key, EndianUnsafe.GetBytes((long)-7264111368357934733)); // random, hard-coded salt
+            byte[] hash = DeriveKeyScrypt(key, Primitives.GetBytes((long)-7264111368357934733)); // random, hard-coded salt
 
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < VERIFY_PART_LENGTH; i++)

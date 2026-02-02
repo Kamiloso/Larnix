@@ -3,7 +3,6 @@ using Larnix.Core.Physics;
 using System.Collections;
 using System.Collections.Generic;
 using Larnix.Core.Utils;
-using ActionType = Larnix.Entities.EntityNBT.ActionType;
 
 namespace Larnix.Entities
 {
@@ -19,18 +18,20 @@ namespace Larnix.Entities
             bool touchesWall = (outputData?.OnLeftWall ?? false) ||
                                (outputData?.OnRightWall ?? false);
 
-            if (--NBT.NextActionTicks <= 0) // change action
+            // change action
+
+            if (--Data["action.ticks"].Int <= 0)
             {
-                ActionType action = NBT.Action;
-                ActionType nextAction = action switch
+                string action = Data["action.current"].String;
+                string nextAction = action switch
                 {
-                    ActionType.WalkingLeft => ActionType.None,
-                    ActionType.WalkingRight => ActionType.None,
-                    _ => Common.Rand().Next() % 2 == 0 ? ActionType.WalkingLeft : ActionType.WalkingRight,
+                    "WALK_LEFT" => "",
+                    "WALK_RIGHT" => "",
+                    _ => Common.Rand().Next() % 2 == 0 ? "WALK_LEFT" : "WALK_RIGHT",
                 };
 
-                NBT.Action = nextAction;
-                NBT.NextActionTicks = Common.Rand().Next(
+                Data["action.current"].String = nextAction;
+                Data["action.ticks"].Int = Common.Rand().Next(
                     MIN_THINKING_TIME(),
                     MAX_THINKING_TIME()
                     );
@@ -38,12 +39,12 @@ namespace Larnix.Entities
 
             // perform action
 
-            ActionType finalAction = NBT.Action;
+            string finalAction = Data["action.current"].String;
             return new InputData
             {
                 Jump = touchesWall,
-                Left = finalAction == ActionType.WalkingLeft,
-                Right = finalAction == ActionType.WalkingRight,
+                Left = finalAction == "WALK_LEFT",
+                Right = finalAction == "WALK_RIGHT",
             };
         }
     }

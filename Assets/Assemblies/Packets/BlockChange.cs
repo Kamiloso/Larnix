@@ -10,14 +10,12 @@ namespace Larnix.Packets
 {
     public sealed class BlockChange : Payload
     {
-        private const int SIZE = (4 + 4) + 5 + 8 + 1;
+        private const int SIZE = 8 + 5 + 8 + 1;
 
-        public Vec2Int BlockPosition => new Vec2Int(
-            EndianUnsafe.FromBytes<int>(Bytes, 0),  // 4B
-            EndianUnsafe.FromBytes<int>(Bytes, 4)); // 4B
-        public BlockData1 Item => BlockData2.Deserialize(Bytes, 8).Front; // 2.5B
-        public BlockData1 Tool => BlockData2.Deserialize(Bytes, 8).Back; // 2.5B
-        public long Operation => EndianUnsafe.FromBytes<long>(Bytes, 13); // 8B
+        public Vec2Int BlockPosition => Structures.FromBytes<Vec2Int>(Bytes, 0); // 8B
+        public BlockData1 Item => Structures.FromBytes<BlockData2>(Bytes, 8).Front; // 2.5B
+        public BlockData1 Tool => Structures.FromBytes<BlockData2>(Bytes, 8).Back; // 2.5B
+        public long Operation => Primitives.FromBytes<long>(Bytes, 13); // 8B
         public bool Front => (Bytes[21] & 0b1) != 0; // 1B
 
 
@@ -28,17 +26,16 @@ namespace Larnix.Packets
             if (tool == null) throw new ArgumentNullException(nameof(tool));
 
             InitializePayload(ArrayUtils.MegaConcat(
-                EndianUnsafe.GetBytes(blockPosition.x),
-                EndianUnsafe.GetBytes(blockPosition.y),
-                new BlockData2(item, tool).Serialize(),
-                EndianUnsafe.GetBytes(operation),
+                Structures.GetBytes(blockPosition),
+                Structures.GetBytes(new BlockData2(item, tool)),
+                Primitives.GetBytes(operation),
                 new byte[] { (byte)(front ? 0b1 : 0b0) }
                 ), code);
         }
 
         protected override bool IsValid()
         {
-            return Bytes?.Length == SIZE &&
+            return Bytes.Length == SIZE &&
                 BlockPosition.x >= BlockUtils.MIN_BLOCK && BlockPosition.x <= BlockUtils.MAX_BLOCK &&
                 BlockPosition.y >= BlockUtils.MIN_BLOCK && BlockPosition.y <= BlockUtils.MAX_BLOCK;
         }

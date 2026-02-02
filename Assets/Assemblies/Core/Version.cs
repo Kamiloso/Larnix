@@ -6,11 +6,11 @@ using Larnix.Core.Binary;
 
 namespace Larnix.Core
 {
-    public struct Version : IBinaryStruct<Version>
+    public struct Version : IBinary<Version>
     {
-        public static readonly Version Current = new Version("0.0.22.5");
+        public static readonly Version Current = new Version("0.0.23");
 
-        public int SIZE => sizeof(uint);
+        public const int SIZE = sizeof(uint);
         public uint ID { get; private set; }
 
         public Version(uint id)
@@ -54,12 +54,15 @@ namespace Larnix.Core
 
         public byte[] Serialize()
         {
-            return EndianUnsafe.GetBytes(ID);
+            return Primitives.GetBytes(ID);
         }
 
         public bool Deserialize(byte[] bytes, int offset = 0)
         {
-            ID = EndianUnsafe.FromBytes<uint>(bytes, offset);
+            if (offset + SIZE > bytes.Length)
+                return false;
+            
+            ID = Primitives.FromBytes<uint>(bytes, offset);
             return true;
         }
 

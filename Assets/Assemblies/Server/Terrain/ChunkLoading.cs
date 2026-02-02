@@ -17,14 +17,13 @@ namespace Larnix.Server.Terrain
     {
         public const float UNLOADING_TIME = 4f; // seconds
 
-        public WorldAPI WorldAPI { get; private set; } = null;
+        public readonly WorldAPI WorldAPI;
         private Server Server => Ref<Server>();
         private PlayerManager PlayerManager => Ref<PlayerManager>();
         private QuickServer QuickServer => Ref<QuickServer>();
         private EntityManager EntityManager => Ref<EntityManager>();
 
         private readonly Dictionary<Vec2Int, ChunkContainer> Chunks = new();
-        private readonly BlockData2[,] PreAllocatedChunkArray = new BlockData2[16, 16];
 
         public enum LoadState { None, Loading, Active }
         private class ChunkContainer
@@ -37,13 +36,6 @@ namespace Larnix.Server.Terrain
         public ChunkLoading(Server server) : base(server)
         {
             WorldAPI = new WorldAPI(server);
-
-            if (PreAllocatedChunkArray[0, 0] == null) // pre-allocating chunk array
-            {
-                for (int x = 0; x < 16; x++)
-                    for (int y = 0; y < 16; y++)
-                        PreAllocatedChunkArray[x, y] = new BlockData2();
-            }
         }
 
         public override void FrameUpdate()
@@ -141,8 +133,8 @@ namespace Larnix.Server.Terrain
                 // send added
                 foreach (var chunk in added)
                 {
-                    Chunks[chunk].Instance.MoveChunkIntoArray(PreAllocatedChunkArray);
-                    Payload packet = new ChunkInfo(chunk, PreAllocatedChunkArray);
+                    BlockData2[,] chunkArray = Chunks[chunk].Instance.ActiveChunkReference;
+                    Payload packet = new ChunkInfo(chunk, chunkArray);
                     QuickServer.Send(nickname, packet);
                 }
 

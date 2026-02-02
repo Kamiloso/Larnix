@@ -15,41 +15,32 @@ namespace Larnix.Worldgen.Biomes
             switch (protoBlock)
             {
                 case ProtoBlock.Air:
-                    return new BlockData2(
-                    new BlockData1 { },
-                    new BlockData1 { }
-                    );
+                    return new BlockData2();
 
                 case ProtoBlock.Stone:
                     return new BlockData2(
-                    new BlockData1 { ID = BlockID.Sandstone },
-                    new BlockData1 { ID = BlockID.Sandstone }
+                        new(BlockID.Sandstone, 0),
+                        new(BlockID.Sandstone, 0)
                     );
 
                 case ProtoBlock.Soil:
                 case ProtoBlock.SoilSurface:
                     return new BlockData2(
-                    new BlockData1 { ID = BlockID.Sand },
-                    new BlockData1 { }
+                        new(BlockID.Sand, 0),
+                        new()
                     );
 
                 case ProtoBlock.Cave:
                     return new BlockData2(
-                    new BlockData1 { },
-                    new BlockData1 { ID = BlockID.Sandstone }
+                        new(),
+                        new(BlockID.Sandstone, 0)
                     );
 
                 case ProtoBlock.Liquid:
-                    return new BlockData2(
-                    new BlockData1 { },
-                    new BlockData1 { }
-                    );
+                    return new BlockData2();
 
                 default:
-                    return new BlockData2(
-                    new BlockData1 { },
-                    new BlockData1 { }
-                    );
+                    return new BlockData2();
             }
         }
     }

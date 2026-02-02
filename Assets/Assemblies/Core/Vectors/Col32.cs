@@ -4,9 +4,10 @@ using Larnix.Core.Binary;
 
 namespace Larnix.Core.Vectors
 {
-    public struct Col32 : IEquatable<Col32>, IBinaryStruct<Col32>
+    public struct Col32 : IEquatable<Col32>, IBinary<Col32>
     {
-        public int SIZE => sizeof(byte) * 4;
+        public const int SIZE = sizeof(byte) * 4;
+
         public byte r { get; private set; }
         public byte g { get; private set; }
         public byte b { get; private set; }
@@ -38,7 +39,7 @@ namespace Larnix.Core.Vectors
         public bool Deserialize(byte[] bytes, int offset = 0)
         {
             if (offset + SIZE > bytes.Length)
-                throw new ArgumentException("Array too short to deserialize!");
+                return false;
 
             r = bytes[offset + 0];
             g = bytes[offset + 1];

@@ -131,13 +131,11 @@ namespace Larnix.Client
         private void UpdateEntityObject(double time)
         {
             transform.position = ToUnityPos(Position);
-            EntityProjection.UpdateTransform(new EntityData
-            {
-                ID = EntityID.Player,
-                Position = Position,
-                Rotation = Rotation,
-                NBT = null
-            }, time);
+            EntityProjection.UpdateTransform(new EntityData(
+                id: EntityID.Player,
+                position: Position,
+                rotation: Rotation
+            ), time);
         }
 
         public Vector2 ClientPosition()

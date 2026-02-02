@@ -56,14 +56,14 @@ namespace Larnix.Socket.Packets
             {
                 PayloadBox box = new PayloadBox();
 
-                ushort checksum = EndianUnsafe.FromBytes<ushort>(networkBytes, 0);
-                ushort version = EndianUnsafe.FromBytes<ushort>(networkBytes, 2);
+                ushort checksum = Primitives.FromBytes<ushort>(networkBytes, 0);
+                ushort version = Primitives.FromBytes<ushort>(networkBytes, 2);
 
                 if (version == PROTOCOL_VERSION && checksum == CheckSum(networkBytes, 2))
                 {
-                    box.SeqNum = EndianUnsafe.FromBytes<int>(networkBytes, 4);
-                    box.AckNum = EndianUnsafe.FromBytes<int>(networkBytes, 8);
-                    box.Flags = EndianUnsafe.FromBytes<byte>(networkBytes, 12);
+                    box.SeqNum = Primitives.FromBytes<int>(networkBytes, 4);
+                    box.AckNum = Primitives.FromBytes<int>(networkBytes, 8);
+                    box.Flags = Primitives.FromBytes<byte>(networkBytes, 12);
 
                     if (key != null) // include contents
                     {
@@ -72,7 +72,7 @@ namespace Larnix.Socket.Packets
                         if (box.Bytes.Length >= Payload.BASE_HEADER_SIZE)
                         {
                             // extract encrypted signature
-                            int secureSeq = EndianUnsafe.FromBytes<int>(box.Bytes, 3);
+                            int secureSeq = Primitives.FromBytes<int>(box.Bytes, 3);
 
                             // check integrity
                             if (secureSeq == box.SeqNum)
@@ -102,15 +102,15 @@ namespace Larnix.Socket.Packets
         public byte[] Serialize(IEncryptionKey key)
         {
             byte[] serialized = ArrayUtils.MegaConcat(
-                EndianUnsafe.GetBytes((ushort) 0),
-                EndianUnsafe.GetBytes(PROTOCOL_VERSION),
-                EndianUnsafe.GetBytes(SeqNum),
-                EndianUnsafe.GetBytes(AckNum),
-                EndianUnsafe.GetBytes(Flags),
+                Primitives.GetBytes((ushort) 0),
+                Primitives.GetBytes(PROTOCOL_VERSION),
+                Primitives.GetBytes(SeqNum),
+                Primitives.GetBytes(AckNum),
+                Primitives.GetBytes(Flags),
                 key.Encrypt(Bytes)
                 );
 
-            byte[] checksum = EndianUnsafe.GetBytes(CheckSum(serialized, 2));
+            byte[] checksum = Primitives.GetBytes(CheckSum(serialized, 2));
             Buffer.BlockCopy(checksum, 0, serialized, 0, checksum.Length);
 
             return serialized;

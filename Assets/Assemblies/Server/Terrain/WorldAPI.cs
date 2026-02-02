@@ -4,7 +4,6 @@ using System.Collections;
 using System.Collections.Generic;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
-using Larnix.Core.References;
 
 namespace Larnix.Server.Terrain
 {
@@ -26,38 +25,29 @@ namespace Larnix.Server.Terrain
             return null;
         }
 
-        public BlockServer ReplaceBlock(Vec2Int POS, bool isFront, BlockData1 blockData)
+        public BlockServer ReplaceBlock(Vec2Int POS, bool isFront, BlockData1 blockTemplate)
         {
             Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
             if (Chunks.TryGetChunk(chunk, out var chunkObject))
             {
                 Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
-                return chunkObject.UpdateBlock(pos, isFront, blockData);
-            }
-            return null;
-
-        }
-
-        public BlockServer SetBlockVariant(Vec2Int POS, bool isFront, byte Variant)
-        {
-            BlockServer oldBlock = GetBlock(POS, isFront);
-            if (oldBlock != null)
-            {
-                BlockData1 data = oldBlock.BlockData.DeepCopy();
-                data.Variant = Variant;
-                return ReplaceBlock(POS, isFront, data);
+                BlockData1 blockDeepCopy = blockTemplate.DeepCopy();
+                return chunkObject.UpdateBlock(pos, isFront, blockDeepCopy);
             }
             return null;
         }
 
-        public BlockServer SetBlockNBT(Vec2Int POS, bool isFront, string NBT)
+        public BlockServer SetBlockVariant(Vec2Int POS, bool isFront, byte variant)
         {
             BlockServer oldBlock = GetBlock(POS, isFront);
             if (oldBlock != null)
             {
-                BlockData1 data = oldBlock.BlockData.DeepCopy();
-                data.NBT = NBT;
-                return ReplaceBlock(POS, isFront, data);
+                BlockData1 blockTemplate = new BlockData1(
+                    id: oldBlock.BlockData.ID,
+                    variant: variant,
+                    data: oldBlock.BlockData.Data);
+                
+                return ReplaceBlock(POS, isFront, blockTemplate);
             }
             return null;
         }
@@ -110,7 +100,7 @@ namespace Larnix.Server.Terrain
 
         public void BreakBlockWithEffects(Vec2Int POS, bool front, BlockData1 tool)
         {
-            ReplaceBlock(POS, front, new BlockData1 { });
+            ReplaceBlock(POS, front, new BlockData1());
         }
     }
 }

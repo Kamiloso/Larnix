@@ -4,9 +4,10 @@ using Larnix.Core.Binary;
 
 namespace Larnix.Core.Vectors
 {
-    public struct Vec2 : IEquatable<Vec2>, IBinaryStruct<Vec2>
+    public struct Vec2 : IEquatable<Vec2>, IBinary<Vec2>
     {
-        public int SIZE => sizeof(double) * 2;
+        public const int SIZE = sizeof(double) * 2;
+        
         public double x { get; private set; }
         public double y { get; private set; }
 
@@ -19,15 +20,18 @@ namespace Larnix.Core.Vectors
         public byte[] Serialize()
         {
             return ArrayUtils.MegaConcat(
-                EndianUnsafe.GetBytes(x),
-                EndianUnsafe.GetBytes(y)
+                Primitives.GetBytes(x),
+                Primitives.GetBytes(y)
             );
         }
 
         public bool Deserialize(byte[] bytes, int offset = 0)
         {
-            double _x = EndianUnsafe.FromBytes<double>(bytes, offset);
-            double _y = EndianUnsafe.FromBytes<double>(bytes, offset + 8);
+            if (offset + SIZE > bytes.Length)
+                return false;
+
+            double _x = Primitives.FromBytes<double>(bytes, offset);
+            double _y = Primitives.FromBytes<double>(bytes, offset + 8);
 
             x = double.IsFinite(_x) ? _x : 0.0;
             y = double.IsFinite(_y) ? _y : 0.0;

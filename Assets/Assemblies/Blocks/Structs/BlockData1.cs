@@ -1,31 +1,54 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using Larnix.Blocks;
+using System.Drawing;
+using Larnix.Core.Binary;
+using Larnix.Core.Json;
+using Larnix.Core.Utils;
 
 namespace Larnix.Blocks.Structs
 {
-    public class BlockData1
+    public class BlockData1 : IBinary<BlockData1>
     {
-        public BlockID ID = 0;
-        public byte Variant = 0; // 0 - 16
-        public string NBT = "{}";
+        public const int SIZE = sizeof(BlockID) + sizeof(byte);
 
-        public static bool BaseEquals(BlockData1 b1, BlockData1 b2)
+        public BlockID ID { get; private set; }
+        private byte _variant;
+        public byte Variant
         {
-            return (
-                b1.ID == b2.ID &&
-                b1.Variant == b2.Variant
+            get => _variant;
+            private set => _variant = (byte)(value & 0b00001111);
+        }
+        public Storage Data { get; private set; }
+
+        public BlockData1() => Data = new();
+        public BlockData1(BlockID id, byte variant, Storage data = null)
+        {
+            ID = id;
+            Variant = variant;
+            Data = data ?? new();
+        }
+
+        public byte[] Serialize()
+        {
+            return ArrayUtils.MegaConcat(
+                Primitives.GetBytes(ID),
+                Primitives.GetBytes(Variant)
                 );
         }
 
-        public static bool FullEquals(BlockData1 b1, BlockData1 b2)
+        public bool Deserialize(byte[] bytes, int offset = 0)
         {
-            return (
-                BaseEquals(b1, b2) &&
-                b1.NBT == b2.NBT
-                );
+            if (offset + SIZE > bytes.Length)
+                return false;
+            
+            ID = Primitives.FromBytes<BlockID>(bytes, offset);
+            offset += sizeof(BlockID);
+
+            Variant = Primitives.FromBytes<byte>(bytes, offset);
+            offset += sizeof(byte);
+
+            return true;
         }
 
         public BlockData1 DeepCopy()
@@ -34,7 +57,7 @@ namespace Larnix.Blocks.Structs
             {
                 ID = ID,
                 Variant = Variant,
-                NBT = NBT,
+                Data = Data.DeepCopy(),
             };
         }
     }

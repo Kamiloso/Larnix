@@ -64,11 +64,9 @@ namespace Larnix.Server.Terrain
             foreach (string nickname in PlayerManager.GetAllPlayerNicknames())
             {
                 Queue<(Vec2Int block, BlockData2 data)> changes = IndividualUpdates[nickname];
-                BlockUpdate.Record[] records = changes.Select(ch => new BlockUpdate.Record
-                {
-                    POS = ch.block,
-                    Block = ch.data,
-                }).ToArray();
+                
+                BlockUpdate.Record[] records = changes.Select(
+                    ch => new BlockUpdate.Record(ch.block, ch.data)).ToArray();
 
                 List<BlockUpdate> packets = BlockUpdate.CreateList(records);
                 foreach (Payload packet in packets)

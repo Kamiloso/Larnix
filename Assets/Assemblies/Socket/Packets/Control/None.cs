@@ -16,7 +16,7 @@ namespace Larnix.Socket.Packets.Control
 
         protected override bool IsValid()
         {
-            return Bytes?.Length == SIZE;
+            return Bytes.Length == SIZE;
         }
     }
 }

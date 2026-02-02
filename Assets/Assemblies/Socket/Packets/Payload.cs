@@ -31,13 +31,13 @@ namespace Larnix.Socket.Packets
         {
             if (rawBytes.Length >= BASE_HEADER_SIZE)
             {
-                CmdID id = EndianUnsafe.FromBytes<CmdID>(rawBytes, 0);
+                CmdID id = Primitives.FromBytes<CmdID>(rawBytes, 0);
                 if (id == CmdID<T>())
                 {
                     T payload = new T();
 
                     payload.ID = payload.GetMyCmdID();
-                    payload.Code = EndianUnsafe.FromBytes<byte>(rawBytes, 2);
+                    payload.Code = Primitives.FromBytes<byte>(rawBytes, 2);
                     payload.Bytes = rawBytes[7..];
 
                     if (payload.IsValid())
@@ -55,9 +55,9 @@ namespace Larnix.Socket.Packets
         internal byte[] Serialize(int seqSecure)
         {
             return ArrayUtils.MegaConcat(
-                EndianUnsafe.GetBytes(ID),
-                EndianUnsafe.GetBytes(Code),
-                EndianUnsafe.GetBytes(seqSecure), // SeqNum signature
+                Primitives.GetBytes(ID),
+                Primitives.GetBytes(Code),
+                Primitives.GetBytes(seqSecure), // SeqNum signature
                 Bytes
                 );
         }

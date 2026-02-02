@@ -1,25 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using SimpleJSON;
 
-namespace Larnix.Core
+namespace Larnix.Core.Json
 {
     public class Node
     {
         private JSONNode _node;
         internal Node(JSONNode node) => _node = node;
-
-        public int Int
-        {
-            get => _node.AsInt;
-            set => _node.AsInt = value;
-        }
-
-        public float Float
-        {
-            get => _node.AsFloat;
-            set => _node.AsFloat = value;
-        }
 
         public string String
         {
@@ -27,10 +16,22 @@ namespace Larnix.Core
             set => _node.Value = value;
         }
 
+        public int Int
+        {
+            get => int.TryParse(_node.Value, out int result) ? result : default;
+            set => _node.Value = value.ToString();
+        }
+
+        public float Float
+        {
+            get => float.TryParse(_node.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out float result) ? result : default;
+            set => _node.Value = value.ToString(CultureInfo.InvariantCulture);
+        }
+
         public bool Bool
         {
-            get => _node.AsBool;
-            set => _node.AsBool = value;
+            get => bool.TryParse(_node.Value, out bool result) ? result : default;
+            set => _node.Value = value.ToString();
         }
     }
 }

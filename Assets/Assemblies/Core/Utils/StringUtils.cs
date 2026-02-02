@@ -32,7 +32,7 @@ namespace Larnix.Core.Utils
 
     #region StringN structs
 
-    public interface IStringStruct : IIgnoresEndianness
+    public interface IStringStruct : IEndianSafe
     {
         public int BinarySize { get; }
     }

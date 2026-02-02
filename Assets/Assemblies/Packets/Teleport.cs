@@ -9,24 +9,21 @@ namespace Larnix.Packets
 {
     public sealed class Teleport : Payload
     {
-        private const int SIZE = 8 + 8;
+        private const int SIZE = 16;
 
-        public Vec2 TargetPosition => new Vec2(
-            EndianUnsafe.FromBytes<double>(Bytes, 0),  // 8B
-            EndianUnsafe.FromBytes<double>(Bytes, 8)); // 8B
-
+        public Vec2 TargetPosition => Structures.FromBytes<Vec2>(Bytes, 0); // 16B
+        
         public Teleport() { }
         public Teleport(Vec2 targetPosition, byte code = 0) 
         {
             InitializePayload(ArrayUtils.MegaConcat(
-                EndianUnsafe.GetBytes(targetPosition.x),
-                EndianUnsafe.GetBytes(targetPosition.y)
+                Structures.GetBytes(targetPosition)
                 ), code);
         }
 
         protected override bool IsValid()
         {
-            return Bytes?.Length == SIZE;
+            return Bytes.Length == SIZE;
         }
     }
 }
