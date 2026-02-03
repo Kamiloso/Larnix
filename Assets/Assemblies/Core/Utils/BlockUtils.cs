@@ -7,6 +7,8 @@ namespace Larnix.Core.Utils
 {
     public static class BlockUtils
     {
+        public const int CHUNK_SIZE = 16;
+
         public const int MIN_CHUNK = -(1 << 27) + 1;
         public const int MAX_CHUNK = -(MIN_CHUNK + 1);
 

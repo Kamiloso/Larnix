@@ -14,14 +14,16 @@ namespace Larnix.Server.Terrain
 {
     internal class ChunkServer : RefObject<Server>, IDisposable
     {
+        private const int CHUNK_SIZE = BlockUtils.CHUNK_SIZE;
+
         private WorldAPI WorldAPI => Ref<ChunkLoading>().WorldAPI;
         private BlockDataManager BlockDataManager => Ref<BlockDataManager>();
         private PhysicsManager PhysicsManager => Ref<PhysicsManager>();
         private BlockSender BlockSender => Ref<BlockSender>();
 
         public readonly Vec2Int Chunkpos;
-        private readonly BlockServer[,] BlocksFront = new BlockServer[16, 16];
-        private readonly BlockServer[,] BlocksBack = new BlockServer[16, 16];
+        private readonly BlockServer[,] BlocksFront = new BlockServer[CHUNK_SIZE, CHUNK_SIZE];
+        private readonly BlockServer[,] BlocksBack = new BlockServer[CHUNK_SIZE, CHUNK_SIZE];
         private readonly Dictionary<Vec2Int, StaticCollider> StaticColliders = new();
 
         public readonly BlockData2[,] ActiveChunkReference;
@@ -31,83 +33,22 @@ namespace Larnix.Server.Terrain
             Chunkpos = chunkpos;
             ActiveChunkReference = BlockDataManager.ObtainChunkReference(Chunkpos);
 
-            for (int x = 0; x < 16; x++)
-                for (int y = 0; y < 16; y++)
-                {
-                    Vec2Int pos = new Vec2Int(x, y);
-                    Vec2Int POS = BlockUtils.GlobalBlockCoords(Chunkpos, pos);
+            foreach (Vec2Int pos in ChunkIterator.IterateXY())
+            {
+                Vec2Int POS = BlockUtils.GlobalBlockCoords(Chunkpos, pos);
 
-                    BlockData2 blockData = ActiveChunkReference[x, y];
+                BlockData2 blockData = ActiveChunkReference[pos.x, pos.y];
 
-                    BlockServer frontBlock = BlockFactory.ConstructBlockObject(POS, blockData.Front, true, WorldAPI);
-                    BlocksFront[pos.x, pos.y] = frontBlock;
+                BlockServer frontBlock = BlockFactory.ConstructBlockObject(POS, blockData.Front, true, WorldAPI);
+                BlocksFront[pos.x, pos.y] = frontBlock;
 
-                    BlockServer backBlock = BlockFactory.ConstructBlockObject(POS, blockData.Back, false, WorldAPI);
-                    BlocksBack[pos.x, pos.y] = backBlock;
+                BlockServer backBlock = BlockFactory.ConstructBlockObject(POS, blockData.Back, false, WorldAPI);
+                BlocksBack[pos.x, pos.y] = backBlock;
 
-                    RefreshCollider(pos);
-                }
+                RefreshCollider(pos);
+            }
 
             PhysicsManager.SetChunkActive(Chunkpos, true);
-        }
-
-        public void INVOKE_PreFrame() // START
-        {
-            for (int y = 0; y < 16; y++)
-                for (int x = 0; x < 16; x++)
-                {
-                    BlocksBack[x, y].PreFrameTrigger();
-                    BlocksFront[x, y].PreFrameTrigger();
-                }
-        }
-
-        public void INVOKE_Conway() // 1
-        {
-            for (int y = 0; y < 16; y++)
-                for (int x = 0; x < 16; x++)
-                {
-                    BlocksBack[x, y].FrameUpdateConway();
-                    BlocksFront[x, y].FrameUpdateConway();
-                }
-        }
-
-        public void INVOKE_SequentialEarly() // 2
-        {
-            for (int y = 0; y < 16; y++)
-                for (int x = 0; x < 16; x++)
-                {
-                    BlocksBack[x, y].FrameUpdateSequentialEarly();
-                    BlocksFront[x, y].FrameUpdateSequentialEarly();
-                }
-        }
-
-        public void INVOKE_Random() // 3
-        {
-            foreach (var pos in Common.GetShuffledPositions(16, 16))
-            {
-                BlocksBack[pos.x, pos.y].FrameUpdateRandom();
-                BlocksFront[pos.x, pos.y].FrameUpdateRandom();
-            }
-        }
-
-        public void INVOKE_SequentialLate() // 4
-        {
-            for (int y = 0; y < 16; y++)
-                for (int x = 0; x < 16; x++)
-                {
-                    BlocksBack[x, y].FrameUpdateSequentialLate();
-                    BlocksFront[x, y].FrameUpdateSequentialLate();
-                }
-        }
-
-        public void INVOKE_PostFrame() // END
-        {
-            for (int y = 0; y < 16; y++)
-                for (int x = 0; x < 16; x++)
-                {
-                    BlocksBack[x, y].PostFrameTrigger();
-                    BlocksFront[x, y].PostFrameTrigger();
-                }
         }
 
         public BlockServer GetBlock(Vec2Int pos, bool isFront)
@@ -197,5 +138,64 @@ namespace Larnix.Server.Terrain
             PhysicsManager.SetChunkActive(Chunkpos, false);
             BlockDataManager.ReturnChunkReference(Chunkpos);
         }
+
+#region Frame Invokes
+
+        public void INVOKE_PreFrame() // START
+        {
+            foreach (Vec2Int pos in ChunkIterator.IterateYX())
+            {
+                BlocksBack[pos.x, pos.y].PreFrameTrigger();
+                BlocksFront[pos.x, pos.y].PreFrameTrigger();
+            }
+        }
+
+        public void INVOKE_Conway() // 1
+        {
+            foreach (Vec2Int pos in ChunkIterator.IterateYX())
+            {
+                BlocksBack[pos.x, pos.y].FrameUpdateConway();
+                BlocksFront[pos.x, pos.y].FrameUpdateConway();
+            }
+        }
+
+        public void INVOKE_SequentialEarly() // 2
+        {
+            foreach (Vec2Int pos in ChunkIterator.IterateYX())
+            {
+                BlocksBack[pos.x, pos.y].FrameUpdateSequentialEarly();
+                BlocksFront[pos.x, pos.y].FrameUpdateSequentialEarly();
+            }
+        }
+
+        public void INVOKE_Random() // 3
+        {
+            foreach (Vec2Int pos in ChunkIterator.IterateRandom())
+            {
+                BlocksBack[pos.x, pos.y].FrameUpdateRandom();
+                BlocksFront[pos.x, pos.y].FrameUpdateRandom();
+            }
+        }
+
+        public void INVOKE_SequentialLate() // 4
+        {
+            foreach (Vec2Int pos in ChunkIterator.IterateYX())
+            {
+                BlocksBack[pos.x, pos.y].FrameUpdateSequentialLate();
+                BlocksFront[pos.x, pos.y].FrameUpdateSequentialLate();
+            }
+        }
+
+        public void INVOKE_PostFrame() // END
+        {
+            foreach (Vec2Int pos in ChunkIterator.IterateYX())
+            {
+                BlocksBack[pos.x, pos.y].PostFrameTrigger();
+                BlocksFront[pos.x, pos.y].PostFrameTrigger();
+            }
+        }
+
+#endregion
+
     }
 }

@@ -69,28 +69,5 @@ namespace Larnix.Core.Utils
             var step1 = Regex.Replace(input, @"([A-Z])(?=[A-Z][a-z])", "$1 ");
             return Regex.Replace(step1, @"(?<=[a-z])(?=[A-Z])", " ");
         }
-
-        public static List<(int x, int y)> GetShuffledPositions(int width, int height)
-        {
-            int total = width * height;
-            int[] indices = Enumerable.Range(0, total).ToArray();
-
-            var rng = Rand();
-            for (int i = total - 1; i > 0; i--)
-            {
-                int j = rng.Next(i + 1);
-                (indices[i], indices[j]) = (indices[j], indices[i]);
-            }
-
-            var result = new List<(int x, int y)>(total);
-            foreach (int idx in indices)
-            {
-                int x = idx % width;
-                int y = idx / width;
-                result.Add((x, y));
-            }
-
-            return result;
-        }
     }
 }

@@ -15,6 +15,8 @@ namespace Larnix.Worldgen
     public enum ProtoBlock { Air, Stone, Soil, SoilSurface, Cave, Liquid }
     public class Generator
     {
+        private const int CHUNK_SIZE = BlockUtils.CHUNK_SIZE;
+
         // Variables
         private readonly Seed _seed;
         private readonly Dictionary<BiomeID, Biome> _biomes;
@@ -106,7 +108,7 @@ namespace Larnix.Worldgen
 
         public BlockData2[,] GenerateChunk(Vec2Int chunk)
         {
-            ProtoBlock[,] protoBlocks = new ProtoBlock[16, 16];
+            ProtoBlock[,] protoBlocks = new ProtoBlock[CHUNK_SIZE, CHUNK_SIZE];
 
             Build_BaseTerrain(protoBlocks, chunk);
             Build_Caves(protoBlocks, chunk);
@@ -121,93 +123,127 @@ namespace Larnix.Worldgen
 
         private void Build_BaseTerrain(ProtoBlock[,] protoBlocks, Vec2Int chunk)
         {
-            for (int x = 0; x < 16; x++)
-                for (int y = 0; y < 16; y++)
+            foreach (Vec2Int pos in ChunkIterator.IterateXY())
+            {
+                int x = pos.x;
+                int y = pos.y;
+
+                Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, pos);
+
+                const int SOIL_LAYER_SIZE = 3;
+
+                int surface_level = (int)Math.Floor(ProviderSurface.GetValue(POS.x));
+                int stone_level = surface_level - SOIL_LAYER_SIZE;
+
+                if (POS.y > surface_level) // air
                 {
-                    Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, new Vec2Int(x, y));
-
-                    const int SOIL_LAYER_SIZE = 3;
-
-                    int surface_level = (int)Math.Floor(ProviderSurface.GetValue(POS.x));
-                    int stone_level = surface_level - SOIL_LAYER_SIZE;
-
-                    if (POS.y > surface_level) // air
-                    {
-                        bool is_lake = POS.y <= WATER_LEVEL;
-                        protoBlocks[x, y] = is_lake ? ProtoBlock.Liquid : ProtoBlock.Air;
-                    }
-                    else if (POS.y > stone_level) // dirt
-                    {
-                        bool is_top = POS.y + 1 > surface_level;
-                        protoBlocks[x, y] = is_top ? ProtoBlock.SoilSurface : ProtoBlock.Soil;
-                    }
-                    else // underground
-                    {
-                        protoBlocks[x, y] = ProtoBlock.Stone;
-                    }
+                    bool is_lake = POS.y <= WATER_LEVEL;
+                    protoBlocks[x, y] = is_lake ? ProtoBlock.Liquid : ProtoBlock.Air;
                 }
+                else if (POS.y > stone_level) // dirt
+                {
+                    bool is_top = POS.y + 1 > surface_level;
+                    protoBlocks[x, y] = is_top ? ProtoBlock.SoilSurface : ProtoBlock.Soil;
+                }
+                else // underground
+                {
+                    protoBlocks[x, y] = ProtoBlock.Stone;
+                }
+            }
+
+            foreach (Vec2Int pos in ChunkIterator.IterateXY())
+            {
+                int x = pos.x;
+                int y = pos.y;
+
+                Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, pos);
+
+                const int SOIL_LAYER_SIZE = 3;
+
+                int surface_level = (int)Math.Floor(ProviderSurface.GetValue(POS.x));
+                int stone_level = surface_level - SOIL_LAYER_SIZE;
+
+                if (POS.y > surface_level) // air
+                {
+                    bool is_lake = POS.y <= WATER_LEVEL;
+                    protoBlocks[x, y] = is_lake ? ProtoBlock.Liquid : ProtoBlock.Air;
+                }
+                else if (POS.y > stone_level) // dirt
+                {
+                    bool is_top = POS.y + 1 > surface_level;
+                    protoBlocks[x, y] = is_top ? ProtoBlock.SoilSurface : ProtoBlock.Soil;
+                }
+                else // underground
+                {
+                    protoBlocks[x, y] = ProtoBlock.Stone;
+                }
+            }
         }
 
         private void Build_Caves(ProtoBlock[,] protoBlocks, Vec2Int chunk)
         {
-            for (int x = 0; x < 16; x++)
-                for (int y = 0; y < 16; y++)
+            foreach (Vec2Int pos in ChunkIterator.IterateXY())
+            {
+                int x = pos.x;
+                int y = pos.y;
+
+                Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, pos);
+
+                const double CAVE_NOISE_WIDTH = 0.2f;
+                double cave_value = ProviderCave.GetValue(POS.x, POS.y);
+
+                if (cave_value > -CAVE_NOISE_WIDTH && cave_value < CAVE_NOISE_WIDTH) // cave
                 {
-                    Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, new Vec2Int(x, y));
-
-                    const double CAVE_NOISE_WIDTH = 0.2f;
-                    double cave_value = ProviderCave.GetValue(POS.x, POS.y);
-
-                    if (cave_value > -CAVE_NOISE_WIDTH && cave_value < CAVE_NOISE_WIDTH) // cave
+                    ProtoBlock protoBlock = protoBlocks[x, y];
+                    switch(protoBlock)
                     {
-                        ProtoBlock protoBlock = protoBlocks[x, y];
-                        switch(protoBlock)
-                        {
-                            case ProtoBlock.Stone: protoBlock = ProtoBlock.Cave; break;
-                            default: protoBlock = ProtoBlock.Air; break;
-                        }
-                        protoBlocks[x, y] = protoBlock;
+                        case ProtoBlock.Stone: protoBlock = ProtoBlock.Cave; break;
+                        default: protoBlock = ProtoBlock.Air; break;
                     }
+                    protoBlocks[x, y] = protoBlock;
                 }
+            }
         }
 
         private BlockData2[,] ConvertToBlockArray(ProtoBlock[,] protoBlocks, Vec2Int chunk)
         {
-            BlockData2[,] blocks = new BlockData2[16, 16];
+            BlockData2[,] blocks = new BlockData2[CHUNK_SIZE, CHUNK_SIZE];
 
-            for (int x = 0; x < 16; x++)
-                for (int y = 0; y < 16; y++)
+            foreach (Vec2Int pos in ChunkIterator.IterateXY())
+            {
+                int x = pos.x;
+                int y = pos.y;
+                
+                const string PHRASE = "block_hash";
+                Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, pos);
+
+                BiomeID biomeID = BiomeID.Empty;
+                double temperature = NoiseTemperature.GetValue(POS.x, POS.y);
+
+                if (temperature < -0.22)
+                    biomeID = BiomeID.Arctic;
+
+                else if (temperature < -0.21 )
                 {
-                    const string PHRASE = "block_hash";
-                    Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, new Vec2Int(x, y));
-
-                    BiomeID biomeID = BiomeID.Empty;
-                    double temperature = NoiseTemperature.GetValue(POS.x, POS.y);
-
-                    if (temperature < -0.22)
-                        biomeID = BiomeID.Arctic;
-
-                    else if (temperature < -0.21 )
-                    {
-                        double gradient = (temperature - (-0.22)) / 0.01;
-                        biomeID = ValueFromGradient(BiomeID.Arctic, BiomeID.Plains, gradient, _seed.BlockHash(POS, PHRASE));
-                    }
-
-                    else if (temperature < 0.21)
-                        biomeID = BiomeID.Plains;
-
-                    else if (temperature < 0.22)
-                    {
-                        double gradient = (temperature - 0.21) / 0.01;
-                        biomeID = ValueFromGradient(BiomeID.Plains, BiomeID.Desert, gradient, _seed.BlockHash(POS, PHRASE));
-                    }
-
-                    else
-                        biomeID = BiomeID.Desert;
-
-                    Biome biome = _biomes[biomeID];
-                    blocks[x, y] = biome.TranslateProtoBlock(protoBlocks[x, y]);
+                    double gradient = (temperature - (-0.22)) / 0.01;
+                    biomeID = ValueFromGradient(BiomeID.Arctic, BiomeID.Plains, gradient, _seed.BlockHash(POS, PHRASE));
                 }
+
+                else if (temperature < 0.21)
+                    biomeID = BiomeID.Plains;
+
+                else if (temperature < 0.22)
+                {
+                    double gradient = (temperature - 0.21) / 0.01;
+                    biomeID = ValueFromGradient(BiomeID.Plains, BiomeID.Desert, gradient, _seed.BlockHash(POS, PHRASE));
+                }
+
+                else
+                    biomeID = BiomeID.Desert;
+
+                Biome biome = _biomes[biomeID];
+                blocks[x, y] = biome.TranslateProtoBlock(protoBlocks[x, y]);
+            }
 
             return blocks;
         }

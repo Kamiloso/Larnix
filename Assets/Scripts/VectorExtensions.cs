@@ -1,6 +1,7 @@
 using UnityEngine;
 using Larnix.Core.Vectors;
 using System;
+using Larnix.Core.Utils;
 
 namespace Larnix
 {
@@ -18,7 +19,7 @@ namespace Larnix
 
         // === Vec2 extensions ===
 
-        public const int ORIGIN_STEP = 16 * 64;
+        public const int ORIGIN_STEP = BlockUtils.CHUNK_SIZE * 64;
 
         public static Vec2 ConstructVec2(Vector2 pos, Vec2 origin)
         {

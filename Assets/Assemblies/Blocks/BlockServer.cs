@@ -21,13 +21,6 @@ namespace Larnix.Blocks
 
         private bool _markedToUpdate = false;
 
-        public event EventHandler PreFrameEvent;
-        public event EventHandler FrameEventConway;
-        public event EventHandler FrameEventSequentialEarly;
-        public event EventHandler FrameEventRandom;
-        public event EventHandler FrameEventSequentialLate;
-        public event EventHandler PostFrameEvent;
-
         public BlockServer(Vec2Int position, BlockData1 blockData, bool isFront)
         {
             Position = position;
@@ -42,6 +35,15 @@ namespace Larnix.Blocks
 
             _worldAPI = worldAPI;
         }
+
+#region Frame Events
+
+        public event EventHandler PreFrameEvent;
+        public event EventHandler FrameEventConway;
+        public event EventHandler FrameEventSequentialEarly;
+        public event EventHandler FrameEventRandom;
+        public event EventHandler FrameEventSequentialLate;
+        public event EventHandler PostFrameEvent;
 
         public void PreFrameTrigger() // START
         {
@@ -80,5 +82,8 @@ namespace Larnix.Blocks
             
             _markedToUpdate = false;
         }
+
+#endregion
+
     }
 }

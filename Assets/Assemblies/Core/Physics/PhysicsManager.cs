@@ -7,6 +7,8 @@ namespace Larnix.Core.Physics
 {
     public class PhysicsManager
     {
+        private const int CHUNK_SIZE = BlockUtils.CHUNK_SIZE;
+
         private readonly SpatialDictionary<StaticCollider> StaticColliders = new(3f);
         private readonly HashSet<Vec2Int> ActiveChunks = new();
 
@@ -31,7 +33,7 @@ namespace Larnix.Core.Physics
             OutputData totalReport = new OutputData { Position = dynCollider.Center };
             var list = StaticColliders.Get3x3SectorList(dynCollider.Center);
 
-            Vec2Int middleChunk = BlockUtils.CoordsToBlock(dynCollider.Center, 16.0);
+            Vec2Int middleChunk = BlockUtils.CoordsToBlock(dynCollider.Center, CHUNK_SIZE);
             for (int dx = -1; dx <= 1 ; dx++)
                 for (int dy = -1; dy <= 1; dy++)
                 {
@@ -40,7 +42,7 @@ namespace Larnix.Core.Physics
                     {
                         list.Add(new StaticCollider(
                             BlockUtils.ChunkCenter(chunk),
-                            new Vec2(16.01, 16.01)
+                            new Vec2(CHUNK_SIZE + 0.01, CHUNK_SIZE + 0.01)
                             ));
                     }
                 }

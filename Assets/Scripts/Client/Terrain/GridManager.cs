@@ -216,12 +216,14 @@ namespace Larnix.Client.Terrain
             if (!Chunks.TryGetValue(chunk, out BlockData2[,] chunkBlocks))
                 chunkBlocks = null;
 
-            for (int x = 0; x < 16; x++)
-                for (int y = 0; y < 16; y++)
-                {
-                    Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, new Vec2Int(x, y));
-                    UpdateBlockCollider(POS, chunkBlocks != null ? chunkBlocks[x, y] : null);
-                }
+            foreach (Vec2Int pos in ChunkIterator.IterateXY())
+            {
+                int x = pos.x;
+                int y = pos.y;
+
+                Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, pos);
+                UpdateBlockCollider(POS, chunkBlocks != null ? chunkBlocks[x, y] : null);
+            }
 
             if(!isMenu) Ref.PhysicsManager.SetChunkActive(chunk, chunkBlocks != null);
         }

@@ -36,13 +36,15 @@ namespace Larnix.Client.Terrain
             Tilemap Front = TileChunks[chunk].Front;
             Tilemap Back = TileChunks[chunk].Back;
 
-            for (int x = 0; x < 16; x++)
-                for (int y = 0; y < 16; y++)
-                {
-                    Vector3Int pos = new Vector3Int(x, y, 0);
-                    Front.SetTile(pos, Tiles.GetTile(blocks[x, y].Front, true));
-                    Back.SetTile(pos, Tiles.GetTile(blocks[x, y].Back, false));
-                }
+            foreach (Vec2Int pos in ChunkIterator.IterateXY())
+            {
+                int x = pos.x;
+                int y = pos.y;
+
+                Vector3Int tilePos = new Vector3Int(x, y, 0);
+                Front.SetTile(tilePos, Tiles.GetTile(blocks[x, y].Front, true));
+                Back.SetTile(tilePos, Tiles.GetTile(blocks[x, y].Back, false));
+            }
         }
 
         public void RedrawExistingTile(Vec2Int chunk, Vec2Int pos, BlockData2 block)
