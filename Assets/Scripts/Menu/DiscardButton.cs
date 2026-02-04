@@ -17,12 +17,12 @@ namespace Larnix.Menu
 
         private void LateUpdate()
         {
-            button.interactable = References.Menu.ScreenLock == 0;
+            button.interactable = Ref.Menu.ScreenLock == 0;
         }
 
         public void GoBack()
         {
-            References.Menu.GoBack();
+            Ref.Menu.GoBack();
         }
     }
 }

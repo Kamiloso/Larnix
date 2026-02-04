@@ -35,7 +35,7 @@ namespace Larnix.Menu.Forms
             this.args = args;
             TX_ErrorText.text = "";
 
-            References.Menu.SetScreen("ServerEdit");
+            Ref.Menu.SetScreen("ServerEdit");
         }
 
         protected override ErrorCode GetErrorCode()
@@ -46,10 +46,10 @@ namespace Larnix.Menu.Forms
             if (address == "")
                 return ErrorCode.ADDRESS_EMPTY;
 
-            if ((args[0] == "ADD" || (args[0] == "EDIT" && args[1] != address)) && References.ServerSelect.ContainsAddress(address))
+            if ((args[0] == "ADD" || (args[0] == "EDIT" && args[1] != address)) && Ref.ServerSelect.ContainsAddress(address))
                 return ErrorCode.ADDRESS_EXISTS;
 
-            //if ((args[0] == "ADD" || (args[0] == "EDIT" && args[2] != authcode)) && References.ServerSelect.ContainsAuthcode(authcode))
+            //if ((args[0] == "ADD" || (args[0] == "EDIT" && args[2] != authcode)) && Ref.ServerSelect.ContainsAuthcode(authcode))
             //    return ErrorCode.AUTHCODE_EXISTS;
 
             if (!Authcode.IsGoodAuthcode(authcode))
@@ -74,17 +74,17 @@ namespace Larnix.Menu.Forms
                     Password = "",
                 };
 
-                References.ServerSelect.AddServerSegment(address, serverData, true);
-                References.ServerSelect.SelectWorld(address, true);
+                Ref.ServerSelect.AddServerSegment(address, serverData, true);
+                Ref.ServerSelect.SelectWorld(address, true);
                 ServerSelect.SaveServerData(serverData);
             }
 
             if (args[0] == "EDIT")
             {
-                References.ServerSelect.EditSegment(args[1], address, authcode);
+                Ref.ServerSelect.EditSegment(args[1], address, authcode);
             }
 
-            References.Menu.GoBack();
+            Ref.Menu.GoBack();
         }
     }
 }

@@ -24,7 +24,7 @@ namespace Larnix.Menu.Forms
 
             TX_ErrorText.text = "";
 
-            References.Menu.SetScreen("CreateWorld");
+            Ref.Menu.SetScreen("CreateWorld");
         }
 
         protected override ErrorCode GetErrorCode()

@@ -43,7 +43,7 @@ namespace Larnix.Menu.Forms
 
             TX_ErrorText.text = "Your login data will be visible to the server owner.";
 
-            References.Menu.SetScreen("ChangePassword");
+            Ref.Menu.SetScreen("ChangePassword");
         }
 
         protected override ErrorCode GetErrorCode()
@@ -98,7 +98,7 @@ namespace Larnix.Menu.Forms
                 if (Result == false)
                     EnterForm(IF_Address.text, IF_Nickname.text);
                 else
-                    References.Menu.GoBack();
+                    Ref.Menu.GoBack();
             }
         }
 
@@ -146,13 +146,13 @@ namespace Larnix.Menu.Forms
                     break;
 
                 case "WAITING":
-                    References.Menu.LockScreen();
+                    Ref.Menu.LockScreen();
                     IF_Confirm.interactable = false;
                     BT_Submit.interactable = false;
                     break;
 
                 case "RESULT":
-                    References.Menu.UnlockScreen();
+                    Ref.Menu.UnlockScreen();
                     BT_Submit.interactable = true;
                     break;
             }

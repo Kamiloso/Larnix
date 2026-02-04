@@ -43,7 +43,7 @@ namespace Larnix.Menu.Worlds
 
         private void Awake()
         {
-            References.ServerSelect = this;
+            Ref.ServerSelect = this;
             ReloadWorldList();
         }
 

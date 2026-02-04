@@ -8,7 +8,6 @@ using UnityEngine.UI;
 using TMPro;
 using Larnix.Menu.Forms;
 using Larnix.Core;
-using Larnix.Core.Utils;
 using Version = Larnix.Core.Version;
 
 namespace Larnix.Menu.Worlds
@@ -29,7 +28,7 @@ namespace Larnix.Menu.Worlds
 
         private void Awake()
         {
-            References.WorldSelect = this;
+            Ref.WorldSelect = this;
             ReloadWorldList();
         }
 

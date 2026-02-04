@@ -21,7 +21,7 @@ namespace Larnix.Menu.Forms
 
             TX_ErrorText.text = "";
 
-            References.Menu.SetScreen("RenameWorld");
+            Ref.Menu.SetScreen("RenameWorld");
         }
 
         protected override ErrorCode GetErrorCode()
@@ -60,11 +60,11 @@ namespace Larnix.Menu.Forms
                     Directory.Move(tempDir, newDir);
                 }
 
-                References.WorldSelect.ReloadWorldList();
-                References.WorldSelect.SelectWorld(newName);
+                Ref.WorldSelect.ReloadWorldList();
+                Ref.WorldSelect.SelectWorld(newName);
             }
 
-            References.Menu.SetScreen("Singleplayer");
+            Ref.Menu.SetScreen("Singleplayer");
         }
     }
 }

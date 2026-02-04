@@ -35,8 +35,8 @@ namespace Larnix.Client.Terrain
 
         private void Awake()
         {
+            Ref.GridManager = this; // both client and menu
             isMenu = gameObject.scene.name == "Menu";
-            if(!isMenu) Ref.GridManager = this;
         }
 
         private void Update()
@@ -144,9 +144,6 @@ namespace Larnix.Client.Terrain
             return nearbyChunks.Count == 0;
         }
 
-        /// <summary>
-        /// Warning: Can be null if can't find a block!
-        /// </summary>
         public BlockData2 BlockDataAtPOS(Vec2Int POS)
         {
             Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
@@ -155,6 +152,32 @@ namespace Larnix.Client.Terrain
             
             Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
             return Chunks[chunk][pos.x, pos.y];
+        }
+
+        public byte CalculateBorderByte(Vec2Int POS)
+        {
+            byte borderByte = 0;
+
+            int i = 0;
+            for (int dy = 1; dy >= -1; dy--)
+                for (int dx = -1; dx <= 1; dx++)
+                {
+                    if (dx == 0 && dy == 0) continue;
+
+                    Vec2Int n_POS = new Vec2Int(POS.x + dx, POS.y + dy);
+                    BlockData1 n_block = BlockDataAtPOS(n_POS)?.Front;
+
+                    IHasConture iface;
+                    if (n_block != null && (iface = BlockFactory.GetSlaveInstance<IHasConture>(n_block.ID)) != null)
+                    {
+                        if (iface.STATIC_GetAlphaByte(n_block.Variant) != 0)
+                            borderByte = (byte)(borderByte | (1 << i));
+                    }
+
+                    i++;
+                }
+
+            return borderByte;
         }
 
         public long PlaceBlockClient(Vec2Int POS, BlockData1 block, bool front)
@@ -208,7 +231,7 @@ namespace Larnix.Client.Terrain
         private void RedrawTileChecked(Vec2Int chunk, Vec2Int pos, BlockData2 block)
         {
             if(VisibleChunks.Contains(chunk))
-                ChunkedTilemap.RedrawExistingTile(chunk, pos, block);
+                ChunkedTilemap.RedrawExistingTile(chunk, pos, block, true);
         }
 
         private void UpdateChunkColliders(Vec2Int chunk)

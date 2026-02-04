@@ -2,7 +2,7 @@
 %TAG !u! tag:unity3d.com,2011:
 --- !u!78 &1
 TagManager:
-  serializedVersion: 2
+  serializedVersion: 3
   tags: []
   layers:
   - Default
@@ -62,6 +62,11 @@ TagManager:
   - name: FrontBlocks
     uniqueID: 4132993079
     locked: 0
+  - name: FrontBorders
+    uniqueID: 535201217
+    locked: 0
   - name: OnTop
     uniqueID: 712124137
     locked: 0
+  m_RenderingLayers:
+  - Default

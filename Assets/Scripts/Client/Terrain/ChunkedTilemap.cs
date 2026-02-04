@@ -16,7 +16,8 @@ namespace Larnix.Client.Terrain
         [SerializeField] GameObject TilemapPrefabFront;
         [SerializeField] GameObject TilemapPrefabBack;
 
-        private readonly Dictionary<Vec2Int, (Tilemap Front, Tilemap Back)> TileChunks = new();
+        private class Tilemaps { public Tilemap Front, Back, Border; }
+        private readonly Dictionary<Vec2Int, Tilemaps> TileChunks = new();
         private Vec2Int CurrentOrigin = new Vec2Int(0, 0);
 
         private bool IsMenu;
@@ -30,30 +31,55 @@ namespace Larnix.Client.Terrain
         {
             PrepareChunk(chunk, blocks != null);
 
-            if (blocks == null)
-                return;
-
-            Tilemap Front = TileChunks[chunk].Front;
-            Tilemap Back = TileChunks[chunk].Back;
+            if (blocks == null) return;
 
             foreach (Vec2Int pos in ChunkIterator.IterateXY())
             {
-                int x = pos.x;
-                int y = pos.y;
+                RedrawExistingTile(chunk, pos, blocks[pos.x, pos.y], false);
+            }
 
-                Vector3Int tilePos = new Vector3Int(x, y, 0);
-                Front.SetTile(tilePos, Tiles.GetTile(blocks[x, y].Front, true));
-                Back.SetTile(tilePos, Tiles.GetTile(blocks[x, y].Back, false));
+            RedrawBorderTilesInRect(
+                BlockUtils.GlobalBlockCoords(chunk, new Vec2Int(0, 0)),
+                BlockUtils.GlobalBlockCoords(chunk, new Vec2Int(15, 15))
+            );
+        }
+
+        public void RedrawExistingTile(Vec2Int chunk, Vec2Int pos, BlockData2 block, bool redrawBorder)
+        {
+            Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, pos);
+            Tilemaps Tilemaps = TileChunks[chunk];
+
+            Tilemaps.Front.SetTile(pos.ToUnity3(), Tiles.GetTile(block.Front, true));
+            Tilemaps.Back.SetTile(pos.ToUnity3(), Tiles.GetTile(block.Back, false));
+            Tilemaps.Border.SetTile(pos.ToUnity3(), Tiles.GetBorderTile(POS));
+
+            if (redrawBorder)
+            {
+                RedrawBorderTilesInRect(
+                    POS + new Vec2Int(-1, -1),
+                    POS + new Vec2Int(1, 1)
+                );
             }
         }
 
-        public void RedrawExistingTile(Vec2Int chunk, Vec2Int pos, BlockData2 block)
+        public void RedrawBorderTilesInRect(Vec2Int POS1, Vec2Int POS2)
         {
-            Tilemap Front = TileChunks[chunk].Front;
-            Tilemap Back = TileChunks[chunk].Back;
+            Vec2Int MIN = new Vec2Int(System.Math.Min(POS1.x, POS2.x), System.Math.Min(POS1.y, POS2.y));
+            Vec2Int MAX = new Vec2Int(System.Math.Max(POS1.x, POS2.x), System.Math.Max(POS1.y, POS2.y));
 
-            Front.SetTile(pos.ToUnity3(), Tiles.GetTile(block.Front, true));
-            Back.SetTile(pos.ToUnity3(), Tiles.GetTile(block.Back, false));
+            for (int x = MIN.x - 1; x <= MAX.x + 1; x++)
+                for (int y = MIN.y - 1; y <= MAX.y + 1; y++)
+                {
+                    Vec2Int POS = new Vec2Int(x, y);
+
+                    Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
+                    Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
+
+                    if (TileChunks.ContainsKey(chunk))
+                    {
+                        TileChunks[chunk].Border.SetTile(pos.ToUnity3(), Tiles.GetBorderTile(POS));
+                    }
+                }
         }
 
         private void PrepareChunk(Vec2Int chunk, bool hasData)
@@ -73,17 +99,22 @@ namespace Larnix.Client.Terrain
 
             Transform trnFront = Instantiate(TilemapPrefabFront, realPos, Quaternion.identity).transform;
             Transform trnBack = Instantiate(TilemapPrefabBack, realPos, Quaternion.identity).transform;
+            Transform trnBorder = Instantiate(TilemapPrefabBorder, realPos, Quaternion.identity).transform;
 
             trnFront.name = $"Front [{chunk.x}, {chunk.y}]";
             trnBack.name = $"Back [{chunk.x}, {chunk.y}]";
+            trnBorder.name = $"Border [{chunk.x}, {chunk.y}]";
 
             trnFront.SetParent(transform, true);
             trnBack.SetParent(transform, true);
+            trnBorder.SetParent(transform, true);
 
-            TileChunks[chunk] = (
-                trnFront.GetComponent<Tilemap>(),
-                trnBack.GetComponent<Tilemap>()
-                );
+            TileChunks[chunk] = new Tilemaps
+            {
+                Front = trnFront.GetComponent<Tilemap>(),
+                Back = trnBack.GetComponent<Tilemap>(),
+                Border = trnBorder.GetComponent<Tilemap>()
+            };
         }
 
         private void RemoveChunk(Vec2Int chunk)
@@ -93,6 +124,7 @@ namespace Larnix.Client.Terrain
                 var pair = TileChunks[chunk];
                 Destroy(pair.Front.gameObject);
                 Destroy(pair.Back.gameObject);
+                Destroy(pair.Border.gameObject);
                 TileChunks.Remove(chunk);
             }
         }
@@ -111,10 +143,12 @@ namespace Larnix.Client.Terrain
                         Vec2Int chunk = vkp.Key;
                         Tilemap frontmap = vkp.Value.Front;
                         Tilemap backmap = vkp.Value.Back;
-
+                        Tilemap bordermap = vkp.Value.Border;
+                        
                         Vector2 realPos = WorldPositionFromOrigin(chunk, CurrentOrigin);
                         frontmap.transform.position = realPos;
                         backmap.transform.position = realPos;
+                        bordermap.transform.position = realPos;
                     }
                 }
             }

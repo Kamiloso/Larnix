@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Larnix.Blocks
 {
-    public interface ISolid : IHasCollider
+    public interface ISolid : IHasCollider, IHasConture
     {
         void Init()
         {

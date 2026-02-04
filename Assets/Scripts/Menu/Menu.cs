@@ -21,7 +21,7 @@ namespace Larnix.Menu
         public void Awake()
         {
             Application.runInBackground = true;
-            References.Menu = this;
+            Ref.Menu = this;
 
             Core.Debug.Log("Menu loaded");
         }

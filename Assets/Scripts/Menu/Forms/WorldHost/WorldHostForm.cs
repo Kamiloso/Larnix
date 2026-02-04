@@ -54,7 +54,7 @@ namespace Larnix.Menu.Forms
 
             state = 0;
 
-            References.Menu.SetScreen("HostWorld");
+            Ref.Menu.SetScreen("HostWorld");
         }
 
         private ushort PortFromAddress(string address)

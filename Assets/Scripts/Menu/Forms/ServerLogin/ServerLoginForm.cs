@@ -28,7 +28,7 @@ namespace Larnix.Menu.Forms
 
             TX_ErrorText.text = "Your login data will be visible to the server owner.";
 
-            References.Menu.SetScreen("Login");
+            Ref.Menu.SetScreen("Login");
         }
 
         protected override ErrorCode GetErrorCode()
@@ -55,7 +55,7 @@ namespace Larnix.Menu.Forms
             string password = IF_Password.text;
 
             thinker.SubmitUser(nickname, password, false);
-            References.Menu.GoBack();
+            Ref.Menu.GoBack();
         }
     }
 }

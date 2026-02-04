@@ -19,7 +19,7 @@ namespace Larnix.Menu.Forms
 
             TX_ErrorText.text = "";
 
-            References.Menu.SetScreen("DeleteWorld");
+            Ref.Menu.SetScreen("DeleteWorld");
         }
 
         protected override ErrorCode GetErrorCode()
@@ -35,15 +35,15 @@ namespace Larnix.Menu.Forms
             if (Directory.Exists(delDir))
             {
                 Directory.Delete(delDir, true);
-                References.WorldSelect.ReloadWorldList();
+                Ref.WorldSelect.ReloadWorldList();
             }
             
-            References.Menu.SetScreen("Singleplayer");
+            Ref.Menu.SetScreen("Singleplayer");
         }
 
         public void Cancel()
         {
-            References.Menu.GoBack();
+            Ref.Menu.GoBack();
         }
     }
 }
