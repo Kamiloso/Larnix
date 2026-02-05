@@ -138,6 +138,12 @@ namespace Larnix.Server.Terrain
             }
         }
 
+        public bool IsLoadedPosition(Vec2 position)
+        {
+            Vec2Int chunk = BlockUtils.CoordsToChunk(position);
+            return ChunkState(chunk) == LoadState.Active;
+        }
+
         public LoadState ChunkState(Vec2Int chunk)
         {
             if(Chunks.TryGetValue(chunk, out var container))

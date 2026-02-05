@@ -15,6 +15,7 @@ namespace Larnix
         public static Client.Client Client;
         public static MainPlayer MainPlayer;
         public static EntityProjections EntityProjections;
+        public static ParticleManager ParticleManager;
         public static LoadingScreen LoadingScreen;
         public static Loading Loading;
         public static TileSelector TileSelector;

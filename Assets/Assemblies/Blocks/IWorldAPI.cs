@@ -8,9 +8,15 @@ namespace Larnix.Blocks
 {
     public interface IWorldAPI
     {
+        public enum BreakMode : byte // must be byte for serialization
+        {
+            Replace = 0,
+            Effects = 1,
+        }
+        
         public uint FramesSinceServerStart();
         public BlockServer GetBlock(Vec2Int POS, bool front);
-        public BlockServer ReplaceBlock(Vec2Int POS, bool front, BlockData1 blockTemplate);
+        public BlockServer ReplaceBlock(Vec2Int POS, bool front, BlockData1 blockTemplate, BreakMode breakMode = BreakMode.Replace);
         public BlockServer SetBlockVariant(Vec2Int POS, bool front, byte variant);
         public bool CanPlaceBlock(Vec2Int POS, bool front, BlockData1 item);
         public bool CanBreakBlock(Vec2Int POS, bool front, BlockData1 item, BlockData1 tool);

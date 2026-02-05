@@ -6,7 +6,7 @@ using Larnix.Blocks.Structs;
 
 namespace Larnix.Blocks
 {
-    public sealed class Soil : BlockServer, ISolid, IPlaceable, IBreakable, IHasGrowingFlora
+    public sealed class Soil : BlockServer, ISolid, IPlaceable, IBreakable, IHasGrowingFlora, IFalling
     {
         public Soil(Vec2Int POS, BlockData1 block, bool isFront) : base(POS, block, isFront) { }
 
@@ -17,6 +17,7 @@ namespace Larnix.Blocks
 
         public double DRY_CHANCE() => 0.001;
         public double GROWTH_CHANCE() => 0.0002;
+        public int FALL_PERIOD() => 5;
 
         public string STATIC_GetBlockName(byte variant)
         {

@@ -12,13 +12,19 @@ using Larnix.Blocks.Structs;
 using Larnix.Entities.Structs;
 using Larnix.Socket.Backend;
 using Larnix.Worldgen;
-using Larnix.Core.References;
+using Larnix.Core;
+using Larnix.Socket.Packets;
 using Console = Larnix.Core.Console;
+using Larnix.Core.Utils;
 
 namespace Larnix.Server
 {
     internal class Commands : Singleton
     {
+        /* WARNING:
+        Command floating points are parsed using the current culture settings.
+        It may change in the future. */
+        
         private QuickServer QuickServer => Ref<QuickServer>();
         private PlayerManager PlayerManager => Ref<PlayerManager>();
         private EntityManager EntityManager => Ref<EntityManager>();
@@ -80,6 +86,7 @@ namespace Larnix.Server
                 "kill" when len == 2 => Kill(arg[1]),
                 "spawn" when len == 4 => Spawn(arg[1], arg[2], arg[3]),
                 "place" when len == 5 || len == 6 => Place(arg),
+                "particles" when len == 4 => Particles(arg[1], arg[2], arg[3]),
                 "seed" when len == 1 => Seed(),
                 _ => (ResultType.Error, "Unknown command! Type 'help' for documentation.")
             };
@@ -99,6 +106,7 @@ namespace Larnix.Server
                 " | kill [nickname] - Kills player if alive.\n" +
                 " | spawn [entity] [x] [y] - Spawns entity at a given position.\n" +
                 " | place [front/back] [x] [y] [block] [?variant] - Places block at a given position.\n" +
+                " | particles [name] [x] [y] - Spawns particles at a given position.\n" +
                 " | seed - Displays the server seed.\n" +
                 "\n");
         }
@@ -183,13 +191,21 @@ namespace Larnix.Server
             {
                 if (double.TryParse(xs, out double x) && double.TryParse(ys, out double y))
                 {
-                    EntityManager.SummonEntity(new EntityData(
+                    Vec2 position = new Vec2(x, y);
+
+                    bool success = EntityManager.SummonEntity(new EntityData(
                         id: entityID,
-                        position: new Vec2(x, y),
+                        position: position,
                         rotation: 0.0f,
                         data: null
                     ));
-                    return (ResultType.Success, $"Spawned {entityname} at position ({x}, {y}).");
+
+                    if (success)
+                    {
+                        string realName = entityID.ToString();
+                        return (ResultType.Success, $"Spawned {realName} at position ({x}, {y}).");
+                    }
+                    return (ResultType.Error, $"Position ({x}, {y}) is not loaded!");
                 }
                 else return (ResultType.Error, "Cannot parse coordinates!");
             }
@@ -201,7 +217,7 @@ namespace Larnix.Server
             bool front = arg[1] == "front";
             if (arg[1] != "front" && arg[1] != "back")
             {
-                return (ResultType.Error, $"Phrase '{arg[1]}' is not valid in this context.");
+                return (ResultType.Error, $"Phrase \"{arg[1]}\" is not valid in this context.");
             }
 
             if (int.TryParse(arg[2], out int x) && int.TryParse(arg[3], out int y))
@@ -219,17 +235,44 @@ namespace Larnix.Server
                         id: blockID,
                         variant: variant,
                         data: null
-                    ));
+                    ), IWorldAPI.BreakMode.Replace);
 
                     if (result != null)
+                    {
                         return (ResultType.Success,
-                            $"Block ({x}, {y}) changed to " + blockID.ToString() + (variant == 0 ? "" : "-" + variant));
-                    else
-                        return (ResultType.Error, $"Position ({x}, {y}) cannot be updated.");
+                            $"Block at ({x}, {y}) changed to " + blockID.ToString() + (variant == 0 ? "" : "-" + variant));
+                    }
+                    return (ResultType.Error, $"Position ({x}, {y}) cannot be updated.");
                 }
-                else return (ResultType.Error, $"Cannot place block named {blockname}!");
+                else return (ResultType.Error, $"Cannot place block named \"{blockname}\"!");
             }
             else return (ResultType.Error, "Cannot parse coordinates!");
+        }
+
+        private (ResultType, string) Particles(string name, string xs, string ys)
+        {
+            if (Enum.TryParse(name, ignoreCase: true, out ParticleID particleID) &&
+                Enum.IsDefined(typeof(ParticleID), particleID))
+            {
+                if (double.TryParse(xs, out double x) && double.TryParse(ys, out double y))
+                {
+                    Vec2 position = new Vec2(x, y);
+
+                    Payload particles = new SpawnParticles(
+                        position: position,
+                        particleID: particleID
+                    );
+                    foreach (string nickname in PlayerManager.AllPlayersInRange(position, Common.PARTICLE_VIEW_DISTANCE))
+                    {
+                        QuickServer.Send(nickname, particles);
+                    }
+
+                    string realName = particleID.ToString();
+                    return (ResultType.Success, $"Spawned {realName} particles at position ({x}, {y}).");
+                }
+                else return (ResultType.Error, "Cannot parse coordinates!");
+            }
+            else return (ResultType.Error, $"Cannot spawn particles named \"{name}\"!");
         }
 
         private (ResultType, string) Seed()

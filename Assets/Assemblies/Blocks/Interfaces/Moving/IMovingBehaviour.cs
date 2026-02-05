@@ -42,7 +42,7 @@ namespace Larnix.Blocks
 
             else if (block2 is IFragile) // break
             {
-                WorldAPI.BreakBlockWithEffects(POS_destin, isFront, new BlockData1());
+                WorldAPI.BreakBlockWithEffects(POS_destin, isFront, new BlockData1(BlockID.UltimateTool, 0));
                 if (!clone) WorldAPI.ReplaceBlock(POS_source, isFront, new BlockData1());
                 WorldAPI.ReplaceBlock(POS_destin, isFront, data1);
             }

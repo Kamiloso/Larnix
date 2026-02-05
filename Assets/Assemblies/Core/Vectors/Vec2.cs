@@ -43,6 +43,7 @@ namespace Larnix.Core.Vectors
         public static Vec2 One => new Vec2(1, 1);
         public double Magnitude => Math.Sqrt(x * x + y * y);
         public double SqrMagnitude => x * x + y * y;
+        public static double Distance(Vec2 a, Vec2 b) => (a - b).Magnitude;
 
         public Vec2 Normalized
         {

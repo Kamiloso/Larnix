@@ -5,8 +5,8 @@ using Larnix.Entities;
 using Larnix.Socket.Packets;
 using Larnix.Core.Vectors;
 using Larnix.Socket.Backend;
-using Larnix.Core.References;
 using Larnix.Packets;
+using System;
 
 namespace Larnix.Server.Entities
 {
@@ -158,12 +158,29 @@ namespace Larnix.Server.Entities
             return PlayerState.Dead;
         }
 
-        public HashSet<string> GetAllPlayersThatAre(PlayerState state)
+        public IEnumerable<string> AllPlayers()
+        {
+            return new HashSet<string>(PlayerUID.Keys);
+        }
+
+        public IEnumerable<string> AllPlayersThatAre(PlayerState state)
         {
             HashSet<string> result = new();
             foreach (string nickname in PlayerUID.Keys)
             {
                 if (GetPlayerState(nickname) == state)
+                    result.Add(nickname);
+            }
+            return result;
+        }
+
+        public IEnumerable<string> AllPlayersInRange(Vec2 position, double range)
+        {
+            HashSet<string> result = new();
+            foreach (string nickname in PlayerUID.Keys)
+            {
+                Vec2 playerPos = GetPlayerRenderingPosition(nickname);
+                if (Vec2.Distance(playerPos, position) <= range)
                     result.Add(nickname);
             }
             return result;
@@ -183,7 +200,7 @@ namespace Larnix.Server.Entities
                     return RecentPlayerUpdates[nickname].Position;
 
                 default:
-                    throw new System.InvalidOperationException("Player " + nickname + " is not connected!");
+                    throw new InvalidOperationException("Player " + nickname + " is not connected!");
             }
         }
 
@@ -208,7 +225,7 @@ namespace Larnix.Server.Entities
             if (PlayerUID.TryGetValue(nickname, out ulong uid))
                 return uid;
                 
-            throw new System.InvalidOperationException("Player " + nickname + " is not connected!");
+            throw new InvalidOperationException("Player " + nickname + " is not connected!");
         }
     }
 }

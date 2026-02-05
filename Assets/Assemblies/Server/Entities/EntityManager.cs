@@ -116,7 +116,7 @@ namespace Larnix.Server.Entities
                         bool isPlayer = entity.EntityData.ID == EntityID.Player;
 
                         const float MAX_DISTANCE = 50f;
-                        if ((playerPos - entityPos).Magnitude < MAX_DISTANCE)
+                        if (Vec2.Distance(playerPos, entityPos) < MAX_DISTANCE)
                         {
                             if(entity.IsActive)
                             {
@@ -166,7 +166,7 @@ namespace Larnix.Server.Entities
 
         public void CreatePlayerController(string nickname)
         {
-            EntityAbstraction playerController = new(this, nickname);
+            EntityAbstraction playerController = new EntityAbstraction(this, nickname);
             playerControllers.Add(nickname, playerController);
             entityControllers.Add(playerController.uID, playerController);
 
@@ -199,10 +199,14 @@ namespace Larnix.Server.Entities
         public List<EntityAbstraction> GetAllPlayerControllers() => playerControllers.Values.ToList();
         public List<EntityAbstraction> GetAllEntityControllers() => entityControllers.Values.ToList();
 
-        public void SummonEntity(EntityData entityData)
+        public bool SummonEntity(EntityData entityData)
         {
-            EntityAbstraction entityController = new(this, entityData);
+            if (!ChunkLoading.IsLoadedPosition(entityData.Position))
+                return false;
+
+            EntityAbstraction entityController = new EntityAbstraction(this, entityData);
             entityControllers.Add(entityController.uID, entityController);
+            return true;
         }
 
         public void LoadEntitiesByChunk(Vec2Int chunkCoords)
@@ -210,7 +214,7 @@ namespace Larnix.Server.Entities
             Dictionary<ulong, EntityData> entities = EntityDataManager.GetUnloadedEntitiesByChunk(chunkCoords);
             foreach (var kvp in entities)
             {
-                EntityAbstraction entityController = new(this, kvp.Value, kvp.Key);
+                EntityAbstraction entityController = new EntityAbstraction(this, kvp.Value, kvp.Key);
                 entityControllers.Add(entityController.uID, entityController);
             }
         }

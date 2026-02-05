@@ -4,6 +4,7 @@ using UnityEngine;
 using Larnix.Client.Entities.Body;
 using Larnix.Core.Utils;
 using Larnix.Entities.Structs;
+using Larnix.Client.Relativity;
 
 namespace Larnix.Client.Entities
 {
@@ -88,7 +89,7 @@ namespace Larnix.Client.Entities
             // Update smooth & position
 
             Smoother.UpdateSmooth(Time.deltaTime);
-            transform.position = Ref.MainPlayer.ToUnityPos(Smoother.Position);
+            transform.SetLarnixPos(Smoother.Position);
 
             // Animations
 

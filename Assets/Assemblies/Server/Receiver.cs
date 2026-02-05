@@ -86,7 +86,7 @@ namespace Larnix.Server
                     WorldAPI.PlaceBlockWithEffects(POS, front, msg.Item);
                 }
 
-                BlockSender.AddRetBlockChange(owner, msg.Operation, POS, front, success);
+                BlockSender.AddRetBlockChange(new BlockChangeItem(owner, msg.Operation, POS, front, success));
             }
 
             else if (code == 1) // break using item
@@ -102,7 +102,7 @@ namespace Larnix.Server
                     WorldAPI.BreakBlockWithEffects(POS, front, msg.Tool);
                 }
 
-                BlockSender.AddRetBlockChange(owner, msg.Operation, POS, front, success);
+                BlockSender.AddRetBlockChange(new BlockChangeItem(owner, msg.Operation, POS, front, success));
             }
         }
     }

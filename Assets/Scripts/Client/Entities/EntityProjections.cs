@@ -161,6 +161,11 @@ namespace Larnix.Client.Entities
             else throw new System.Exception("This exception will never be thrown.");
         }
 
+        public bool TryGetProjection(ulong uid, out EntityProjection projection)
+        {
+            return Projections.TryGetValue(uid, out projection);
+        }
+
         private EntityProjection CreateProjection(ulong uid, EntityData entityData, double time)
         {
             GameObject gobj = Resources.CreateEntity(entityData.ID);

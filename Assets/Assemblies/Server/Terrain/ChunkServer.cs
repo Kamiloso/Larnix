@@ -9,6 +9,7 @@ using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
 using Larnix.Core.References;
 using Larnix.Core.Binary;
+using Larnix.Packets.Structs;
 
 namespace Larnix.Server.Terrain
 {
@@ -56,7 +57,7 @@ namespace Larnix.Server.Terrain
             return isFront ? BlocksFront[pos.x, pos.y] : BlocksBack[pos.x, pos.y];
         }
 
-        public BlockServer UpdateBlock(Vec2Int pos, bool isFront, BlockData1 block)
+        public BlockServer UpdateBlock(Vec2Int pos, bool isFront, BlockData1 block, IWorldAPI.BreakMode breakMode)
         {
             BlockServer result;
 
@@ -100,7 +101,7 @@ namespace Larnix.Server.Terrain
             if (!((IBinary<BlockData2>)oldHeader).BinaryEquals(newHeader))
             {
                 Vec2Int POS = BlockUtils.GlobalBlockCoords(Chunkpos, pos);
-                BlockSender.AddBlockUpdate((POS, newHeader));
+                BlockSender.AddBlockUpdate(new BlockUpdateRecord(POS, newHeader, breakMode));
             }
 
             return result;

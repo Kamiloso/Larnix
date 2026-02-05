@@ -18,9 +18,9 @@ namespace Larnix.Socket.Backend
     public class QuickServer : IDisposable
     {
         // --- Server properties ---
-        public string Authcode { get; private set; }
-        internal long Secret { get; private set; }
-        internal long RunID { get; private set; }
+        public string Authcode { get; init; }
+        internal long Secret { get; init; }
+        internal long RunID { get; init; }
         public ushort PlayerCount => (ushort)_connections.Count;
 
         // --- Public classes ---

@@ -25,7 +25,7 @@ namespace Larnix.Blocks
             public Func<Vec2Int, BlockData1, bool, BlockServer> Constructor;
             public List<Action<BlockServer>> Inits = new();
 
-            public BlockServer SlaveInstance { get; private set; }
+            public BlockServer SlaveInstance { get; init; }
 
             public BlockInfo(BlockID ID)
             {

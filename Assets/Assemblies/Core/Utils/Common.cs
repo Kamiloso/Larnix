@@ -18,6 +18,7 @@ namespace Larnix.Core.Utils
         public const string LoopbackOnlyPassword = "SGP_PASSWORD\x01";
 
         public const float FIXED_TIME = 0.02f;
+        public const double PARTICLE_VIEW_DISTANCE = 128.0;
 
         private static List<string> reservedFolders = new List<string>
         {

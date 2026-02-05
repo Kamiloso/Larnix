@@ -4,21 +4,35 @@ using UnityEngine;
 using Larnix.Entities;
 using Larnix.Blocks;
 using UnityEngine.Tilemaps;
+using System.IO;
 
 namespace Larnix
 {
     public static class Resources
-
     {
+        private static readonly Dictionary<string, GameObject> PrefabCache = new();
         private static readonly Dictionary<string, GameObject> PrefabChildCache = new();
+
+        public static GameObject GetPrefab(string root, string path)
+        {
+            string fullPath = root + "/" + path;
+
+            if (!PrefabCache.TryGetValue(fullPath, out GameObject prefab))
+            {
+                prefab = UnityEngine.Resources.Load<GameObject>(fullPath);
+                PrefabCache[fullPath] = prefab;
+            }
+
+            return prefab;
+        }
 
         public static GameObject CreateEntity(EntityID entityID)
         {
-            GameObject prefab = GetPrefabChild("EntityPrefabs/" + entityID.ToString());
+            GameObject prefab = GetPrefabChild("Entities/" + entityID.ToString());
             if (prefab == null)
             {
                 Core.Debug.LogWarning("Couldn't find '" + entityID + "' entity prefab!");
-                prefab = GetPrefabChild("EntityPrefabs/None");
+                prefab = GetPrefabChild("Entities/None");
             }
 
             GameObject gobj = GameObject.Instantiate(prefab);

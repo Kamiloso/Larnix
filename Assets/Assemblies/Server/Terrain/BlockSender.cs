@@ -7,31 +7,34 @@ using Larnix.Core.Utils;
 using Larnix.Blocks.Structs;
 using Larnix.Server.Entities;
 using Larnix.Socket.Backend;
-using Larnix.Core.References;
 using Larnix.Packets;
 using Larnix.Core.Vectors;
+using Larnix.Packets.Structs;
 
 namespace Larnix.Server.Terrain
 {
+    internal record BlockChangeItem(
+        string Owner, long Operation, Vec2Int POS, bool Front, bool Success);
+
     internal class BlockSender : Singleton
     {
         private WorldAPI WorldAPI => Ref<ChunkLoading>().WorldAPI;
         private PlayerManager PlayerManager => Ref<PlayerManager>();
         private QuickServer QuickServer => Ref<QuickServer>();
 
-        private readonly Queue<(Vec2Int block, BlockData2 data)> _blockUpdates = new();
-        private readonly Queue<(string owner, long operation, Vec2Int POS, bool front, bool success)> _blockChanges = new();
+        private readonly Queue<BlockUpdateRecord> _blockUpdates = new();
+        private readonly Queue<BlockChangeItem> _blockChanges = new();
 
         public BlockSender(Server server) : base(server) {}
 
-        public void AddBlockUpdate((Vec2Int, BlockData2) element)
+        public void AddBlockUpdate(BlockUpdateRecord element)
         {
             _blockUpdates.Enqueue(element);
         }
 
-        public void AddRetBlockChange(string owner, long operation, Vec2Int POS, bool front, bool success)
+        public void AddRetBlockChange(BlockChangeItem element)
         {
-            _blockChanges.Enqueue((owner, operation, POS, front, success));
+            _blockChanges.Enqueue(element);
         }
 
         public override void PostLateFrameUpdate()
@@ -42,7 +45,7 @@ namespace Larnix.Server.Terrain
 
         private void SendBlockUpdate()
         {
-            Dictionary<string, Queue<(Vec2Int block, BlockData2 data)>> IndividualUpdates = new();
+            Dictionary<string, Queue<BlockUpdateRecord>> IndividualUpdates = new();
 
             foreach (string nickname in PlayerManager.GetAllPlayerNicknames())
             {
@@ -52,7 +55,7 @@ namespace Larnix.Server.Terrain
             while (_blockUpdates.Count > 0)
             {
                 var element = _blockUpdates.Dequeue();
-                Vec2Int chunk = BlockUtils.CoordsToChunk(element.block);
+                Vec2Int chunk = BlockUtils.CoordsToChunk(element.Position);
 
                 foreach (string nickname in PlayerManager.GetAllPlayerNicknames())
                 {
@@ -63,10 +66,8 @@ namespace Larnix.Server.Terrain
 
             foreach (string nickname in PlayerManager.GetAllPlayerNicknames())
             {
-                Queue<(Vec2Int block, BlockData2 data)> changes = IndividualUpdates[nickname];
-                
-                BlockUpdate.Record[] records = changes.Select(
-                    ch => new BlockUpdate.Record(ch.block, ch.data)).ToArray();
+                Queue<BlockUpdateRecord> changes = IndividualUpdates[nickname];
+                BlockUpdateRecord[] records = changes.ToArray();
 
                 List<BlockUpdate> packets = BlockUpdate.CreateList(records);
                 foreach (Payload packet in packets)
@@ -80,14 +81,14 @@ namespace Larnix.Server.Terrain
         {
             while(_blockChanges.Count > 0)
             {
-                var element = _blockChanges.Dequeue();
+                BlockChangeItem element = _blockChanges.Dequeue();
 
-                string nickname = element.owner;
+                string nickname = element.Owner;
                 Vec2Int POS = element.POS;
                 Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
-                bool front = element.front;
-                bool success = element.success;
-                long operation = element.operation;
+                bool front = element.Front;
+                bool success = element.Success;
+                long operation = element.Operation;
 
                 BlockServer blockFront = WorldAPI.GetBlock(POS, true);
                 BlockServer blockBack = WorldAPI.GetBlock(POS, false);

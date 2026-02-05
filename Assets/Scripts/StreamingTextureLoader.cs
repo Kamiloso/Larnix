@@ -106,9 +106,9 @@ namespace Larnix
 
         private class ResourcePack
         {
-            public string Name { get; private set; }
-            public string Path { get; private set; }
-            public int Priority { get; private set; }
+            public string Name { get; init; }
+            public string Path { get; init; }
+            public int Priority { get; init; }
 
             public ResourcePack(string path, string name, int priority)
             {

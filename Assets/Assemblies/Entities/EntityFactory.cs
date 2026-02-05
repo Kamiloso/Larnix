@@ -24,7 +24,7 @@ namespace Larnix.Entities
             public Func<ulong, EntityData, EntityServer> Constructor;
             public List<Action<EntityServer>> Inits = new();
 
-            public EntityServer SlaveInstance { get; private set; }
+            public EntityServer SlaveInstance { get; init; }
 
             public EntityInfo(EntityID ID)
             {

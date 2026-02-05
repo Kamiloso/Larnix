@@ -18,6 +18,7 @@ namespace Larnix.Blocks
         public enum Type
         {
             Normal,
+            Ultimate, // type bypass (on tools)
         }
 
         public enum Tier
@@ -26,6 +27,7 @@ namespace Larnix.Blocks
             Wood,
             Stone,
             Copper,
+            Ultimate // tier bypass (on tools)
         }
     }
 }

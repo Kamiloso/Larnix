@@ -9,6 +9,7 @@ using System.Linq;
 using Larnix.Core.Vectors;
 using Larnix.Core.Utils;
 using Larnix.Blocks.Structs;
+using Larnix.Client.Relativity;
 
 namespace Larnix.Client.Terrain
 {
@@ -60,7 +61,7 @@ namespace Larnix.Client.Terrain
                 new List<Vec2Int> { BlockUtils.CoordsToBlock(cursor_pos) };
 
             if (!Ref.Debugger.SpectatorMode)
-                grids.RemoveAll(grid => (new Vec2(grid.x, grid.y) - player_pos).Magnitude > INTERACTION_RANGE);
+                grids.RemoveAll(grid => Vec2.Distance(new Vec2(grid.x, grid.y), player_pos) > INTERACTION_RANGE);
 
             if (active && isGameFocused && grids.Count > 0) // ENABLED CURSOR
             {
@@ -69,7 +70,7 @@ namespace Larnix.Client.Terrain
 
                 foreach (Vec2Int grid in grids)
                 {
-                    Selector.transform.position = Ref.MainPlayer.ToUnityPos(new Vec2(grid.x, grid.y));
+                    Selector.transform.SetLarnixPos(new Vec2(grid.x, grid.y));
                     DoActionOn(grid, pointsRight);
                 }
 
@@ -147,7 +148,7 @@ namespace Larnix.Client.Terrain
 
         public static List<Vec2Int> GetCellsIntersectedByLine(Vec2 start, Vec2 end)
         {
-            double magnitude = (start - end).Magnitude;
+            double magnitude = Vec2.Distance(start, end);
             if (magnitude > 256.0) return new();
             if (magnitude == 0.0) return new() { BlockUtils.CoordsToBlock(start) };
 
