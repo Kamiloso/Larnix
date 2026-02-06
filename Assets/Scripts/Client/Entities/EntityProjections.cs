@@ -158,12 +158,22 @@ namespace Larnix.Client.Entities
             else if (overtime >= CRITICAL_DELAY)
                 return true; // waiting for too long, preventing deadlock
 
-            else throw new System.Exception("This exception will never be thrown.");
+            return false; // impossible case
         }
 
-        public bool TryGetProjection(ulong uid, out EntityProjection projection)
+        public bool TryGetProjection(ulong uid, bool includePlayer, out EntityProjection projection)
         {
-            return Projections.TryGetValue(uid, out projection);
+            if (Projections.TryGetValue(uid, out projection))
+                return true;
+
+            if (includePlayer && Ref.Client.MyUID == uid)
+            {
+                projection = Ref.MainPlayer.GetEntityProjection();
+                return true;
+            }
+
+            projection = default;
+            return false;
         }
 
         private EntityProjection CreateProjection(ulong uid, EntityData entityData, double time)

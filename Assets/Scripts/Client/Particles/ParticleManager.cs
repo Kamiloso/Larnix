@@ -5,8 +5,10 @@ using Larnix.Client.Entities;
 using Larnix.Client.Relativity;
 using UnityEngine;
 using System.Linq;
+using Larnix.Blocks.Structs;
+using Larnix.Blocks;
 
-namespace Larnix.Client
+namespace Larnix.Client.Particles
 {
     public class ParticleManager : MonoBehaviour
     {
@@ -14,6 +16,9 @@ namespace Larnix.Client
 
         private EntityProjections EntityProjections => Ref.EntityProjections;
         private HashSet<GameObject> ActiveParticles = new();
+
+        private BlockData1 _optionBlock = new();
+        private bool _optionFront = false;
 
         private void Awake()
         {
@@ -36,6 +41,15 @@ namespace Larnix.Client
 
             GameObject obj = GameObject.Instantiate(prefab).Relativise(position);
             obj.transform.SetParent(this.transform, false);
+
+            if (obj.TryGetComponent<ParticleControl>(out var particles))
+            {
+                particles.TryTextureFromBlock(
+                    blockData: _optionBlock.DeepCopy(),
+                    front: _optionFront
+                );
+            }
+
             ActiveParticles.Add(obj);
         }
 
@@ -44,13 +58,22 @@ namespace Larnix.Client
             GameObject prefab = GetParticlePrefab(id);
             if (prefab == null || ActiveParticles.Count >= MaxParticles) return;
 
-            if (EntityProjections.TryGetProjection(uid, out var projection))
+            if (EntityProjections.TryGetProjection(uid, true, out var projection))
             {
                 GameObject obj = GameObject.Instantiate(prefab);
                 obj.transform.SetParent(projection.transform, false);
                 obj.transform.localPosition = localPosition.ExtractPosition(Vec2.Zero);
+
                 ActiveParticles.Add(obj);
             }
+        }
+
+        public void SpawnBlockParticles(BlockData1 blockData, Vec2Int POS, bool front, ParticleID id)
+        {
+            _optionBlock = blockData ?? new();
+            _optionFront = front;
+
+            SpawnGlobalParticles(id, POS.ToVec2());
         }
 
         private GameObject GetParticlePrefab(ParticleID id)

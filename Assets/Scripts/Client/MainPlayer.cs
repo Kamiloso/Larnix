@@ -138,14 +138,14 @@ namespace Larnix.Client
             ), time);
         }
 
-        public Vector2 ClientPosition()
-        {
-            return transform.position;
-        }
-
         public void LoadPlayerData(PlayerInitialize msg)
         {
             Position = msg.Position;
+        }
+
+        public EntityProjection GetEntityProjection()
+        {
+            return EntityProjection;
         }
 
         public void SetAlive()

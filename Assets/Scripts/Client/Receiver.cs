@@ -4,11 +4,12 @@ using Larnix.Core.Vectors;
 using Larnix.Socket.Frontend;
 using Larnix.Packets;
 using Larnix.Packets.Structs;
-using UnityEngine;
-using Larnix.Client.Relativity;
 using Larnix.Client.Entities;
 using Larnix.Client.Terrain;
 using Larnix.Client.UI;
+using Larnix.Client.Particles;
+using UnityEngine;
+using Larnix.Blocks;
 
 namespace Larnix.Client
 {
@@ -77,16 +78,17 @@ namespace Larnix.Client
             BlockUpdateRecord[] records = msg.BlockUpdates;
             foreach (var rec in records)
             {
-                GridManager.UpdateBlock(rec.Position, rec.Block);
+                GridManager.UpdateBlock(rec.Position, rec.Block, rec.BreakMode);
             }
         }
 
         private void _RetBlockChange(RetBlockChange msg)
         {
             GridManager.UpdateBlock(
-                msg.BlockPosition,
-                msg.CurrentBlock,
-                msg.Operation
+                POS: msg.BlockPosition,
+                data: msg.CurrentBlock,
+                breakMode: IWorldAPI.BreakMode.Replace,
+                unlock: msg.Operation
             ); // unlock and update block
         }
 

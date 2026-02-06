@@ -8,6 +8,7 @@ using Larnix.Core.Utils;
 using Larnix.Core.Physics;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
+using Larnix.Core;
 
 namespace Larnix.Client.Terrain
 {
@@ -79,7 +80,7 @@ namespace Larnix.Client.Terrain
             return Chunks.Keys.Contains(chunk);
         }
 
-        public void UpdateBlock(Vec2Int POS, BlockData2 data, long? unlock = null)
+        public void UpdateBlock(Vec2Int POS, BlockData2 data, IWorldAPI.BreakMode breakMode, long? unlock = null)
         {
             Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
             Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
@@ -88,7 +89,7 @@ namespace Larnix.Client.Terrain
                 UnlockBlock((long)unlock);
 
             if (Chunks.ContainsKey(chunk) && !IsBlockLocked(POS))
-                ChangeBlockData(POS, data);
+                ChangeBlockData(POS, data, breakMode);
         }
 
         public void RedrawGrid(bool instantLoad = false)
@@ -186,15 +187,12 @@ namespace Larnix.Client.Terrain
             if (oldblock == null)
                 throw new InvalidOperationException($"Cannot place block at {POS}");
 
-            Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
-            Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
-
             BlockData2 blockdata = new BlockData2(
                 front ? block : oldblock.Front.DeepCopy(),
                 front ? oldblock.Back.DeepCopy() : block
                 );
 
-            ChangeBlockData(POS, blockdata);
+            ChangeBlockData(POS, blockdata, IWorldAPI.BreakMode.Effects);
             long operation = LockBlock(POS);
             return operation;
         }
@@ -205,27 +203,41 @@ namespace Larnix.Client.Terrain
             if (oldblock == null)
                 throw new InvalidOperationException($"Cannot break block at {POS}");
 
-            Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
-            Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
-
             BlockData2 blockdata = new BlockData2(
                 front ? new BlockData1 { } : oldblock.Front.DeepCopy(),
                 front ? oldblock.Back.DeepCopy() : new BlockData1 { }
                 );
 
-            ChangeBlockData(POS, blockdata);
+            ChangeBlockData(POS, blockdata, IWorldAPI.BreakMode.Effects);
             long operation = LockBlock(POS);
             return operation;
         }
 
-        private void ChangeBlockData(Vec2Int POS, BlockData2 block)
+        private void ChangeBlockData(Vec2Int POS, BlockData2 newBlock, IWorldAPI.BreakMode breakMode)
         {
             Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
             Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
 
-            Chunks[chunk][pos.x, pos.y] = block;
-            RedrawTileChecked(chunk, pos, block);
-            UpdateBlockCollider(POS, block);
+            BlockData2 oldBlock = Chunks[chunk][pos.x, pos.y];
+            Chunks[chunk][pos.x, pos.y] = newBlock;
+
+            if (breakMode == IWorldAPI.BreakMode.Effects)
+            {
+                if (oldBlock.Front.ID == BlockID.Air && newBlock.Front.ID != BlockID.Air) // front block placed
+                    Ref.ParticleManager.SpawnBlockParticles(newBlock.Front, POS, true, ParticleID.BlockPlace);
+
+                if (oldBlock.Front.ID != BlockID.Air && newBlock.Front.ID == BlockID.Air) // front block broken
+                    Ref.ParticleManager.SpawnBlockParticles(oldBlock.Front, POS, true, ParticleID.BlockBreak);
+
+                if (oldBlock.Back.ID == BlockID.Air && newBlock.Back.ID != BlockID.Air) // back block placed
+                    Ref.ParticleManager.SpawnBlockParticles(newBlock.Back, POS, false, ParticleID.BlockPlace);
+
+                if (oldBlock.Back.ID != BlockID.Air && newBlock.Back.ID == BlockID.Air) // back block broken
+                    Ref.ParticleManager.SpawnBlockParticles(oldBlock.Back, POS, false, ParticleID.BlockBreak);
+            }
+
+            RedrawTileChecked(chunk, pos, newBlock);
+            UpdateBlockCollider(POS, newBlock);
         }
 
         private void RedrawTileChecked(Vec2Int chunk, Vec2Int pos, BlockData2 block)
@@ -265,9 +277,9 @@ namespace Larnix.Client.Terrain
                 if (iface != null)
                 {
                     StaticCollider statCol = StaticCollider.Create(
-                        new Vec2(iface.COLLIDER_WIDTH(), iface.COLLIDER_HEIGHT()),
-                        new Vec2(iface.COLLIDER_OFFSET_X(), iface.COLLIDER_OFFSET_Y()),
-                        POS
+                        size: new Vec2(iface.COLLIDER_WIDTH(), iface.COLLIDER_HEIGHT()),
+                        offset: new Vec2(iface.COLLIDER_OFFSET_X(), iface.COLLIDER_OFFSET_Y()),
+                        POS: POS
                         );
                     if(!isMenu) Ref.PhysicsManager.AddCollider(statCol);
                     BlockColliders.Add(POS, statCol);

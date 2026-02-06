@@ -22,10 +22,11 @@ namespace Larnix.Server
 {
     internal class Server : RefRoot
     {
-        public readonly ServerType Type;
-        public readonly string WorldPath;
-        public readonly string LocalAddress;
-        public readonly string Authcode;
+        public ServerType Type { get; init; }
+        public string WorldPath { get; init; }
+        public string LocalAddress { get; init; }
+        public string Authcode { get; init; }
+
         public uint FixedFrame { get; private set; } = 0;
 
         private WorldMeta _mdata;

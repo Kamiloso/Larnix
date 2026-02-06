@@ -6,6 +6,7 @@ using Larnix.Client.UI;
 using Larnix.Core.Physics;
 using Larnix.Client;
 using Larnix.Menu.Worlds;
+using Larnix.Client.Particles;
 
 namespace Larnix
 {
