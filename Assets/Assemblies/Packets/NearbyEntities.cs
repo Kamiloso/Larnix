@@ -10,21 +10,21 @@ namespace Larnix.Packets
 {
     public sealed class NearbyEntities : Payload
     {
-        private const int HEADER_SIZE = 4 + 2 + 2;
-        private const int ENTRY_SIZE = 8;
-        private const int MAX_RECORDS = 85;
+        private const int HEADER_SIZE = sizeof(uint) + sizeof(ushort) + sizeof(ushort);
+        private const int ENTRY_SIZE = sizeof(ulong);
+        private const int MAX_RECORDS = (1400 - HEADER_SIZE) / ENTRY_SIZE;
 
-        public uint FixedFrame => Primitives.FromBytes<uint>(Bytes, 0); // 4B
-        public ushort AddLength => Primitives.FromBytes<ushort>(Bytes, 4); // 2B
-        public ushort RemoveLength => Primitives.FromBytes<ushort>(Bytes, 6); // 2B
-        public ulong[] AddEntities => Primitives.ArrayFromBytes<ulong>(Bytes, AddLength, HEADER_SIZE); // n * 8B
-        public ulong[] RemoveEntities => Primitives.ArrayFromBytes<ulong>(Bytes, RemoveLength, HEADER_SIZE + AddLength * ENTRY_SIZE); // n * 8B
+        public uint FixedFrame => Primitives.FromBytes<uint>(Bytes, 0); // sizeof(uint)
+        public ushort AddLength => Primitives.FromBytes<ushort>(Bytes, 4); // sizeof(ushort)
+        public ushort RemoveLength => Primitives.FromBytes<ushort>(Bytes, 6); // sizeof(ushort)
+        public ulong[] AddEntities => Primitives.ArrayFromBytes<ulong>(Bytes, AddLength, HEADER_SIZE); // n * ENTRY_SIZE
+        public ulong[] RemoveEntities => Primitives.ArrayFromBytes<ulong>(Bytes, RemoveLength, HEADER_SIZE + AddLength * ENTRY_SIZE); // n * ENTRY_SIZE
 
         public NearbyEntities() { }
         private NearbyEntities(uint fixedFrame, ulong[] addEntities, ulong[] removeEntities, byte code = 0)
         {
-            if (addEntities == null) addEntities = new ulong[0];
-            if (removeEntities == null) removeEntities = new ulong[0];
+            addEntities = addEntities ?? Array.Empty<ulong>();
+            removeEntities = removeEntities ?? Array.Empty<ulong>();
 
             InitializePayload(ArrayUtils.MegaConcat(
                 Primitives.GetBytes(fixedFrame),
@@ -35,10 +35,15 @@ namespace Larnix.Packets
                 ), code);
         }
 
+        public static NearbyEntities CreateBootstrap(uint fixedFrame)
+        {
+            return new NearbyEntities(fixedFrame, Array.Empty<ulong>(), Array.Empty<ulong>());
+        }
+
         public static List<NearbyEntities> CreateList(uint fixedFrame, ulong[] addEntities, ulong[] removeEntities, byte code = 0)
         {
-            if (addEntities == null) addEntities = new ulong[0];
-            if (removeEntities == null) removeEntities = new ulong[0];
+            addEntities = addEntities ?? Array.Empty<ulong>();
+            removeEntities = removeEntities ?? Array.Empty<ulong>();
 
             int estimatedLength = Math.Max(addEntities.Length, removeEntities.Length) / MAX_RECORDS + 1;
             List<NearbyEntities> result = new(estimatedLength);
@@ -48,22 +53,17 @@ namespace Larnix.Packets
             {
                 ulong[] add = eyes < addEntities.Length ?
                     addEntities[eyes..Math.Min(addEntities.Length, eyes + MAX_RECORDS)] :
-                    null;
+                    Array.Empty<ulong>();
 
                 ulong[] remove = eyes < removeEntities.Length ?
                     removeEntities[eyes..Math.Min(removeEntities.Length, eyes + MAX_RECORDS)] :
-                    null;
+                    Array.Empty<ulong>();
 
                 result.Add(new NearbyEntities(fixedFrame, add, remove, code));
                 eyes += MAX_RECORDS;
             }
 
             return result;
-        }
-
-        public static NearbyEntities CreateBootstrap(uint fixedFrame)
-        {
-            return new NearbyEntities(fixedFrame, new ulong[0], new ulong[0]);
         }
 
         protected override bool IsValid()

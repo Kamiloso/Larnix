@@ -10,12 +10,7 @@ namespace Larnix.Blocks
         public ITool.Type MATERIAL_TYPE();
         public ITool.Tier MATERIAL_TIER();
 
-        public bool STATIC_IsBreakable(BlockData1 block, bool front)
-        {
-            return true;
-        }
-
-        public bool STATIC_CanMineWith(BlockData1 tool)
+        public bool STATIC_IsBreakable(BlockData1 block, BlockData1 tool, bool front)
         {
             if (!BlockFactory.HasInterface<ITool>(tool.ID))
                 return false;

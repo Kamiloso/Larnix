@@ -21,6 +21,9 @@ namespace Larnix.Blocks.Structs
         }
         public Storage Data { get; private set; }
 
+        public static BlockData1 Air => new(BlockID.Air, 0);
+        public static BlockData1 UltimateTool => new(BlockID.UltimateTool, 0);
+
         public BlockData1() => Data = new();
         public BlockData1(BlockID id, byte variant, Storage data = null)
         {

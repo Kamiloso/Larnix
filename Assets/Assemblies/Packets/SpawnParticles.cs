@@ -10,11 +10,11 @@ namespace Larnix.Packets
 {
     public sealed class SpawnParticles : Payload
     {
-        private const int SIZE = 16 + 2 + 8;
+        private const int SIZE = Vec2.SIZE + sizeof(ParticleID) + sizeof(ulong);
 
-        public Vec2 Position => Structures.FromBytes<Vec2>(Bytes, 0); // 16B
-        public ParticleID ParticleID => Primitives.FromBytes<ParticleID>(Bytes, 16); // 2B
-        public ulong EntityUid => Primitives.FromBytes<ulong>(Bytes, 18); // 8B
+        public Vec2 Position => Structures.FromBytes<Vec2>(Bytes, 0); // Vec2.SIZE
+        public ParticleID ParticleID => Primitives.FromBytes<ParticleID>(Bytes, Vec2.SIZE); // ParticleID size
+        public ulong EntityUid => Primitives.FromBytes<ulong>(Bytes, Vec2.SIZE + sizeof(ParticleID)); // ulong size
         public bool IsEntityParticle => EntityUid != 0;
 
         public SpawnParticles() { }

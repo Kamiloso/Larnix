@@ -3,11 +3,10 @@ using System.Collections.Generic;
 using Larnix.Core.Vectors;
 using Larnix.Core.Utils;
 using Larnix.Blocks.Structs;
-using Larnix.Core.Binary;
 
 namespace Larnix.Blocks
 {
-    public interface ILiquid : IMovingBehaviour, IReplaceable
+    public interface ILiquid : IMovingBehaviour, IReplaceable, IBlockingFront
     {
         void Init()
         {

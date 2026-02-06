@@ -10,13 +10,13 @@ namespace Larnix.Packets
 {
     public sealed class BlockChange : Payload
     {
-        private const int SIZE = 8 + 5 + 8 + 1;
+        private const int SIZE = Vec2Int.SIZE + BlockData2.SIZE + sizeof(long) + sizeof(byte);
 
-        public Vec2Int BlockPosition => Structures.FromBytes<Vec2Int>(Bytes, 0); // 8B
-        public BlockData1 Item => Structures.FromBytes<BlockData2>(Bytes, 8).Front; // 2.5B
-        public BlockData1 Tool => Structures.FromBytes<BlockData2>(Bytes, 8).Back; // 2.5B
-        public long Operation => Primitives.FromBytes<long>(Bytes, 13); // 8B
-        public bool Front => (Bytes[21] & 0b1) != 0; // 1B
+        public Vec2Int BlockPosition => Structures.FromBytes<Vec2Int>(Bytes, 0); // Vec2Int.SIZE
+        public BlockData1 Item => Structures.FromBytes<BlockData2>(Bytes, Vec2Int.SIZE).Front; // BlockData2.SIZE
+        public BlockData1 Tool => Structures.FromBytes<BlockData2>(Bytes, Vec2Int.SIZE).Back; // BlockData2.SIZE
+        public long Operation => Primitives.FromBytes<long>(Bytes, Vec2Int.SIZE + BlockData2.SIZE); // sizeof(long)
+        public bool Front => (Bytes[Vec2Int.SIZE + BlockData2.SIZE + sizeof(long)] & 0b1) != 0; // flag
 
 
         public BlockChange() { }

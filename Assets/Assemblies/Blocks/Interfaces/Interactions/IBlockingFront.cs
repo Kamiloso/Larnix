@@ -5,5 +5,8 @@ using Larnix.Blocks.Structs;
 
 namespace Larnix.Blocks
 {
-    public interface IBlockingFront : IBlockInterface { }
+    public interface IBlockingFront : IBlockInterface
+    {
+        public bool IS_BLOCKING_FRONT();
+    }
 }

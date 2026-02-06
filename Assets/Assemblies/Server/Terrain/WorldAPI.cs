@@ -65,36 +65,23 @@ namespace Larnix.Server.Terrain
 
             if (frontBlock != null && backBlock != null)
             {
-                BlockData1 block = front ? frontBlock : backBlock;
-
-                bool can_replace = BlockFactory.GetSlaveInstance<IReplaceable>(block.ID)?.STATIC_IsReplaceable(block, item, front) == true;
-                bool can_place = BlockFactory.GetSlaveInstance<IPlaceable>(item.ID)?.STATIC_IsPlaceable(item, front) == true;
-                bool blocking_front = BlockFactory.HasInterface<IBlockingFront>(frontBlock.ID);
-
-                return can_replace && can_place && (front || !blocking_front);
+                BlockData2 blockPair = new BlockData2(frontBlock, backBlock);
+                return BlockInteractions.CanBePlaced(blockPair, item, front);
             }
-            else return false;
+            return false;
         }
 
         public bool CanBreakBlock(Vec2Int POS, bool front, BlockData1 item, BlockData1 tool)
         {
             BlockData1 frontBlock = GetBlock(POS, true)?.BlockData;
             BlockData1 backBlock = GetBlock(POS, false)?.BlockData;
-
+            
             if (frontBlock != null && backBlock != null)
             {
-                BlockData1 block = front ? frontBlock : backBlock;
-
-                if (!((IBinary<BlockData1>)block).BinaryEquals(item))
-                    return false;
-
-                bool is_breakable = BlockFactory.GetSlaveInstance<IBreakable>(block.ID)?.STATIC_IsBreakable(block, front) == true;
-                bool can_mine = BlockFactory.GetSlaveInstance<IBreakable>(block.ID)?.STATIC_CanMineWith(tool) == true;
-                bool blocking_front = BlockFactory.HasInterface<IBlockingFront>(frontBlock.ID);
-
-                return is_breakable && can_mine && (front || !blocking_front);
+                BlockData2 blockPair = new BlockData2(frontBlock, backBlock);
+                return BlockInteractions.CanBeBroken(blockPair, item, tool, front);
             }
-            else return false;
+            return false;
         }
 
         public void PlaceBlockWithEffects(Vec2Int POS, bool front, BlockData1 item)

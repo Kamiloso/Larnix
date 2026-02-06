@@ -9,9 +9,9 @@ namespace Larnix.Packets
 {
     public sealed class Teleport : Payload
     {
-        private const int SIZE = 16;
+        private const int SIZE = Vec2.SIZE;
 
-        public Vec2 TargetPosition => Structures.FromBytes<Vec2>(Bytes, 0); // 16B
+        public Vec2 TargetPosition => Structures.FromBytes<Vec2>(Bytes, 0); // Vec2.SIZE
         
         public Teleport() { }
         public Teleport(Vec2 targetPosition, byte code = 0) 

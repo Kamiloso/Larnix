@@ -13,6 +13,7 @@ namespace Larnix.Blocks
         public int FLOW_PERIOD() => 10;
         public int LIQUID_DENSITY() => 1000;
         public bool LIQUID_IS_REPLACEABLE() => true;
+        public bool IS_BLOCKING_FRONT() => false;
 
         public bool ALLOW_PLACE_BACK() => false;
     }

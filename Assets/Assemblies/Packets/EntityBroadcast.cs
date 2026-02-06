@@ -11,16 +11,16 @@ namespace Larnix.Packets
 {
     public sealed class EntityBroadcast : Payload
     {
-        private const int HEADER_SIZE = 4 + 2 + 2;
-        private const int ENTRY_A_SIZE = 8 + 22; // entity transforms entry
-        private const int ENTRY_B_SIZE = 8 + 4; // player fixed indexes entry
-        private const int MAX_RECORDS = 32;
+        private const int HEADER_SIZE = sizeof(uint) + sizeof(ushort) + sizeof(ushort);
+        private const int ENTRY_A_SIZE = sizeof(ulong) + EntityDataCompressed.SIZE; // entity transforms entry
+        private const int ENTRY_B_SIZE = sizeof(ulong) + sizeof(uint); // player fixed indexes entry
+        private const int MAX_RECORDS = (1400 - HEADER_SIZE) / (ENTRY_A_SIZE + ENTRY_B_SIZE); // max records that can fit in one packet
 
         public uint PacketFixedIndex => Primitives.FromBytes<uint>(Bytes, 0); // 4B
         public ushort EntityLength => Primitives.FromBytes<ushort>(Bytes, 4); // 2B
         public ushort PlayerFixedLength => Primitives.FromBytes<ushort>(Bytes, 6); // 2B
-        public Dictionary<ulong, EntityData> EntityTransforms => GetDictionaryA(Bytes, EntityLength, HEADER_SIZE); // n * 30B
-        public Dictionary<ulong, uint> PlayerFixedIndexes => GetDictionaryB(Bytes, PlayerFixedLength, HEADER_SIZE + EntityLength * ENTRY_A_SIZE); // n * 12B
+        public Dictionary<ulong, EntityData> EntityTransforms => GetDictionaryA(Bytes, EntityLength, HEADER_SIZE); // n * ENTRY_A_SIZE
+        public Dictionary<ulong, uint> PlayerFixedIndexes => GetDictionaryB(Bytes, PlayerFixedLength, HEADER_SIZE + EntityLength * ENTRY_A_SIZE); // n * ENTRY_B_SIZE
 
         public EntityBroadcast() { }
 
@@ -77,7 +77,7 @@ namespace Larnix.Packets
             for (int i = 0; i < count; i++)
             {
                 ulong key = Primitives.FromBytes<ulong>(bytes, i * ENTRY_A_SIZE + 0 + offset);
-                EntityData value = Structures.FromBytes<EntityData>(bytes, i * ENTRY_A_SIZE + 8 + offset);
+                EntityData value = Structures.FromBytes<EntityDataCompressed>(bytes, i * ENTRY_A_SIZE + sizeof(ulong) + offset).Contents;
                 result[key] = value;
             }
             return result;
@@ -89,7 +89,7 @@ namespace Larnix.Packets
             for (int i = 0; i < count; i++)
             {
                 ulong key = Primitives.FromBytes<ulong>(bytes, i * ENTRY_B_SIZE + 0 + offset);
-                uint value = Primitives.FromBytes<uint>(bytes, i * ENTRY_B_SIZE + 8 + offset);
+                uint value = Primitives.FromBytes<uint>(bytes, i * ENTRY_B_SIZE + sizeof(ulong) + offset);
                 result[key] = value;
             }
             return result;
@@ -102,10 +102,10 @@ namespace Larnix.Packets
             foreach (var vkp in dictA)
             {
                 byte[] keyBytes = Primitives.GetBytes(vkp.Key);
-                byte[] valueBytes = Structures.GetBytes(vkp.Value);
+                byte[] valueBytes = Structures.GetBytes(new EntityDataCompressed(vkp.Value));
 
-                Buffer.BlockCopy(keyBytes, 0, buffer, 0 + i * ENTRY_A_SIZE, 8);
-                Buffer.BlockCopy(valueBytes, 0, buffer, 8 + i * ENTRY_A_SIZE, 22);
+                Buffer.BlockCopy(keyBytes, 0, buffer, 0 + i * ENTRY_A_SIZE, sizeof(ulong));
+                Buffer.BlockCopy(valueBytes, 0, buffer, sizeof(ulong) + i * ENTRY_A_SIZE, EntityDataCompressed.SIZE);
 
                 i++;
             }
@@ -121,8 +121,8 @@ namespace Larnix.Packets
                 byte[] keyBytes = Primitives.GetBytes(vkp.Key);
                 byte[] valueBytes = Primitives.GetBytes(vkp.Value);
 
-                Buffer.BlockCopy(keyBytes, 0, buffer, 0 + i * ENTRY_B_SIZE, 8);
-                Buffer.BlockCopy(valueBytes, 0, buffer, 8 + i * ENTRY_B_SIZE, 4);
+                Buffer.BlockCopy(keyBytes, 0, buffer, 0 + i * ENTRY_B_SIZE, sizeof(ulong));
+                Buffer.BlockCopy(valueBytes, 0, buffer, sizeof(ulong) + i * ENTRY_B_SIZE, sizeof(uint));
 
                 i++;
             }

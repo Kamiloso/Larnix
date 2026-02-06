@@ -10,11 +10,11 @@ namespace Larnix.Packets
 {
     public sealed class PlayerUpdate : Payload
     {
-        private const int SIZE = 16 + 4 + 4;
+        private const int SIZE = Vec2.SIZE + sizeof(float) + sizeof(uint);
 
-        public Vec2 Position => Structures.FromBytes<Vec2>(Bytes, 0); // 16B
-        public float Rotation => Primitives.FromBytes<float>(Bytes, 16); // 4B
-        public uint FixedFrame => Primitives.FromBytes<uint>(Bytes, 20); // 4B
+        public Vec2 Position => Structures.FromBytes<Vec2>(Bytes, 0); // Vec2.SIZE
+        public float Rotation => Primitives.FromBytes<float>(Bytes, Vec2.SIZE); // sizeof(float)
+        public uint FixedFrame => Primitives.FromBytes<uint>(Bytes, Vec2.SIZE + sizeof(float)); // sizeof(uint)
 
         public PlayerUpdate() { }
         public PlayerUpdate(Vec2 position, float rotation, uint fixedFrame, byte code = 0)

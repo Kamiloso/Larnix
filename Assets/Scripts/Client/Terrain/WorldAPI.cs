@@ -18,16 +18,9 @@ namespace Larnix.Client.Terrain
 
             if (blockData != null && !isLocked)
             {
-                BlockData1 block = front ? blockData.Front : blockData.Back;
-                BlockData1 frontblock = blockData.Front;
-
-                bool can_replace = BlockFactory.GetSlaveInstance<IReplaceable>(block.ID)?.STATIC_IsReplaceable(block, item, front) == true;
-                bool can_place = BlockFactory.GetSlaveInstance<IPlaceable>(item.ID)?.STATIC_IsPlaceable(item, front) == true;
-                bool blocking_front = BlockFactory.HasInterface<IBlockingFront>(frontblock.ID);
-
-                return can_replace && can_place && (front || !blocking_front);
+                return BlockInteractions.CanBePlaced(blockData, item, front);
             }
-            else return false;
+            return false;
         }
 
         public static bool CanBeBroken(Vec2Int POS, BlockData1 tool, bool front)
@@ -37,16 +30,10 @@ namespace Larnix.Client.Terrain
 
             if (blockData != null && !isLocked)
             {
-                BlockData1 block = front ? blockData.Front : blockData.Back;
-                BlockData1 frontblock = blockData.Front;
-
-                bool is_breakable = BlockFactory.GetSlaveInstance<IBreakable>(block.ID)?.STATIC_IsBreakable(block, front) == true;
-                bool can_mine = BlockFactory.GetSlaveInstance<IBreakable>(block.ID)?.STATIC_CanMineWith(tool) == true;
-                bool blocking_front = BlockFactory.HasInterface<IBlockingFront>(frontblock.ID);
-
-                return is_breakable && can_mine && (front || !blocking_front);
+                BlockData1 item = front ? blockData.Front : blockData.Back;
+                return BlockInteractions.CanBeBroken(blockData, item, tool, front);
             }
-            else return false;
+            return false;
         }
 
         public static void PlaceBlock(Vec2Int POS, BlockData1 item, bool front)

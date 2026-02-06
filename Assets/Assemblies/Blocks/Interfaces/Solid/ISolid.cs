@@ -9,5 +9,7 @@ namespace Larnix.Blocks
         float IHasCollider.COLLIDER_OFFSET_Y() => 0f;
         float IHasCollider.COLLIDER_WIDTH() => 1f;
         float IHasCollider.COLLIDER_HEIGHT() => 1f;
+
+        bool IBlockingFront.IS_BLOCKING_FRONT() => true;
     }
 }
