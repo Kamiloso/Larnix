@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Larnix.Socket.Packets;
 using System.Collections.Generic;
+using Larnix.Core.Utils;
 
 namespace Larnix.Socket.Channel.Networking
 {
@@ -27,21 +28,24 @@ namespace Larnix.Socket.Channel.Networking
         {
             if (port == 0)
             {
-                if (!ConfigureSocket(0, isLoopback))
+                if (!ConfigureSocket(Common.LarnixPort, isLoopback))
                 {
-                    int triesLeft = 8;
-                    while (true)
+                    if (!ConfigureSocket(0, isLoopback))
                     {
-                        if (triesLeft == 0)
-                            throw new Exception("Couldn't create double socket on multiple random dynamic ports.");
-
-                        Random rand = new Random();
-                        port = (ushort)rand.Next(49152, 65536);
-                        if (!ConfigureSocket(port, isLoopback))
+                        int triesLeft = 8;
+                        while (true)
                         {
-                            triesLeft--;
+                            if (triesLeft == 0)
+                                throw new Exception("Couldn't create double socket on multiple random dynamic ports.");
+
+                            Random rand = new Random();
+                            port = (ushort)rand.Next(49152, 65536);
+                            if (!ConfigureSocket(port, isLoopback))
+                            {
+                                triesLeft--;
+                            }
+                            else break;
                         }
-                        else break;
                     }
                 }
             }
