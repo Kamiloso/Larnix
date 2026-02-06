@@ -19,7 +19,7 @@ namespace Larnix.Blocks
         public double GROWTH_CHANCE() => 0.0002;
         public int FALL_PERIOD() => 5;
 
-        public string STATIC_GetBlockName(byte variant)
+        string IBlockInterface.STATIC_GetBlockName(byte variant)
         {
             return variant switch
             {

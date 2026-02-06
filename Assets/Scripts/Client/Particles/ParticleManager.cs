@@ -44,10 +44,13 @@ namespace Larnix.Client.Particles
 
             if (obj.TryGetComponent<ParticleControl>(out var particles))
             {
-                particles.TryTextureFromBlock(
-                    blockData: _optionBlock.DeepCopy(),
-                    front: _optionFront
-                );
+                if (particles.UsesBlockTexture())
+                {
+                    particles.SetTextureFromBlock(
+                        blockData: _optionBlock.DeepCopy(),
+                        front: _optionFront
+                    );
+                }
             }
 
             ActiveParticles.Add(obj);

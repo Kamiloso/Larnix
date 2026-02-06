@@ -67,11 +67,11 @@ namespace Larnix.Server.Terrain
             {
                 BlockData1 block = front ? frontBlock : backBlock;
 
-                bool can_replace = BlockFactory.GetSlaveInstance<IReplaceable>(block.ID)?.STATIC_IsReplaceable(block, front) == true;
+                bool can_replace = BlockFactory.GetSlaveInstance<IReplaceable>(block.ID)?.STATIC_IsReplaceable(block, item, front) == true;
                 bool can_place = BlockFactory.GetSlaveInstance<IPlaceable>(item.ID)?.STATIC_IsPlaceable(item, front) == true;
-                bool solid_front = BlockFactory.HasInterface<ISolid>(frontBlock.ID);
+                bool blocking_front = BlockFactory.HasInterface<IBlockingFront>(frontBlock.ID);
 
-                return can_replace && can_place && (front || !solid_front);
+                return can_replace && can_place && (front || !blocking_front);
             }
             else return false;
         }
@@ -90,9 +90,9 @@ namespace Larnix.Server.Terrain
 
                 bool is_breakable = BlockFactory.GetSlaveInstance<IBreakable>(block.ID)?.STATIC_IsBreakable(block, front) == true;
                 bool can_mine = BlockFactory.GetSlaveInstance<IBreakable>(block.ID)?.STATIC_CanMineWith(tool) == true;
-                bool solid_front = BlockFactory.HasInterface<ISolid>(frontBlock.ID);
+                bool blocking_front = BlockFactory.HasInterface<IBlockingFront>(frontBlock.ID);
 
-                return is_breakable && can_mine && (front || !solid_front);
+                return is_breakable && can_mine && (front || !blocking_front);
             }
             else return false;
         }

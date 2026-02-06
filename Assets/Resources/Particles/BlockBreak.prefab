@@ -4896,5 +4896,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Larnix.Client.Particles.ParticleControl
   ParticleSystem: {fileID: 3086852608477324213}
-  BackTilemapPrefab: {fileID: 6276738116610429150, guid: 83aee14d96a208f48aaff71828dcb545, type: 3}
   InheritsBlockTexture: 1
+  BackTilemapPrefab: {fileID: 6276738116610429150, guid: 83aee14d96a208f48aaff71828dcb545, type: 3}

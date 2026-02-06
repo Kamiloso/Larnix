@@ -2,14 +2,30 @@ using System.Collections;
 using System.Collections.Generic;
 using Larnix.Core.Vectors;
 using Larnix.Core.Utils;
+using Larnix.Blocks.Structs;
+using Larnix.Core.Binary;
 
 namespace Larnix.Blocks
 {
-    public interface ILiquid : IMovingBehaviour
+    public interface ILiquid : IMovingBehaviour, IReplaceable
     {
         void Init()
         {
             This.FrameEventRandom += (sender, args) => Flow();
+        }
+
+        bool IReplaceable.STATIC_IsReplaceable(BlockData1 thisBlock, BlockData1 otherBlock, bool isFront)
+        {
+            if (LIQUID_IS_REPLACEABLE())
+            {
+                // can only be replaced by blocks with different IDs
+                return thisBlock.ID != otherBlock.ID;
+            }
+            else
+            {
+                // cannot be replaced by any block
+                return false;
+            }
         }
 
         int FLOW_PERIOD();
@@ -20,6 +36,7 @@ namespace Larnix.Blocks
         int LIQUID_DENSITY();
         byte MEMORY_LEFT() => 0b0001;
         byte MEMORY_RIGHT() => 0b0010;
+        bool LIQUID_IS_REPLACEABLE();
 
         private void Flow()
         {

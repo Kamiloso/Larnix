@@ -44,11 +44,11 @@ TagManager:
   - name: BackBlocks
     uniqueID: 3909468747
     locked: 0
+  - name: BackEffects
+    uniqueID: 729515487
+    locked: 0
   - name: Default
     uniqueID: 0
-    locked: 0
-  - name: Effects
-    uniqueID: 2192046129
     locked: 0
   - name: Entities
     uniqueID: 3709938891
@@ -64,6 +64,9 @@ TagManager:
     locked: 0
   - name: FrontBorders
     uniqueID: 535201217
+    locked: 0
+  - name: FrontEffects
+    uniqueID: 1564074733
     locked: 0
   - name: OnTop
     uniqueID: 712124137

@@ -5,11 +5,6 @@ namespace Larnix.Blocks
 {
     public interface ITool : IBlockInterface
     {
-        void Init()
-        {
-
-        }
-
         public Type TOOL_TYPE(); // what type of material it can mine
         public Tier TOOL_TIER(); // what tier of material it can mine
         public int TOOL_MAX_DURABILITY(); // for how long in can mine

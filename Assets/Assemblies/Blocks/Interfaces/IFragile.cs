@@ -3,11 +3,5 @@ using System.Collections.Generic;
 
 namespace Larnix.Blocks
 {
-    public interface IFragile : IBlockInterface
-    {
-        void Init()
-        {
-
-        }
-    }
+    public interface IFragile : IBlockInterface { }
 }

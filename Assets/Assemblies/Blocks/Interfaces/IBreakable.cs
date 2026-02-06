@@ -7,11 +7,6 @@ namespace Larnix.Blocks
 {
     public interface IBreakable : IBlockInterface
     {
-        void Init()
-        {
-
-        }
-
         public ITool.Type MATERIAL_TYPE();
         public ITool.Tier MATERIAL_TIER();
 

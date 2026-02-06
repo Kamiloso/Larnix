@@ -9,32 +9,56 @@ namespace Larnix.Client.Particles
 {
     public class ParticleControl : MonoBehaviour
     {
+        [Header("Universal")]
         [SerializeField] ParticleSystem ParticleSystem;
-        [SerializeField] GameObject BackTilemapPrefab;
+
+        [Header("Block Texture")]
         [SerializeField] bool InheritsBlockTexture;
+        [SerializeField] GameObject BackTilemapPrefab;
 
         private ParticleSystemRenderer Renderer;
+        private Color FrontColor;
         private Color BackColor;
 
         private void Awake()
         {
+            if (ParticleSystem == null)
+            {
+                throw new Exception($"ParticleControl on GameObject \"{name}\" is missing a reference to its ParticleSystem.");
+            }
+
             Renderer = ParticleSystem.GetComponent<ParticleSystemRenderer>();
-            Tilemap tilemap = BackTilemapPrefab.GetComponent<Tilemap>();
-            BackColor = tilemap != null ? tilemap.color : Color.white;
+            Tilemap tilemap = BackTilemapPrefab != null ? BackTilemapPrefab.GetComponent<Tilemap>() : null;
+
+            FrontColor = Color.white;
+            BackColor = tilemap != null ? tilemap.color : FrontColor;
+
+            if (!InheritsBlockTexture && BackTilemapPrefab != null)
+            {
+                Core.Debug.LogWarning($"Particle \"{name}\" has a BackTilemapPrefab but does not inherit block texture. This is likely a mistake.");
+            }
+
+            Renderer.sortingLayerName = "FrontEffects"; // default for effects
         }
 
-        public bool TryTextureFromBlock(BlockData1 blockData, bool front)
+        public bool UsesBlockTexture() => InheritsBlockTexture;
+        public void SetTextureFromBlock(BlockData1 blockData, bool front)
         {
-            if (!InheritsBlockTexture) return false;
+            if (!InheritsBlockTexture) return;
 
             Texture2D texture = Tiles.GetTexture(blockData, front);
             Renderer.material.mainTexture = texture;
-            if (!front)
+
+            if (front)
+            {
+                Renderer.material.color = FrontColor;
+                Renderer.sortingLayerName = "FrontEffects";
+            }
+            else
             {
                 Renderer.material.color = BackColor;
+                Renderer.sortingLayerName = "BackEffects";
             }
-            
-            return true;
         }
     }
 }

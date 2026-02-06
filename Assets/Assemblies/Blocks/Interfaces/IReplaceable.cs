@@ -7,12 +7,7 @@ namespace Larnix.Blocks
 {
     public interface IReplaceable : IBlockInterface
     {
-        void Init()
-        {
-
-        }
-
-        public bool STATIC_IsReplaceable(BlockData1 block, bool front)
+        public bool STATIC_IsReplaceable(BlockData1 thisBlock, BlockData1 otherBlock, bool isFront)
         {
             return true;
         }
