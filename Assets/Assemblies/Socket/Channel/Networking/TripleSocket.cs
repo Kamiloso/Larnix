@@ -11,6 +11,8 @@ namespace Larnix.Socket.Channel.Networking
 {
     internal class TripleSocket : INetworkInteractions, IDisposable
     {
+        public const ushort PREF_DYNAMIC_PORT = 50_000;
+
         public readonly ushort Port;
         private UdpClient2 UdpClient4;
         private UdpClient2 UdpClient6;
@@ -28,7 +30,7 @@ namespace Larnix.Socket.Channel.Networking
         {
             if (port == 0)
             {
-                if (!ConfigureSocket(Common.LarnixPort, isLoopback))
+                if (!ConfigureSocket(PREF_DYNAMIC_PORT, isLoopback))
                 {
                     if (!ConfigureSocket(0, isLoopback))
                     {
