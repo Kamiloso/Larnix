@@ -12,7 +12,7 @@ namespace Larnix.Packets
     {
         private const int HEADER_SIZE = sizeof(uint) + sizeof(ushort) + sizeof(ushort);
         private const int ENTRY_SIZE = sizeof(ulong);
-        private const int MAX_RECORDS = (1400 - HEADER_SIZE) / ENTRY_SIZE;
+        private const int MAX_RECORDS = (1400 - HEADER_SIZE) / (2 * ENTRY_SIZE);
 
         public uint FixedFrame => Primitives.FromBytes<uint>(Bytes, 0); // sizeof(uint)
         public ushort AddLength => Primitives.FromBytes<ushort>(Bytes, 4); // sizeof(ushort)
@@ -45,8 +45,7 @@ namespace Larnix.Packets
             addEntities = addEntities ?? Array.Empty<ulong>();
             removeEntities = removeEntities ?? Array.Empty<ulong>();
 
-            int estimatedLength = Math.Max(addEntities.Length, removeEntities.Length) / MAX_RECORDS + 1;
-            List<NearbyEntities> result = new(estimatedLength);
+            List<NearbyEntities> result = new();
 
             int eyes = 0;
             while (eyes < addEntities.Length || eyes < removeEntities.Length)
@@ -68,11 +67,8 @@ namespace Larnix.Packets
 
         protected override bool IsValid()
         {
-            return Bytes != null &&
-                   Bytes.Length >= HEADER_SIZE &&
-                   Bytes.Length == HEADER_SIZE + (AddLength + RemoveLength) * ENTRY_SIZE &&
-                   AddLength <= MAX_RECORDS &&
-                   RemoveLength <= MAX_RECORDS;
+            return Bytes.Length >= HEADER_SIZE &&
+                   Bytes.Length == HEADER_SIZE + ((int)AddLength + (int)RemoveLength) * ENTRY_SIZE;
         }
     }
 }

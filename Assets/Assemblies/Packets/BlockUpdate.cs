@@ -36,7 +36,7 @@ namespace Larnix.Packets
             if (records == null)
                 records = new BlockUpdateRecord[0];
 
-            List<BlockUpdate> result = new(records.Length / MAX_RECORDS + 1);
+            List<BlockUpdate> result = new();
 
             int eyes = 0;
             while (eyes < records.Length)
@@ -61,7 +61,7 @@ namespace Larnix.Packets
 
         protected override bool IsValid()
         {
-            return Bytes.Length <= MAX_RECORDS * ENTRY_SIZE &&
+            return Bytes.Length >= HEADER_SIZE &&
                    Bytes.Length % ENTRY_SIZE == 0;
         }
     }

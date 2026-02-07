@@ -14,7 +14,7 @@ namespace Larnix.Packets
         private const int HEADER_SIZE = sizeof(uint) + sizeof(ushort) + sizeof(ushort);
         private const int ENTRY_A_SIZE = sizeof(ulong) + EntityDataCompressed.SIZE; // entity transforms entry
         private const int ENTRY_B_SIZE = sizeof(ulong) + sizeof(uint); // player fixed indexes entry
-        private const int MAX_RECORDS = (1400 - HEADER_SIZE) / (ENTRY_A_SIZE + ENTRY_B_SIZE); // max records that can fit in one packet
+        private const int MAX_PAYLOAD_SIZE = 1400 - HEADER_SIZE; // max payload bytes excluding header
 
         public uint PacketFixedIndex => Primitives.FromBytes<uint>(Bytes, 0); // 4B
         public ushort EntityLength => Primitives.FromBytes<ushort>(Bytes, 4); // 2B
@@ -45,24 +45,31 @@ namespace Larnix.Packets
 
             List<EntityBroadcast> result = new();
             List<ulong> sendUIDs = entityTransforms.Keys.ToList();
-            for (int pos = 0; pos < sendUIDs.Count; pos += MAX_RECORDS)
+
+            int idx = 0;
+            while (idx < sendUIDs.Count)
             {
-                int sizeEnt = Math.Clamp(sendUIDs.Count - pos, 0, MAX_RECORDS);
-                if (sizeEnt == 0) break;
-                var fragmentedUIDs = sendUIDs.GetRange(pos, sizeEnt).ToHashSet();
-
                 Dictionary<ulong, EntityData> fragmentEntities = new();
-                foreach (ulong uid in fragmentedUIDs)
-                {
-                    if (entityTransforms.TryGetValue(uid, out EntityData data))
-                        fragmentEntities[uid] = data;
-                }
-
                 Dictionary<ulong, uint> fragmentFixed = new();
-                foreach (ulong uid in fragmentedUIDs)
+
+                int payloadBytes = 0; // current payload size in bytes
+
+                // pack as many UIDs as possible until we hit MAX_PAYLOAD_SIZE
+                while (idx < sendUIDs.Count)
                 {
-                    if (playerFixedIndexes.TryGetValue(uid, out uint fixedIndex))
-                        fragmentFixed[uid] = fixedIndex;
+                    ulong uid = sendUIDs[idx];
+                    int added = ENTRY_A_SIZE;
+                    bool hasFixed = playerFixedIndexes.ContainsKey(uid);
+                    if (hasFixed) added += ENTRY_B_SIZE;
+
+                    if (payloadBytes + added > MAX_PAYLOAD_SIZE)
+                        break; // can't add more without exceeding max payload size
+
+                    fragmentEntities[uid] = entityTransforms[uid];
+                    if (hasFixed) fragmentFixed[uid] = playerFixedIndexes[uid];
+
+                    payloadBytes += added;
+                    idx++;
                 }
 
                 result.Add(new EntityBroadcast(packetFixedIndex, fragmentEntities, fragmentFixed, code));
@@ -132,9 +139,7 @@ namespace Larnix.Packets
         protected override bool IsValid()
         {
             return Bytes.Length >= HEADER_SIZE &&
-                   Bytes.Length == HEADER_SIZE + EntityLength * ENTRY_A_SIZE + PlayerFixedLength * ENTRY_B_SIZE &&
-                   EntityLength <= MAX_RECORDS &&
-                   PlayerFixedLength <= MAX_RECORDS;
+                   Bytes.Length == HEADER_SIZE + (int)EntityLength * ENTRY_A_SIZE + (int)PlayerFixedLength * ENTRY_B_SIZE;
         }
     }
 }
