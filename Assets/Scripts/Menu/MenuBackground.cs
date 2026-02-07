@@ -3,17 +3,15 @@ using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Worldgen;
 using Larnix.Client.Terrain;
-using Larnix.Blocks;
 using Larnix.Core.Utils;
 using Larnix.Core.Vectors;
-using Larnix;
 
 namespace Larnix.Menu
 {
     public class MenuBackground : MonoBehaviour
     {
         [SerializeField] Camera Camera;
-        [SerializeField] GridManager GridManager;
+        [SerializeField] BasicGridManager BasicGridManager;
         [SerializeField] Vector3 CameraSpeed;
 
         private Generator Generator;
@@ -39,13 +37,13 @@ namespace Larnix.Menu
 
             foreach(var chunk in ToAdd)
             {
-                GridManager.AddChunk(chunk, Generator.GenerateChunk(chunk), firstGeneration);
+                BasicGridManager.AddChunk(chunk, Generator.GenerateChunk(chunk), firstGeneration);
                 ActiveChunks.Add(chunk);
             }
 
             foreach(var chunk in ToRemove)
             {
-                GridManager.RemoveChunk(chunk);
+                BasicGridManager.RemoveChunk(chunk);
                 ActiveChunks.Remove(chunk);
             }
 

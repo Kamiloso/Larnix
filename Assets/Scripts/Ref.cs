@@ -7,6 +7,7 @@ using Larnix.Core.Physics;
 using Larnix.Client;
 using Larnix.Menu.Worlds;
 using Larnix.Client.Particles;
+using Larnix.Menu;
 
 namespace Larnix
 {
@@ -17,10 +18,11 @@ namespace Larnix
         public static MainPlayer MainPlayer;
         public static EntityProjections EntityProjections;
         public static ParticleManager ParticleManager;
-        public static LoadingScreen LoadingScreen;
-        public static Loading Loading;
+        public static GridManager GridManager;
         public static TileSelector TileSelector;
         public static Inventory Inventory;
+        public static LoadingScreen LoadingScreen;
+        public static Loading Loading;
         public static Screenshots Screenshots;
         public static Debugger Debugger;
 
@@ -31,8 +33,6 @@ namespace Larnix
         public static Menu.Menu Menu;
         public static ServerSelect ServerSelect;
         public static WorldSelect WorldSelect;
-
-        // Mono Behaviours (both)
-        public static GridManager GridManager;
+        public static BasicGridManager BasicGridManager;
     }
 }

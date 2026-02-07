@@ -21,12 +21,7 @@ namespace Larnix.Client.Terrain
         private readonly Dictionary<Vec2Int, Tilemaps> TileChunks = new();
         private Vec2Int CurrentOrigin = new Vec2Int(0, 0);
 
-        private bool IsMenu;
-
-        private void Awake()
-        {
-            IsMenu = gameObject.scene.name == "Menu";
-        }
+        private bool IsMenu => gameObject.scene.name == "Menu";
 
         public void RedrawChunk(Vec2Int chunk, BlockData2[,] blocks)
         {
@@ -52,7 +47,7 @@ namespace Larnix.Client.Terrain
 
             Tilemaps.Front.SetTile(pos.ToUnity3(), Tiles.GetTile(block.Front, true));
             Tilemaps.Back.SetTile(pos.ToUnity3(), Tiles.GetTile(block.Back, false));
-            Tilemaps.Border.SetTile(pos.ToUnity3(), Tiles.GetBorderTile(POS));
+            Tilemaps.Border.SetTile(pos.ToUnity3(), Tiles.GetBorderTile(POS, IsMenu));
 
             if (redrawBorder)
             {
@@ -78,7 +73,7 @@ namespace Larnix.Client.Terrain
 
                     if (TileChunks.ContainsKey(chunk))
                     {
-                        TileChunks[chunk].Border.SetTile(pos.ToUnity3(), Tiles.GetBorderTile(POS));
+                        TileChunks[chunk].Border.SetTile(pos.ToUnity3(), Tiles.GetBorderTile(POS, IsMenu));
                     }
                 }
         }
@@ -132,9 +127,9 @@ namespace Larnix.Client.Terrain
 
         private void Update()
         {
-            // Update chunk position to match the origin
             if (!IsMenu)
             {
+                // Update chunk position to match the origin
                 Vec2Int newOrigin = Ref.MainPlayer.Position.ExtractSector();
                 if (CurrentOrigin != newOrigin)
                 {

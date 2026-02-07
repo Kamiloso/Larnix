@@ -104,7 +104,7 @@ namespace Larnix.Client.Terrain
 
             if (is_tool)
             {
-                bool can_be_broken = WorldAPI.CanBeBroken(pointed_block, item, !shift);
+                bool can_be_broken = GridAPI.CanBeBroken(pointed_block, item, !shift);
 
                 Selector.sprite = tile.sprite;
                 Selector.color = new Color(1, 1, 1);
@@ -114,7 +114,7 @@ namespace Larnix.Client.Terrain
 
                 if (hold_0 && can_be_broken)
                 {
-                    WorldAPI.BreakBlock(pointed_block, item, !shift);
+                    GridAPI.BreakBlock(pointed_block, item, !shift);
                 }
             }
             else
@@ -122,7 +122,7 @@ namespace Larnix.Client.Terrain
                 Color transpColor = new Color(1, 1, 1, Transparency);
                 Color darkerColor = new Color(0, 0, 0, Transparency);
 
-                if (WorldAPI.CanBePlaced(pointed_block, item, !shift))
+                if (GridAPI.CanBePlaced(pointed_block, item, !shift))
                 {
                     Selector.sprite = tile.sprite;
 
@@ -139,7 +139,7 @@ namespace Larnix.Client.Terrain
 
                     if (hold_0)
                     {
-                        WorldAPI.PlaceBlock(pointed_block, item, !shift);
+                        GridAPI.PlaceBlock(pointed_block, item, !shift);
                     }
                 }
                 else HideSelector();

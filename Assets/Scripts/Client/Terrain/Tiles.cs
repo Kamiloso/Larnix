@@ -30,15 +30,16 @@ namespace Larnix.Client.Terrain
         public static Texture2D GetTexture(BlockData1 item, bool isFront) =>
             GetTile(item, isFront).sprite.texture;
 
-        public static Tile GetBorderTile(Vec2Int POS)
+        public static Tile GetBorderTile(Vec2Int POS, bool isMenu)
         {
-            BlockData1 block = Ref.GridManager.BlockDataAtPOS(POS)?.Front;
+            BasicGridManager CurrentGrid = isMenu ? Ref.BasicGridManager : Ref.GridManager;
+            BlockData1 block = CurrentGrid.BlockDataAtPOS(POS)?.Front;
 
             IHasConture iface;
             if (block != null && (iface = BlockFactory.GetSlaveInstance<IHasConture>(block.ID)) != null)
             {
                 byte alphaByte = iface.STATIC_GetAlphaByte(block.Variant);
-                byte borderByte = Ref.GridManager.CalculateBorderByte(POS);
+                byte borderByte = CurrentGrid.CalculateBorderByte(POS);
 
                 if (alphaByte != 0)
                 {
@@ -55,10 +56,10 @@ namespace Larnix.Client.Terrain
             return GetTile(new BlockData1(), true);
         }
 
-        public static Sprite GetBorderSprite(Vec2Int POS) =>
-            GetBorderTile(POS).sprite;
+        public static Sprite GetBorderSprite(Vec2Int POS, bool isMenu) =>
+            GetBorderTile(POS, isMenu).sprite;
 
-        public static Texture2D GetBorderTexture(Vec2Int POS) =>
-            GetBorderTile(POS).sprite.texture;
+        public static Texture2D GetBorderTexture(Vec2Int POS, bool isMenu) =>
+            GetBorderTile(POS, isMenu).sprite.texture;
     }
 }

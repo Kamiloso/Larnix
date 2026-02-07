@@ -1,7 +1,6 @@
 using Larnix.Blocks;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using Larnix.Socket.Packets;
 using Larnix.Blocks.Structs;
 using Larnix.Packets;
@@ -9,7 +8,7 @@ using Larnix.Core.Vectors;
 
 namespace Larnix.Client.Terrain
 {
-    public static class WorldAPI
+    public static class GridAPI
     {
         public static bool CanBePlaced(Vec2Int POS, BlockData1 item, bool front)
         {
