@@ -9,13 +9,10 @@ namespace Larnix.Client.Particles
 {
     public class ParticleControl : MonoBehaviour
     {
-        [Header("Universal")]
         [SerializeField] ParticleSystem ParticleSystem;
-
-        [Header("Block Texture")]
         [SerializeField] bool InheritsBlockTexture;
-        [SerializeField] GameObject BackTilemapPrefab;
 
+        private GameObject BackTilemapPrefab => Resources.GetPrefab("Tilemaps", "TilemapBack");
         private ParticleSystemRenderer Renderer;
         private Color FrontColor;
         private Color BackColor;
@@ -28,17 +25,16 @@ namespace Larnix.Client.Particles
             }
 
             Renderer = ParticleSystem.GetComponent<ParticleSystemRenderer>();
-            Tilemap tilemap = BackTilemapPrefab != null ? BackTilemapPrefab.GetComponent<Tilemap>() : null;
 
             FrontColor = Color.white;
-            BackColor = tilemap != null ? tilemap.color : FrontColor;
-
-            if (!InheritsBlockTexture && BackTilemapPrefab != null)
-            {
-                Core.Debug.LogWarning($"Particle \"{name}\" has a BackTilemapPrefab but does not inherit block texture. This is likely a mistake.");
-            }
+            BackColor = BackTilemapPrefab.GetComponent<Tilemap>().color;
 
             Renderer.sortingLayerName = "FrontEffects"; // default for effects
+        }
+
+        public void DisableRenderer()
+        {
+            Renderer.enabled = false;
         }
 
         public bool UsesBlockTexture() => InheritsBlockTexture;

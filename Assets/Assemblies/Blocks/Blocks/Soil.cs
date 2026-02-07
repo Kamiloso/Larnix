@@ -6,7 +6,7 @@ using Larnix.Blocks.Structs;
 
 namespace Larnix.Blocks
 {
-    public sealed class Soil : BlockServer, ISolid, IPlaceable, IBreakable, IHasGrowingFlora, IFalling
+    public sealed class Soil : BlockServer, ISolid, IHasGrowingFlora, IFalling
     {
         public Soil(Vec2Int POS, BlockData1 block, bool isFront) : base(POS, block, isFront) { }
 

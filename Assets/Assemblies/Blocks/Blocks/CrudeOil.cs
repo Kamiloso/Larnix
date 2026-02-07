@@ -6,7 +6,7 @@ using Larnix.Blocks.Structs;
 
 namespace Larnix.Blocks
 {
-    public sealed class CrudeOil : BlockServer, ILiquid, IPlaceable
+    public sealed class CrudeOil : BlockServer, ILiquid
     {
         public CrudeOil(Vec2Int POS, BlockData1 block, bool isFront) : base(POS, block, isFront) { }
 

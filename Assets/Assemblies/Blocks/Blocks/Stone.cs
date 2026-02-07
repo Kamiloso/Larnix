@@ -6,7 +6,7 @@ using Larnix.Blocks.Structs;
 
 namespace Larnix.Blocks
 {
-    public sealed class Stone : BlockServer, ISolid, IPlaceable, IBreakable
+    public sealed class Stone : BlockServer, ISolid
     {
         public Stone(Vec2Int POS, BlockData1 block, bool isFront) : base(POS, block, isFront) { }
 

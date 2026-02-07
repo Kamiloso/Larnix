@@ -8,6 +8,7 @@ namespace Larnix.Blocks
     public interface IPlaceable : IBlockInterface
     {
         bool ALLOW_PLACE_BACK();
+        bool HAS_PLACE_PARTICLES() => false;
 
         public bool STATIC_IsPlaceable(BlockData1 block, bool front)
         {

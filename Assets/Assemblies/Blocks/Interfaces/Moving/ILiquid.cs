@@ -6,7 +6,7 @@ using Larnix.Blocks.Structs;
 
 namespace Larnix.Blocks
 {
-    public interface ILiquid : IMovingBehaviour, IReplaceable, IBlockingFront
+    public interface ILiquid : IMovingBehaviour, IPlaceable, IReplaceable, IBlockingFront
     {
         void Init()
         {
@@ -36,6 +36,8 @@ namespace Larnix.Blocks
         byte MEMORY_LEFT() => 0b0001;
         byte MEMORY_RIGHT() => 0b0010;
         bool LIQUID_IS_REPLACEABLE();
+
+        bool IPlaceable.HAS_PLACE_PARTICLES() => true;
 
         private void Flow()
         {

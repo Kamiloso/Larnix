@@ -46,10 +46,21 @@ namespace Larnix.Client.Particles
             {
                 if (particles.UsesBlockTexture())
                 {
-                    particles.SetTextureFromBlock(
-                        blockData: _optionBlock.DeepCopy(),
-                        front: _optionFront
-                    );
+                    bool break_particles = BlockFactory.GetSlaveInstance<IBreakable>(_optionBlock.ID)?.HAS_BREAK_PARTICLES() == true;
+                    bool place_particles = BlockFactory.GetSlaveInstance<IPlaceable>(_optionBlock.ID)?.HAS_PLACE_PARTICLES() == true;
+
+                    if ((break_particles && id == ParticleID.BlockBreak) ||
+                        (place_particles && id == ParticleID.BlockPlace))
+                    {
+                        particles.SetTextureFromBlock(
+                            blockData: _optionBlock.DeepCopy(),
+                            front: _optionFront
+                        );
+                    }
+                    else
+                    {
+                        particles.DisableRenderer();
+                    }
                 }
             }
 

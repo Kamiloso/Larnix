@@ -6,7 +6,7 @@ using Larnix.Blocks.Structs;
 
 namespace Larnix.Blocks
 {
-    public sealed class Sandstone : BlockServer, ISolid, IPlaceable, IBreakable
+    public sealed class Sandstone : BlockServer, ISolid
     {
         public Sandstone(Vec2Int POS, BlockData1 block, bool isFront) : base(POS, block, isFront) { }
 

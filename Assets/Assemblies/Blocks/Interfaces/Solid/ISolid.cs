@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Larnix.Blocks
 {
-    public interface ISolid : IHasCollider, IHasConture, IBlockingFront
+    public interface ISolid : IHasCollider, IPlaceable, IBreakable, IBlockingFront, IHasConture
     {
         float IHasCollider.COLLIDER_OFFSET_X() => 0f;
         float IHasCollider.COLLIDER_OFFSET_Y() => 0f;

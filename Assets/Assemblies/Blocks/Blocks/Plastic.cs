@@ -6,7 +6,7 @@ using Larnix.Blocks.Structs;
 
 namespace Larnix.Blocks
 {
-    public sealed class Plastic : BlockServer, ISolid, IPlaceable, IBreakable
+    public sealed class Plastic : BlockServer, ISolid
     {
         public Plastic(Vec2Int POS, BlockData1 block, bool isFront) : base(POS, block, isFront) { }
 

@@ -6,7 +6,7 @@ using Larnix.Blocks.Structs;
 
 namespace Larnix.Blocks
 {
-    public sealed class Lava : BlockServer, ILiquid, IPlaceable
+    public sealed class Lava : BlockServer, ILiquid
     {
         public Lava(Vec2Int POS, BlockData1 block, bool isFront) : base(POS, block, isFront) { }
 

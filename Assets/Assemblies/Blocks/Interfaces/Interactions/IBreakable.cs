@@ -9,6 +9,7 @@ namespace Larnix.Blocks
     {
         public ITool.Type MATERIAL_TYPE();
         public ITool.Tier MATERIAL_TIER();
+        public bool HAS_BREAK_PARTICLES() => true;
 
         public bool STATIC_IsBreakable(BlockData1 block, BlockData1 tool, bool front)
         {

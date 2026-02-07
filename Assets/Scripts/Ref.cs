@@ -24,6 +24,9 @@ namespace Larnix
         public static Screenshots Screenshots;
         public static Debugger Debugger;
 
+        // Normal Classes (client)
+        public static PhysicsManager PhysicsManager;
+
         // Mono Behaviours (menu)
         public static Menu.Menu Menu;
         public static ServerSelect ServerSelect;
@@ -31,8 +34,5 @@ namespace Larnix
 
         // Mono Behaviours (both)
         public static GridManager GridManager;
-
-        // Normal Classes
-        public static PhysicsManager PhysicsManager;
     }
 }
