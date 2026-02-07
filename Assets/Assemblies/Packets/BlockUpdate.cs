@@ -10,7 +10,8 @@ namespace Larnix.Packets
     public sealed class BlockUpdate : Payload
     {
         private const int ENTRY_SIZE = BlockUpdateRecord.SIZE;
-        private const int MAX_RECORDS = 1400 / ENTRY_SIZE;
+        private const int HEADER_SIZE = 0;
+        private const int MAX_RECORDS = (1400 - HEADER_SIZE) / ENTRY_SIZE;
 
         public BlockUpdateRecord[] BlockUpdates => GetRecords(); // n * ENTRY_SIZE
 
