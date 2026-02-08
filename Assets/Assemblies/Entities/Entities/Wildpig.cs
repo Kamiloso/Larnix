@@ -6,7 +6,7 @@ using Larnix.Entities.Structs;
 
 namespace Larnix.Entities
 {
-    public sealed class Wildpig : EntityServer, IWalkingCreature
+    public sealed class Wildpig : EntityServer, IWalking
     {
         public Wildpig(ulong uid, EntityData entityData)
             : base(uid, entityData) { }
@@ -17,7 +17,7 @@ namespace Larnix.Entities
         Vec2 IHasCollider.COLLIDER_OFFSET() => new Vec2(0.00, 0.2);
         Vec2 IHasCollider.COLLIDER_SIZE() => new Vec2(0.75, 1.40);
 
-        int IWalkingCreature.MIN_THINKING_TIME() => 50;
-        int IWalkingCreature.MAX_THINKING_TIME() => 100;
+        int IWalking.MIN_THINKING_TIME() => 50;
+        int IWalking.MAX_THINKING_TIME() => 100;
     }
 }

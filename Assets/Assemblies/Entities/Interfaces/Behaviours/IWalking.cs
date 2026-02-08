@@ -6,7 +6,7 @@ using Larnix.Core.Utils;
 
 namespace Larnix.Entities
 {
-    public interface IWalkingCreature : IPhysics
+    public interface IWalking : IPhysics
     {
         InputData IPhysics.inputData => GenerateNextInput();
 
@@ -20,18 +20,18 @@ namespace Larnix.Entities
 
             // change action
 
-            if (--Data["action.ticks"].Int <= 0)
+            if (--Data["walking.next_in"].Int <= 0)
             {
-                string action = Data["action.current"].String;
+                string action = Data["walking.state"].String;
                 string nextAction = action switch
                 {
-                    "WALK_LEFT" => "",
-                    "WALK_RIGHT" => "",
-                    _ => Common.Rand().Next() % 2 == 0 ? "WALK_LEFT" : "WALK_RIGHT",
+                    "LEFT" => "",
+                    "RIGHT" => "",
+                    _ => Common.Rand().Next() % 2 == 0 ? "LEFT" : "RIGHT",
                 };
 
-                Data["action.current"].String = nextAction;
-                Data["action.ticks"].Int = Common.Rand().Next(
+                Data["walking.state"].String = nextAction;
+                Data["walking.next_in"].Int = Common.Rand().Next(
                     MIN_THINKING_TIME(),
                     MAX_THINKING_TIME()
                     );
@@ -39,12 +39,12 @@ namespace Larnix.Entities
 
             // perform action
 
-            string finalAction = Data["action.current"].String;
+            string finalAction = Data["walking.state"].String;
             return new InputData
             {
                 Jump = touchesWall,
-                Left = finalAction == "WALK_LEFT",
-                Right = finalAction == "WALK_RIGHT",
+                Left = finalAction == "LEFT",
+                Right = finalAction == "RIGHT",
             };
         }
     }

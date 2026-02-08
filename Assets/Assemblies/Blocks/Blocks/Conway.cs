@@ -6,7 +6,7 @@ using Larnix.Blocks.Structs;
 
 namespace Larnix.Blocks
 {
-    public sealed class Conway : BlockServer, ISolid, IConwayLike
+    public sealed class Conway : BlockServer, ISolid, IConway
     {
         public Conway(Vec2Int POS, BlockData1 block, bool isFront) : base(POS, block, isFront) { }
 

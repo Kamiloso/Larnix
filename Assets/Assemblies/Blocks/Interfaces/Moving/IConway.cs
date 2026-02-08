@@ -6,7 +6,7 @@ using Larnix.Core.Vectors;
 
 namespace Larnix.Blocks
 {
-    public interface IConwayLike : IMovingBehaviour
+    public interface IConway : IMovingBehaviour
     {
         void Init()
         {
