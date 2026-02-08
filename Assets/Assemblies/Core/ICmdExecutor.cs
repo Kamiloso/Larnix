@@ -6,7 +6,7 @@ namespace Larnix.Core
 {
     public interface ICmdExecutor
     {
-        public enum CmdResult { Raw, Log, Success, Warning, Error, Ignore }
+        public enum CmdResult { Raw, Log, Success, Warning, Error, Ignore, Clear }
 
         public (CmdResult, string) ExecuteCommand(string command, string sender = null);
         public bool TryExecuteCommand(string command, out string message)

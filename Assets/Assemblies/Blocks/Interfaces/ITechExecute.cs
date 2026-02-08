@@ -22,7 +22,6 @@ namespace Larnix.Blocks
             {
                 ["$x"] = This.Position.x.ToString(),
                 ["$y"] = This.Position.y.ToString(),
-                ["$front"] = This.IsFront ? "front" : "back"
             });
 
             WorldAPI.ExecuteCommand(command);

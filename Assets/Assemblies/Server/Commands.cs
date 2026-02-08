@@ -16,9 +16,10 @@ using Larnix.Core;
 using Larnix.Socket.Packets;
 using Larnix.Core.Utils;
 using Larnix.Server.Data;
+using System.Net;
 using Console = Larnix.Core.Console;
 using CmdResult = Larnix.Core.ICmdExecutor.CmdResult;
-using System.Net;
+using Larnix.Core.Json;
 
 namespace Larnix.Server
 {
@@ -62,6 +63,11 @@ namespace Larnix.Server
             if (sender is null) // from console
             {
                 (type, message) = InnerExecuteCmd(command, sender, true);
+
+                if (type == CmdResult.Clear)
+                {
+                    Console.Clear();
+                }
             }
             else // from player
             {
@@ -83,11 +89,8 @@ namespace Larnix.Server
 
         private (CmdResult, string) InnerExecuteCmd(string command, string sender, bool adminPrivileges)
         {
-            string[] arg = command.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            string[] arg = command.Split(' ');
             int len = arg.Length;
-
-            if (len == 0)
-                return (CmdResult.Error, "Unknown command! Type 'help' for documentation.");
 
             if (!adminPrivileges && !(
                 arg[0] == "help" //||
@@ -103,32 +106,35 @@ namespace Larnix.Server
                 "tp" when len == 4 => Tp(arg[1], arg[2], arg[3]),
                 "kick" when len == 2 => Kick(arg[1]),
                 "kill" when len == 2 => Kill(arg[1]),
-                "spawn" when len == 4 => Spawn(arg[1], arg[2], arg[3]),
-                "place" when len == 5 || len == 6 => Place(arg),
+                "spawn" when len >= 4 => Spawn(arg[1], arg[2], arg[3], len >= 5 ? arg[4..] : null),
+                "place" when len >= 5 => Place(arg[1], arg[2], arg[3], arg[4], len >= 6 ? arg[5] : null, len >= 7 ? arg[6..] : null),
                 "particles" when len == 4 => Particles(arg[1], arg[2], arg[3]),
-                "seed" when len == 1 => Seed(),
+                "clear" when len == 1 => Clear(),
+                "info" when len == 1 => Info(),
                 _ => (CmdResult.Error, "Unknown command! Type 'help' for documentation.")
             };
         }
 
         private (CmdResult, string) Help()
         {
-            return (CmdResult.Raw,
-@"
- | ------ COMMAND LIST ------
- |
- | help - Displays this documentation.
- | stop - Turns off the server.
- | playerlist - Shows all players on the server.
- | tp [nickname] [x] [y] - Teleports player to a given position.
- | kick [nickname] - Kicks player if online.
- | kill [nickname] - Kills player if alive.
- | spawn [entity] [x] [y] - Spawns entity at a given position.
- | place [front/back] [x] [y] [block] [?variant] - Places block at a given position.
- | particles [name] [x] [y] - Spawns particles at a given position.
- | seed - Displays the server seed.
+            StringBuilder sb = new();
+            sb.Append($"\n");
+            sb.Append($" | ------ COMMAND LIST ------\n");
+            sb.Append($" |\n");
+            sb.Append($" | help - Displays this documentation.\n");
+            sb.Append($" | stop - Turns off the server.\n");
+            sb.Append($" | playerlist - Shows all players on the server.\n");
+            sb.Append($" | tp [nickname] [x] [y] - Teleports player to a given position.\n");
+            sb.Append($" | kick [nickname] - Kicks player if online.\n");
+            sb.Append($" | kill [nickname] - Kills player if alive.\n");
+            sb.Append($" | spawn [entity] [x] [y] [?json] - Spawns entity at a given position.\n");
+            sb.Append($" | place [front/back] [x] [y] [block] [?variant] [?json] - Places block at a given position.\n");
+            sb.Append($" | particles [name] [x] [y] - Spawns particles at a given position.\n");
+            sb.Append($" | clear - Clears the console.\n");
+            sb.Append($" | info - Displays server information.\n");
+            sb.Append($"\n");
 
-");
+            return (CmdResult.Raw, sb.ToString());
         }
 
         private (CmdResult, string) Stop()
@@ -140,9 +146,9 @@ namespace Larnix.Server
         private (CmdResult, string) PlayerList()
         {
             StringBuilder sb = new();
-            sb.Append("\n");
+            sb.Append($"\n");
             sb.Append($" | ------ PLAYER LIST [ {QuickServer.PlayerCount} / {QuickServer.Config.MaxClients} ] ------\n");
-            sb.Append(" |\n");
+            sb.Append($" |\n");
 
             foreach (string nickname in PlayerManager.GetAllPlayerNicknames())
             {
@@ -151,7 +157,7 @@ namespace Larnix.Server
                 sb.Append($" | {nickname} from {endPoint} is {playerState}\n");
             }
 
-            sb.Append("\n");
+            sb.Append($"\n");
 
             return (CmdResult.Raw, sb.ToString());
         }
@@ -192,7 +198,7 @@ namespace Larnix.Server
             return (CmdResult.Success, $"Player {nickname} has been killed.");
         }
 
-        private (CmdResult, string) Spawn(string entityname, string xs, string ys)
+        private (CmdResult, string) Spawn(string entityname, string xs, string ys, string[] jsonlist = null)
         {
             if (!Enum.TryParse(entityname, ignoreCase: true, out EntityID entityID) ||
                 !Enum.IsDefined(typeof(EntityID), entityID))
@@ -210,7 +216,7 @@ namespace Larnix.Server
                 id: entityID,
                 position: position,
                 rotation: 0.0f,
-                data: null
+                data: ParseJsonList(jsonlist)
             ));
 
             if (!success)
@@ -220,21 +226,19 @@ namespace Larnix.Server
             return (CmdResult.Success, $"Spawned {realName} at position {position}.");
         }
 
-        private (CmdResult, string) Place(string[] arg)
+        private (CmdResult, string) Place(string mode, string xs, string ys, string blockname, string vs = null, string[] jsonlist = null)
         {
-            bool front = arg[1] == "front";
-            if (arg[1] != "front" && arg[1] != "back")
+            bool front = mode == "front";
+            if (mode != "front" && mode != "back")
             {
-                return (CmdResult.Error, $"Phrase \"{arg[1]}\" is not valid in this context.");
+                return (CmdResult.Error, $"Phrase \"{mode}\" is not valid in this context.");
             }
 
-            if (!int.TryParse(arg[2], out int x) || !int.TryParse(arg[3], out int y))
+            if (!int.TryParse(xs, out int x) || !int.TryParse(ys, out int y))
                 return (CmdResult.Error, "Cannot parse coordinates.");
 
-            string blockname = arg[4];
-
             byte variant;
-            if (arg.Length == 5 || !byte.TryParse(arg[5], out variant))
+            if (vs == null || !byte.TryParse(vs, out variant))
                 variant = 0;
 
             if (!Enum.TryParse(blockname, ignoreCase: true, out BlockID blockID) ||
@@ -246,7 +250,7 @@ namespace Larnix.Server
             var result = WorldAPI.ReplaceBlock(POS, front, new BlockData1(
                 id: blockID,
                 variant: variant,
-                data: null
+                data: ParseJsonList(jsonlist)
             ), IWorldAPI.BreakMode.Replace);
 
             if (result != null)
@@ -285,10 +289,38 @@ namespace Larnix.Server
             return (CmdResult.Success, $"Spawned {realName} particles at position {dblPos}.");
         }
 
-        private (CmdResult, string) Seed()
+        private (CmdResult, string) Clear()
         {
-            long seed = Generator.Seed;
-            return (CmdResult.Log, $"Seed: {seed}");
+            return (CmdResult.Clear, string.Empty);
+        }
+
+        private (CmdResult, string) Info()
+        {
+            StringBuilder sb = new();
+            sb.Append("\n");
+            sb.Append($" | ------ SERVER INFO ------\n");
+            sb.Append($" |\n");
+            sb.Append($" | Version: {Core.Version.Current}\n");
+            sb.Append($" | Players: {QuickServer.PlayerCount} / {QuickServer.Config.MaxClients}\n");
+            sb.Append($" | Port: {QuickServer.Config.Port}\n");
+            sb.Append($" | Authcode: {QuickServer.Authcode}\n");
+            sb.Append($" | Seed: {Generator.Seed}\n");
+            sb.Append($"\n");
+
+            return (CmdResult.Raw, sb.ToString());
+        }
+
+        // ===== STATIC HELPERS =====
+
+        private static Storage ParseJsonList(string[] jsonlist)
+        {
+            if (jsonlist == null)
+            {
+                return new Storage();
+            }
+
+            string json = string.Join(' ', jsonlist);
+            return Storage.FromString(json);
         }
     }
 }

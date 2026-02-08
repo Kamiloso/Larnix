@@ -58,6 +58,14 @@ namespace Larnix.Core
             }
         }
 
+        public static void Clear()
+        {
+            lock (_lock)
+            {
+                System.Console.Clear();
+            }
+        }
+
         public static void SetTitle(string title)
         {
             lock (_lock)
