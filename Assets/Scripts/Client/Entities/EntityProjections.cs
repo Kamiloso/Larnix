@@ -49,7 +49,7 @@ namespace Larnix.Client.Entities
             if (_startFixed == null)
                 _startFixed = msg.PacketFixedIndex;
 
-            uint RelativeFixedFrame = msg.PacketFixedIndex - (uint)_startFixed;
+            uint relativeFixedFrame = msg.PacketFixedIndex - (uint)_startFixed;
 
             Dictionary<ulong, EntityData> dict = msg.EntityTransforms;
             Dictionary<ulong, uint> fixeds = msg.PlayerFixedIndexes;
@@ -63,10 +63,12 @@ namespace Larnix.Client.Entities
                 if (uid == MainPlayer.UID || !_nearbyUIDs.Contains(uid))
                     continue;
 
-                double time_fixed = (double)(RelativeFixedFrame * Time.fixedDeltaTime);
+                double time_fixed = (double)(relativeFixedFrame * Time.fixedDeltaTime);
 
                 if (fixeds.ContainsKey(uid)) // extra fixed (smoothing based on other client's info)
+                {
                     time_fixed = (double)(fixeds[uid] * Time.fixedDeltaTime);
+                }
 
                 if (_projections.ContainsKey(uid)) // update transform
                 {

@@ -27,6 +27,7 @@ namespace Larnix.Server
         public string LocalAddress { get; init; }
         public string Authcode { get; init; }
 
+        public long ServerTick { get; private set; } = 0;
         public uint FixedFrame { get; private set; } = 0;
 
         private WorldMeta _mdata;
@@ -38,6 +39,7 @@ namespace Larnix.Server
         private Config Config => Ref<Config>();
         private Database Database => Ref<Database>();
         private EntityManager EntityManager => Ref<EntityManager>();
+        private PlayerManager PlayerManager => Ref<PlayerManager>();
         private EntityDataManager EntityDataManager => Ref<EntityDataManager>();
         private BlockDataManager BlockDataManager => Ref<BlockDataManager>();
         private UserManager UserManager => Ref<UserManager>();
@@ -78,6 +80,9 @@ namespace Larnix.Server
                 AddRef(Config.Obtain(WorldPath));
                 AddRef(new Database(WorldPath, "database.sqlite"));
                 AddRef(new Generator(Database.GetSeed(seedSuggestion)));
+
+                // Server tick obtain
+                ServerTick = Database.GetServerTick();
 
                 // World metadata
                 _mdata = WorldMeta.ReadData(WorldPath, true);
@@ -206,6 +211,7 @@ namespace Larnix.Server
 
         public void TickFixed()
         {
+            ServerTick++;
             FixedFrame++;
 
             // Refresh QuickServer & process packets (with callbacks)
@@ -233,7 +239,10 @@ namespace Larnix.Server
             // Cyclic actions
 
             if (FixedFrame % Config.EntityBroadcastPeriodFrames == 0)
+            {
                 EntityManager.SendEntityBroadcast();
+                PlayerManager.SendFrameInfoBroadcast();
+            }
 
             if (FixedFrame % Config.DataSavingPeriodFrames == 0)
                 SaveAllNow();
@@ -248,6 +257,7 @@ namespace Larnix.Server
                 {
                     EntityDataManager.FlushIntoDatabase();
                     BlockDataManager.FlushIntoDatabase();
+                    Database.SetServerTick(ServerTick);
                     Database.CommitTransaction();
                 }
                 catch

@@ -7,7 +7,7 @@ using Larnix.Core.Vectors;
 
 namespace Larnix.Client
 {
-    public class CameraControl : MonoBehaviour
+    public class CameraMove : MonoBehaviour
     {
         [SerializeField] Camera MainCamera;
         [SerializeField] Transform FollowTransform;

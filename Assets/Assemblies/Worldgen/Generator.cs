@@ -106,6 +106,11 @@ namespace Larnix.Worldgen
             return new Col32(105, 165, 255, 0);
         }
 
+        public BiomeID BiomeAt(Vec2 position)
+        {
+            return BiomeID.Empty;
+        }
+
         public BlockData2[,] GenerateChunk(Vec2Int chunk)
         {
             ProtoBlock[,] protoBlocks = new ProtoBlock[CHUNK_SIZE, CHUNK_SIZE];

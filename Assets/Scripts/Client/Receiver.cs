@@ -10,6 +10,7 @@ using Larnix.Client.UI;
 using Larnix.Client.Particles;
 using UnityEngine;
 using Larnix.Blocks;
+using Larnix.Background;
 
 namespace Larnix.Client
 {
@@ -21,6 +22,8 @@ namespace Larnix.Client
         private GridManager GridManager => Ref.GridManager;
         private EntityProjections EntityProjections => Ref.EntityProjections;
         private ParticleManager ParticleManager => Ref.ParticleManager;
+        private Sky Sky => Ref.Sky;
+        private Debugger Debugger => Ref.Debugger;
 
         public Receiver(QuickClient client)
         {
@@ -33,6 +36,7 @@ namespace Larnix.Client
             client.Subscribe<RetBlockChange>(_RetBlockChange);
             client.Subscribe<Teleport>(_Teleport);
             client.Subscribe<SpawnParticles>(_SpawnParticles);
+            client.Subscribe<FrameInfo>(_FrameInfo);
         }
 
         private void _PlayerInitialize(PlayerInitialize msg)
@@ -117,6 +121,25 @@ namespace Larnix.Client
                     msg.ParticleID,
                     msg.Position
                 );
+            }
+        }
+
+        private long _lastFrameTick = 0;
+        private void _FrameInfo(FrameInfo msg)
+        {
+            long frameTick = msg.ServerTick;
+            if (frameTick > _lastFrameTick)
+            {
+                _lastFrameTick = frameTick;
+
+                Sky.UpdateSky(
+                    biomeID: msg.BiomeID,
+                    skyColor: msg.SkyColor,
+                    weather: msg.Weather
+                    );
+
+                Debugger.ServerTick = frameTick;
+                Debugger.CurrentBiome = msg.BiomeID;
             }
         }
     }

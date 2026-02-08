@@ -5,6 +5,8 @@ using Larnix.Worldgen;
 using Larnix.Client.Terrain;
 using Larnix.Core.Utils;
 using Larnix.Core.Vectors;
+using Larnix.Background;
+using Larnix.Core;
 
 namespace Larnix.Menu
 {
@@ -15,6 +17,7 @@ namespace Larnix.Menu
         [SerializeField] Vector3 CameraSpeed;
 
         private Generator Generator;
+        private Sky Sky => Ref.Sky;
 
         private HashSet<Vec2Int> ActiveChunks = new();
         private bool firstGeneration = true;
@@ -47,10 +50,12 @@ namespace Larnix.Menu
                 ActiveChunks.Remove(chunk);
             }
 
-            Vector2 camPos = (Vector2)Camera.transform.position;
-            Camera.backgroundColor = Generator.SkyColorAt(
-                VectorExtensions.ConstructVec2(camPos, Vec2.Zero)
-                ).ToUnity();
+            Vec2 camPos = VectorExtensions.ConstructVec2((Vector2)Camera.transform.position, Vec2.Zero);
+            Sky.UpdateSky(
+                biomeID: Generator.BiomeAt(camPos),
+                skyColor: Generator.SkyColorAt(camPos),
+                weather: Weather.Clear
+                );
 
             firstGeneration = false;
         }

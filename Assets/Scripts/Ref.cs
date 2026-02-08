@@ -7,7 +7,7 @@ using Larnix.Core.Physics;
 using Larnix.Client;
 using Larnix.Menu.Worlds;
 using Larnix.Client.Particles;
-using Larnix.Menu;
+using Larnix.Background;
 
 namespace Larnix
 {
@@ -34,5 +34,8 @@ namespace Larnix
         public static ServerSelect ServerSelect;
         public static WorldSelect WorldSelect;
         public static BasicGridManager BasicGridManager;
+
+        // Universal references (client and menu)
+        public static Sky Sky;
     }
 }

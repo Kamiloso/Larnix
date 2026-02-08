@@ -75,6 +75,11 @@ namespace Larnix.Server.Data
                 CREATE TABLE IF NOT EXISTS seed (
                     value INTEGER
                 );
+
+                CREATE TABLE IF NOT EXISTS server_tick (
+                    id INTEGER PRIMARY KEY,
+                    value INTEGER
+                );
                 ";
                 cmd.ExecuteNonQuery();
             }
@@ -328,6 +333,28 @@ namespace Larnix.Server.Data
             }
 
             return seed;
+        }
+
+        public long GetServerTick()
+        {
+            using (var cmd = CreateCommand())
+            {
+                cmd.CommandText = "SELECT value FROM server_tick WHERE id = 1;";
+                var result = cmd.ExecuteScalar();
+                if (result == null || result == DBNull.Value)
+                    return 0L;
+                return (long)result;
+            }
+        }
+
+        public void SetServerTick(long tick)
+        {
+            using (var cmd = CreateCommand())
+            {
+                cmd.CommandText = "INSERT OR REPLACE INTO server_tick (id, value) VALUES (1, $value);";
+                cmd.Parameters.AddWithValue("$value", tick);
+                cmd.ExecuteNonQuery();
+            }
         }
 
         public void SetChunk(int x, int y, BlockData2[,] chunk)

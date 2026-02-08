@@ -7,6 +7,7 @@ using System.Linq;
 using UnityEngine.Profiling;
 using Larnix.Core.Vectors;
 using Larnix.Core;
+using Larnix.Worldgen;
 
 namespace Larnix.Client
 {
@@ -20,6 +21,9 @@ namespace Larnix.Client
         [SerializeField] public bool SpectatorMode;
         [SerializeField] public bool ClientBlockSwap;
         [SerializeField] TextMeshProUGUI DebugF3;
+
+        public BiomeID CurrentBiome { get; set; }
+        public long ServerTick { get; set; }
 
         private float? _lastFPS = null;
         private float _lastPing = 0f;
@@ -80,9 +84,37 @@ namespace Larnix.Client
                 $"Ping: {_lastPing} ms\n" +
                 $"Memory: {allocations}\n" +
                 $"X: {playerPos.x}\n" +
-                $"Y: {playerPos.y}\n";
+                $"Y: {playerPos.y}\n" +
+                $"Biome: {CurrentBiome}\n" +
+                $"World Age: {TextAge(ServerTick)}\n";
 
             DebugF3.text = ShowDebugInfo && MainPlayer.IsAlive ? debugText : "";
+        }
+
+        private static string TextAge(long ticks)
+        {
+            long seconds = ticks / 50;
+            long minutes = seconds / 60;
+            long hours = minutes / 60;
+            long days = hours / 24;
+
+            seconds %= 60;
+            minutes %= 60;
+            hours %= 24;
+
+            if (days == 0)
+            {
+                if (hours == 0)
+                {
+                    if (minutes == 0)
+                    {
+                        return $"{seconds}s";
+                    }
+                    return $"{minutes}m {seconds}s";
+                }
+                return $"{hours}h {minutes}m {seconds}s";
+            }
+            return $"{days}d {hours}h {minutes}m {seconds}s";
         }
     }
 }

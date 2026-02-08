@@ -153,11 +153,6 @@ namespace Larnix.Client
                 UID = msg.MyUid;
         }
 
-        public EntityProjection GetEntityProjection()
-        {
-            return EntityProjection;
-        }
-
         public void SetAlive()
         {
             if (IsAlive)
@@ -186,7 +181,9 @@ namespace Larnix.Client
             EntityProjection.ResetSmoother();
         }
 
-        // --- OFFSET SEGMENT ---
+        public EntityProjection GetEntityProjection() => EntityProjection;
+
+#region Larnix offsets
 
         public Vec2 GetOriginOffset()
         {
@@ -204,5 +201,7 @@ namespace Larnix.Client
             Vec2 origin = GetOriginOffset();
             return VectorExtensions.ConstructVec2(position, origin);
         }
+
+#endregion
     }
 }

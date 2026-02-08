@@ -7,6 +7,8 @@ using Larnix.Core.Vectors;
 using Larnix.Socket.Backend;
 using Larnix.Packets;
 using System;
+using Larnix.Worldgen;
+using Larnix.Core;
 
 namespace Larnix.Server.Entities
 {
@@ -17,9 +19,11 @@ namespace Larnix.Server.Entities
         private readonly Dictionary<string, HashSet<ulong>> _nearbyUIDs = new();
         private readonly Dictionary<string, HashSet<Vec2Int>> _clientChunks = new();
 
+        private Server Server => Ref<Server>();
+        private QuickServer QuickServer => Ref<QuickServer>();
         private UserManager UserManager => Ref<UserManager>();
         private EntityManager EntityManager => Ref<EntityManager>();
-        private QuickServer QuickServer => Ref<QuickServer>();
+        private Generator Worldgen => Ref<Generator>();
 
         public enum PlayerState : byte
         {
@@ -119,6 +123,22 @@ namespace Larnix.Server.Entities
             }
 
             _nearbyUIDs[nickname] = newUIDs;
+        }
+
+        public void SendFrameInfoBroadcast()
+        {
+            foreach (string nickname in _playerUIDs.Keys)
+            {
+                Vec2 renderingPosition = GetPlayerRenderingPosition(nickname);
+
+                Payload packet = new FrameInfo(
+                    Server.ServerTick,
+                    Worldgen.SkyColorAt(renderingPosition),
+                    Worldgen.BiomeAt(renderingPosition),
+                    Weather.Clear // TODO: implement weather
+                );
+                QuickServer.Send(nickname, packet, false);
+            }
         }
 
         public void UpdateClientChunks(string nickname, HashSet<Vec2Int> chunks)
