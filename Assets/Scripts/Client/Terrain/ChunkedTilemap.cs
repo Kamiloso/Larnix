@@ -13,15 +13,22 @@ namespace Larnix.Client.Terrain
 {
     public class ChunkedTilemap : MonoBehaviour
     {
+        private MainPlayer MainPlayer => Ref.MainPlayer;
+
         private GameObject TilemapPrefabBorder => Resources.GetPrefab("Tilemaps", "TilemapBorder");
         private GameObject TilemapPrefabFront => Resources.GetPrefab("Tilemaps", "TilemapFront");
         private GameObject TilemapPrefabBack => Resources.GetPrefab("Tilemaps", "TilemapBack");
 
-        private class Tilemaps { public Tilemap Front, Back, Border; }
-        private readonly Dictionary<Vec2Int, Tilemaps> TileChunks = new();
-        private Vec2Int CurrentOrigin = new Vec2Int(0, 0);
+        private class Tilemaps
+        {
+            public Tilemap Front;
+            public Tilemap Back;
+            public Tilemap Border;
+        }
 
         private bool IsMenu => gameObject.scene.name == "Menu";
+        private readonly Dictionary<Vec2Int, Tilemaps> _tileChunks = new();
+        private Vec2Int _currentOrigin = new Vec2Int(0, 0);
 
         public void RedrawChunk(Vec2Int chunk, BlockData2[,] blocks)
         {
@@ -43,7 +50,7 @@ namespace Larnix.Client.Terrain
         public void RedrawExistingTile(Vec2Int chunk, Vec2Int pos, BlockData2 block, bool redrawBorder)
         {
             Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, pos);
-            Tilemaps Tilemaps = TileChunks[chunk];
+            Tilemaps Tilemaps = _tileChunks[chunk];
 
             Tilemaps.Front.SetTile(pos.ToUnity3(), Tiles.GetTile(block.Front, true));
             Tilemaps.Back.SetTile(pos.ToUnity3(), Tiles.GetTile(block.Back, false));
@@ -71,16 +78,16 @@ namespace Larnix.Client.Terrain
                     Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
                     Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
 
-                    if (TileChunks.ContainsKey(chunk))
+                    if (_tileChunks.ContainsKey(chunk))
                     {
-                        TileChunks[chunk].Border.SetTile(pos.ToUnity3(), Tiles.GetBorderTile(POS, IsMenu));
+                        _tileChunks[chunk].Border.SetTile(pos.ToUnity3(), Tiles.GetBorderTile(POS, IsMenu));
                     }
                 }
         }
 
         private void PrepareChunk(Vec2Int chunk, bool hasData)
         {
-            bool inMemory = TileChunks.ContainsKey(chunk);
+            bool inMemory = _tileChunks.ContainsKey(chunk);
 
             if(!hasData && inMemory)
                 RemoveChunk(chunk);
@@ -91,7 +98,7 @@ namespace Larnix.Client.Terrain
 
         private void AddChunk(Vec2Int chunk)
         {
-            Vector2 realPos = WorldPositionFromOrigin(chunk, CurrentOrigin);
+            Vector2 realPos = WorldPositionFromOrigin(chunk, _currentOrigin);
 
             Transform trnFront = Instantiate(TilemapPrefabFront, realPos, Quaternion.identity).transform;
             Transform trnBack = Instantiate(TilemapPrefabBack, realPos, Quaternion.identity).transform;
@@ -105,7 +112,7 @@ namespace Larnix.Client.Terrain
             trnBack.SetParent(transform, true);
             trnBorder.SetParent(transform, true);
 
-            TileChunks[chunk] = new Tilemaps
+            _tileChunks[chunk] = new Tilemaps
             {
                 Front = trnFront.GetComponent<Tilemap>(),
                 Back = trnBack.GetComponent<Tilemap>(),
@@ -115,13 +122,13 @@ namespace Larnix.Client.Terrain
 
         private void RemoveChunk(Vec2Int chunk)
         {
-            if (TileChunks.ContainsKey(chunk))
+            if (_tileChunks.ContainsKey(chunk))
             {
-                var pair = TileChunks[chunk];
+                var pair = _tileChunks[chunk];
                 Destroy(pair.Front.gameObject);
                 Destroy(pair.Back.gameObject);
                 Destroy(pair.Border.gameObject);
-                TileChunks.Remove(chunk);
+                _tileChunks.Remove(chunk);
             }
         }
 
@@ -130,18 +137,18 @@ namespace Larnix.Client.Terrain
             if (!IsMenu)
             {
                 // Update chunk position to match the origin
-                Vec2Int newOrigin = Ref.MainPlayer.Position.ExtractSector();
-                if (CurrentOrigin != newOrigin)
+                Vec2Int newOrigin = MainPlayer.Position.ExtractSector();
+                if (_currentOrigin != newOrigin)
                 {
-                    CurrentOrigin = newOrigin;
-                    foreach (var vkp in TileChunks)
+                    _currentOrigin = newOrigin;
+                    foreach (var kvp in _tileChunks)
                     {
-                        Vec2Int chunk = vkp.Key;
-                        Tilemap frontmap = vkp.Value.Front;
-                        Tilemap backmap = vkp.Value.Back;
-                        Tilemap bordermap = vkp.Value.Border;
+                        Vec2Int chunk = kvp.Key;
+                        Tilemap frontmap = kvp.Value.Front;
+                        Tilemap backmap = kvp.Value.Back;
+                        Tilemap bordermap = kvp.Value.Border;
                         
-                        Vector2 realPos = WorldPositionFromOrigin(chunk, CurrentOrigin);
+                        Vector2 realPos = WorldPositionFromOrigin(chunk, _currentOrigin);
                         frontmap.transform.position = realPos;
                         backmap.transform.position = realPos;
                         bordermap.transform.position = realPos;
@@ -154,7 +161,7 @@ namespace Larnix.Client.Terrain
         {
             Vec2Int startBlock = BlockUtils.GlobalBlockCoords(chunk, new Vec2Int(0, 0));
             Vector2 subtract = IsMenu ? Vector2.zero : VectorExtensions.ORIGIN_STEP / 2 * Vector2.one;
-            return (startBlock - VectorExtensions.ORIGIN_STEP * CurrentOrigin).ToUnity() - subtract;
+            return (startBlock - VectorExtensions.ORIGIN_STEP * _currentOrigin).ToUnity() - subtract;
         }
     }
 }

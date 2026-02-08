@@ -9,21 +9,26 @@ using Larnix.Core.Physics;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
 using Larnix.Core;
+using Larnix.Client.Particles;
+using Random = System.Random;
 
 namespace Larnix.Client.Terrain
 {
     public class GridManager : BasicGridManager
     {
-        private Dictionary<Vec2Int, StaticCollider> BlockColliders = new();
+        private const double LOCK_TIMEOUT = 5.0; // seconds
 
-        private readonly List<BlockLock> LockedBlocks = new();
-        private const double BLOCK_LOCK_TIMEOUT = 5.0; // seconds
+        private readonly Dictionary<Vec2Int, StaticCollider> _blockColliders = new();
+        private readonly List<BlockLock> _lockedBlocks = new();
+
+        private ParticleManager ParticleManager => Ref.ParticleManager;
+        private PhysicsManager PhysicsManager => Ref.PhysicsManager;
 
         private class BlockLock
         {
             public Vec2Int POS;
             public long operation;
-            public double timeout = BLOCK_LOCK_TIMEOUT;
+            public double timeout = LOCK_TIMEOUT;
         }
 
         protected override void Awake()
@@ -38,10 +43,10 @@ namespace Larnix.Client.Terrain
         {
             base.Update();
 
-            foreach (var l in LockedBlocks)
+            foreach (var l in _lockedBlocks)
                 l.timeout -= Time.deltaTime;
 
-            LockedBlocks.RemoveAll(l => l.timeout < 0);
+            _lockedBlocks.RemoveAll(l => l.timeout < 0);
         }
 
         protected override void LateUpdate()
@@ -57,18 +62,18 @@ namespace Larnix.Client.Terrain
             if (unlock != null)
                 UnlockBlock((long)unlock);
 
-            if (Chunks.ContainsKey(chunk) && !IsBlockLocked(POS))
+            if (_allChunks.ContainsKey(chunk) && !IsBlockLocked(POS))
                 ChangeBlockData(POS, data, breakMode);
         }
 
         public bool LoadedAroundPlayer()
         {
             HashSet<Vec2Int> nearbyChunks = BlockUtils.GetNearbyChunks(
-                BlockUtils.CoordsToChunk(Ref.MainPlayer.Position),
+                BlockUtils.CoordsToChunk(MainPlayer.Position),
                 BlockUtils.LOADING_DISTANCE
                 );
 
-            nearbyChunks.ExceptWith(VisibleChunks);
+            nearbyChunks.ExceptWith(_visibleChunks);
             return nearbyChunks.Count == 0;
         }
 
@@ -109,22 +114,22 @@ namespace Larnix.Client.Terrain
             Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
             Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
 
-            BlockData2 oldBlock = Chunks[chunk][pos.x, pos.y];
-            Chunks[chunk][pos.x, pos.y] = newBlock;
+            BlockData2 oldBlock = _allChunks[chunk][pos.x, pos.y];
+            _allChunks[chunk][pos.x, pos.y] = newBlock;
 
             if (breakMode == IWorldAPI.BreakMode.Effects)
             {
                 if (oldBlock.Front.ID == BlockID.Air && newBlock.Front.ID != BlockID.Air) // front block placed
-                    Ref.ParticleManager.SpawnBlockParticles(newBlock.Front, POS, true, ParticleID.BlockPlace);
+                    ParticleManager.SpawnBlockParticles(newBlock.Front, POS, true, ParticleID.BlockPlace);
 
                 if (oldBlock.Front.ID != BlockID.Air && newBlock.Front.ID == BlockID.Air) // front block broken
-                    Ref.ParticleManager.SpawnBlockParticles(oldBlock.Front, POS, true, ParticleID.BlockBreak);
+                    ParticleManager.SpawnBlockParticles(oldBlock.Front, POS, true, ParticleID.BlockBreak);
 
                 if (oldBlock.Back.ID == BlockID.Air && newBlock.Back.ID != BlockID.Air) // back block placed
-                    Ref.ParticleManager.SpawnBlockParticles(newBlock.Back, POS, false, ParticleID.BlockPlace);
+                    ParticleManager.SpawnBlockParticles(newBlock.Back, POS, false, ParticleID.BlockPlace);
 
                 if (oldBlock.Back.ID != BlockID.Air && newBlock.Back.ID == BlockID.Air) // back block broken
-                    Ref.ParticleManager.SpawnBlockParticles(oldBlock.Back, POS, false, ParticleID.BlockBreak);
+                    ParticleManager.SpawnBlockParticles(oldBlock.Back, POS, false, ParticleID.BlockBreak);
             }
 
             RedrawTileChecked(chunk, pos, newBlock);
@@ -133,7 +138,7 @@ namespace Larnix.Client.Terrain
 
         public void UpdateChunkColliders(Vec2Int chunk)
         {
-            if (!Chunks.TryGetValue(chunk, out BlockData2[,] chunkBlocks))
+            if (!_allChunks.TryGetValue(chunk, out BlockData2[,] chunkBlocks))
                 chunkBlocks = null;
 
             foreach (Vec2Int pos in ChunkIterator.IterateXY())
@@ -145,15 +150,15 @@ namespace Larnix.Client.Terrain
                 UpdateBlockCollider(POS, chunkBlocks != null ? chunkBlocks[x, y] : null);
             }
 
-            Ref.PhysicsManager.SetChunkActive(chunk, chunkBlocks != null);
+            PhysicsManager.SetChunkActive(chunk, chunkBlocks != null);
         }
 
         private void UpdateBlockCollider(Vec2Int POS, BlockData2 block)
         {
-            if (BlockColliders.TryGetValue(POS, out var statCollider))
+            if (_blockColliders.TryGetValue(POS, out var statCollider))
             {
-                Ref.PhysicsManager.RemoveColliderByReference(statCollider);
-                BlockColliders.Remove(POS);
+                PhysicsManager.RemoveColliderByReference(statCollider);
+                _blockColliders.Remove(POS);
             }
 
             if(block != null)
@@ -166,22 +171,22 @@ namespace Larnix.Client.Terrain
                         offset: new Vec2(iface.COLLIDER_OFFSET_X(), iface.COLLIDER_OFFSET_Y()),
                         POS: POS
                         );
-                    Ref.PhysicsManager.AddCollider(statCol);
-                    BlockColliders.Add(POS, statCol);
+                    PhysicsManager.AddCollider(statCol);
+                    _blockColliders.Add(POS, statCol);
                 }
             }
         }
 
         public bool IsBlockLocked(Vec2Int POS)
         {
-            return LockedBlocks.Any(l => l.POS == POS);
+            return _lockedBlocks.Any(l => l.POS == POS);
         }
 
         private long LockBlock(Vec2Int POS)
         {
-            System.Random Rand = Common.Rand();
+            Random Rand = Common.Rand();
             long operation = ((long)Rand.Next(int.MinValue, int.MaxValue) << 32) | (uint)Rand.Next(int.MinValue, int.MaxValue);
-            LockedBlocks.Add(new BlockLock
+            _lockedBlocks.Add(new BlockLock
             {
                 POS = POS,
                 operation = operation,
@@ -191,12 +196,12 @@ namespace Larnix.Client.Terrain
 
         private void UnlockBlock(long operation)
         {
-            LockedBlocks.RemoveAll(l => l.operation == operation);
+            _lockedBlocks.RemoveAll(l => l.operation == operation);
         }
 
         public void UnlockChunk(Vec2Int chunk)
         {
-            LockedBlocks.RemoveAll(l => BlockUtils.InChunk(chunk, l.POS));
+            _lockedBlocks.RemoveAll(l => BlockUtils.InChunk(chunk, l.POS));
         }
     }
 }

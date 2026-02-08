@@ -9,26 +9,37 @@ using Larnix.Server;
 using Larnix.Socket.Frontend;
 using Larnix.Patches;
 using Larnix.Packets;
+using Larnix.Client.UI;
+using Larnix.Client.Terrain;
+using Larnix.Client.Entities;
 
 namespace Larnix.Client
 {
     public class Client : MonoBehaviour
     {
-        public QuickClient LarnixClient = null;
-        private Queue<(Payload packet, bool safemode)> delayedPackets = new();
-        private Receiver Receiver = null;
+        private record DelayedPacket(Payload Packet, bool Safemode);
 
-        private string Address;
-        private string Authcode;
-        private string Nickname;
-        private string Password;
+        private QuickClient _larnixClient = null;
+        private Queue<DelayedPacket> _delayedPackets = new();
+        private Receiver _receiver = null;
 
-        public string WorldPath;
-        public bool IsMultiplayer;
+        private Loading Loading => Ref.Loading;
+        private Inventory Inventory => Ref.Inventory;
+        private TileSelector TileSelector => Ref.TileSelector;
+        private EntityProjections EntityProjections => Ref.EntityProjections;
+        private MainPlayer MainPlayer => Ref.MainPlayer;
+        private Screenshots Screenshots => Ref.Screenshots;
 
-        public ulong MyUID = 0;
+        public string Address { get; private set; }
+        public string Authcode { get; private set; }
+        public string Nickname { get; private set; }
+        public string Password { get; private set; }
+        public string WorldPath { get; private set; }
+        public bool IsMultiplayer { get; private set; }
 
-        // Client initialization
+        private uint _fixedFrame = 0;
+        public uint FixedFrame => _fixedFrame;
+
         void Awake()
         {
             if (!WorldLoad.PlayedAlready)
@@ -50,7 +61,7 @@ namespace Larnix.Client
 
         private void Start()
         {
-            Ref.Loading.StartLoading("Connecting...");
+            Loading.StartLoading("Connecting...");
         }
 
         private IEnumerator CreateClient()
@@ -68,8 +79,8 @@ namespace Larnix.Client
 
             if (connecting.Result != null)
             {
-                LarnixClient = connecting.Result;
-                Receiver = new Receiver(LarnixClient);
+                _larnixClient = connecting.Result;
+                _receiver = new Receiver(_larnixClient);
                 Core.Debug.Log($"{(IsMultiplayer ? "Remote" : "Local")} world on address {Address}");
             }
             else
@@ -81,59 +92,67 @@ namespace Larnix.Client
 
         public void Send(Payload packet, bool safemode = true)
         {
-            if (LarnixClient != null && delayedPackets.Count == 0)
-                LarnixClient.Send(packet, safemode);
+            if (_larnixClient != null && _delayedPackets.Count == 0)
+                _larnixClient.Send(packet, safemode);
             else
-                delayedPackets.Enqueue((packet, safemode));
+                _delayedPackets.Enqueue(new DelayedPacket(packet, safemode));
+        }
+
+        private void FixedUpdate()
+        {
+            _fixedFrame++;
+
+            if (MainPlayer.IsAlive) // 1
+                MainPlayer.FixedPlayerUpdate();
         }
 
         private void EarlyUpdate() // Executes BEFORE default Update() time
         {
-            if(LarnixClient != null)
+            if(_larnixClient != null)
             {
-                while (delayedPackets.Count > 0)
+                while (_delayedPackets.Count > 0)
                 {
-                    var pack = delayedPackets.Dequeue();
-                    LarnixClient.Send(pack.packet, pack.safemode);
+                    DelayedPacket pack = _delayedPackets.Dequeue();
+                    _larnixClient.Send(pack.Packet, pack.Safemode);
                 }
                 
-                LarnixClient.ClientTick(Time.deltaTime);
+                _larnixClient.ClientTick(Time.deltaTime);
 
-                if (LarnixClient.IsDead())
+                if (_larnixClient.IsDead())
                 {
                     BackToMenu();
                     return;
                 }
             }
 
-            Ref.EntityProjections.EarlyUpdate1();
-            Ref.MainPlayer.EarlyUpdate2();
+            EntityProjections.EarlyUpdate1();
+            MainPlayer.EarlyUpdate2();
         }
 
         private void Update()
         {
-            // Debug input
+            // debug input
             if (Input.GetKeyDown(KeyCode.R)) // temporary respawn using R
             {
-                if (!Ref.MainPlayer.gameObject.activeInHierarchy)
+                if (!MainPlayer.gameObject.activeInHierarchy)
                 {
                     Payload packet = new CodeInfo(CodeInfo.Info.RespawnMe);
                     Send(packet);
 
-                    Ref.Loading.StartLoading("Respawning...");
+                    Loading.StartLoading("Respawning...");
                 }
             }
 
-            // Ordered updates
-            Ref.Inventory.Update1();
-            Ref.TileSelector.Update2();
+            Inventory.Update1();
+            TileSelector.Update2();
 
-            // Escape input
             if (Input.GetKeyDown(KeyCode.Escape))
             {
                 BackToMenu();
             }
         }
+
+        public float GetPing() => _larnixClient?.GetPing() ?? 0f;
 
         public void BackToMenu()
         {
@@ -141,19 +160,18 @@ namespace Larnix.Client
 
             if (WorldPath != null)
             {
-                if (Ref.MainPlayer.IsAlive)
-                    Ref.Screenshots.CaptureTitleImage();
+                if (MainPlayer.IsAlive)
+                    Screenshots.CaptureTitleImage();
             }
         }
 
         private void OnDestroy()
         {
-            LarnixClient?.Dispose();
+            _larnixClient?.Dispose();
             WorldLoad.SetStartingScreen(IsMultiplayer ? "Multiplayer" : "Singleplayer");
             EarlyUpdateInjector.ClearEarlyUpdate();
 
-            // Close server if running any
-            ServerRunner.Instance.Stop();
+            ServerRunner.Instance.Stop(); // if any
         }
     }
 }

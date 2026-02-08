@@ -165,11 +165,11 @@ namespace Larnix.Menu.Worlds
         public void AddServerSegment(string name, ServerData serverData, bool asFirst)
         {
             if (ServerThinkers.ContainsKey(name))
-                throw new System.InvalidOperationException("Trying to add server segment with a duplicate name: " + name);
+                throw new InvalidOperationException("Trying to add server segment with a duplicate name: " + name);
 
             RectTransform rt = Instantiate(WorldSegmentPrefab).transform as RectTransform;
             if (rt == null)
-                throw new System.InvalidOperationException("Prefab should be of type RectTransform!");
+                throw new InvalidOperationException("Prefab should be of type RectTransform!");
 
             rt.name = $"Server: \"{name}\"";
             rt.GetComponent<WorldSegment>().Init(name, this);

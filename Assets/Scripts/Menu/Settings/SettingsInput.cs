@@ -50,10 +50,10 @@ namespace Larnix.Menu.Settings
 
         private void InitializeType<T>(Action<T, string> Initialize) where T : class
         {
-            foreach (var vkp in GetReferencesOfType<T>(this))
+            foreach (var kvp in GetReferencesOfType<T>(this))
             {
-                string key = vkp.Key;
-                T ifield = vkp.Value;
+                string key = kvp.Key;
+                T ifield = kvp.Value;
 
                 Initialize(ifield, key);
             }

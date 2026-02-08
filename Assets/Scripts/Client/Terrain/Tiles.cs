@@ -10,16 +10,16 @@ namespace Larnix.Client.Terrain
 {
     public static class Tiles
     {
-        private static readonly Dictionary<string, Tile> TileCache = new();
+        private static readonly Dictionary<string, Tile> _tileCache = new();
 
         public static Tile GetTile(BlockData1 block, bool isFront)
         {
             string string_id = block.ID + ":" + block.Variant + ":" + isFront;
 
-            if (!TileCache.TryGetValue(string_id, out Tile tile))
+            if (!_tileCache.TryGetValue(string_id, out Tile tile))
             {
                 tile = Resources.CreateTileObject(block.ID, block.Variant);
-                TileCache.Add(string_id, tile);
+                _tileCache.Add(string_id, tile);
             }
             return tile;
         }
@@ -44,10 +44,10 @@ namespace Larnix.Client.Terrain
                 if (alphaByte != 0)
                 {
                     string string_id = "border[" + borderByte + ":" + alphaByte + "]";
-                    if (!TileCache.TryGetValue(string_id, out Tile tile))
+                    if (!_tileCache.TryGetValue(string_id, out Tile tile))
                     {
                         tile = Resources.CreateBorderTileObject(borderByte, alphaByte);
-                        TileCache.Add(string_id, tile);
+                        _tileCache.Add(string_id, tile);
                     }
                     return tile;
                 }

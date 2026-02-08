@@ -14,6 +14,9 @@ namespace Larnix.Menu.Forms
         [SerializeField] TMP_InputField IF_OldName;
         [SerializeField] TMP_InputField IF_NewName;
 
+        private Menu Menu => Ref.Menu;
+        private WorldSelect WorldSelect => Ref.WorldSelect;
+
         public override void EnterForm(params string[] args)
         {
             IF_OldName.text = args[0];
@@ -21,7 +24,7 @@ namespace Larnix.Menu.Forms
 
             TX_ErrorText.text = "";
 
-            Ref.Menu.SetScreen("RenameWorld");
+            Menu.SetScreen("RenameWorld");
         }
 
         protected override ErrorCode GetErrorCode()
@@ -60,11 +63,11 @@ namespace Larnix.Menu.Forms
                     Directory.Move(tempDir, newDir);
                 }
 
-                Ref.WorldSelect.ReloadWorldList();
-                Ref.WorldSelect.SelectWorld(newName);
+                WorldSelect.ReloadWorldList();
+                WorldSelect.SelectWorld(newName);
             }
 
-            Ref.Menu.SetScreen("Singleplayer");
+            Menu.SetScreen("Singleplayer");
         }
     }
 }

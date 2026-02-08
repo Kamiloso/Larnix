@@ -4,19 +4,23 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Blocks.Structs;
+using Larnix.Client.Terrain;
 
 namespace Larnix.Client.UI
 {
     public class Inventory : MonoBehaviour
     {
+        [SerializeField] int MinSlot = 0;
+        [SerializeField] int MaxSlot = 9;
+        [SerializeField] int MinSelectable = 0;
+        [SerializeField] int MaxSelectable = 9;
+
         [SerializeField] BlockID[] BlocksInSlots;
         [SerializeField] byte[] VariantsInSlots;
 
+        private Debugger Debugger => Ref.Debugger;
+
         public int SelectedSlot { get; private set; } = 0;
-        private const int MIN_SLOT = 0;
-        private const int MAX_SLOT = 9;
-        private const int MIN_SELECTABLE = 0;
-        private const int MAX_SELECTABLE = 9;
 
         private void Awake()
         {
@@ -31,22 +35,22 @@ namespace Larnix.Client.UI
                 SelectedSlot -= System.Math.Sign(scroll);
             }
 
-            for (int slot = MIN_SELECTABLE; slot <= MAX_SELECTABLE; slot++)
+            for (int slot = MinSelectable; slot <= MaxSelectable; slot++)
             {
-                if (slot < 0 || slot > 9) continue;
+                if (slot < MinSlot || slot > MaxSlot) continue;
 
                 KeyCode slotKey = slot != 9 ? (KeyCode)((int)KeyCode.Alpha1 + slot) : KeyCode.Alpha0;
                 if(Input.GetKeyDown(slotKey))
                     SelectedSlot = slot;
             }
 
-            if (SelectedSlot < MIN_SELECTABLE)
-                SelectedSlot = MAX_SELECTABLE;
+            if (SelectedSlot < MinSelectable)
+                SelectedSlot = MaxSelectable;
 
-            if (SelectedSlot > MAX_SELECTABLE)
-                SelectedSlot = MIN_SELECTABLE;
+            if (SelectedSlot > MaxSelectable)
+                SelectedSlot = MinSelectable;
 
-            if (Ref.Debugger.ClientBlockSwap)
+            if (Debugger.ClientBlockSwap)
             {
                 int deltaBlock = (Input.GetKeyDown(KeyCode.P) ? 1 : 0) - (Input.GetKeyDown(KeyCode.O) ? 1 : 0);
                 int deltaVariant = (Input.GetKeyDown(KeyCode.L) ? 1 : 0) - (Input.GetKeyDown(KeyCode.K) ? 1 : 0);

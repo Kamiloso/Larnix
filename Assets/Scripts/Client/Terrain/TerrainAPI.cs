@@ -8,12 +8,15 @@ using Larnix.Core.Vectors;
 
 namespace Larnix.Client.Terrain
 {
-    public static class GridAPI
+    public static class TerrainAPI
     {
+        private static Client Client => Ref.Client;
+        private static GridManager GridManager => Ref.GridManager;
+
         public static bool CanBePlaced(Vec2Int POS, BlockData1 item, bool front)
         {
-            BlockData2 blockData = Ref.GridManager.BlockDataAtPOS(POS);
-            bool isLocked = Ref.GridManager.IsBlockLocked(POS);
+            BlockData2 blockData = GridManager.BlockDataAtPOS(POS);
+            bool isLocked = GridManager.IsBlockLocked(POS);
 
             if (blockData != null && !isLocked)
             {
@@ -24,8 +27,8 @@ namespace Larnix.Client.Terrain
 
         public static bool CanBeBroken(Vec2Int POS, BlockData1 tool, bool front)
         {
-            BlockData2 blockData = Ref.GridManager.BlockDataAtPOS(POS);
-            bool isLocked = Ref.GridManager.IsBlockLocked(POS);
+            BlockData2 blockData = GridManager.BlockDataAtPOS(POS);
+            bool isLocked = GridManager.IsBlockLocked(POS);
 
             if (blockData != null && !isLocked)
             {
@@ -37,22 +40,22 @@ namespace Larnix.Client.Terrain
 
         public static void PlaceBlock(Vec2Int POS, BlockData1 item, bool front)
         {
-            long operation = Ref.GridManager.PlaceBlockClient(POS, item, front);
+            long operation = GridManager.PlaceBlockClient(POS, item, front);
             SendBlockChange(POS, item, new(), front, operation, 0);
         }
 
         public static void BreakBlock(Vec2Int POS, BlockData1 tool, bool front)
         {
-            BlockData2 _oldblock = Ref.GridManager.BlockDataAtPOS(POS);
+            BlockData2 _oldblock = GridManager.BlockDataAtPOS(POS);
             BlockData1 oldblock = front ? _oldblock.Front : _oldblock.Back;
-            long operation = Ref.GridManager.BreakBlockClient(POS, front);
+            long operation = GridManager.BreakBlockClient(POS, front);
             SendBlockChange(POS, oldblock, tool, front, operation, 1);
         }
 
         private static void SendBlockChange(Vec2Int POS, BlockData1 item, BlockData1 tool, bool front, long operation, byte code)
         {
             Payload packet = new BlockChange(POS, item, tool, operation, front, code);
-            Ref.Client.Send(packet);
+            Client.Send(packet);
         }
     }
 }

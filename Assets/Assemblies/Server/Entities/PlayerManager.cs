@@ -12,10 +12,10 @@ namespace Larnix.Server.Entities
 {
     internal class PlayerManager : Singleton
     {
-        private readonly Dictionary<string, ulong> PlayerUID = new();
-        private readonly Dictionary<string, PlayerUpdate> RecentPlayerUpdates = new(); // present for alive and dead players
-        private readonly Dictionary<string, HashSet<ulong>> NearbyUIDs = new();
-        private readonly Dictionary<string, HashSet<Vec2Int>> ClientChunks = new();
+        private readonly Dictionary<string, ulong> _playerUIDs = new();
+        private readonly Dictionary<string, PlayerUpdate> _recentPlayerUpdates = new(); // present for alive and dead players
+        private readonly Dictionary<string, HashSet<ulong>> _nearbyUIDs = new();
+        private readonly Dictionary<string, HashSet<Vec2Int>> _clientChunks = new();
 
         private UserManager UserManager => Ref<UserManager>();
         private EntityManager EntityManager => Ref<EntityManager>();
@@ -34,9 +34,9 @@ namespace Larnix.Server.Entities
         public void JoinPlayer(string nickname)
         {
             ulong uid = (ulong)UserManager.GetUserID(nickname);
-            PlayerUID[nickname] = uid;
-            NearbyUIDs[nickname] = new();
-            ClientChunks[nickname] = new();
+            _playerUIDs[nickname] = uid;
+            _nearbyUIDs[nickname] = new();
+            _clientChunks[nickname] = new();
 
             CreatePlayerInstance(nickname);
         }
@@ -46,8 +46,8 @@ namespace Larnix.Server.Entities
             EntityManager.CreatePlayerController(nickname);
             
             // Set to PlayerState.Inactive
-            if(RecentPlayerUpdates.ContainsKey(nickname))
-                RecentPlayerUpdates.Remove(nickname);
+            if(_recentPlayerUpdates.ContainsKey(nickname))
+                _recentPlayerUpdates.Remove(nickname);
         }
 
         public void UpdatePlayerDataIfHasController(string nickname, PlayerUpdate msg)
@@ -64,13 +64,13 @@ namespace Larnix.Server.Entities
                     msg.Position, msg.Rotation);
 
                 // Update PlayerUpdate info
-                RecentPlayerUpdates[nickname] = msg;
+                _recentPlayerUpdates[nickname] = msg;
             }
         }
 
         public PlayerUpdate GetRecentPlayerUpdate(string nickname)
         {
-            if (RecentPlayerUpdates.TryGetValue(nickname, out PlayerUpdate lastPacket))
+            if (_recentPlayerUpdates.TryGetValue(nickname, out PlayerUpdate lastPacket))
                 return lastPacket;
             return null;
         }
@@ -80,18 +80,18 @@ namespace Larnix.Server.Entities
             if(EntityManager.GetPlayerController(nickname) != null)
                 EntityManager.UnloadPlayerController(nickname);
 
-            PlayerUID.Remove(nickname);
+            _playerUIDs.Remove(nickname);
 
-            if(RecentPlayerUpdates.ContainsKey(nickname))
-                RecentPlayerUpdates.Remove(nickname);
+            if(_recentPlayerUpdates.ContainsKey(nickname))
+                _recentPlayerUpdates.Remove(nickname);
 
-            NearbyUIDs.Remove(nickname);
-            ClientChunks.Remove(nickname);
+            _nearbyUIDs.Remove(nickname);
+            _clientChunks.Remove(nickname);
         }
 
         public void UpdateNearbyUIDs(string nickname, HashSet<ulong> newUIDs, uint fixedFrame, bool sendAtLeastOne)
         {
-            HashSet<ulong> oldUIDs = NearbyUIDs[nickname];
+            HashSet<ulong> oldUIDs = _nearbyUIDs[nickname];
 
             HashSet<ulong> added = new HashSet<ulong>(newUIDs);
             added.ExceptWith(oldUIDs);
@@ -118,26 +118,26 @@ namespace Larnix.Server.Entities
                 }
             }
 
-            NearbyUIDs[nickname] = newUIDs;
+            _nearbyUIDs[nickname] = newUIDs;
         }
 
         public void UpdateClientChunks(string nickname, HashSet<Vec2Int> chunks)
         {
-            if (ClientChunks.ContainsKey(nickname))
-                ClientChunks[nickname] = chunks;
+            if (_clientChunks.ContainsKey(nickname))
+                _clientChunks[nickname] = chunks;
         }
 
         public HashSet<Vec2Int> LoadedChunksCopy(string nickname)
         {
-            if (!ClientChunks.ContainsKey(nickname))
+            if (!_clientChunks.ContainsKey(nickname))
                 return new HashSet<Vec2Int>();
 
-            return new HashSet<Vec2Int>(ClientChunks[nickname]);
+            return new HashSet<Vec2Int>(_clientChunks[nickname]);
         }
 
         public bool PlayerHasChunk(string nickname, Vec2Int chunk)
         {
-            if (ClientChunks.TryGetValue(nickname, out var chunks))
+            if (_clientChunks.TryGetValue(nickname, out var chunks))
             {
                 return chunks.Contains(chunk);
             }
@@ -146,10 +146,10 @@ namespace Larnix.Server.Entities
 
         public PlayerState GetPlayerState(string nickname)
         {
-            if (!PlayerUID.ContainsKey(nickname))
+            if (!_playerUIDs.ContainsKey(nickname))
                 return PlayerState.None;
 
-            if (!RecentPlayerUpdates.ContainsKey(nickname))
+            if (!_recentPlayerUpdates.ContainsKey(nickname))
                 return PlayerState.Inactive;
 
             if (EntityManager.GetPlayerController(nickname) != null)
@@ -160,13 +160,13 @@ namespace Larnix.Server.Entities
 
         public IEnumerable<string> AllPlayers()
         {
-            return new HashSet<string>(PlayerUID.Keys);
+            return new HashSet<string>(_playerUIDs.Keys);
         }
 
         public IEnumerable<string> AllPlayersThatAre(PlayerState state)
         {
             HashSet<string> result = new();
-            foreach (string nickname in PlayerUID.Keys)
+            foreach (string nickname in _playerUIDs.Keys)
             {
                 if (GetPlayerState(nickname) == state)
                     result.Add(nickname);
@@ -177,7 +177,7 @@ namespace Larnix.Server.Entities
         public IEnumerable<string> AllObserversInRange(Vec2 position, double range)
         {
             HashSet<string> result = new();
-            foreach (string nickname in PlayerUID.Keys)
+            foreach (string nickname in _playerUIDs.Keys)
             {
                 Vec2 playerPos = GetPlayerRenderingPosition(nickname);
                 if (Vec2.Distance(playerPos, position) <= range)
@@ -197,7 +197,7 @@ namespace Larnix.Server.Entities
                     return EntityManager.GetPlayerController(nickname).EntityData.Position;
 
                 case PlayerState.Dead:
-                    return RecentPlayerUpdates[nickname].Position;
+                    return _recentPlayerUpdates[nickname].Position;
 
                 default:
                     throw new InvalidOperationException("Player " + nickname + " is not connected!");
@@ -207,22 +207,17 @@ namespace Larnix.Server.Entities
         public Dictionary<ulong, uint> GetFixedFramesByUID()
         {
             Dictionary<ulong, uint> returns = new();
-            foreach(string nickname in PlayerUID.Keys)
+            foreach(string nickname in _playerUIDs.Keys)
             {
-                if(RecentPlayerUpdates.ContainsKey(nickname))
-                    returns[PlayerUID[nickname]] = RecentPlayerUpdates[nickname].FixedFrame;
+                if(_recentPlayerUpdates.ContainsKey(nickname))
+                    returns[_playerUIDs[nickname]] = _recentPlayerUpdates[nickname].FixedFrame;
             }
             return returns;
         }
 
-        public IEnumerable<string> GetAllPlayerNicknames()
-        {
-            return PlayerUID.Keys;
-        }
-
         public ulong GetPlayerUID(string nickname)
         {
-            if (PlayerUID.TryGetValue(nickname, out ulong uid))
+            if (_playerUIDs.TryGetValue(nickname, out ulong uid))
                 return uid;
                 
             throw new InvalidOperationException("Player " + nickname + " is not connected!");

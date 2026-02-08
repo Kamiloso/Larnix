@@ -12,12 +12,13 @@ namespace Larnix.Client.Terrain
     {
         [SerializeField] protected ChunkedTilemap ChunkedTilemap;
 
-        protected readonly Dictionary<Vec2Int, BlockData2[,]> Chunks = new();
-        protected readonly HashSet<Vec2Int> DirtyChunks = new();
-        protected readonly HashSet<Vec2Int> VisibleChunks = new();
+        protected readonly Dictionary<Vec2Int, BlockData2[,]> _allChunks = new();
+        protected readonly HashSet<Vec2Int> _dirtyChunks = new();
+        protected readonly HashSet<Vec2Int> _visibleChunks = new();
 
         protected bool IsMenu => this is not GridManager;
         private GridManager NotMenu => this as GridManager;
+        protected MainPlayer MainPlayer => !IsMenu ? Ref.MainPlayer : null;
 
         protected virtual void Awake()
         {
@@ -37,64 +38,64 @@ namespace Larnix.Client.Terrain
 
         public void AddChunk(Vec2Int chunk, BlockData2[,] BlockArray, bool instantLoad = false)
         {
-            Chunks[chunk] = BlockArray;
+            _allChunks[chunk] = BlockArray;
             if (!IsMenu) NotMenu.UpdateChunkColliders(chunk);
-            DirtyChunks.Add(chunk);
+            _dirtyChunks.Add(chunk);
 
             if (instantLoad) RedrawGrid(true);
         }
 
         public void RemoveChunk(Vec2Int chunk)
         {
-            if (!Chunks.ContainsKey(chunk))
+            if (!_allChunks.ContainsKey(chunk))
                 return;
 
-            Chunks.Remove(chunk);
+            _allChunks.Remove(chunk);
             if (!IsMenu) NotMenu.UpdateChunkColliders(chunk);
-            DirtyChunks.Add(chunk);
+            _dirtyChunks.Add(chunk);
 
             if (!IsMenu) NotMenu.UnlockChunk(chunk);
         }
 
         public bool ChunkLoaded(Vec2Int chunk)
         {
-            return Chunks.ContainsKey(chunk);
+            return _allChunks.ContainsKey(chunk);
         }
 
         public void RedrawGrid(bool instantLoad = false)
         {
             // Ascending - ADD
-            List<Vec2Int> addChunks = DirtyChunks.Where(c => Chunks.ContainsKey(c)).ToList();
+            List<Vec2Int> addChunks = _dirtyChunks.Where(c => _allChunks.ContainsKey(c)).ToList();
             addChunks.Sort((Vec2Int a, Vec2Int b) => ChunkDistance(a) - ChunkDistance(b));
             foreach (var chunk in addChunks)
             {
                 RedrawChunk(chunk, true);
-                DirtyChunks.Remove(chunk);
+                _dirtyChunks.Remove(chunk);
                 if(!instantLoad) return; // only one per frame
             }
 
             // Descending - REMOVE
-            List<Vec2Int> removeChunks = DirtyChunks.Where(c => !Chunks.ContainsKey(c)).ToList();
+            List<Vec2Int> removeChunks = _dirtyChunks.Where(c => !_allChunks.ContainsKey(c)).ToList();
             removeChunks.Sort((Vec2Int a, Vec2Int b) => ChunkDistance(b) - ChunkDistance(a));
             foreach (var chunk in removeChunks)
             {
                 RedrawChunk(chunk, false);
-                DirtyChunks.Remove(chunk);
+                _dirtyChunks.Remove(chunk);
                 if(!instantLoad) return; // only one per frame
             }
         }
 
         private void RedrawChunk(Vec2Int chunk, bool active)
         {
-            ChunkedTilemap.RedrawChunk(chunk, active ? Chunks[chunk] : null);
+            ChunkedTilemap.RedrawChunk(chunk, active ? _allChunks[chunk] : null);
 
-            if (active) VisibleChunks.Add(chunk);
-            else VisibleChunks.Remove(chunk);
+            if (active) _visibleChunks.Add(chunk);
+            else _visibleChunks.Remove(chunk);
         }
 
         protected void RedrawTileChecked(Vec2Int chunk, Vec2Int pos, BlockData2 block)
         {
-            if(VisibleChunks.Contains(chunk))
+            if(_visibleChunks.Contains(chunk))
             {
                 ChunkedTilemap.RedrawExistingTile(chunk, pos, block, true);
             }
@@ -103,11 +104,11 @@ namespace Larnix.Client.Terrain
         public BlockData2 BlockDataAtPOS(Vec2Int POS)
         {
             Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
-            if (!Chunks.ContainsKey(chunk))
+            if (!_allChunks.ContainsKey(chunk))
                 return null;
             
             Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
-            return Chunks[chunk][pos.x, pos.y];
+            return _allChunks[chunk][pos.x, pos.y];
         }
 
         public byte CalculateBorderByte(Vec2Int POS)
@@ -140,7 +141,7 @@ namespace Larnix.Client.Terrain
         {
             if (!IsMenu)
             {
-                Vec2Int playerChunk = BlockUtils.CoordsToChunk(Ref.MainPlayer.Position);
+                Vec2Int playerChunk = BlockUtils.CoordsToChunk(MainPlayer.Position);
                 return GeometryUtils.ManhattanDistance(playerChunk, chunk);
             }
             else

@@ -11,30 +11,32 @@ namespace Larnix.Client.UI
 {
     public class Slot : MonoBehaviour
     {
+        private const float DISPLAY_TIME = 1.2f;
+        private const float FADE_TIME = 0.6f;
+
         [SerializeField] Image Image;
         [SerializeField] TextMeshProUGUI Title;
         [SerializeField] GameObject Selected;
         [SerializeField] Color TitleColor;
 
-        private int SlotID = -1;
+        private Inventory Inventory => Ref.Inventory;
 
-        private float TextDisplayTime = 0f;
-        private const float DISPLAY_TIME = 1.2f;
-        private const float FADE_TIME = 0.6f;
+        private float _textDisplayTime = 0f;
+        private int _slotID = -1;
 
         public void Init(int slotID)
         {
-            SlotID = slotID;
+            _slotID = slotID;
         }
 
         private void LateUpdate()
         {
-            bool slotActive = SlotID == Ref.Inventory.SelectedSlot;
+            bool slotActive = _slotID == Inventory.SelectedSlot;
             if (Selected.activeSelf)
             {
                 if(!slotActive)
                 {
-                    TextDisplayTime = 0f;
+                    _textDisplayTime = 0f;
                     Selected.SetActive(false);
                 }
             }
@@ -42,16 +44,16 @@ namespace Larnix.Client.UI
             {
                 if(slotActive)
                 {
-                    TextDisplayTime = DISPLAY_TIME;
+                    _textDisplayTime = DISPLAY_TIME;
                     Selected.SetActive(true);
                 }
             }
 
-            Item item = Ref.Inventory.GetItemInSlot(SlotID);
+            Item item = Inventory.GetItemInSlot(_slotID);
             if(item.Count != 0)
             {
                 Image.sprite = Tiles.GetSprite(item.Block, true);
-                Title.text = TextDisplayTime > 0f ?
+                Title.text = _textDisplayTime > 0f ?
                     BlockFactory.GetSlaveInstance<IBlockInterface>(item.Block.ID)?.STATIC_GetBlockName(item.Block.Variant) ?? string.Empty :
                     string.Empty;
             }
@@ -61,11 +63,11 @@ namespace Larnix.Client.UI
                 Title.text = string.Empty;
             }
 
-            if (TextDisplayTime > 0f)
+            if (_textDisplayTime > 0f)
             {
                 Title.gameObject.SetActive(true);
-                Title.color = TextDisplayTime > FADE_TIME ? TitleColor : new Color(TitleColor.r, TitleColor.g, TitleColor.b, TextDisplayTime / FADE_TIME);
-                TextDisplayTime -= Time.deltaTime;
+                Title.color = _textDisplayTime > FADE_TIME ? TitleColor : new Color(TitleColor.r, TitleColor.g, TitleColor.b, _textDisplayTime / FADE_TIME);
+                _textDisplayTime -= Time.deltaTime;
             }
             else
             {

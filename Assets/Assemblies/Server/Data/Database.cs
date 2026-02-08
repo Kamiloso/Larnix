@@ -17,23 +17,28 @@ namespace Larnix.Server.Data
 {
     internal class Database : IUserAPI ,IDisposable
     {
-        private SqliteConnection connection = null;
-        private SqliteTransaction transaction = null;
+        private readonly SqliteConnection _connection = null;
+        private SqliteTransaction _transaction = null;
 
+        private static object _initLock = new();
         private static bool _initialized = false;
+
         private bool _disposed = false;
 
         public Database(string path, string filename)
         {
-            if(!_initialized)
+            lock (_initLock)
             {
-                SQLitePCL.Batteries_V2.Init();
-                _initialized = true;
+                if(!_initialized)
+                {
+                    SQLitePCL.Batteries_V2.Init();
+                    _initialized = true;
+                }
             }
 
             FileManager.EnsureDirectory(path);
-            connection = new SqliteConnection($"Data Source={Path.Combine(path, filename)};Pooling=False");
-            connection.Open();
+            _connection = new SqliteConnection($"Data Source={Path.Combine(path, filename)};Pooling=False");
+            _connection.Open();
 
             using (var cmd = CreateCommand())
             {
@@ -211,7 +216,7 @@ namespace Larnix.Server.Data
 
         public void FlushEntities(Dictionary<ulong, EntityData> entities)
         {
-            if (transaction == null)
+            if (_transaction == null)
                 throw new InvalidOperationException("Active transaction is needed for this method!");
 
             using (var cmd = CreateCommand())
@@ -230,12 +235,12 @@ namespace Larnix.Server.Data
                 var paramRotation = cmd.Parameters.Add("$rotation", SqliteType.Real);
                 var paramNbt = cmd.Parameters.Add("$nbt", SqliteType.Text);
 
-                foreach (var vkp in entities)
+                foreach (var kvp in entities)
                 {
-                    EntityData entity = vkp.Value;
+                    EntityData entity = kvp.Value;
                     Vec2Int chunkCoords = BlockUtils.CoordsToChunk(entity.Position);
 
-                    paramUid.Value = (long)vkp.Key;
+                    paramUid.Value = (long)kvp.Key;
                     paramType.Value = (long)entity.ID;
                     paramChunkX.Value = (long)chunkCoords.x;
                     paramChunkY.Value = (long)chunkCoords.y;
@@ -250,7 +255,7 @@ namespace Larnix.Server.Data
 
         public bool DeleteEntities(List<ulong> uids)
         {
-            if (transaction == null)
+            if (_transaction == null)
                 throw new InvalidOperationException("Active transaction is needed for this method!");
 
             if (uids == null || uids.Count == 0)
@@ -362,38 +367,38 @@ namespace Larnix.Server.Data
 
         private SqliteCommand CreateCommand()
         {
-            var cmd = connection.CreateCommand();
-            if(transaction != null)
-                cmd.Transaction = transaction;
+            var cmd = _connection.CreateCommand();
+            if(_transaction != null)
+                cmd.Transaction = _transaction;
             return cmd;
         }
 
         public void BeginTransaction()
         {
-            if (transaction != null)
+            if (_transaction != null)
                 throw new InvalidOperationException("Transaction already in progress.");
 
-            transaction = connection.BeginTransaction();
+            _transaction = _connection.BeginTransaction();
         }
 
         public void CommitTransaction()
         {
-            if (transaction == null)
+            if (_transaction == null)
                 throw new InvalidOperationException("No active transaction.");
 
-            transaction.Commit();
-            transaction.Dispose();
-            transaction = null;
+            _transaction.Commit();
+            _transaction.Dispose();
+            _transaction = null;
         }
 
         public void RollbackTransaction()
         {
-            if (transaction == null)
+            if (_transaction == null)
                 throw new InvalidOperationException("No active transaction.");
 
-            transaction.Rollback();
-            transaction.Dispose();
-            transaction = null;
+            _transaction.Rollback();
+            _transaction.Dispose();
+            _transaction = null;
         }
 
         public void Dispose()
@@ -402,15 +407,11 @@ namespace Larnix.Server.Data
             {
                 _disposed = true;
 
-                if (transaction != null)
+                if (_transaction != null)
                     RollbackTransaction();
 
-                if (connection != null)
-                {
-                    connection.Close();
-                    connection.Dispose();
-                    connection = null;
-                }
+                _connection?.Close();
+                _connection?.Dispose();
             }
         }
     }

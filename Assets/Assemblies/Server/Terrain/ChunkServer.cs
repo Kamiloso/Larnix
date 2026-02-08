@@ -17,44 +17,44 @@ namespace Larnix.Server.Terrain
     {
         private const int CHUNK_SIZE = BlockUtils.CHUNK_SIZE;
 
-        private WorldAPI WorldAPI => Ref<ChunkLoading>().WorldAPI;
+        private WorldAPI WorldAPI => Ref<WorldAPI>();
         private BlockDataManager BlockDataManager => Ref<BlockDataManager>();
         private PhysicsManager PhysicsManager => Ref<PhysicsManager>();
         private BlockSender BlockSender => Ref<BlockSender>();
 
-        public readonly Vec2Int Chunkpos;
-        private readonly BlockServer[,] BlocksFront = new BlockServer[CHUNK_SIZE, CHUNK_SIZE];
-        private readonly BlockServer[,] BlocksBack = new BlockServer[CHUNK_SIZE, CHUNK_SIZE];
-        private readonly Dictionary<Vec2Int, StaticCollider> StaticColliders = new();
+        private readonly Vec2Int _chunkpos;
+        private readonly BlockServer[,] _blocksFront = new BlockServer[CHUNK_SIZE, CHUNK_SIZE];
+        private readonly BlockServer[,] _blocksBack = new BlockServer[CHUNK_SIZE, CHUNK_SIZE];
+        private readonly Dictionary<Vec2Int, StaticCollider> _staticColliders = new();
 
         public readonly BlockData2[,] ActiveChunkReference;
 
         public ChunkServer(RefObject<Server> reff, Vec2Int chunkpos) : base(reff)
         {
-            Chunkpos = chunkpos;
-            ActiveChunkReference = BlockDataManager.ObtainChunkReference(Chunkpos);
+            _chunkpos = chunkpos;
+            ActiveChunkReference = BlockDataManager.ObtainChunkReference(_chunkpos);
 
             foreach (Vec2Int pos in ChunkIterator.IterateXY())
             {
-                Vec2Int POS = BlockUtils.GlobalBlockCoords(Chunkpos, pos);
+                Vec2Int POS = BlockUtils.GlobalBlockCoords(_chunkpos, pos);
 
                 BlockData2 blockData = ActiveChunkReference[pos.x, pos.y];
 
                 BlockServer frontBlock = BlockFactory.ConstructBlockObject(POS, blockData.Front, true, WorldAPI);
-                BlocksFront[pos.x, pos.y] = frontBlock;
+                _blocksFront[pos.x, pos.y] = frontBlock;
 
                 BlockServer backBlock = BlockFactory.ConstructBlockObject(POS, blockData.Back, false, WorldAPI);
-                BlocksBack[pos.x, pos.y] = backBlock;
+                _blocksBack[pos.x, pos.y] = backBlock;
 
                 RefreshCollider(pos);
             }
 
-            PhysicsManager.SetChunkActive(Chunkpos, true);
+            PhysicsManager.SetChunkActive(_chunkpos, true);
         }
 
         public BlockServer GetBlock(Vec2Int pos, bool isFront)
         {
-            return isFront ? BlocksFront[pos.x, pos.y] : BlocksBack[pos.x, pos.y];
+            return isFront ? _blocksFront[pos.x, pos.y] : _blocksBack[pos.x, pos.y];
         }
 
         public BlockServer UpdateBlock(Vec2Int pos, bool isFront, BlockData1 block, IWorldAPI.BreakMode breakMode)
@@ -72,11 +72,11 @@ namespace Larnix.Server.Terrain
                     back: ActiveChunkReference[pos.x, pos.y].Back
                 );
 
-                BlocksFront[pos.x, pos.y] = BlockFactory.ConstructBlockObject(
-                    BlocksFront[pos.x, pos.y].Position,
+                _blocksFront[pos.x, pos.y] = BlockFactory.ConstructBlockObject(
+                    _blocksFront[pos.x, pos.y].Position,
                     block, true, WorldAPI);
                 
-                result = BlocksFront[pos.x, pos.y];
+                result = _blocksFront[pos.x, pos.y];
             }
             else
             {
@@ -85,11 +85,11 @@ namespace Larnix.Server.Terrain
                     back: block
                 );
 
-                BlocksBack[pos.x, pos.y] = BlockFactory.ConstructBlockObject(
-                    BlocksBack[pos.x, pos.y].Position,
+                _blocksBack[pos.x, pos.y] = BlockFactory.ConstructBlockObject(
+                    _blocksBack[pos.x, pos.y].Position,
                     block, false, WorldAPI);
 
-                result = BlocksBack[pos.x, pos.y];
+                result = _blocksBack[pos.x, pos.y];
             }
 
             RefreshCollider(pos);
@@ -100,7 +100,7 @@ namespace Larnix.Server.Terrain
 
             if (!((IBinary<BlockData2>)oldHeader).BinaryEquals(newHeader))
             {
-                Vec2Int POS = BlockUtils.GlobalBlockCoords(Chunkpos, pos);
+                Vec2Int POS = BlockUtils.GlobalBlockCoords(_chunkpos, pos);
                 BlockSender.AddBlockUpdate(new BlockUpdateRecord(POS, newHeader, breakMode));
             }
 
@@ -109,35 +109,35 @@ namespace Larnix.Server.Terrain
 
         private void RefreshCollider(Vec2Int pos)
         {
-            if(StaticColliders.TryGetValue(pos, out var statCollider))
+            if(_staticColliders.TryGetValue(pos, out var statCollider))
             {
                 PhysicsManager.RemoveColliderByReference(statCollider);
-                StaticColliders.Remove(pos);
+                _staticColliders.Remove(pos);
             }
 
-            BlockServer blockServer = BlocksFront[pos.x, pos.y];
+            BlockServer blockServer = _blocksFront[pos.x, pos.y];
             IHasCollider iface = blockServer as IHasCollider;
             if(iface != null)
             {
                 StaticCollider staticCollider = StaticCollider.Create(
                     new Vec2(iface.COLLIDER_WIDTH(), iface.COLLIDER_HEIGHT()),
                     new Vec2(iface.COLLIDER_OFFSET_X(), iface.COLLIDER_OFFSET_Y()),
-                    BlockUtils.GlobalBlockCoords(Chunkpos, pos)
+                    BlockUtils.GlobalBlockCoords(_chunkpos, pos)
                     );
-                StaticColliders[pos] = staticCollider;
+                _staticColliders[pos] = staticCollider;
                 PhysicsManager.AddCollider(staticCollider);
             }
         }
 
         public void Dispose()
         {
-            foreach(StaticCollider staticCollider in StaticColliders.Values)
+            foreach(StaticCollider staticCollider in _staticColliders.Values)
             {
                 PhysicsManager.RemoveColliderByReference(staticCollider);
             }
 
-            PhysicsManager.SetChunkActive(Chunkpos, false);
-            BlockDataManager.ReturnChunkReference(Chunkpos);
+            PhysicsManager.SetChunkActive(_chunkpos, false);
+            BlockDataManager.ReturnChunkReference(_chunkpos);
         }
 
 #region Frame Invokes
@@ -146,8 +146,8 @@ namespace Larnix.Server.Terrain
         {
             foreach (Vec2Int pos in ChunkIterator.IterateYX())
             {
-                BlocksBack[pos.x, pos.y].PreFrameTrigger();
-                BlocksFront[pos.x, pos.y].PreFrameTrigger();
+                _blocksBack[pos.x, pos.y].PreFrameTrigger();
+                _blocksFront[pos.x, pos.y].PreFrameTrigger();
             }
         }
 
@@ -155,8 +155,8 @@ namespace Larnix.Server.Terrain
         {
             foreach (Vec2Int pos in ChunkIterator.IterateYX())
             {
-                BlocksBack[pos.x, pos.y].FrameUpdateConway();
-                BlocksFront[pos.x, pos.y].FrameUpdateConway();
+                _blocksBack[pos.x, pos.y].FrameUpdateConway();
+                _blocksFront[pos.x, pos.y].FrameUpdateConway();
             }
         }
 
@@ -164,8 +164,8 @@ namespace Larnix.Server.Terrain
         {
             foreach (Vec2Int pos in ChunkIterator.IterateYX())
             {
-                BlocksBack[pos.x, pos.y].FrameUpdateSequentialEarly();
-                BlocksFront[pos.x, pos.y].FrameUpdateSequentialEarly();
+                _blocksBack[pos.x, pos.y].FrameUpdateSequentialEarly();
+                _blocksFront[pos.x, pos.y].FrameUpdateSequentialEarly();
             }
         }
 
@@ -173,8 +173,8 @@ namespace Larnix.Server.Terrain
         {
             foreach (Vec2Int pos in ChunkIterator.IterateRandom())
             {
-                BlocksBack[pos.x, pos.y].FrameUpdateRandom();
-                BlocksFront[pos.x, pos.y].FrameUpdateRandom();
+                _blocksBack[pos.x, pos.y].FrameUpdateRandom();
+                _blocksFront[pos.x, pos.y].FrameUpdateRandom();
             }
         }
 
@@ -182,8 +182,8 @@ namespace Larnix.Server.Terrain
         {
             foreach (Vec2Int pos in ChunkIterator.IterateYX())
             {
-                BlocksBack[pos.x, pos.y].FrameUpdateSequentialLate();
-                BlocksFront[pos.x, pos.y].FrameUpdateSequentialLate();
+                _blocksBack[pos.x, pos.y].FrameUpdateSequentialLate();
+                _blocksFront[pos.x, pos.y].FrameUpdateSequentialLate();
             }
         }
 
@@ -191,8 +191,8 @@ namespace Larnix.Server.Terrain
         {
             foreach (Vec2Int pos in ChunkIterator.IterateYX())
             {
-                BlocksBack[pos.x, pos.y].PostFrameTrigger();
-                BlocksFront[pos.x, pos.y].PostFrameTrigger();
+                _blocksBack[pos.x, pos.y].PostFrameTrigger();
+                _blocksFront[pos.x, pos.y].PostFrameTrigger();
             }
         }
 

@@ -3,14 +3,14 @@ using System.Collections.Generic;
 using System.IO;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 using Larnix.Menu.Worlds;
-using Unity.VisualScripting;
 
 namespace Larnix.Menu.Forms
 {
     public class WorldDeleteForm : BaseForm
     {
+        private Menu Menu => Ref.Menu;
+        private WorldSelect WorldSelect => Ref.WorldSelect;
         [SerializeField] TMP_InputField IF_DeleteName;
 
         public override void EnterForm(params string[] args)
@@ -19,7 +19,7 @@ namespace Larnix.Menu.Forms
 
             TX_ErrorText.text = "";
 
-            Ref.Menu.SetScreen("DeleteWorld");
+            Menu.SetScreen("DeleteWorld");
         }
 
         protected override ErrorCode GetErrorCode()
@@ -35,15 +35,15 @@ namespace Larnix.Menu.Forms
             if (Directory.Exists(delDir))
             {
                 Directory.Delete(delDir, true);
-                Ref.WorldSelect.ReloadWorldList();
+                WorldSelect.ReloadWorldList();
             }
             
-            Ref.Menu.SetScreen("Singleplayer");
+            Menu.SetScreen("Singleplayer");
         }
 
         public void Cancel()
         {
-            Ref.Menu.GoBack();
+            Menu.GoBack();
         }
     }
 }

@@ -10,11 +10,14 @@ namespace Larnix.Menu.Forms
 {
     public class ServerEditForm : BaseForm
     {
+        private Menu Menu => Ref.Menu;
+        private ServerSelect ServerSelect => Ref.ServerSelect;
+
         [SerializeField] TextMeshProUGUI Title;
         [SerializeField] TMP_InputField IF_Address;
         [SerializeField] TMP_InputField IF_Authcode;
 
-        string[] args = null;
+        private string[] args = null;
 
         public override void EnterForm(params string[] args)
         {
@@ -30,12 +33,12 @@ namespace Larnix.Menu.Forms
                 IF_Address.text = args[1];
                 IF_Authcode.text = args[2];
             }
-            else throw new System.NotImplementedException("Unknown arg[0]: \"" + args[0] + "\" (can be ADD or EDIT)");
+            else throw new NotImplementedException("Unknown arg[0]: \"" + args[0] + "\" (can be ADD or EDIT)");
 
             this.args = args;
             TX_ErrorText.text = "";
 
-            Ref.Menu.SetScreen("ServerEdit");
+            Menu.SetScreen("ServerEdit");
         }
 
         protected override ErrorCode GetErrorCode()
@@ -46,11 +49,8 @@ namespace Larnix.Menu.Forms
             if (address == "")
                 return ErrorCode.ADDRESS_EMPTY;
 
-            if ((args[0] == "ADD" || (args[0] == "EDIT" && args[1] != address)) && Ref.ServerSelect.ContainsAddress(address))
+            if ((args[0] == "ADD" || (args[0] == "EDIT" && args[1] != address)) && ServerSelect.ContainsAddress(address))
                 return ErrorCode.ADDRESS_EXISTS;
-
-            //if ((args[0] == "ADD" || (args[0] == "EDIT" && args[2] != authcode)) && Ref.ServerSelect.ContainsAuthcode(authcode))
-            //    return ErrorCode.AUTHCODE_EXISTS;
 
             if (!Authcode.IsGoodAuthcode(authcode))
                 return ErrorCode.AUTHCODE_FORMAT;
@@ -74,17 +74,17 @@ namespace Larnix.Menu.Forms
                     Password = "",
                 };
 
-                Ref.ServerSelect.AddServerSegment(address, serverData, true);
-                Ref.ServerSelect.SelectWorld(address, true);
+                ServerSelect.AddServerSegment(address, serverData, true);
+                ServerSelect.SelectWorld(address, true);
                 ServerSelect.SaveServerData(serverData);
             }
 
             if (args[0] == "EDIT")
             {
-                Ref.ServerSelect.EditSegment(args[1], address, authcode);
+                ServerSelect.EditSegment(args[1], address, authcode);
             }
 
-            Ref.Menu.GoBack();
+            Menu.GoBack();
         }
     }
 }

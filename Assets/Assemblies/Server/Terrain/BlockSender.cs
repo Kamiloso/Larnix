@@ -18,12 +18,12 @@ namespace Larnix.Server.Terrain
 
     internal class BlockSender : Singleton
     {
-        private WorldAPI WorldAPI => Ref<ChunkLoading>().WorldAPI;
-        private PlayerManager PlayerManager => Ref<PlayerManager>();
-        private QuickServer QuickServer => Ref<QuickServer>();
-
         private readonly Queue<BlockUpdateRecord> _blockUpdates = new();
         private readonly Queue<BlockChangeItem> _blockChanges = new();
+
+        private WorldAPI WorldAPI => Ref<WorldAPI>();
+        private PlayerManager PlayerManager => Ref<PlayerManager>();
+        private QuickServer QuickServer => Ref<QuickServer>();
 
         public BlockSender(Server server) : base(server) {}
 
@@ -47,7 +47,7 @@ namespace Larnix.Server.Terrain
         {
             Dictionary<string, Queue<BlockUpdateRecord>> IndividualUpdates = new();
 
-            foreach (string nickname in PlayerManager.GetAllPlayerNicknames())
+            foreach (string nickname in PlayerManager.AllPlayers())
             {
                 IndividualUpdates[nickname] = new();
             }
@@ -57,14 +57,14 @@ namespace Larnix.Server.Terrain
                 var element = _blockUpdates.Dequeue();
                 Vec2Int chunk = BlockUtils.CoordsToChunk(element.Position);
 
-                foreach (string nickname in PlayerManager.GetAllPlayerNicknames())
+                foreach (string nickname in PlayerManager.AllPlayers())
                 {
                     if (PlayerManager.PlayerHasChunk(nickname, chunk))
                         IndividualUpdates[nickname].Enqueue(element);
                 }
             }
 
-            foreach (string nickname in PlayerManager.GetAllPlayerNicknames())
+            foreach (string nickname in PlayerManager.AllPlayers())
             {
                 Queue<BlockUpdateRecord> changes = IndividualUpdates[nickname];
                 BlockUpdateRecord[] records = changes.ToArray();

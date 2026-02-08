@@ -9,15 +9,17 @@ namespace Larnix.Menu.Forms
 {
     public class ServerLoginForm : BaseForm
     {
+        private Menu Menu => Ref.Menu;
+
         [SerializeField] TMP_InputField IF_Address;
         [SerializeField] TMP_InputField IF_Nickname;
         [SerializeField] TMP_InputField IF_Password;
 
-        private ServerThinker thinker = null;
+        private ServerThinker _thinker = null;
 
         public void ProvideServerThinker(ServerThinker thinker)
         {
-            this.thinker = thinker;
+            _thinker = thinker;
         }
 
         public override void EnterForm(params string[] args)
@@ -28,7 +30,7 @@ namespace Larnix.Menu.Forms
 
             TX_ErrorText.text = "Your login data will be visible to the server owner.";
 
-            Ref.Menu.SetScreen("Login");
+            Menu.SetScreen("Login");
         }
 
         protected override ErrorCode GetErrorCode()
@@ -54,8 +56,8 @@ namespace Larnix.Menu.Forms
             string nickname = IF_Nickname.text;
             string password = IF_Password.text;
 
-            thinker.SubmitUser(nickname, password, false);
-            Ref.Menu.GoBack();
+            _thinker.SubmitUser(nickname, password, false);
+            Menu.GoBack();
         }
     }
 }

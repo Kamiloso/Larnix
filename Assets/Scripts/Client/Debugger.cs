@@ -12,31 +12,22 @@ namespace Larnix.Client
 {
     public class Debugger : MonoBehaviour
     {
+        private Client Client => Ref.Client;
+        private MainPlayer MainPlayer => Ref.MainPlayer;
+
         [SerializeField] public bool ShowDebugInfo;
         [SerializeField] public bool AdvancedDebugKeys;
         [SerializeField] public bool SpectatorMode;
         [SerializeField] public bool ClientBlockSwap;
-
         [SerializeField] TextMeshProUGUI DebugF3;
 
-        private int FixedFrame = 0;
-        private float? LastFPS = null;
-        private float LastPing = 0f;
-        private List<float> FrameTimes = new();
+        private float? _lastFPS = null;
+        private float _lastPing = 0f;
+        private List<float> _frameTimes = new();
 
         private void Awake()
         {
             Ref.Debugger = this;
-        }
-
-        private void OnDestroy()
-        {
-            Ref.Debugger = null;
-        }
-
-        private void FixedUpdate()
-        {
-            FixedFrame++;
         }
 
         private void Update()
@@ -55,18 +46,18 @@ namespace Larnix.Client
         {
             // FPS calculate
 
-            FrameTimes.Add(Time.deltaTime);
-            if (LastFPS == null || FixedFrame % 25 == 0)
+            _frameTimes.Add(Time.deltaTime);
+            if (_lastFPS == null || Client.FixedFrame % 25 == 0)
             {
-                LastFPS = (float)(Math.Round(1f / FrameTimes.Average() * 10f) / 10f);
-                FrameTimes.Clear();
+                _lastFPS = (float)(Math.Round(1f / _frameTimes.Average() * 10f) / 10f);
+                _frameTimes.Clear();
             }
 
             // Ping calculate
 
-            if (LastPing == 0f || FixedFrame % 25 == 0)
+            if (_lastPing == 0f || Client.FixedFrame % 25 == 0)
             {
-                LastPing = (float)(Math.Round((Ref.Client.LarnixClient?.GetPing() ?? 0f) * 10f) / 10f);
+                _lastPing = (float)(Math.Round(Client.GetPing() * 10f) / 10f);
             }
 
             // Allocations
@@ -78,20 +69,20 @@ namespace Larnix.Client
             float heapMB = heap / (1024f * 1024f);
             float percent = (heap > 0) ? (used / (float)heap) * 100f : 0f;
 
-            string allocations = $"{usedMB:F2} / {heapMB:F2} MB";
+            string allocations = $"{usedMB:F2} / {heapMB:F2} MB ({percent:F1}%)";
 
             // Coordinates text update (temporary)
 
-            Vec2 playerPos = Ref.MainPlayer.Position;
+            Vec2 playerPos = MainPlayer.Position;
 
             string debugText =
-                $"FPS: {LastFPS}\n" +
-                $"Ping: {LastPing} ms\n" +
+                $"FPS: {_lastFPS}\n" +
+                $"Ping: {_lastPing} ms\n" +
                 $"Memory: {allocations}\n" +
                 $"X: {playerPos.x}\n" +
                 $"Y: {playerPos.y}\n";
 
-            DebugF3.text = ShowDebugInfo && Ref.MainPlayer.IsAlive ? debugText : "";
+            DebugF3.text = ShowDebugInfo && MainPlayer.IsAlive ? debugText : "";
         }
     }
 }

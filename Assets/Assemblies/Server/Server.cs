@@ -60,6 +60,7 @@ namespace Larnix.Server
             // Scripts
             AddRef(new ChunkLoading(this)); // must be 1st (execution order)
             AddRef(new EntityManager(this)); // must be 2nd (execution order)
+            AddRef(new WorldAPI(this));
             AddRef(new EntityDataManager(this));
             AddRef(new PlayerManager(this));
             AddRef(new BlockDataManager(this));

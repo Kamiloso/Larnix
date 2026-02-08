@@ -12,6 +12,8 @@ namespace Larnix.Client
         [SerializeField] Camera MainCamera;
         [SerializeField] Transform FollowTransform;
 
+        private Debugger Debugger => Ref.Debugger;
+
         private int ZoomSteps = DefaultZoomSteps;
 
         private const int DefaultZoomSteps = 0;
@@ -46,7 +48,7 @@ namespace Larnix.Client
             );
 
             // Camera zoom
-            float zoomValue = !Ref.Debugger.SpectatorMode ?
+            float zoomValue = !Debugger.SpectatorMode ?
                 (ZoomBase + ZoomSteps * ZoomStep) :
                 (ZoomBase_SPECT + ZoomSteps * ZoomStep_SPECT);
             MainCamera.orthographicSize = zoomValue;

@@ -10,25 +10,28 @@ using Larnix.Core.Vectors;
 using Larnix.Core.Utils;
 using Larnix.Blocks.Structs;
 using Larnix.Client.Relativity;
+using Larnix.Client.UI;
 
 namespace Larnix.Client.Terrain
 {
     public class TileSelector : MonoBehaviour
     {
+        public const int MIN_FRAMES = 3;
+        public const float INTERACTION_RANGE = 8f;
+        public const float TRANSPARENCY = 0.70f;
+        public const float BACK_DARKING = 0.45f;
+
         [SerializeField] Camera Camera;
         [SerializeField] SpriteRenderer Selector;
-        
-        const float Transparency = 0.70f;
-        const float BackDarking = 0.45f;
 
-        private bool isGameFocused = true;
-        private Vector2? old_mouse_pos = null;
-        private bool active = false;
+        private MainPlayer MainPlayer => Ref.MainPlayer;
+        private Debugger Debugger => Ref.Debugger;
+        private Inventory Inventory => Ref.Inventory;
 
-        private int framesAlready = 0;
-        private const int MIN_FRAMES = 3;
-
-        private const float INTERACTION_RANGE = 8f;
+        private bool _isGameFocused = true;
+        private Vector2? _oldMousePos = null;
+        private int _framesAlready = 0;
+        private bool _active = false;
 
         private void Awake()
         {
@@ -37,22 +40,21 @@ namespace Larnix.Client.Terrain
 
         private void OnApplicationFocus(bool hasFocus)
         {
-            isGameFocused = hasFocus;
+            _isGameFocused = hasFocus;
         }
 
         public void Update2()
         {
-            if(framesAlready < MIN_FRAMES)
+            if(_framesAlready < MIN_FRAMES)
             {
-                framesAlready++;
+                _framesAlready++;
                 return;
             }
 
             Vector2 mouse_pos = Input.mousePosition;
-            Vec2 cursor_pos = Ref.MainPlayer.ToLarnixPos(Camera.ScreenToWorldPoint(mouse_pos));
-            Vec2? old_cursor_pos = old_mouse_pos != null ?
-                Ref.MainPlayer.ToLarnixPos(Camera.ScreenToWorldPoint((Vector2)old_mouse_pos)) : null;
-            Vec2 player_pos = Ref.MainPlayer.Position;
+            Vec2 cursor_pos = MainPlayer.ToLarnixPos(Camera.ScreenToWorldPoint(mouse_pos));
+            Vec2? old_cursor_pos = _oldMousePos != null ? MainPlayer.ToLarnixPos(Camera.ScreenToWorldPoint((Vector2)_oldMousePos)) : null;
+            Vec2 player_pos = MainPlayer.Position;
 
             bool pointsRight = cursor_pos.x >= player_pos.x;
 
@@ -60,10 +62,10 @@ namespace Larnix.Client.Terrain
                 GetCellsIntersectedByLine((Vec2)old_cursor_pos, cursor_pos) :
                 new List<Vec2Int> { BlockUtils.CoordsToBlock(cursor_pos) };
 
-            if (!Ref.Debugger.SpectatorMode)
+            if (!Debugger.SpectatorMode)
                 grids.RemoveAll(grid => Vec2.Distance(new Vec2(grid.x, grid.y), player_pos) > INTERACTION_RANGE);
 
-            if (active && isGameFocused && grids.Count > 0) // ENABLED CURSOR
+            if (_active && _isGameFocused && grids.Count > 0) // ENABLED CURSOR
             {
                 Selector.transform.localRotation = Quaternion.identity; // rotation may change during DoActionOn(grid)
                 Selector.transform.localScale = Vector3.one; // scale may change during DoActionOn(grid)
@@ -75,12 +77,12 @@ namespace Larnix.Client.Terrain
                 }
 
                 Selector.enabled = true;
-                old_mouse_pos = mouse_pos;
+                _oldMousePos = mouse_pos;
             }
             else // DISABLED CURSOR
             {
                 Selector.enabled = false;
-                old_mouse_pos = null;
+                _oldMousePos = null;
             }
         }
 
@@ -91,7 +93,7 @@ namespace Larnix.Client.Terrain
             bool hold_2 = Input.GetMouseButton(2);
             bool shift = Input.GetKey(KeyCode.LeftShift);
 
-            BlockData1 item = Ref.Inventory.GetHoldingItem();
+            BlockData1 item = Inventory.GetHoldingItem();
             bool is_tool = BlockFactory.HasInterface<ITool>(item.ID);
 
             Action HideSelector = () =>
@@ -104,7 +106,7 @@ namespace Larnix.Client.Terrain
 
             if (is_tool)
             {
-                bool can_be_broken = GridAPI.CanBeBroken(pointed_block, item, !shift);
+                bool can_be_broken = TerrainAPI.CanBeBroken(pointed_block, item, !shift);
 
                 Selector.sprite = tile.sprite;
                 Selector.color = new Color(1, 1, 1);
@@ -114,15 +116,15 @@ namespace Larnix.Client.Terrain
 
                 if (hold_0 && can_be_broken)
                 {
-                    GridAPI.BreakBlock(pointed_block, item, !shift);
+                    TerrainAPI.BreakBlock(pointed_block, item, !shift);
                 }
             }
             else
             {
-                Color transpColor = new Color(1, 1, 1, Transparency);
-                Color darkerColor = new Color(0, 0, 0, Transparency);
+                Color transpColor = new Color(1, 1, 1, TRANSPARENCY);
+                Color darkerColor = new Color(0, 0, 0, TRANSPARENCY);
 
-                if (GridAPI.CanBePlaced(pointed_block, item, !shift))
+                if (TerrainAPI.CanBePlaced(pointed_block, item, !shift))
                 {
                     Selector.sprite = tile.sprite;
 
@@ -134,12 +136,12 @@ namespace Larnix.Client.Terrain
                     else // back
                     {
                         Selector.sortingLayerID = SortingLayer.NameToID("BackBlocks");
-                        Selector.color = Color.Lerp(transpColor, darkerColor, BackDarking);
+                        Selector.color = Color.Lerp(transpColor, darkerColor, BACK_DARKING);
                     }
 
                     if (hold_0)
                     {
-                        GridAPI.PlaceBlock(pointed_block, item, !shift);
+                        TerrainAPI.PlaceBlock(pointed_block, item, !shift);
                     }
                 }
                 else HideSelector();
@@ -169,13 +171,13 @@ namespace Larnix.Client.Terrain
 
         public void Enable()
         {
-            active = true;
-            framesAlready = 0;
+            _active = true;
+            _framesAlready = 0;
         }
 
         public void Disable()
         {
-            active = false;
+            _active = false;
         }
     }
 }

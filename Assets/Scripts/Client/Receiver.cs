@@ -38,7 +38,6 @@ namespace Larnix.Client
         private void _PlayerInitialize(PlayerInitialize msg)
         {
             MainPlayer.LoadPlayerData(msg);
-            Client.MyUID = msg.MyUid;
             Loading.StartWaitingFrom(msg.LastFixedFrame);
         }
 

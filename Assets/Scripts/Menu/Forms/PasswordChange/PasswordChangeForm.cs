@@ -11,25 +11,27 @@ namespace Larnix.Menu.Forms
 {
     public class PasswordChangeForm : BaseForm
     {
+        private Menu Menu => Ref.Menu;
+        
         [SerializeField] TMP_InputField IF_Address;
         [SerializeField] TMP_InputField IF_Nickname;
         [SerializeField] TMP_InputField IF_Password;
         [SerializeField] TMP_InputField IF_Confirm;
 
-        private ServerThinker thinker = null;
-        private InputSwapper swapper = null;
+        private ServerThinker _thinker = null;
+        private InputSwapper _swapper = null;
 
         private string ActionState = null;
         private bool? Result = null;
 
         private void Awake()
         {
-            swapper = GetComponent<InputSwapper>();
+            _swapper = GetComponent<InputSwapper>();
         }
 
         public void ProvideServerThinker(ServerThinker thinker)
         {
-            this.thinker = thinker;
+            _thinker = thinker;
         }
 
         public override void EnterForm(params string[] args)
@@ -43,7 +45,7 @@ namespace Larnix.Menu.Forms
 
             TX_ErrorText.text = "Your login data will be visible to the server owner.";
 
-            Ref.Menu.SetScreen("ChangePassword");
+            Menu.SetScreen("ChangePassword");
         }
 
         protected override ErrorCode GetErrorCode()
@@ -53,7 +55,7 @@ namespace Larnix.Menu.Forms
 
             string address = IF_Address.text;
             string nickname = IF_Nickname.text;
-            string oldPassword = thinker.serverData.Password;
+            string oldPassword = _thinker.serverData.Password;
             string newPassword = IF_Password.text;
             string confirm = IF_Confirm.text;
 
@@ -79,7 +81,7 @@ namespace Larnix.Menu.Forms
         {
             string address = IF_Address.text;
             string nickname = IF_Nickname.text;
-            string oldPassword = thinker.serverData.Password;
+            string oldPassword = _thinker.serverData.Password;
             string newPassword = IF_Password.text;
 
             if (ActionState == "TYPING_1") // before submit 1
@@ -98,13 +100,13 @@ namespace Larnix.Menu.Forms
                 if (Result == false)
                     EnterForm(IF_Address.text, IF_Nickname.text);
                 else
-                    Ref.Menu.GoBack();
+                    Menu.GoBack();
             }
         }
 
         private IEnumerator ChangePassword(string address, string nickname, string oldPassword, string newPassword)
         {
-            string authcode = thinker.serverData.AuthCodeRSA;
+            string authcode = _thinker.serverData.AuthCodeRSA;
 
             var changeTask = Task.Run(() =>
             Resolver.TryChangePasswordAsync(address, authcode, nickname, oldPassword, newPassword));
@@ -117,7 +119,7 @@ namespace Larnix.Menu.Forms
             if (Result == true)
             {
                 TX_ErrorText.text = "Password changed.";
-                thinker.SubmitUserOnlyData(nickname, newPassword);
+                _thinker.SubmitUserOnlyData(nickname, newPassword);
             }
             else if (Result == false)
             {
@@ -138,21 +140,21 @@ namespace Larnix.Menu.Forms
                 case "TYPING_1":
                     IF_Confirm.interactable = true;
                     BT_Submit.interactable = true;
-                    swapper.SetState(0);
+                    _swapper.SetState(0);
                     break;
 
                 case "TYPING_2":
-                    swapper.SetState(1);
+                    _swapper.SetState(1);
                     break;
 
                 case "WAITING":
-                    Ref.Menu.LockScreen();
+                    Menu.LockScreen();
                     IF_Confirm.interactable = false;
                     BT_Submit.interactable = false;
                     break;
 
                 case "RESULT":
-                    Ref.Menu.UnlockScreen();
+                    Menu.UnlockScreen();
                     BT_Submit.interactable = true;
                     break;
             }

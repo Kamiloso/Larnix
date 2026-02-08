@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
+using System;
 
 namespace Larnix.Forms
 {
@@ -23,7 +23,7 @@ namespace Larnix.Forms
                 State = state;
                 UpdateView();
             }
-            else throw new System.IndexOutOfRangeException();
+            else throw new IndexOutOfRangeException();
         }
 
         public void IncrementState()

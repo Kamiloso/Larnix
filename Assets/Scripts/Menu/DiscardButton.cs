@@ -8,21 +8,22 @@ namespace Larnix.Menu
 {
     public class DiscardButton : MonoBehaviour
     {
-        private Button button;
+        private Menu Menu => Ref.Menu;
+        private Button _button;
 
         private void Start()
         {
-            button = GetComponent<Button>();
+            _button = GetComponent<Button>();
         }
 
         private void LateUpdate()
         {
-            button.interactable = Ref.Menu.ScreenLock == 0;
+            _button.interactable = Menu.ScreenLock == 0;
         }
 
         public void GoBack()
         {
-            Ref.Menu.GoBack();
+            Menu.GoBack();
         }
     }
 }

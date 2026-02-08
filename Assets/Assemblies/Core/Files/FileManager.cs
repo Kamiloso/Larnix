@@ -1,5 +1,6 @@
 using System.Collections;
 using System.IO;
+using System;
 
 namespace Larnix.Core.Files
 {
@@ -135,8 +136,8 @@ namespace Larnix.Core.Files
 
         private static void FilenameCheck(string filename)
         {
-            if (string.IsNullOrEmpty(filename)) throw new System.NullReferenceException();
-            if (filename.StartsWith('_')) throw new System.ArgumentException("Filename cannot start with '_'!");
+            if (string.IsNullOrEmpty(filename)) throw new NullReferenceException();
+            if (filename.StartsWith('_')) throw new ArgumentException("Filename cannot start with '_'!");
         }
     }
 }

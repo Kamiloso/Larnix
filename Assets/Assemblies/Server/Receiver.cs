@@ -13,7 +13,7 @@ namespace Larnix.Server
 {
     internal class Receiver : Singleton
     {
-        private WorldAPI WorldAPI => Ref<ChunkLoading>().WorldAPI;
+        private WorldAPI WorldAPI => Ref<WorldAPI>();
         private QuickServer QuickServer => Ref<QuickServer>();
         private PlayerManager PlayerManager => Ref<PlayerManager>();
         private BlockSender BlockSender => Ref<BlockSender>();

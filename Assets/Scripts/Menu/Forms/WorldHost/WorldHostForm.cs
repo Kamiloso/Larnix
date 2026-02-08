@@ -21,11 +21,12 @@ namespace Larnix.Menu.Forms
         [SerializeField] Button BT_RefreshRelay;
         [SerializeField] TMP_Text ButtonTitle;
 
-        private string nickname = null;
-        private (string address, string authcode) serverTuple = default;
+        private Menu Menu => Ref.Menu;
 
-        private int state = 0;
-        private Task<string> RelayEstablishment = null;
+        private string _nickname;
+        private (string address, string authcode) _serverTuple;
+        private Task<string> _relayEstablishment = null;
+        private int _state = 0;
 
         private void Awake()
         {
@@ -37,24 +38,24 @@ namespace Larnix.Menu.Forms
             TX_ErrorText.text = "";
 
             IF_WorldName.text = args[0];
-            nickname = args[1];
+            _nickname = args[1];
             IF_RelayAddress.text = Settings.Settings.Instance.GetValue("$relay-server");
 
-            serverTuple = ("...", "...");
-            OF_ServerAddress.text = serverTuple.address;
-            OF_Authcode.text = serverTuple.authcode;
+            _serverTuple = ("...", "...");
+            OF_ServerAddress.text = _serverTuple.address;
+            OF_Authcode.text = _serverTuple.authcode;
             OF_ServerAddress.interactable = false;
             OF_Authcode.interactable = false;
 
             IF_RelayAddress.interactable = true;
             ButtonTitle.text = "START SERVER";
-            RelayEstablishment = null;
+            _relayEstablishment = null;
 
             BT_RefreshRelay.interactable = true;
 
-            state = 0;
+            _state = 0;
 
-            Ref.Menu.SetScreen("HostWorld");
+            Menu.SetScreen("HostWorld");
         }
 
         private ushort PortFromAddress(string address)
@@ -77,16 +78,16 @@ namespace Larnix.Menu.Forms
 
         protected override void RealSubmit()
         {
-            if (state == 0)
+            if (_state == 0)
             {
                 string path = Path.Combine(GamePath.SavesPath, IF_WorldName.text);
-                serverTuple = ServerRunner.Instance.Start(Server.ServerType.Host, path, null);
-                OF_ServerAddress.text = serverTuple.address;
-                OF_Authcode.text = serverTuple.authcode;
+                _serverTuple = ServerRunner.Instance.Start(Server.ServerType.Host, path, null);
+                OF_ServerAddress.text = _serverTuple.address;
+                OF_Authcode.text = _serverTuple.authcode;
                 OF_ServerAddress.interactable = true;
                 OF_Authcode.interactable = true;
 
-                TX_ErrorText.text = $"Server is running on localhost:{PortFromAddress(serverTuple.address)}\n " +
+                TX_ErrorText.text = $"Server is running on localhost:{PortFromAddress(_serverTuple.address)}\n " +
                     (IF_RelayAddress.text != "" ? $"Connecting to relay..." : "Relay disabled.");
 
                 IF_RelayAddress.interactable = false;
@@ -94,39 +95,39 @@ namespace Larnix.Menu.Forms
 
                 if (IF_RelayAddress.text != "")
                 {
-                    RelayEstablishment = Task.Run(() => ServerRunner.Instance.ConnectToRelayAsync(IF_RelayAddress.text));
+                    _relayEstablishment = Task.Run(() => ServerRunner.Instance.ConnectToRelayAsync(IF_RelayAddress.text));
                 }
                 SaveRelayString();
 
                 BT_RefreshRelay.interactable = false;
             }
 
-            if (state == 1)
+            if (_state == 1)
             {
                 string worldName = IF_WorldName.text;
-                WorldSelect.HostAndPlayWorldByName(worldName, serverTuple);
+                WorldSelect.HostAndPlayWorldByName(worldName, _serverTuple);
             }
 
-            state++;
+            _state++;
         }
 
         private void Update()
         {
-            if (RelayEstablishment?.IsCompleted == true)
+            if (_relayEstablishment?.IsCompleted == true)
             {
-                string connectAddress = RelayEstablishment.Result;
+                string connectAddress = _relayEstablishment.Result;
                 if (connectAddress == null)
                 {
-                    TX_ErrorText.text = $"Server is running on localhost:{PortFromAddress(serverTuple.address)}\n " +
+                    TX_ErrorText.text = $"Server is running on localhost:{PortFromAddress(_serverTuple.address)}\n " +
                         $"Relay connection failed :(";
                 }
                 else
                 {
-                    TX_ErrorText.text = $"Server is running on localhost:{PortFromAddress(serverTuple.address)}\n " +
+                    TX_ErrorText.text = $"Server is running on localhost:{PortFromAddress(_serverTuple.address)}\n " +
                         $"Players can join!";
                     OF_ServerAddress.text = connectAddress;
                 }
-                RelayEstablishment = null;
+                _relayEstablishment = null;
             }
         }
 

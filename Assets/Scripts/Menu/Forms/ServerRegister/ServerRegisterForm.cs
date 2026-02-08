@@ -15,17 +15,19 @@ namespace Larnix.Menu.Forms
         [SerializeField] TMP_InputField IF_Password;
         [SerializeField] TMP_InputField IF_Confirm;
 
-        private ServerThinker thinker = null;
-        private InputSwapper swapper = null;
+        private Menu Menu => Ref.Menu;
+
+        private ServerThinker _thinker;
+        private InputSwapper _swapper;
 
         private void Awake()
         {
-            swapper = GetComponent<InputSwapper>();
+            _swapper = GetComponent<InputSwapper>();
         }
 
         public void ProvideServerThinker(ServerThinker thinker)
         {
-            this.thinker = thinker;
+            _thinker = thinker;
         }
 
         public override void EnterForm(params string[] args)
@@ -35,12 +37,12 @@ namespace Larnix.Menu.Forms
             IF_Password.text = "";
             IF_Confirm.text = "";
 
-            swapper.SetState(0);
+            _swapper.SetState(0);
             IF_Nickname.interactable = true;
 
             TX_ErrorText.text = "Your login data will be visible to the server owner.";
 
-            Ref.Menu.SetScreen("Register");
+            Menu.SetScreen("Register");
         }
 
         protected override ErrorCode GetErrorCode()
@@ -59,7 +61,7 @@ namespace Larnix.Menu.Forms
             if (!Validation.IsGoodPassword(password))
                 return ErrorCode.PASSWORD_FORMAT;
 
-            if (swapper.State == 1)
+            if (_swapper.State == 1)
             {
                 if (password != confirm)
                     return ErrorCode.PASSWORDS_NOT_MATCH;
@@ -70,18 +72,18 @@ namespace Larnix.Menu.Forms
 
         protected override void RealSubmit()
         {
-            if (swapper.State == 0) // before submit 1
+            if (_swapper.State == 0) // before submit 1
             {
-                swapper.SetState(1);
+                _swapper.SetState(1);
                 IF_Nickname.interactable = false;
             }
-            else if (swapper.State == 1) // before submit 2
+            else if (_swapper.State == 1) // before submit 2
             {
                 string nickname = IF_Nickname.text;
                 string password = IF_Password.text;
 
-                thinker.SubmitUser(nickname, password, true);
-                Ref.Menu.GoBack();
+                _thinker.SubmitUser(nickname, password, true);
+                Menu.GoBack();
             }
         }
     }

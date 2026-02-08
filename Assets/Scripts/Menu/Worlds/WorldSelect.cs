@@ -90,7 +90,7 @@ namespace Larnix.Menu.Worlds
             {
                 RectTransform rt = Instantiate(WorldSegmentPrefab).transform as RectTransform;
                 if (rt == null)
-                    throw new System.InvalidOperationException("Prefab should be of type RectTransform!");
+                    throw new InvalidOperationException("Prefab should be of type RectTransform!");
 
                 string worldName = WorldPathToName(worldPath);
 

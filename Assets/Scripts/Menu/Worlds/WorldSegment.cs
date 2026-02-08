@@ -15,15 +15,17 @@ namespace Larnix.Menu.Worlds
         [SerializeField] Button SelectButton;
         [SerializeField] Button PlayButton;
 
-        private UniversalSelect MySelect;
-        private bool versionChecked = false;
+        private ServerSelect ServerSelect => Ref.ServerSelect;
+
+        private UniversalSelect _mySelect;
+        private bool _versionChecked = false;
 
         public string Name { get; private set; }
 
         public void Init(string name, UniversalSelect mySelect)
         {
             Name = name;
-            MySelect = mySelect;
+            _mySelect = mySelect;
 
             using (new ButtonFadeDisabler(SelectButton))
             {
@@ -33,7 +35,7 @@ namespace Larnix.Menu.Worlds
 
         public void ReInit(string name)
         {
-            Init(name, MySelect);
+            Init(name, _mySelect);
         }
 
         private void Update()
@@ -45,17 +47,17 @@ namespace Larnix.Menu.Worlds
         {
             NameText.text = Name;
 
-            if (MySelect is WorldSelect)
+            if (_mySelect is WorldSelect)
             {
-                if (!versionChecked)
+                if (!_versionChecked)
                 {
                     WorldMeta mdata = WorldMeta.ReadData(Name);
                     PlayButton.interactable = mdata.version <= Version.Current;
-                    versionChecked = true;
+                    _versionChecked = true;
                 }
             }
 
-            if (MySelect is ServerSelect)
+            if (_mySelect is ServerSelect)
             {
                 ServerThinker thinker = GetComponent<ServerThinker>();
                 PlayButton.interactable = thinker != null ? thinker.GetLoginState() == LoginState.Good : false;
@@ -71,19 +73,19 @@ namespace Larnix.Menu.Worlds
 
         public void SelectWorld()
         {
-            MySelect.SelectWorld(Name);
+            _mySelect.SelectWorld(Name);
         }
 
         public void PlayWorld()
         {
-            if (MySelect is WorldSelect)
+            if (_mySelect is WorldSelect)
             {
                 WorldSelect.PlayWorldByName(Name);
             }
             
-            else if (MySelect is ServerSelect)
+            else if (_mySelect is ServerSelect)
             {
-                Ref.ServerSelect.JoinByName(Name);
+                ServerSelect.JoinByName(Name);
             }
         }
     }

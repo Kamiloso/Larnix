@@ -6,26 +6,32 @@ using Larnix.Socket.Backend;
 using Larnix.Core.Physics;
 using Larnix.Core.References;
 using Larnix.Core.Vectors;
+using System;
 
 namespace Larnix.Server.Entities
 {
     internal class EntityAbstraction : RefObject<Server>
     {
-        private EntityServer controller;
-        private ulong storedUID;
-        private EntityData storedEntityData;
-
         private UserManager UserManager => Ref<UserManager>();
         private EntityDataManager EntityDataManager => Ref<EntityDataManager>();
         private EntityManager EntityManager => Ref<EntityManager>();
         private PhysicsManager PhysicsManager => Ref<PhysicsManager>();
 
-        public bool IsActive => controller != null;
-        public ulong uID => IsActive ? controller.uID : storedUID;
-        public EntityData EntityData => IsActive ? controller.EntityData : storedEntityData;
+        private EntityServer _controller;
+        private ulong _storedUID;
+        private EntityData _storedEntityData;
 
-        // === Player constructor ===
-        public EntityAbstraction(RefObject<Server> reff, string nickname) : base(reff)
+        public bool IsActive => _controller != null;
+        public ulong uID => IsActive ? _controller.uID : _storedUID;
+        public EntityData EntityData => IsActive ? _controller.EntityData : _storedEntityData;
+
+        public static EntityAbstraction CreatePlayerController(RefObject<Server> reff, string nickname) =>
+            new EntityAbstraction(reff, nickname);
+            
+        public static EntityAbstraction CreateEntityController(RefObject<Server> reff, EntityData entityData, ulong? uid = null) =>
+            new EntityAbstraction(reff, entityData, uid);
+
+        private EntityAbstraction(RefObject<Server> reff, string nickname) : base(reff)
         {
             ulong uid = (ulong)UserManager.GetUserID(nickname);
             EntityData entityData = EntityDataManager.TryFindEntityData(uid);
@@ -42,36 +48,35 @@ namespace Larnix.Server.Entities
             Initialize(uid, entityData);
         }
 
-        // === Entity constructor ===
-        public EntityAbstraction(RefObject<Server> reff, EntityData entityData, ulong? uid = null) : base(reff)
+        private EntityAbstraction(RefObject<Server> reff, EntityData entityData, ulong? uid = null) : base(reff)
         {
             if (entityData.ID == EntityID.Player)
-                throw new System.ArgumentException("Cannot create player instance as a generic entity!");
+                throw new ArgumentException("Cannot create player instance as a generic entity!");
 
-            ulong resolvedUid = uid ?? EntityManager.GetNextUID();
-            Initialize(resolvedUid, entityData);
+            ulong uid2 = uid ?? EntityManager.GetNextUID();
+            Initialize(uid2, entityData);
         }
 
         private void Initialize(ulong uid, EntityData entityData)
         {
-            storedUID = uid;
-            storedEntityData = entityData;
+            _storedUID = uid;
+            _storedEntityData = entityData;
 
             // flushing data to EntityDataManager
-            EntityDataManager.SetEntityData(storedUID, storedEntityData);
+            EntityDataManager.SetEntityData(_storedUID, _storedEntityData);
         }
 
         public void Activate()
         {
             if (IsActive)
-                throw new System.InvalidOperationException("Entity abstraction is already active!");
+                throw new InvalidOperationException("Entity abstraction is already active!");
 
-            controller = EntityFactory.ConstructEntityObject(storedUID, storedEntityData, PhysicsManager);
+            _controller = EntityFactory.ConstructEntityObject(_storedUID, _storedEntityData, PhysicsManager);
         }
 
         public EntityServer GetRealController()
         {
-            return controller;
+            return _controller;
         }
 
         public void DeleteEntityInstant()
@@ -87,9 +92,9 @@ namespace Larnix.Server.Entities
         public void FromFrameUpdate()
         {
             if (!IsActive)
-                throw new System.InvalidOperationException("Cannot execute FromFrameUpdate() on inactive entity abstraction!");
+                throw new InvalidOperationException("Cannot execute FromFrameUpdate() on inactive entity abstraction!");
 
-            controller.FromFrameUpdate();
+            _controller.FromFrameUpdate();
         }
     }
 }

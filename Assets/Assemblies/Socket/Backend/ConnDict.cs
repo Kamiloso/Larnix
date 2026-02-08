@@ -154,10 +154,10 @@ namespace Larnix.Socket
         {
             Queue<(HeaderSpan, string)> received = ReceiveAll();
 
-            foreach (var vkp in _connections.ToList())
+            foreach (var kvp in _connections.ToList())
             {
-                var endPoint = vkp.Key;
-                var connection = vkp.Value;
+                var endPoint = kvp.Key;
+                var connection = kvp.Value;
 
                 connection.Tick(deltaTime);
                 if (connection.IsDead)

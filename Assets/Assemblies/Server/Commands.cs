@@ -31,7 +31,7 @@ namespace Larnix.Server
         private Generator Generator => Ref<Generator>();
         private Server Server => Ref<Server>();
         private Config Config => Ref<Config>();
-        private WorldAPI WorldAPI => Ref<ChunkLoading>().WorldAPI;
+        private WorldAPI WorldAPI => Ref<WorldAPI>();
 
         public Commands(Server server) : base(server) { }
 
@@ -150,7 +150,7 @@ namespace Larnix.Server
             sb.Append($" | ------ PLAYER LIST [ {QuickServer.PlayerCount} / {QuickServer.Config.MaxClients} ] ------\n");
             sb.Append($" |\n");
 
-            foreach (string nickname in PlayerManager.GetAllPlayerNicknames())
+            foreach (string nickname in PlayerManager.AllPlayers())
             {
                 IPEndPoint endPoint = QuickServer.GetClientEndPoint(nickname);
                 string playerState = PlayerManager.GetPlayerState(nickname).ToString().ToUpper();

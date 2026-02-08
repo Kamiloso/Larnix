@@ -106,10 +106,10 @@ namespace Larnix.Packets
         {
             byte[] buffer = new byte[dictA.Count * ENTRY_A_SIZE];
             int i = 0;
-            foreach (var vkp in dictA)
+            foreach (var kvp in dictA)
             {
-                byte[] keyBytes = Primitives.GetBytes(vkp.Key);
-                byte[] valueBytes = Structures.GetBytes(new EntityDataCompressed(vkp.Value));
+                byte[] keyBytes = Primitives.GetBytes(kvp.Key);
+                byte[] valueBytes = Structures.GetBytes(new EntityDataCompressed(kvp.Value));
 
                 Buffer.BlockCopy(keyBytes, 0, buffer, 0 + i * ENTRY_A_SIZE, sizeof(ulong));
                 Buffer.BlockCopy(valueBytes, 0, buffer, sizeof(ulong) + i * ENTRY_A_SIZE, EntityDataCompressed.SIZE);
@@ -123,10 +123,10 @@ namespace Larnix.Packets
         {
             byte[] buffer = new byte[dictB.Count * ENTRY_B_SIZE];
             int i = 0;
-            foreach (var vkp in dictB)
+            foreach (var kvp in dictB)
             {
-                byte[] keyBytes = Primitives.GetBytes(vkp.Key);
-                byte[] valueBytes = Primitives.GetBytes(vkp.Value);
+                byte[] keyBytes = Primitives.GetBytes(kvp.Key);
+                byte[] valueBytes = Primitives.GetBytes(kvp.Value);
 
                 Buffer.BlockCopy(keyBytes, 0, buffer, 0 + i * ENTRY_B_SIZE, sizeof(ulong));
                 Buffer.BlockCopy(valueBytes, 0, buffer, sizeof(ulong) + i * ENTRY_B_SIZE, sizeof(uint));

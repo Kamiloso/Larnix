@@ -16,6 +16,8 @@ namespace Larnix.Menu.Forms
         [SerializeField] TMP_InputField IF_WorldName;
         [SerializeField] TMP_InputField IF_Seed;
 
+        private Menu Menu => Ref.Menu;
+
         public override void EnterForm(params string[] args)
         {
             IF_Nickname.text = Settings.Settings.Instance.GetValue("$last-nickname-SGP");
@@ -24,7 +26,7 @@ namespace Larnix.Menu.Forms
 
             TX_ErrorText.text = "";
 
-            Ref.Menu.SetScreen("CreateWorld");
+            Menu.SetScreen("CreateWorld");
         }
 
         protected override ErrorCode GetErrorCode()

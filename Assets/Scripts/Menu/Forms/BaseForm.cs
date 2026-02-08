@@ -4,7 +4,7 @@ using System.IO;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using Larnix.Menu.Worlds;
+using System;
 
 namespace Larnix.Menu.Forms
 {
@@ -32,7 +32,7 @@ namespace Larnix.Menu.Forms
         protected static string GetErrorInfo(ErrorCode code) => code switch
         {
             ErrorCode.SUCCESS => null,
-            ErrorCode.WORLD_NAME_FORMAT => "World name should be 1–32 characters, be already trimmed and only use: letters, digits, space, _ or -.",
+            ErrorCode.WORLD_NAME_FORMAT => "World name should be 1-32 characters, be already trimmed and only use: letters, digits, space, _ or -.",
             ErrorCode.WORLD_EXISTS => "World with such name already exists.",
             ErrorCode.NICKNAME_FORMAT => "Nickname should be 3-16 characters and only use: letters, digits, _ or -.",
             ErrorCode.NICKNAME_IS_PLAYER => "Nickname \"Player\" is reserved.",
@@ -53,7 +53,7 @@ namespace Larnix.Menu.Forms
             if (errorInfo != null)
                 TX_ErrorText.text = errorInfo;
 
-            if (code == 0) // everything ok
+            if (code == ErrorCode.SUCCESS) // everything ok
             {
                 RealSubmit();
             }
@@ -63,7 +63,7 @@ namespace Larnix.Menu.Forms
         {
             T found = FindAnyObjectByType<T>();
             if (found == null)
-                throw new System.NotImplementedException("Cannot find object of type " + typeof(T).ToString());
+                throw new NotImplementedException("Cannot find object of type " + typeof(T).ToString());
             return found;
         }
 

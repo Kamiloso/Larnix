@@ -9,35 +9,44 @@ using Larnix.Core.Vectors;
 using Larnix.Entities.Structs;
 using Larnix.Core.Utils;
 using Larnix.Packets;
+using Larnix.Client.Terrain;
+using System;
 using IHasCollider = Larnix.Entities.IHasCollider;
 
 namespace Larnix.Client
 {
     public class MainPlayer : MonoBehaviour
     {
-        // Serialized Unity fields
+        // Unity utils
         [SerializeField] Camera Camera;
         [SerializeField] EntityProjection EntityProjection;
         [SerializeField] Transform RaycastCenter; // player's head
 
-        // Teleport with editor
+        // Editor utils
         [SerializeField] Vector2Int DebugTeleportPos;
         [SerializeField] bool DebugTeleportSubmit;
 
         // Collider settings
-        private DynamicCollider DynamicCollider;
+        private DynamicCollider _dynamicCollider;
         private readonly Vec2 ColliderOffset = EntityFactory.GetSlaveInstance<IHasCollider>(EntityID.Player).COLLIDER_OFFSET();
         private readonly Vec2 ColliderSize = EntityFactory.GetSlaveInstance<IHasCollider>(EntityID.Player).COLLIDER_SIZE();
         private readonly PhysicsProperties PhysicsProperties = EntityFactory.GetSlaveInstance<IPhysicsProperties>(EntityID.Player).PHYSICS_PROPERTIES();
 
+        // Singletons
+        private Client Client => Ref.Client;
+        private GridManager GridManager => Ref.GridManager;
+        private TileSelector TileSelector => Ref.TileSelector;
+        private PhysicsManager PhysicsManager => Ref.PhysicsManager;
+        private Debugger Debugger => Ref.Debugger;
+
         // Player / Entity data
         public bool IsAlive => transform.parent.gameObject.activeSelf;
+        public ulong UID { get; private set; }
         public Vec2 Position { get; private set; }
         public float Rotation { get; private set; }
 
         // Counters
-        private uint FixedCounter = 0;
-        private uint LastSentFixedCounter = 0;
+        private uint _lastSentFixedCounter = 0;
 
         private void Awake()
         {
@@ -45,10 +54,8 @@ namespace Larnix.Client
             transform.parent.gameObject.SetActive(false);
         }
 
-        private void FixedUpdate()
+        public void FixedPlayerUpdate()
         {
-            FixedCounter++;
-
             // Debug teleporting
             if (DebugTeleportSubmit)
             {
@@ -59,12 +66,12 @@ namespace Larnix.Client
 
             // Movement
             OutputData? odata = null;
-            if (!Ref.Debugger.SpectatorMode)
+            if (!Debugger.SpectatorMode)
             {
                 Vec2Int chunk = BlockUtils.CoordsToChunk(Position);
-                if (Ref.GridManager.ChunkLoaded(chunk))
+                if (GridManager.ChunkLoaded(chunk))
                 {
-                    odata = DynamicCollider.PhysicsUpdate(new InputData
+                    odata = _dynamicCollider.PhysicsUpdate(new InputData
                     {
                         Left = Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A),
                         Right = Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D),
@@ -91,17 +98,17 @@ namespace Larnix.Client
                     (down ? 1 : 0) * new Vec2(0, -1)
                 );
 
-                odata = DynamicCollider.NoPhysicsUpdate(Position + will);
+                odata = _dynamicCollider.NoPhysicsUpdate(Position + will);
             }
             Position = odata?.Position ?? Position;
 
             RotationUpdate();
-            UpdateEntityObject(FixedCounter * Time.fixedDeltaTime);
+            UpdateEntityObject(Client.FixedFrame * Time.fixedDeltaTime);
         }
 
         public void Teleport(Vec2 position)
         {
-            OutputData odata = DynamicCollider.NoPhysicsUpdate(position);
+            OutputData odata = _dynamicCollider.NoPhysicsUpdate(position);
             Position = odata.Position;
         }
 
@@ -109,12 +116,12 @@ namespace Larnix.Client
         {
             // Send update to server
 
-            if(LastSentFixedCounter != FixedCounter)
+            if(_lastSentFixedCounter != Client.FixedFrame)
             {
-                Payload packet = new PlayerUpdate(Position, Rotation, FixedCounter);
-                Ref.Client.Send(packet, false); // fast mode (over raw udp)
+                Payload packet = new PlayerUpdate(Position, Rotation, Client.FixedFrame);
+                Client.Send(packet, false); // fast mode (over raw udp)
 
-                LastSentFixedCounter = FixedCounter;
+                _lastSentFixedCounter = Client.FixedFrame;
             }
         }
 
@@ -141,6 +148,9 @@ namespace Larnix.Client
         public void LoadPlayerData(PlayerInitialize msg)
         {
             Position = msg.Position;
+
+            if (UID == 0)
+                UID = msg.MyUid;
         }
 
         public EntityProjection GetEntityProjection()
@@ -151,12 +161,12 @@ namespace Larnix.Client
         public void SetAlive()
         {
             if (IsAlive)
-                throw new System.InvalidOperationException("Player is already alive!");
+                throw new InvalidOperationException("Player is already alive!");
 
             transform.parent.gameObject.SetActive(true);
-            Ref.TileSelector.Enable();
+            TileSelector.Enable();
 
-            DynamicCollider = new DynamicCollider(Ref.PhysicsManager,
+            _dynamicCollider = new DynamicCollider(PhysicsManager,
                 Position, ColliderOffset, ColliderSize, PhysicsProperties);
 
             RotationUpdate();
@@ -166,12 +176,12 @@ namespace Larnix.Client
         public void SetDead()
         {
             if (!IsAlive)
-                throw new System.InvalidOperationException("Player is already dead!");
+                throw new InvalidOperationException("Player is already dead!");
 
             transform.parent.gameObject.SetActive(false);
-            Ref.TileSelector.Disable();
+            TileSelector.Disable();
 
-            DynamicCollider = null;
+            _dynamicCollider = null;
 
             EntityProjection.ResetSmoother();
         }

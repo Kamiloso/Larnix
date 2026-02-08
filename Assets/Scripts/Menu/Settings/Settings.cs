@@ -6,6 +6,7 @@ using System.Text;
 using System.Linq;
 using Larnix.Core.Files;
 using Larnix.Core.Utils;
+using System;
 
 namespace Larnix.Menu.Settings
 {
@@ -47,7 +48,7 @@ namespace Larnix.Menu.Settings
                 (key != null && (key.Contains('\r') || key.Contains('\n'))) ||
                 (value != null && (value.Contains('\r') || value.Contains('\n'))))
             {
-                throw new System.ArgumentException("Characters '\\r' and '\\n' are not supported.");
+                throw new ArgumentException("Characters '\\r' and '\\n' are not supported.");
             }
 
             if (value != null) options[key] = value;
@@ -100,10 +101,10 @@ namespace Larnix.Menu.Settings
         {
             StringBuilder sb = new StringBuilder();
 
-            foreach (var vkp in options)
+            foreach (var kvp in options)
             {
-                sb.Append(vkp.Key + "\n");
-                sb.Append(vkp.Value + "\n");
+                sb.Append(kvp.Key + "\n");
+                sb.Append(kvp.Value + "\n");
             }
 
             string str = sb.ToString();

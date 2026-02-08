@@ -1,23 +1,23 @@
 using System.Collections;
 using System.Collections.Generic;
-using Larnix.Blocks;
 using Larnix.Blocks.Structs;
 using System.Linq;
 using Larnix.Server.Data;
 using Larnix.Worldgen;
-using Larnix.Core.References;
 using Larnix.Core.Vectors;
+using System;
 
 namespace Larnix.Server.Terrain
 {
     internal class BlockDataManager : Singleton
     {
-        private readonly Dictionary<Vec2Int, BlockData2[,]> chunkCache = new();
-        private readonly HashSet<Vec2Int> referencedChunks = new();
-        private bool DEBUG_UNLINK_DATABASE = false;
+        private readonly Dictionary<Vec2Int, BlockData2[,]> _chunkCache = new();
+        private readonly HashSet<Vec2Int> _referencedChunks = new();
 
         private Database Database => Ref<Database>();
         private Generator Generator => Ref<Generator>();
+
+        private bool _debugUnlinkDatabase = false;
 
         public BlockDataManager(Server server) : base(server) {}
 
@@ -27,54 +27,54 @@ namespace Larnix.Server.Terrain
         /// </summary>
         public BlockData2[,] ObtainChunkReference(Vec2Int chunk)
         {
-            if (referencedChunks.Contains(chunk))
-                throw new System.InvalidOperationException($"Cannot get more than one reference to chunk {chunk}!");
+            if (_referencedChunks.Contains(chunk))
+                throw new InvalidOperationException($"Cannot get more than one reference to chunk {chunk}!");
 
-            referencedChunks.Add(chunk);
+            _referencedChunks.Add(chunk);
 
             BlockData2[,] blocks;
 
-            if (chunkCache.ContainsKey(chunk)) // Get from cache
+            if (_chunkCache.ContainsKey(chunk)) // Get from cache
             {
-                blocks = chunkCache[chunk];
+                blocks = _chunkCache[chunk];
                 return blocks;
             }
-            else if(!DEBUG_UNLINK_DATABASE && Database.TryGetChunk(chunk.x, chunk.y, out blocks)) // Get from database
+            else if(!_debugUnlinkDatabase && Database.TryGetChunk(chunk.x, chunk.y, out blocks)) // Get from database
             {
-                chunkCache[chunk] = blocks;
+                _chunkCache[chunk] = blocks;
                 return blocks;
             }
             else // Generate a new chunk
             {
                 blocks = Generator.GenerateChunk(chunk);
-                chunkCache[chunk] = blocks;
+                _chunkCache[chunk] = blocks;
                 return blocks;
             }
         }
 
         public void ReturnChunkReference(Vec2Int chunk)
         {
-            if (!referencedChunks.Contains(chunk))
-                throw new System.InvalidOperationException($"Reference to chunk {chunk} is not marked as active!");
+            if (!_referencedChunks.Contains(chunk))
+                throw new InvalidOperationException($"Reference to chunk {chunk} is not marked as active!");
 
-            referencedChunks.Remove(chunk);
+            _referencedChunks.Remove(chunk);
         }
 
         public void FlushIntoDatabase()
         {
-            if (!DEBUG_UNLINK_DATABASE)
+            if (!_debugUnlinkDatabase)
             {
-                foreach(var vkp in chunkCache.ToList())
+                foreach(var kvp in _chunkCache.ToList())
                 {
-                    Vec2Int chunk = vkp.Key;
-                    BlockData2[,] data = vkp.Value;
+                    Vec2Int chunk = kvp.Key;
+                    BlockData2[,] data = kvp.Value;
 
                     // flush data
                     Database.SetChunk(chunk.x, chunk.y, data);
 
                     // remove disabled chunks from cache
-                    if (!referencedChunks.Contains(chunk))
-                        chunkCache.Remove(chunk);
+                    if (!_referencedChunks.Contains(chunk))
+                        _chunkCache.Remove(chunk);
                 }
             }
         }

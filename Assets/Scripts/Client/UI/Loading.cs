@@ -1,15 +1,20 @@
 using System.Collections;
 using System.Collections.Generic;
+using Larnix.Client.Entities;
+using Larnix.Client.Terrain;
 using UnityEngine;
 
 namespace Larnix.Client.UI
 {
     public class Loading : MonoBehaviour
     {
-        private const float LOADING_TIME_TEMP = 1f; // seconds
+        private LoadingScreen LoadingScreen => Ref.LoadingScreen;
+        private MainPlayer MainPlayer => Ref.MainPlayer;
+        private EntityProjections EntityProjections => Ref.EntityProjections;
+        private GridManager GridManager => Ref.GridManager;
 
-        private bool waiting = false; // trying to end
-        private uint FixFrame = 0; // frame at which waiting will start
+        private bool _tryingToEnd = false;
+        private uint _fixFrame = 0; // frame at which waiting will start
 
         private void Awake()
         {
@@ -18,39 +23,32 @@ namespace Larnix.Client.UI
 
         private void Update()
         {
-            if(waiting)
+            if(_tryingToEnd)
             {
-                if (ReadyEntities() && ReadyChunks())
+                if (EntityProjections.EverythingLoaded(_fixFrame) &&
+                    GridManager.LoadedAroundPlayer())
+                {
                     EndLoading();
+                }
             }
         }
 
         public void StartLoading(string info)
         {
-            Ref.LoadingScreen.Enable(info);
+            LoadingScreen.Enable(info);
         }
 
         public void StartWaitingFrom(uint fixFrame)
         {
-            waiting = true;
-            FixFrame = fixFrame;
+            _tryingToEnd = true;
+            _fixFrame = fixFrame;
         }
 
         private void EndLoading()
         {
-            waiting = false;
-            Ref.LoadingScreen.Disable();
-            Ref.MainPlayer.SetAlive();
-        }
-
-        private bool ReadyEntities()
-        {
-            return Ref.EntityProjections.EverythingLoaded(FixFrame);
-        }
-
-        private bool ReadyChunks()
-        {
-            return Ref.GridManager.LoadedAroundPlayer();
+            _tryingToEnd = false;
+            LoadingScreen.Disable();
+            MainPlayer.SetAlive();
         }
     }
 }
