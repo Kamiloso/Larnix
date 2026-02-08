@@ -16,12 +16,13 @@ namespace Larnix.Blocks
         /// $x, $y for block position
         /// $front for whether the block is placed in front or back (front / back)
         /// </summary>
-        public static BlockData1 WithCommand(string command, BlockID replaceBlock = BlockID.Air, byte replaceVariant = 0)
+        public static BlockData1 WithCommand(string command, BlockData1 replaceBlock)
         {
             Storage data = new();
             data["tech_execute.command"].String = command;
-            data["tech_execute.replace.id"].Int = (int)replaceBlock;
-            data["tech_execute.replace.variant"].Int = replaceVariant;
+            data["tech_execute.replace.id"].Int = (int)replaceBlock.ID;
+            data["tech_execute.replace.variant"].Int = replaceBlock.Variant;
+            data["tech_execute.replace.data"].String = replaceBlock.Data.ToString();
 
             return new BlockData1(
                 id: BlockID.TechExecute,

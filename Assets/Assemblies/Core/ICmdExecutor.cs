@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Larnix.Core
 {
@@ -12,6 +14,18 @@ namespace Larnix.Core
             var (result, msg) = ExecuteCommand(command);
             message = msg;
             return result != CmdResult.Error;
+        }
+
+        public static void InsertParameters(ref string command, Dictionary<string, string> parameters)
+        {
+            // Sort keys by length in descending order to prevent partial replacement
+            IEnumerable<string> keys = parameters.Keys
+                .OrderByDescending(k => k.Length);
+            
+            foreach (var key in keys)
+            {
+                command = command.Replace(key, parameters[key]);
+            }
         }
     }
 }
