@@ -10,8 +10,8 @@ namespace Larnix.Blocks
     {
         void Init()
         {
-            This.FrameEventSequentialLate += (sender, args) => FloraDry();
-            This.FrameEventSequentialLate += (sender, args) => FloraGrowth();
+            This.FrameEventRandom += (sender, args) => FloraDry();
+            This.FrameEventRandom += (sender, args) => FloraGrowth();
         }
 
         double DRY_CHANCE();

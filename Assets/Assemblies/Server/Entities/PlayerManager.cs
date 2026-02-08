@@ -174,7 +174,7 @@ namespace Larnix.Server.Entities
             return result;
         }
 
-        public IEnumerable<string> AllPlayersInRange(Vec2 position, double range)
+        public IEnumerable<string> AllObserversInRange(Vec2 position, double range)
         {
             HashSet<string> result = new();
             foreach (string nickname in PlayerUID.Keys)

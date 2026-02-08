@@ -40,7 +40,7 @@ namespace Larnix.Socket.Frontend
 
     public static class Resolver
     {
-        public static async Task<IPEndPoint> ResolveStringAsync(string address, ushort defaultPort = Common.LarnixPort)
+        public static async Task<IPEndPoint> ResolveStringAsync(string address, ushort defaultPort = Common.LARNIX_PORT)
         {
             if (address == null) return null;
 

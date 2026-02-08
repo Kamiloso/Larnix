@@ -2,11 +2,11 @@ using System.Collections;
 using System.Collections.Generic;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
-using Larnix.Core.Json;
+using Larnix.Core;
 
 namespace Larnix.Blocks
 {
-    public interface IWorldAPI
+    public interface IWorldAPI : ICmdExecutor
     {
         public enum BreakMode : byte // must be byte for serialization
         {

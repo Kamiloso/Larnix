@@ -1,6 +1,7 @@
 using System;
 using Larnix.Core.Utils;
 using Larnix.Core.Binary;
+using System.Globalization;
 
 namespace Larnix.Core.Vectors
 {
@@ -54,7 +55,7 @@ namespace Larnix.Core.Vectors
             }
         }
 
-        public override string ToString() => $"({x}, {y})";
+        public override string ToString() => $"({x.ToString(CultureInfo.InvariantCulture)}, {y.ToString(CultureInfo.InvariantCulture)})";
         public static implicit operator string(Vec2 value) => value.ToString();
 
         public static Vec2 operator +(Vec2 a, Vec2 b) => new Vec2(a.x + b.x, a.y + b.y);

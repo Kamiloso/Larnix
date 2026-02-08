@@ -9,14 +9,14 @@ namespace Larnix.Server.Data
     {
         public ushort ConfigVersion = 5;
         public ushort MaxPlayers = 10;
-        public ushort Port = Common.LarnixPort;
+        public ushort Port = Common.LARNIX_PORT;
         public string Motd = "Welcome to Larnix server!";
         public int DataSavingPeriodFrames = 15 * 50;
         public int EntityBroadcastPeriodFrames = 2;
         public int ClientIdentityPrefixSizeIPv4 = 32;
         public int ClientIdentityPrefixSizeIPv6 = 56;
         public bool UseRelay = false;
-        public string RelayAddress = "relay-1.se3.page";
+        public string RelayAddress = Common.DEFAULT_RELAY_ADDRESS;
 
         private Config() { }
 

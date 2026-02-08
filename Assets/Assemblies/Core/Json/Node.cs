@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using Larnix.Core.Utils;
 using SimpleJSON;
 
 namespace Larnix.Core.Json
@@ -22,9 +23,9 @@ namespace Larnix.Core.Json
             set => _node.Value = value.ToString();
         }
 
-        public float Float
+        public double Double
         {
-            get => float.TryParse(_node.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out float result) ? result : default;
+            get => DoubleUtils.TryParse(_node.Value, out double result) ? result : default;
             set => _node.Value = value.ToString(CultureInfo.InvariantCulture);
         }
 

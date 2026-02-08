@@ -357,8 +357,8 @@ namespace Larnix.Socket.Backend
                 serverSecret != Secret || // wrong server secret
                 runID != RunID || // wrong runID
                 !Timestamp.InTimestamp(timestamp) || // login message is outdated
-                (!isLoopback && nickname == Common.LoopbackOnlyNickname) || // loopback-only nickname
-                (!isLoopback && password == Common.LoopbackOnlyPassword) || // loopback-only password
+                (!isLoopback && nickname == Common.LOOPBACK_ONLY_NICKNAME) || // loopback-only nickname
+                (!isLoopback && password == Common.LOOPBACK_ONLY_PASSWORD) || // loopback-only password
                 challengeID != _userManager.GetChallengeID(nickname)) // wrong challengeID
             {
                 ExecuteFailed(); // invalid login data

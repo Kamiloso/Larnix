@@ -4,19 +4,14 @@ using System.Collections;
 using System.Collections.Generic;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
-using Larnix.Socket.Packets;
-using Larnix.Packets;
-using Larnix.Core;
-using Larnix.Server.Entities;
-using System.Linq;
-using Larnix.Socket.Backend;
-using Larnix.Core.Binary;
+using ResultType = Larnix.Core.ICmdExecutor.CmdResult;
 
 namespace Larnix.Server.Terrain
 {
     internal class WorldAPI : Singleton, IWorldAPI
     {
         private ChunkLoading ChunkLoading => Ref<ChunkLoading>();
+        private Commands Commands => Ref<Commands>();
 
         public uint FramesSinceServerStart() => Ref<Server>().FixedFrame;
 
@@ -98,6 +93,11 @@ namespace Larnix.Server.Terrain
             // INSERT LATER
 
             ReplaceBlock(POS, front, new BlockData1(), IWorldAPI.BreakMode.Effects);
+        }
+
+        public (ResultType, string) ExecuteCommand(string command, string sender = null)
+        {
+            return Commands.ExecuteCommand(command, sender);
         }
     }
 }

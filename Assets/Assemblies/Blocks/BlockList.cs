@@ -24,5 +24,6 @@ namespace Larnix.Blocks
         Plastic = 15,
         Sword = 16,
         Conway = 17,
+        TechExecute = 18,
     }
 }

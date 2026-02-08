@@ -14,25 +14,24 @@ using Larnix.Socket.Backend;
 using Larnix.Worldgen;
 using Larnix.Core;
 using Larnix.Socket.Packets;
-using Console = Larnix.Core.Console;
 using Larnix.Core.Utils;
+using Larnix.Server.Data;
+using Console = Larnix.Core.Console;
+using CmdResult = Larnix.Core.ICmdExecutor.CmdResult;
+using System.Net;
 
 namespace Larnix.Server
 {
-    internal class Commands : Singleton
+    internal class Commands : Singleton, ICmdExecutor
     {
-        /* WARNING:
-        Command floating points are parsed using the current culture settings.
-        It may change in the future. */
-        
         private QuickServer QuickServer => Ref<QuickServer>();
         private PlayerManager PlayerManager => Ref<PlayerManager>();
         private EntityManager EntityManager => Ref<EntityManager>();
         private Generator Generator => Ref<Generator>();
         private Server Server => Ref<Server>();
+        private Config Config => Ref<Config>();
         private WorldAPI WorldAPI => Ref<ChunkLoading>().WorldAPI;
 
-        public enum ResultType { Raw, Log, Success, Warning, Error, Ignore }
         public Commands(Server server) : base(server) { }
 
         public override void PostEarlyFrameUpdate()
@@ -42,39 +41,59 @@ namespace Larnix.Server
                 string cmd = Console.GetCommand();
                 if (cmd == null) break;
 
-                ExecuteAndInform(cmd, null);
-            }
-        }
-
-        public void ExecuteAndInform(string command, string sender)
-        {
-            var (type, message) = Execute(command, sender);
-
-            if (sender == null)
-            {
+                var (type, message) = ExecuteCommand(cmd);
                 switch (type)
                 {
-                    case ResultType.Raw: Console.LogRaw(message); break;
-                    case ResultType.Log: Console.Log(message); break;
-                    case ResultType.Success: Console.LogSuccess(message); break;
-                    case ResultType.Warning: Console.LogWarning(message); break;
-                    case ResultType.Error: Console.LogError(message); break;
-                    case ResultType.Ignore: break;
+                    case CmdResult.Raw: Console.LogRaw(message); break;
+                    case CmdResult.Log: Console.Log(message); break;
+                    case CmdResult.Success: Console.LogSuccess(message); break;
+                    case CmdResult.Warning: Console.LogWarning(message); break;
+                    case CmdResult.Error: Console.LogError(message); break;
+                    case CmdResult.Ignore: break;
                 }
-            }
-            else
-            {
-                throw new NotImplementedException("Only server can execute commands for now.");
             }
         }
 
-        private (ResultType, string) Execute(string command, string sender = null)
+        public (CmdResult, string) ExecuteCommand(string command, string sender = null)
+        {
+            CmdResult type = CmdResult.Ignore;
+            string message = string.Empty;
+
+            if (sender is null) // from console
+            {
+                (type, message) = InnerExecuteCmd(command, sender, true);
+            }
+            else // from player
+            {
+                bool player_online = PlayerManager.GetPlayerState(sender) != PlayerManager.PlayerState.None;
+                if (player_online)
+                {
+                    bool player_admin = /*Config.AdminList.Contains(sender)*/ false;
+                    (type, message) = InnerExecuteCmd(command, sender, player_admin);
+
+                    if (type != CmdResult.Ignore)
+                    {
+                        //QuickServer.Send(sender, new ChatMessage(type, (String512)message));
+                    }
+                }
+            }
+
+            return (type, message);
+        }
+
+        private (CmdResult, string) InnerExecuteCmd(string command, string sender, bool adminPrivileges)
         {
             string[] arg = command.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             int len = arg.Length;
 
             if (len == 0)
-                return (ResultType.Error, "Unknown command! Type 'help' for documentation.");
+                return (CmdResult.Error, "Unknown command! Type 'help' for documentation.");
+
+            if (!adminPrivileges && !(
+                arg[0] == "help" //||
+                //arg[0] == "..."
+            ))
+                return (CmdResult.Error, "You don't have permission to execute this command.");
 
             return arg[0] switch
             {
@@ -88,36 +107,37 @@ namespace Larnix.Server
                 "place" when len == 5 || len == 6 => Place(arg),
                 "particles" when len == 4 => Particles(arg[1], arg[2], arg[3]),
                 "seed" when len == 1 => Seed(),
-                _ => (ResultType.Error, "Unknown command! Type 'help' for documentation.")
+                _ => (CmdResult.Error, "Unknown command! Type 'help' for documentation.")
             };
         }
 
-        private (ResultType, string) Help()
+        private (CmdResult, string) Help()
         {
-            return (ResultType.Raw,
-                "\n" +
-                " | ------ COMMAND LIST ------\n" +
-                " |\n" +
-                " | help - Displays this documentation.\n" +
-                " | stop - Turns off the server.\n" +
-                " | playerlist - Shows all players on the server.\n" +
-                " | tp [nickname] [x] [y] - Teleports player to a given position.\n" +
-                " | kick [nickname] - Kicks player if online.\n" +
-                " | kill [nickname] - Kills player if alive.\n" +
-                " | spawn [entity] [x] [y] - Spawns entity at a given position.\n" +
-                " | place [front/back] [x] [y] [block] [?variant] - Places block at a given position.\n" +
-                " | particles [name] [x] [y] - Spawns particles at a given position.\n" +
-                " | seed - Displays the server seed.\n" +
-                "\n");
+            return (CmdResult.Raw,
+@"
+ | ------ COMMAND LIST ------
+ |
+ | help - Displays this documentation.
+ | stop - Turns off the server.
+ | playerlist - Shows all players on the server.
+ | tp [nickname] [x] [y] - Teleports player to a given position.
+ | kick [nickname] - Kicks player if online.
+ | kill [nickname] - Kills player if alive.
+ | spawn [entity] [x] [y] - Spawns entity at a given position.
+ | place [front/back] [x] [y] [block] [?variant] - Places block at a given position.
+ | particles [name] [x] [y] - Spawns particles at a given position.
+ | seed - Displays the server seed.
+
+");
         }
 
-        private (ResultType, string) Stop()
+        private (CmdResult, string) Stop()
         {
             Server.CloseServer();
-            return (ResultType.Ignore, string.Empty);
+            return (CmdResult.Ignore, string.Empty);
         }
 
-        private (ResultType, string) PlayerList()
+        private (CmdResult, string) PlayerList()
         {
             StringBuilder sb = new();
             sb.Append("\n");
@@ -126,159 +146,149 @@ namespace Larnix.Server
 
             foreach (string nickname in PlayerManager.GetAllPlayerNicknames())
             {
-                sb.Append($" | {nickname} from {QuickServer.GetClientEndPoint(nickname)}" +
-                          $" is {PlayerManager.GetPlayerState(nickname).ToString().ToUpper()}\n");
+                IPEndPoint endPoint = QuickServer.GetClientEndPoint(nickname);
+                string playerState = PlayerManager.GetPlayerState(nickname).ToString().ToUpper();
+                sb.Append($" | {nickname} from {endPoint} is {playerState}\n");
             }
 
             sb.Append("\n");
 
-            return (ResultType.Raw, sb.ToString());
+            return (CmdResult.Raw, sb.ToString());
         }
 
-        private (ResultType, string) Tp(string nickname, string xt, string yt)
+        private (CmdResult, string) Tp(string nickname, string xt, string yt)
         {
-            if (PlayerManager.GetPlayerState(nickname) == PlayerManager.PlayerState.Alive)
-            {
-                if (double.TryParse(xt, out double x) && double.TryParse(yt, out double y))
-                {
-                    Vec2 targetPos = new Vec2(x, y);
-                    Vec2 normalOffset = new Vec2(0.00, 0.01);
-                    Vec2 fullTargetPos = targetPos + normalOffset;
-                    QuickServer.Send(nickname, new Teleport(fullTargetPos));
-                    ((Player)EntityManager.GetPlayerController(nickname).GetRealController()).AcceptTeleport(fullTargetPos);
-                    return (ResultType.Success, "Player " + nickname + " has been teleported to " + targetPos);
-                }
-                else return (ResultType.Error, "Cannot parse coordinates!");
-            }
-            else
-            {
-                return (ResultType.Error, "Player " + nickname + " is not alive!");
-            }
+            if (PlayerManager.GetPlayerState(nickname) != PlayerManager.PlayerState.Alive)
+                return (CmdResult.Error, $"Player {nickname} is not alive.");
+
+            if (!DoubleUtils.TryParse(xt, out double x) || !DoubleUtils.TryParse(yt, out double y))
+                return (CmdResult.Error, "Cannot parse coordinates.");
+
+            Vec2 targetPos = new Vec2(x, y);
+            Vec2 normalOffset = new Vec2(0.00, 0.01);
+            Vec2 fullTargetPos = targetPos + normalOffset;
+
+            QuickServer.Send(nickname, new Teleport(fullTargetPos));
+            ((Player)EntityManager.GetPlayerController(nickname).GetRealController()).AcceptTeleport(fullTargetPos);
+            return (CmdResult.Success, $"Player {nickname} has been teleported to {targetPos}.");
         }
 
-        private (ResultType, string) Kick(string nickname)
+        private (CmdResult, string) Kick(string nickname)
         {
-            if (PlayerManager.GetPlayerState(nickname) != PlayerManager.PlayerState.None)
-            {
-                QuickServer.FinishConnection(nickname);
-                return (ResultType.Success, "Player " + nickname + " has been kicked.");
-            }
-            else
-            {
-                return (ResultType.Error, "Player " + nickname + " is not online!");
-            }
+            if (PlayerManager.GetPlayerState(nickname) == PlayerManager.PlayerState.None)
+                return (CmdResult.Error, $"Player {nickname} is not online.");
+
+            QuickServer.FinishConnection(nickname);
+            return (CmdResult.Success, $"Player {nickname} has been kicked.");
         }
 
-        private (ResultType, string) Kill(string nickname)
+        private (CmdResult, string) Kill(string nickname)
         {
-            if (PlayerManager.GetPlayerState(nickname) == PlayerManager.PlayerState.Alive)
-            {
-                ulong uid = PlayerManager.GetPlayerUID(nickname);
-                EntityManager.KillEntity(uid);
-                return (ResultType.Success, "Player " + nickname + " has been killed.");
-            }
-            else
-            {
-                return (ResultType.Error, "Player " + nickname + " is not alive!");
-            }
+            if (PlayerManager.GetPlayerState(nickname) != PlayerManager.PlayerState.Alive)
+                return (CmdResult.Error, $"Player {nickname} is not alive.");
+
+            ulong uid = PlayerManager.GetPlayerUID(nickname);
+            EntityManager.KillEntity(uid);
+            return (CmdResult.Success, $"Player {nickname} has been killed.");
         }
 
-        private (ResultType, string) Spawn(string entityname, string xs, string ys)
+        private (CmdResult, string) Spawn(string entityname, string xs, string ys)
         {
-            if (Enum.TryParse(entityname, ignoreCase: true, out EntityID entityID) &&
-                Enum.IsDefined(typeof(EntityID), entityID) &&
-                entityID != EntityID.Player)
-            {
-                if (double.TryParse(xs, out double x) && double.TryParse(ys, out double y))
-                {
-                    Vec2 position = new Vec2(x, y);
+            if (!Enum.TryParse(entityname, ignoreCase: true, out EntityID entityID) ||
+                !Enum.IsDefined(typeof(EntityID), entityID))
+                return (CmdResult.Error, $"Cannot spawn entity named \"{entityname}\".");
 
-                    bool success = EntityManager.SummonEntity(new EntityData(
-                        id: entityID,
-                        position: position,
-                        rotation: 0.0f,
-                        data: null
-                    ));
+            if (entityID == EntityID.Player)
+                return (CmdResult.Error, "Player is not a spawnable entity.");
 
-                    if (success)
-                    {
-                        string realName = entityID.ToString();
-                        return (ResultType.Success, $"Spawned {realName} at position ({x}, {y}).");
-                    }
-                    return (ResultType.Error, $"Position ({x}, {y}) is not loaded!");
-                }
-                else return (ResultType.Error, "Cannot parse coordinates!");
-            }
-            else return (ResultType.Error, $"Cannot spawn entity named \"{entityname}\"!");
+            if (!DoubleUtils.TryParse(xs, out double x) || !DoubleUtils.TryParse(ys, out double y))
+                return (CmdResult.Error, "Cannot parse coordinates.");
+
+            Vec2 position = new Vec2(x, y);
+
+            bool success = EntityManager.SummonEntity(new EntityData(
+                id: entityID,
+                position: position,
+                rotation: 0.0f,
+                data: null
+            ));
+
+            if (!success)
+                return (CmdResult.Error, $"Position {position} is not loaded.");
+
+            string realName = entityID.ToString();
+            return (CmdResult.Success, $"Spawned {realName} at position {position}.");
         }
 
-        private (ResultType, string) Place(string[] arg)
+        private (CmdResult, string) Place(string[] arg)
         {
             bool front = arg[1] == "front";
             if (arg[1] != "front" && arg[1] != "back")
             {
-                return (ResultType.Error, $"Phrase \"{arg[1]}\" is not valid in this context.");
+                return (CmdResult.Error, $"Phrase \"{arg[1]}\" is not valid in this context.");
             }
 
-            if (int.TryParse(arg[2], out int x) && int.TryParse(arg[3], out int y))
+            if (!int.TryParse(arg[2], out int x) || !int.TryParse(arg[3], out int y))
+                return (CmdResult.Error, "Cannot parse coordinates.");
+
+            string blockname = arg[4];
+
+            byte variant;
+            if (arg.Length == 5 || !byte.TryParse(arg[5], out variant))
+                variant = 0;
+
+            if (!Enum.TryParse(blockname, ignoreCase: true, out BlockID blockID) ||
+                !Enum.IsDefined(typeof(BlockID), blockID))
+                return (CmdResult.Error, $"Cannot place block named \"{blockname}\".");
+
+            Vec2Int POS = new Vec2Int(x, y);
+
+            var result = WorldAPI.ReplaceBlock(POS, front, new BlockData1(
+                id: blockID,
+                variant: variant,
+                data: null
+            ), IWorldAPI.BreakMode.Replace);
+
+            if (result != null)
             {
-                string blockname = arg[4];
-
-                byte variant;
-                if (arg.Length == 5 || !byte.TryParse(arg[5], out variant))
-                    variant = 0;
-
-                if (Enum.TryParse(blockname, ignoreCase: true, out BlockID blockID) &&
-                    Enum.IsDefined(typeof(BlockID), blockID))
-                {
-                    var result = WorldAPI.ReplaceBlock(new Vec2Int(x, y), front, new BlockData1(
-                        id: blockID,
-                        variant: variant,
-                        data: null
-                    ), IWorldAPI.BreakMode.Replace);
-
-                    if (result != null)
-                    {
-                        return (ResultType.Success,
-                            $"Block at ({x}, {y}) changed to " + blockID.ToString() + (variant == 0 ? "" : "-" + variant));
-                    }
-                    return (ResultType.Error, $"Position ({x}, {y}) cannot be updated.");
-                }
-                else return (ResultType.Error, $"Cannot place block named \"{blockname}\"!");
+                string blockText = variant == 0 ? blockID.ToString() : $"{blockID}-{variant}";
+                return (CmdResult.Success, $"Block at {POS} changed to {blockText}.");
             }
-            else return (ResultType.Error, "Cannot parse coordinates!");
+
+            return (CmdResult.Error, $"Position {POS} cannot be updated.");
         }
 
-        private (ResultType, string) Particles(string name, string xs, string ys)
+        private (CmdResult, string) Particles(string name, string xs, string ys)
         {
-            if (Enum.TryParse(name, ignoreCase: true, out ParticleID particleID) &&
-                Enum.IsDefined(typeof(ParticleID), particleID))
+            if (!Enum.TryParse(name, ignoreCase: true, out ParticleID particleID) ||
+                !Enum.IsDefined(typeof(ParticleID), particleID))
+                return (CmdResult.Error, $"Cannot spawn particles named \"{name}\".");
+
+            if (!DoubleUtils.TryParse(xs, out double x) || !DoubleUtils.TryParse(ys, out double y))
+                return (CmdResult.Error, "Cannot parse coordinates.");
+
+            Vec2 position = new Vec2(x, y);
+
+            Payload particles = new SpawnParticles(
+                position: position,
+                particleID: particleID
+            );
+
+            IEnumerable<string> nearbyPlayers = PlayerManager.AllObserversInRange(position, Common.PARTICLE_VIEW_DISTANCE);
+            foreach (string nickname in nearbyPlayers)
             {
-                if (double.TryParse(xs, out double x) && double.TryParse(ys, out double y))
-                {
-                    Vec2 position = new Vec2(x, y);
-
-                    Payload particles = new SpawnParticles(
-                        position: position,
-                        particleID: particleID
-                    );
-                    foreach (string nickname in PlayerManager.AllPlayersInRange(position, Common.PARTICLE_VIEW_DISTANCE))
-                    {
-                        QuickServer.Send(nickname, particles);
-                    }
-
-                    string realName = particleID.ToString();
-                    return (ResultType.Success, $"Spawned {realName} particles at position ({x}, {y}).");
-                }
-                else return (ResultType.Error, "Cannot parse coordinates!");
+                QuickServer.Send(nickname, particles);
             }
-            else return (ResultType.Error, $"Cannot spawn particles named \"{name}\"!");
+
+            string realName = particleID.ToString();
+            Vec2 dblPos = new(x, y);
+            return (CmdResult.Success, $"Spawned {realName} particles at position {dblPos}.");
         }
 
-        private (ResultType, string) Seed()
+        private (CmdResult, string) Seed()
         {
             long seed = Generator.Seed;
-            return (ResultType.Log, "Seed: " + seed);
+            return (CmdResult.Log, $"Seed: {seed}");
         }
     }
 }

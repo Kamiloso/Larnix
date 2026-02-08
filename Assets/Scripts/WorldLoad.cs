@@ -36,7 +36,7 @@ namespace Larnix
             Address = tuple.address;
             Authcode = tuple.authcode;
             Nickname = nickname;
-            Password = Common.LoopbackOnlyPassword;
+            Password = Common.LOOPBACK_ONLY_PASSWORD;
 
             // Load client
             SceneManager.LoadScene("Client");
@@ -55,7 +55,7 @@ namespace Larnix
             Address = serverTuple.address;
             Authcode = serverTuple.authcode;
             Nickname = nickname;
-            Password = Common.LoopbackOnlyPassword;
+            Password = Common.LOOPBACK_ONLY_PASSWORD;
 
             // Load client
             SceneManager.LoadScene("Client");

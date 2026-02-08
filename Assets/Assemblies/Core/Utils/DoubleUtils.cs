@@ -1,9 +1,22 @@
 using System;
+using System.Globalization;
 
 namespace Larnix.Core.Utils
 {
     public static class DoubleUtils
     {
+        /// <summary>
+        /// Safe parse, immune to regional settings (uses dots)
+        /// </summary>
+        public static double Parse(string value) =>
+            double.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
+        
+        /// <summary>
+        /// Safe parse, immune to regional settings (uses dots)
+        /// </summary>
+        public static bool TryParse(string value, out double result) =>
+            double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
+        
         public static double BitIncrement(double x, int iterations = 1)
         {
             if (iterations <= 0) return x;
