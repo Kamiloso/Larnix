@@ -5,14 +5,19 @@ using Larnix.Server.Entities;
 using Larnix.Server.Terrain;
 using Larnix.Core.Utils;
 using Larnix.Socket.Backend;
-using Larnix.Core.References;
 using Larnix.Socket.Packets.Control;
 using Larnix.Core.Vectors;
+using System;
+using Larnix.Socket.Packets;
 
 namespace Larnix.Server
 {
     internal class Receiver : Singleton
     {
+        private record RateLimitID(string Owner, Type Type);
+        private Dictionary<RateLimitID, int> _rateLimits = new();
+        private float _rateLimitTimer = 0f;
+
         private WorldAPI WorldAPI => Ref<WorldAPI>();
         private QuickServer QuickServer => Ref<QuickServer>();
         private PlayerManager PlayerManager => Ref<PlayerManager>();
@@ -20,34 +25,73 @@ namespace Larnix.Server
 
         public Receiver(Server server) : base(server)
         {
-            QuickServer.Subscribe<AllowConnection>(_AllowConnection);
-            QuickServer.Subscribe<Stop>(_Stop);
-            QuickServer.Subscribe<PlayerUpdate>(_PlayerUpdate);
-            QuickServer.Subscribe<CodeInfo>(_CodeInfo);
-            QuickServer.Subscribe<BlockChange>(_BlockChange);
+            Subscribe<AllowConnection>(_AllowConnection); // START (server validated)
+            Subscribe<Stop>(_Stop); // STOP (server generated)
+
+            // Assumptions:
+            // - limit packets to ~2x expected max rate
+            // - make soft limit when packet is not necessary for game integrity
+
+            Subscribe<PlayerUpdate>(_PlayerUpdate, maxPerSecond: 100, softLimit: true);
+            Subscribe<CodeInfo>(_CodeInfo, maxPerSecond: 10);
+            Subscribe<BlockChange>(_BlockChange, maxPerSecond: 500); // TODO: Limit for survival players
+        }
+
+        public void Tick(float deltaTime)
+        {
+            _rateLimitTimer += deltaTime;
+            if (_rateLimitTimer >= 1f)
+            {
+                _rateLimitTimer %= 1f;
+                _rateLimits.Clear();
+            }
+        }
+
+        private void Subscribe<T>(Action<T, string> callback, int maxPerSecond = 0, bool softLimit = false) where T : Payload, new()
+        {
+            if (maxPerSecond > 0) // rate limit
+            {
+                QuickServer.Subscribe<T>((msg, owner) =>
+                {
+                    var id = new RateLimitID(owner, typeof(T));
+                    int current = _rateLimits.GetValueOrDefault(id, 0);
+
+                    if (current < maxPerSecond)
+                    {
+                        _rateLimits[id] = current + 1;
+                        callback(msg, owner);
+                    }
+                    else
+                    {
+                        if (!softLimit) // hard limit - disconnect client
+                        {
+                            Core.Debug.Log("Rate limit for packet " + typeof(T).Name + " from " + owner + " exceeded. Disconnecting...");
+                            QuickServer.FinishConnection(owner);
+                        }
+                    }
+                });
+            }
+            else // no rate limit
+            {
+                QuickServer.Subscribe<T>(callback);
+            }
         }
 
         private void _AllowConnection(AllowConnection msg, string owner)
         {
-            // Create player connection
             PlayerManager.JoinPlayer(owner);
-
-            // Info to console
             Core.Debug.Log(owner + " joined the game.");
         }
 
         private void _Stop(Stop msg, string owner)
         {
-            // Remove player connection
             PlayerManager.DisconnectPlayer(owner);
-
-            // Info to console
             Core.Debug.Log(owner + " disconnected.");
         }
 
         private void _PlayerUpdate(PlayerUpdate msg, string owner)
         {
-            // check if most recent data (fast mode receiving - over raw udp)
+            // check if most recent data (fast mode receiving = over raw udp)
             PlayerUpdate lastPacket = PlayerManager.GetRecentPlayerUpdate(owner);
             if (lastPacket == null || lastPacket.FixedFrame < msg.FixedFrame)
             {
@@ -76,10 +120,10 @@ namespace Larnix.Server
             if (code == 0) // place item
             {
                 bool has_item = true;
-                bool in_chunk = PlayerManager.PlayerHasChunk(owner, chunk);
+                bool has_chunk = PlayerManager.PlayerHasChunk(owner, chunk);
                 bool can_place = WorldAPI.CanPlaceBlock(POS, front, msg.Item);
 
-                bool success = has_item && in_chunk && can_place;
+                bool success = has_item && has_chunk && can_place;
 
                 if (success)
                 {
@@ -92,10 +136,10 @@ namespace Larnix.Server
             else if (code == 1) // break using item
             {
                 bool has_tool = true;
-                bool in_chunk = PlayerManager.PlayerHasChunk(owner, chunk);
+                bool has_chunk = PlayerManager.PlayerHasChunk(owner, chunk);
                 bool can_break = WorldAPI.CanBreakBlock(POS, front, msg.Item, msg.Tool);
 
-                bool success = has_tool && in_chunk && can_break;
+                bool success = has_tool && has_chunk && can_break;
 
                 if (success)
                 {

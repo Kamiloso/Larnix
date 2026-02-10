@@ -43,6 +43,7 @@ namespace Larnix.Server
         private EntityDataManager EntityDataManager => Ref<EntityDataManager>();
         private BlockDataManager BlockDataManager => Ref<BlockDataManager>();
         private UserManager UserManager => Ref<UserManager>();
+        private Receiver Receiver => Ref<Receiver>();
 
         public readonly Action CloseServer;
         private bool _disposed = false;
@@ -214,10 +215,11 @@ namespace Larnix.Server
             ServerTick++;
             FixedFrame++;
 
-            // Refresh QuickServer & process packets (with callbacks)
+            // Tick technical singletons
 
             float realTimeElapsed = GetTimeElapsed();
-            _quickServer.ServerTick(realTimeElapsed);
+            Receiver.Tick(realTimeElapsed); // for limits
+            _quickServer.ServerTick(realTimeElapsed); // refresh & process packets
 
             // Process server logic
 
@@ -245,7 +247,9 @@ namespace Larnix.Server
             }
 
             if (FixedFrame % Config.DataSavingPeriodFrames == 0)
+            {
                 SaveAllNow();
+            }
         }
 
         private void SaveAllNow()

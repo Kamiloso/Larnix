@@ -11,6 +11,7 @@ using Larnix.Core.Utils;
 
 namespace Larnix.Socket
 {
+    internal record PacketPair(HeaderSpan Packet, string Owner);
     internal class ConnDict : IDisposable
     {
         // --- Properties ---
@@ -26,6 +27,8 @@ namespace Larnix.Socket
         private readonly Dictionary<IPEndPoint, string> _epToNick = new();
         private readonly Dictionary<IPEndPoint, Connection> _connections = new();
         private readonly Dictionary<IPEndPoint, PreLoginBuffer> _preLogins = new();
+
+        private bool _disposed = false;
 
         // --- Informative ---
         public enum ConnState { None, PreLogin, Connected }
@@ -73,7 +76,9 @@ namespace Larnix.Socket
                 IPEndPoint alreadyConnectedEp = EndPointOf(nickname);
                 if (alreadyConnectedEp != null)
                 {
-                    Disconnect(alreadyConnectedEp);
+                    Core.Debug.Log(nickname + " is trying to join from " + endPoint + " but is already on the server. Disconnecting...");
+                    KickDealyed(alreadyConnectedEp);
+                    return false; // reject, player may connect once again anyway (rewriting this code to accept would be tedious)
                 }
 
                 byte[] bytes;
@@ -132,9 +137,9 @@ namespace Larnix.Socket
             }
         }
 
-        private Queue<(HeaderSpan packet, string owner)> ReceiveAll()
+        private Queue<PacketPair> ReceiveAll()
         {
-            Queue<(HeaderSpan, string)> received = new();
+            Queue<PacketPair> received = new();
 
             foreach (IPEndPoint endPoint in _connections.Keys.OrderBy(_ => Common.Rand()))
             {
@@ -143,16 +148,16 @@ namespace Larnix.Socket
 
                 while (packets.Count > 0)
                 {
-                    received.Enqueue((packets.Dequeue(), nickname));
+                    received.Enqueue(new PacketPair(packets.Dequeue(), nickname));
                 }
             }
             
             return received;
         }
 
-        public Queue<(HeaderSpan packet, string owner)> TickAndReceive(float deltaTime)
+        public Queue<PacketPair> TickAndReceive(float deltaTime)
         {
-            Queue<(HeaderSpan, string)> received = ReceiveAll();
+            Queue<PacketPair> received = ReceiveAll();
 
             foreach (var kvp in _connections.ToList())
             {
@@ -160,43 +165,54 @@ namespace Larnix.Socket
                 var connection = kvp.Value;
 
                 connection.Tick(deltaTime);
-                if (connection.IsDead)
+                if (connection.IsDead) // terminate connection if it's dead
                 {
-                    received.Enqueue((connection.GenerateStop(), _epToNick[endPoint]));
-                    Disconnect(endPoint);
+                    received.Enqueue(new PacketPair(
+                        Packet: connection.GenerateStop(),
+                        Owner: _epToNick[endPoint])
+                        );
+                    
+                    var nickname = _epToNick[endPoint];
+                    if (_connections.TryGetValue(endPoint, out var conn))
+                    {
+                        conn.Dispose();
+                    }
+
+                    _nickToEp.Remove(nickname);
+                    _epToNick.Remove(endPoint);
+                    _connections.Remove(endPoint);
                 }
             }
             return received;
         }
 
-        public void Disconnect(IPEndPoint endPoint)
+        public void DiscardIncoming(IPEndPoint endPoint)
         {
-            var state = ConnStateOf(endPoint);
-
-            if (state == ConnState.Connected)
-            {
-                var nickname = _epToNick[endPoint];   
-                if (_connections.TryGetValue(endPoint, out var conn))
-                {
-                    conn.Dispose();
-                }
-
-                _nickToEp.Remove(nickname);
-                _epToNick.Remove(endPoint);
-                _connections.Remove(endPoint);
-            }
-            else if (state == ConnState.PreLogin)
+            if (ConnStateOf(endPoint) == ConnState.PreLogin)
             {
                 _preLogins.Remove(endPoint);
             }
-            else return;
+        }
+
+        public void KickDealyed(IPEndPoint endPoint)
+        {
+            if (_connections.TryGetValue(endPoint, out var conn))
+            {
+                conn.Dispose();
+                // don't remove yet, will be removed in TickAndReceive
+            }
         }
 
         public void Dispose()
         {
-            foreach (var endPoint in _connections.Keys.ToList())
+            if (!_disposed)
             {
-                Disconnect(endPoint);
+                _disposed = true;
+
+                foreach (var conn in _connections.Values)
+                {
+                    conn.Dispose();
+                }
             }
         }
     }

@@ -282,7 +282,7 @@ namespace Larnix.Socket.Channel
 
         public void Dispose()
         {
-            if(IsDead) return;
+            if (IsDead) return;
 
             // Send 3 FIN flags (to ensure they arrive).
             // If they don't, protocol will automatically disconnect after a few seconds.

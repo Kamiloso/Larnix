@@ -21,7 +21,7 @@ namespace Larnix.Socket.Backend
         public string Authcode { get; init; }
         internal long Secret { get; init; }
         internal long RunID { get; init; }
-        public ushort PlayerCount => (ushort)_connections.Count;
+        public ushort PlayerCount => (ushort)_connDict.Count;
 
         // --- Public classes ---
         public QuickConfig Config => _config;
@@ -30,7 +30,7 @@ namespace Larnix.Socket.Backend
         // --- Private classes ---
         private readonly KeyRSA _keyRSA;
         private readonly TripleSocket _udpSocket;
-        private readonly ConnDict _connections;
+        private readonly ConnDict _connDict;
         private readonly CoroutineRunner _coroutineRunner;
         private readonly QuickConfig _config;
         private readonly UserManager _userManager;
@@ -54,7 +54,7 @@ namespace Larnix.Socket.Backend
             // classes
             _keyRSA = new KeyRSA(serverConfig.DataPath, "private_key.pem"); // 1
             _udpSocket = new TripleSocket(serverConfig.Port, serverConfig.IsLoopback); // 2
-            _connections = new ConnDict(_udpSocket, serverConfig.MaxClients); // 3
+            _connDict = new ConnDict(_udpSocket, serverConfig.MaxClients); // 3
             _coroutineRunner = new CoroutineRunner(); // 4
 
             // public API
@@ -67,8 +67,8 @@ namespace Larnix.Socket.Backend
 
             // limiters
             _heavyPacketLimiter = new TrafficLimiter<InternetID>(
-                maxTrafficLocal: 5, // MAX_HEAVY_PACKETS_PER_INTERNET_ID_PER_SECOND
-                maxTrafficGlobal: 50 // MAX_HEAVY_PACKETS_GLOBAL_PER_SECOND
+                maxTrafficLocal: 5999, // MAX_HEAVY_PACKETS_PER_INTERNET_ID_PER_SECOND
+                maxTrafficGlobal: 50999 // MAX_HEAVY_PACKETS_GLOBAL_PER_SECOND
             );
             _hashLimiter = new ConcurrentLimiter<InternetID>(
                 maxConcurrentLocal: 6, // MAX_HASHINGS_PER_INTERNET_ID_PER_MINUTE
@@ -112,12 +112,12 @@ namespace Larnix.Socket.Backend
             }
 
             // Tick & Receive from connections
-            Queue<(HeaderSpan packet, string owner)> packets = _connections.TickAndReceive(deltaTime);
+            Queue<PacketPair> packets = _connDict.TickAndReceive(deltaTime);
             while (packets.Count > 0)
             {
                 var element = packets.Dequeue();
-                var packet = element.packet;
-                string owner = element.owner;
+                var packet = element.Packet;
+                string owner = element.Owner;
 
                 if (Subscriptions.TryGetValue(packet.ID, out var Execute))
                 {
@@ -167,7 +167,7 @@ namespace Larnix.Socket.Backend
                         // start new connection
                         if (PayloadBox.TryDeserialize(bytes, KeyEmpty.GetInstance(), out var synBox) &&
                             Payload.TryConstructPayload<AllowConnection>(synBox.Bytes, out var allowcon) &&
-                            _connections.TryAddPreLogin(target, synBox))
+                            _connDict.TryAddPreLogin(target, synBox))
                         {
                             P_LoginTry logtry = allowcon.ToLoginTry();
                             StartLogin(target, logtry, LoginMode.Establishment);
@@ -176,7 +176,7 @@ namespace Larnix.Socket.Backend
                     else
                     {
                         // established connection packet
-                        _connections.EnqueueReceivedPacket(target, bytes);
+                        _connDict.EnqueueReceivedPacket(target, bytes);
                     }
                 }
             }
@@ -235,33 +235,33 @@ namespace Larnix.Socket.Backend
 
         public void Send(string nickname, Payload packet, bool safemode = true)
         {
-            IPEndPoint endPoint = _connections.EndPointOf(nickname);
-            _connections.SendTo(endPoint, packet, safemode);
+            IPEndPoint endPoint = _connDict.EndPointOf(nickname);
+            _connDict.SendTo(endPoint, packet, safemode);
         }
 
         public void Broadcast(Payload packet, bool safemode = true)
         {
-            _connections.SendToAll(packet, safemode);
+            _connDict.SendToAll(packet, safemode);
         }
 
         public IPEndPoint GetClientEndPoint(string nickname)
         {
-            IPEndPoint endPoint = _connections.EndPointOf(nickname);
-            Connection conn = _connections.GetConnectionObject(endPoint);
+            IPEndPoint endPoint = _connDict.EndPointOf(nickname);
+            Connection conn = _connDict.GetConnectionObject(endPoint);
             return conn?.EndPoint;
         }
 
         public float GetPing(string nickname)
         {
-            IPEndPoint endPoint = _connections.EndPointOf(nickname);
-            Connection conn = _connections.GetConnectionObject(endPoint);
+            IPEndPoint endPoint = _connDict.EndPointOf(nickname);
+            Connection conn = _connDict.GetConnectionObject(endPoint);
             return conn?.AvgRTT ?? 0f;
         }
 
         public void FinishConnection(string nickname)
         {
-            IPEndPoint endPoint = _connections.EndPointOf(nickname);
-            _connections.Disconnect(endPoint);
+            IPEndPoint endPoint = _connDict.EndPointOf(nickname);
+            _connDict.KickDealyed(endPoint);
         }
 
         private void StartLogin(IPEndPoint target, P_LoginTry logtry, LoginMode mode, object ad1 = null)
@@ -274,14 +274,14 @@ namespace Larnix.Socket.Backend
                     LoginCoroutine(target, logtry,
                     ExecuteSuccess: () =>
                     {
-                        if (_connections.TryPromoteConnection(target))
+                        if (_connDict.TryPromoteConnection(target))
                             _userManager.IncrementChallengeID(nickname);
                         else
-                            _connections.Disconnect(target);
+                            _connDict.DiscardIncoming(target);
                     },
                     ExecuteFailed: () =>
                     {
-                        _connections.Disconnect(target);
+                        _connDict.DiscardIncoming(target);
                     }
                     ));
             }
@@ -471,7 +471,7 @@ namespace Larnix.Socket.Backend
                 _disposed = true;
 
                 _coroutineRunner.Dispose(); // 4
-                _connections.Dispose(); // 3
+                _connDict.Dispose(); // 3
                 _udpSocket.Dispose(); // 2
                 _keyRSA.Dispose(); // 1
             }
