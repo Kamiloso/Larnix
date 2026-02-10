@@ -76,9 +76,8 @@ namespace Larnix.Socket
                 IPEndPoint alreadyConnectedEp = EndPointOf(nickname);
                 if (alreadyConnectedEp != null)
                 {
-                    Core.Debug.Log(nickname + " is trying to join from " + endPoint + " but is already on the server. Disconnecting...");
-                    KickDealyed(alreadyConnectedEp);
-                    return false; // reject, player may connect once again anyway (rewriting this code to accept would be tedious)
+                    KickRequest(alreadyConnectedEp);
+                    return false; // reject, player may connect once again anyway (rewriting this code to accept would be a nightmare)
                 }
 
                 byte[] bytes;
@@ -137,35 +136,26 @@ namespace Larnix.Socket
             }
         }
 
-        private Queue<PacketPair> ReceiveAll()
+        public Queue<PacketPair> TickAndReceive(float deltaTime)
         {
             Queue<PacketPair> received = new();
 
             foreach (IPEndPoint endPoint in _connections.Keys.OrderBy(_ => Common.Rand()))
             {
-                Queue<HeaderSpan> packets = _connections[endPoint].Receive();
-                string nickname = _epToNick[endPoint];
-
-                while (packets.Count > 0)
-                {
-                    received.Enqueue(new PacketPair(packets.Dequeue(), nickname));
-                }
-            }
-            
-            return received;
-        }
-
-        public Queue<PacketPair> TickAndReceive(float deltaTime)
-        {
-            Queue<PacketPair> received = ReceiveAll();
-
-            foreach (var kvp in _connections.ToList())
-            {
-                var endPoint = kvp.Key;
-                var connection = kvp.Value;
+                var connection = _connections[endPoint];
 
                 connection.Tick(deltaTime);
-                if (connection.IsDead) // terminate connection if it's dead
+                if (!connection.IsDead) // receive all
+                {
+                    Queue<HeaderSpan> recv = connection.Receive();
+                    string nickname = _epToNick[endPoint];
+
+                    while (recv.Count > 0)
+                    {
+                        received.Enqueue(new PacketPair(recv.Dequeue(), nickname));
+                    }
+                }
+                else // terminate connection if dead
                 {
                     received.Enqueue(new PacketPair(
                         Packet: connection.GenerateStop(),
@@ -194,12 +184,11 @@ namespace Larnix.Socket
             }
         }
 
-        public void KickDealyed(IPEndPoint endPoint)
+        public void KickRequest(IPEndPoint endPoint)
         {
             if (_connections.TryGetValue(endPoint, out var conn))
             {
                 conn.Dispose();
-                // don't remove yet, will be removed in TickAndReceive
             }
         }
 

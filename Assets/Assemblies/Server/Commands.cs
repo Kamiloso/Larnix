@@ -152,8 +152,11 @@ namespace Larnix.Server
 
             foreach (string nickname in PlayerManager.AllPlayers())
             {
-                IPEndPoint endPoint = QuickServer.GetClientEndPoint(nickname);
                 string playerState = PlayerManager.GetPlayerState(nickname).ToString().ToUpper();
+                
+                if (!QuickServer.TryGetClientEndPoint(nickname, out IPEndPoint endPoint))
+                    endPoint = new IPEndPoint(IPAddress.Any, 0); // unknown
+
                 sb.Append($" | {nickname} from {endPoint} is {playerState}\n");
             }
 
@@ -184,8 +187,8 @@ namespace Larnix.Server
             if (PlayerManager.GetPlayerState(nickname) == PlayerManager.PlayerState.None)
                 return (CmdResult.Error, $"Player {nickname} is not online.");
 
-            QuickServer.FinishConnection(nickname);
-            return (CmdResult.Success, $"Player {nickname} has been kicked.");
+            QuickServer.RequestFinishConnection(nickname);
+            return (CmdResult.Success, $"Player {nickname} has been marked to be kicked.");
         }
 
         private (CmdResult, string) Kill(string nickname)

@@ -67,8 +67,8 @@ namespace Larnix.Socket.Backend
 
             // limiters
             _heavyPacketLimiter = new TrafficLimiter<InternetID>(
-                maxTrafficLocal: 5999, // MAX_HEAVY_PACKETS_PER_INTERNET_ID_PER_SECOND
-                maxTrafficGlobal: 50999 // MAX_HEAVY_PACKETS_GLOBAL_PER_SECOND
+                maxTrafficLocal: 5, // MAX_HEAVY_PACKETS_PER_INTERNET_ID_PER_SECOND
+                maxTrafficGlobal: 50 // MAX_HEAVY_PACKETS_GLOBAL_PER_SECOND
             );
             _hashLimiter = new ConcurrentLimiter<InternetID>(
                 maxConcurrentLocal: 6, // MAX_HASHINGS_PER_INTERNET_ID_PER_MINUTE
@@ -233,10 +233,24 @@ namespace Larnix.Socket.Backend
             };
         }
 
+        public bool TryGetClientEndPoint(string nickname, out IPEndPoint endPoint)
+        {
+            IPEndPoint endPoint1 = _connDict.EndPointOf(nickname);
+            if (endPoint1 != null)
+            {
+                endPoint = endPoint1;
+                return true;
+            }
+            endPoint = null;
+            return false;
+        }
+
         public void Send(string nickname, Payload packet, bool safemode = true)
         {
-            IPEndPoint endPoint = _connDict.EndPointOf(nickname);
-            _connDict.SendTo(endPoint, packet, safemode);
+            if (TryGetClientEndPoint(nickname, out IPEndPoint endPoint))
+            {
+                _connDict.SendTo(endPoint, packet, safemode);
+            }
         }
 
         public void Broadcast(Payload packet, bool safemode = true)
@@ -244,24 +258,22 @@ namespace Larnix.Socket.Backend
             _connDict.SendToAll(packet, safemode);
         }
 
-        public IPEndPoint GetClientEndPoint(string nickname)
-        {
-            IPEndPoint endPoint = _connDict.EndPointOf(nickname);
-            Connection conn = _connDict.GetConnectionObject(endPoint);
-            return conn?.EndPoint;
-        }
-
         public float GetPing(string nickname)
         {
-            IPEndPoint endPoint = _connDict.EndPointOf(nickname);
-            Connection conn = _connDict.GetConnectionObject(endPoint);
-            return conn?.AvgRTT ?? 0f;
+            if (TryGetClientEndPoint(nickname, out IPEndPoint endPoint))
+            {
+                Connection conn = _connDict.GetConnectionObject(endPoint);
+                return conn.AvgRTT;
+            }
+            return 0f;
         }
 
-        public void FinishConnection(string nickname)
+        public void RequestFinishConnection(string nickname)
         {
-            IPEndPoint endPoint = _connDict.EndPointOf(nickname);
-            _connDict.KickDealyed(endPoint);
+            if (TryGetClientEndPoint(nickname, out IPEndPoint endPoint))
+            {
+                _connDict.KickRequest(endPoint);
+            }
         }
 
         private void StartLogin(IPEndPoint target, P_LoginTry logtry, LoginMode mode, object ad1 = null)

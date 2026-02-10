@@ -15,8 +15,10 @@ namespace Larnix.Server
     internal class Receiver : Singleton
     {
         private record RateLimitID(string Owner, Type Type);
-        private Dictionary<RateLimitID, int> _rateLimits = new();
+        private readonly Dictionary<RateLimitID, int> _rateLimits = new();
         private float _rateLimitTimer = 0f;
+        
+        private readonly HashSet<string> _blackList = new();
 
         private WorldAPI WorldAPI => Ref<WorldAPI>();
         private QuickServer QuickServer => Ref<QuickServer>();
@@ -49,9 +51,12 @@ namespace Larnix.Server
 
         private void Subscribe<T>(Action<T, string> callback, int maxPerSecond = 0, bool softLimit = false) where T : Payload, new()
         {
-            if (maxPerSecond > 0) // rate limit
+            QuickServer.Subscribe<T>((msg, owner) =>
             {
-                QuickServer.Subscribe<T>((msg, owner) =>
+                if (typeof(T) != typeof(Stop) && _blackList.Contains(owner))
+                    return; // discard packets from blacklisted clients
+
+                if (maxPerSecond > 0) // rate limit
                 {
                     var id = new RateLimitID(owner, typeof(T));
                     int current = _rateLimits.GetValueOrDefault(id, 0);
@@ -65,16 +70,17 @@ namespace Larnix.Server
                     {
                         if (!softLimit) // hard limit - disconnect client
                         {
-                            Core.Debug.Log("Rate limit for packet " + typeof(T).Name + " from " + owner + " exceeded. Disconnecting...");
-                            QuickServer.FinishConnection(owner);
+                            Core.Debug.Log("Rate limit for packet " + typeof(T).Name + " from " + owner + " exceeded.");
+                            QuickServer.RequestFinishConnection(owner);
+                            _blackList.Add(owner);
                         }
                     }
-                });
-            }
-            else // no rate limit
-            {
-                QuickServer.Subscribe<T>(callback);
-            }
+                }
+                else // no rate limit
+                {
+                    callback(msg, owner);
+                }
+            });
         }
 
         private void _AllowConnection(AllowConnection msg, string owner)
@@ -85,6 +91,7 @@ namespace Larnix.Server
 
         private void _Stop(Stop msg, string owner)
         {
+            _blackList.Remove(owner);
             PlayerManager.DisconnectPlayer(owner);
             Core.Debug.Log(owner + " disconnected.");
         }
