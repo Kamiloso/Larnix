@@ -7,6 +7,7 @@ using Larnix.Core.Physics;
 using Larnix.Core.References;
 using Larnix.Core.Vectors;
 using System;
+using Larnix.Core.Utils;
 
 namespace Larnix.Server.Entities
 {
@@ -40,10 +41,12 @@ namespace Larnix.Server.Entities
             {
                 entityData = new EntityData(
                     id: EntityID.Player,
-                    position: new Vec2(0.0, 0.0),
+                    position: new Vec2(0, 0),
                     rotation: 0.0f
                 );
             }
+
+            entityData.Position += Common.UP_EPSILON;
 
             Initialize(uid, entityData);
         }
@@ -52,6 +55,8 @@ namespace Larnix.Server.Entities
         {
             if (entityData.ID == EntityID.Player)
                 throw new ArgumentException("Cannot create player instance as a generic entity!");
+
+            entityData.Position += Common.UP_EPSILON;
 
             ulong uid2 = uid ?? EntityManager.GetNextUID();
             Initialize(uid2, entityData);

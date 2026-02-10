@@ -7,6 +7,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
+using Larnix.Core.Vectors;
 
 namespace Larnix.Core.Utils
 {
@@ -20,6 +21,8 @@ namespace Larnix.Core.Utils
 
         public const float FIXED_TIME = 0.02f;
         public const double PARTICLE_VIEW_DISTANCE = 128.0;
+        
+        public static Vec2 UP_EPSILON => new Vec2(0.00, 0.01);
 
         private static IEnumerable<string> _denyWorldNames = new HashSet<string>
         {

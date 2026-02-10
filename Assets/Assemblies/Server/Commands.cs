@@ -17,9 +17,10 @@ using Larnix.Socket.Packets;
 using Larnix.Core.Utils;
 using Larnix.Server.Data;
 using System.Net;
+using Larnix.Core.Json;
 using Console = Larnix.Core.Console;
 using CmdResult = Larnix.Core.ICmdExecutor.CmdResult;
-using Larnix.Core.Json;
+using PlayerState = Larnix.Server.Entities.PlayerManager.PlayerState;
 
 namespace Larnix.Server
 {
@@ -71,7 +72,7 @@ namespace Larnix.Server
             }
             else // from player
             {
-                bool player_online = PlayerManager.GetPlayerState(sender) != PlayerManager.PlayerState.None;
+                bool player_online = PlayerManager.GetPlayerState(sender) != PlayerState.None;
                 if (player_online)
                 {
                     bool player_admin = /*Config.AdminList.Contains(sender)*/ false;
@@ -167,15 +168,14 @@ namespace Larnix.Server
 
         private (CmdResult, string) Tp(string nickname, string xt, string yt)
         {
-            if (PlayerManager.GetPlayerState(nickname) != PlayerManager.PlayerState.Alive)
+            if (PlayerManager.GetPlayerState(nickname) != PlayerState.Alive)
                 return (CmdResult.Error, $"Player {nickname} is not alive.");
 
             if (!DoubleUtils.TryParse(xt, out double x) || !DoubleUtils.TryParse(yt, out double y))
                 return (CmdResult.Error, "Cannot parse coordinates.");
 
             Vec2 targetPos = new Vec2(x, y);
-            Vec2 normalOffset = new Vec2(0.00, 0.01);
-            Vec2 fullTargetPos = targetPos + normalOffset;
+            Vec2 fullTargetPos = targetPos + Common.UP_EPSILON;
 
             QuickServer.Send(nickname, new Teleport(fullTargetPos));
             ((Player)EntityManager.GetPlayerController(nickname).GetRealController()).AcceptTeleport(fullTargetPos);
@@ -184,7 +184,7 @@ namespace Larnix.Server
 
         private (CmdResult, string) Kick(string nickname)
         {
-            if (PlayerManager.GetPlayerState(nickname) == PlayerManager.PlayerState.None)
+            if (PlayerManager.GetPlayerState(nickname) == PlayerState.None)
                 return (CmdResult.Error, $"Player {nickname} is not online.");
 
             QuickServer.RequestFinishConnection(nickname);
@@ -193,7 +193,7 @@ namespace Larnix.Server
 
         private (CmdResult, string) Kill(string nickname)
         {
-            if (PlayerManager.GetPlayerState(nickname) != PlayerManager.PlayerState.Alive)
+            if (PlayerManager.GetPlayerState(nickname) != PlayerState.Alive)
                 return (CmdResult.Error, $"Player {nickname} is not alive.");
 
             ulong uid = PlayerManager.GetPlayerUID(nickname);
