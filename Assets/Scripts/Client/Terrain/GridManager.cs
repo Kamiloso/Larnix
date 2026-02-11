@@ -18,7 +18,7 @@ namespace Larnix.Client.Terrain
     {
         private const double LOCK_TIMEOUT = 5.0; // seconds
 
-        private readonly Dictionary<Vec2Int, StaticCollider> _blockColliders = new();
+        private readonly Dictionary<Vec2Int, IEnumerable<StaticCollider>> _colliderCollections = new();
         private readonly List<BlockLock> _lockedBlocks = new();
 
         private ParticleManager ParticleManager => Ref.ParticleManager;
@@ -155,24 +155,32 @@ namespace Larnix.Client.Terrain
 
         private void UpdateBlockCollider(Vec2Int POS, BlockData2 block)
         {
-            if (_blockColliders.TryGetValue(POS, out var statCollider))
-            {
-                PhysicsManager.RemoveColliderByReference(statCollider);
-                _blockColliders.Remove(POS);
+            { // free old collider
+                if (_colliderCollections.TryGetValue(POS, out var staticColliders))
+                {
+                    foreach (var collider in staticColliders)
+                    {
+                        PhysicsManager.RemoveColliderByReference(collider);
+                    }
+                    _colliderCollections.Remove(POS);
+                }
             }
 
-            if(block != null)
+            if (block != null)
             {
                 IHasCollider iface = BlockFactory.GetSlaveInstance<IHasCollider>(block.Front.ID);
                 if (iface != null)
                 {
-                    StaticCollider statCol = StaticCollider.Create(
-                        size: new Vec2(iface.COLLIDER_WIDTH(), iface.COLLIDER_HEIGHT()),
-                        offset: new Vec2(iface.COLLIDER_OFFSET_X(), iface.COLLIDER_OFFSET_Y()),
-                        POS: POS
-                        );
-                    PhysicsManager.AddCollider(statCol);
-                    _blockColliders.Add(POS, statCol);
+                    IEnumerable<StaticCollider> staticColliders = iface
+                        .STATIC_GetAllColliders(block.Front.ID, block.Front.Variant)
+                        .Select(col => IHasCollider.MakeStaticCollider(col, POS))
+                        .ToList();
+
+                    _colliderCollections.Add(POS, staticColliders);
+                    foreach (var collider in staticColliders)
+                    {
+                        PhysicsManager.AddCollider(collider);
+                    }
                 }
             }
         }

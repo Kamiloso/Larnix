@@ -58,9 +58,9 @@ namespace Larnix
 
             foreach (var pack in ResourcePackManager.Packs)
             {
-                string filePath = pack.GetFilePath(relativePath);
+                string filePath = pack.FindExistingFilePath(relativePath);
 
-                if (File.Exists(filePath))
+                if (filePath != null)
                 {
                     try
                     {
@@ -117,9 +117,40 @@ namespace Larnix
                 Priority = priority;
             }
 
-            public string GetFilePath(string relativePath)
+            public string FindExistingFilePath(string relativePath)
             {
-                return System.IO.Path.Combine(Path, relativePath);
+                if (string.IsNullOrEmpty(relativePath))
+                    return null;
+                
+                // direct path check first
+                string candidate = System.IO.Path.Combine(Path, relativePath);
+                if (File.Exists(candidate))
+                    return candidate;
+
+                // search all subdirectories
+                string dirPart = System.IO.Path.GetDirectoryName(relativePath);
+                string fileName = System.IO.Path.GetFileName(relativePath);
+
+                if (string.IsNullOrEmpty(dirPart) || string.IsNullOrEmpty(fileName))
+                    return null;
+
+                string searchRoot = System.IO.Path.Combine(Path, dirPart);
+                if (!Directory.Exists(searchRoot))
+                    return null;
+
+                try
+                {
+                    foreach (var f in Directory.EnumerateFiles(searchRoot, fileName, SearchOption.AllDirectories))
+                    {
+                        return f;
+                    }
+                }
+                catch (Exception)
+                {
+                    return null;
+                }
+
+                return null;
             }
         }
 

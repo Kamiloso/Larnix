@@ -1,13 +1,22 @@
 using System.Collections;
 using System.Collections.Generic;
+using Larnix.Blocks.Structs;
+using Larnix.Core.Physics;
+using Larnix.Core.Vectors;
 
 namespace Larnix.Blocks
 {
+    public record Collider(Vec2 Offset, Vec2 Size);
     public interface IHasCollider : IBlockInterface
     {
-        float COLLIDER_OFFSET_X();
-        float COLLIDER_OFFSET_Y();
-        float COLLIDER_WIDTH();
-        float COLLIDER_HEIGHT();
+        IEnumerable<Collider> STATIC_GetAllColliders(BlockID ID, byte variant);
+
+        public static StaticCollider MakeStaticCollider(Collider collider, Vec2Int POS)
+        {
+            return new StaticCollider(
+                POS.ToVec2() + collider.Offset,
+                collider.Size
+            );
+        }
     }
 }

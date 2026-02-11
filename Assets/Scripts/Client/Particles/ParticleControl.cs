@@ -12,7 +12,7 @@ namespace Larnix.Client.Particles
         [SerializeField] ParticleSystem ParticleSystem;
         [SerializeField] bool InheritsBlockTexture;
 
-        private GameObject BackTilemapPrefab => Resources.GetPrefab("Tilemaps", "TilemapBack");
+        private GameObject BackTilemapPrefab => Prefabs.GetPrefab("Tilemaps", "TilemapBack");
         private ParticleSystemRenderer Renderer;
         private Color FrontColor;
         private Color BackColor;

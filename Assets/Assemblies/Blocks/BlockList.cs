@@ -25,5 +25,9 @@ namespace Larnix.Blocks
         Sword = 16,
         Conway = 17,
         TechExecute = 18,
+        Battery = 19,
+        ElectricPipe = 20,
+        ElectricPipeLit = 21,
+        Lamp = 22,
     }
 }

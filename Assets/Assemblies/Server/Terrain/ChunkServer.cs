@@ -25,9 +25,11 @@ namespace Larnix.Server.Terrain
         private readonly Vec2Int _chunkpos;
         private readonly BlockServer[,] _blocksFront = new BlockServer[CHUNK_SIZE, CHUNK_SIZE];
         private readonly BlockServer[,] _blocksBack = new BlockServer[CHUNK_SIZE, CHUNK_SIZE];
-        private readonly Dictionary<Vec2Int, StaticCollider> _staticColliders = new();
+        private readonly Dictionary<Vec2Int, IEnumerable<StaticCollider>> _colliderCollections = new();
 
         public readonly BlockData2[,] ActiveChunkReference;
+
+        private bool _disposed = false;
 
         public ChunkServer(RefObject<Server> reff, Vec2Int chunkpos) : base(reff)
         {
@@ -104,50 +106,83 @@ namespace Larnix.Server.Terrain
                 BlockSender.AddBlockUpdate(new BlockUpdateRecord(POS, newHeader, breakMode));
             }
 
+            // Reflag for frame events
+            
+            if (breakMode == IWorldAPI.BreakMode.Weak)
+            {
+                _blocksFront[pos.x, pos.y].ReflagForEvents();
+                _blocksBack[pos.x, pos.y].ReflagForEvents();
+            }
+
             return result;
         }
 
         private void RefreshCollider(Vec2Int pos)
         {
-            if(_staticColliders.TryGetValue(pos, out var statCollider))
-            {
-                PhysicsManager.RemoveColliderByReference(statCollider);
-                _staticColliders.Remove(pos);
+            { // free old colliders
+                if (_colliderCollections.TryGetValue(pos, out var staticColliders))
+                {
+                    foreach (var collider in staticColliders)
+                    {
+                        PhysicsManager.RemoveColliderByReference(collider);
+                    }
+                    _colliderCollections.Remove(pos);
+                }
             }
 
             BlockServer blockServer = _blocksFront[pos.x, pos.y];
+            BlockData1 blockData = blockServer.BlockData;
+
             IHasCollider iface = blockServer as IHasCollider;
-            if(iface != null)
+            if (iface != null)
             {
-                StaticCollider staticCollider = StaticCollider.Create(
-                    new Vec2(iface.COLLIDER_WIDTH(), iface.COLLIDER_HEIGHT()),
-                    new Vec2(iface.COLLIDER_OFFSET_X(), iface.COLLIDER_OFFSET_Y()),
-                    BlockUtils.GlobalBlockCoords(_chunkpos, pos)
-                    );
-                _staticColliders[pos] = staticCollider;
-                PhysicsManager.AddCollider(staticCollider);
+                Vec2Int POS = BlockUtils.GlobalBlockCoords(_chunkpos, pos);
+                IEnumerable<StaticCollider> staticColliders = iface
+                    .STATIC_GetAllColliders(blockData.ID, blockData.Variant)
+                    .Select(col => IHasCollider.MakeStaticCollider(col, POS))
+                    .ToList();
+
+                _colliderCollections.Add(pos, staticColliders);
+                foreach (var collider in staticColliders)
+                {
+                    PhysicsManager.AddCollider(collider);
+                }
             }
         }
 
         public void Dispose()
         {
-            foreach(StaticCollider staticCollider in _staticColliders.Values)
+            if (!_disposed)
             {
-                PhysicsManager.RemoveColliderByReference(staticCollider);
-            }
+                _disposed = true;
 
-            PhysicsManager.SetChunkActive(_chunkpos, false);
-            BlockDataManager.ReturnChunkReference(_chunkpos);
+                foreach(var collider in _colliderCollections.Values.SelectMany(x => x))
+                {
+                    PhysicsManager.RemoveColliderByReference(collider);
+                }
+
+                PhysicsManager.SetChunkActive(_chunkpos, false);
+                BlockDataManager.ReturnChunkReference(_chunkpos);
+            }
         }
 
 #region Frame Invokes
 
-        public void INVOKE_PreFrame() // START
+        public void INVOKE_PreFrame() // START 1
         {
             foreach (Vec2Int pos in ChunkIterator.IterateYX())
             {
                 _blocksBack[pos.x, pos.y].PreFrameTrigger();
                 _blocksFront[pos.x, pos.y].PreFrameTrigger();
+            }
+        }
+
+        public void INVOKE_PreFrameSelfMutations() // START 2
+        {
+            foreach (Vec2Int pos in ChunkIterator.IterateYX())
+            {
+                _blocksBack[pos.x, pos.y].PreFrameTriggerSelfMutations();
+                _blocksFront[pos.x, pos.y].PreFrameTriggerSelfMutations();
             }
         }
 
@@ -160,12 +195,12 @@ namespace Larnix.Server.Terrain
             }
         }
 
-        public void INVOKE_SequentialEarly() // 2
+        public void INVOKE_Sequential() // 2
         {
             foreach (Vec2Int pos in ChunkIterator.IterateYX())
             {
-                _blocksBack[pos.x, pos.y].FrameUpdateSequentialEarly();
-                _blocksFront[pos.x, pos.y].FrameUpdateSequentialEarly();
+                _blocksBack[pos.x, pos.y].FrameUpdateSequential();
+                _blocksFront[pos.x, pos.y].FrameUpdateSequential();
             }
         }
 
@@ -178,7 +213,25 @@ namespace Larnix.Server.Terrain
             }
         }
 
-        public void INVOKE_SequentialLate() // 4
+        public void INVOKE_ElectricPropagation() // 4
+        {
+            foreach (Vec2Int pos in ChunkIterator.IterateYX())
+            {
+                _blocksBack[pos.x, pos.y].FrameUpdateElectricPropagation();
+                _blocksFront[pos.x, pos.y].FrameUpdateElectricPropagation();
+            }
+        }
+
+        public void INVOKE_ElectricFinalize() // 5
+        {
+            foreach (Vec2Int pos in ChunkIterator.IterateYX())
+            {
+                _blocksBack[pos.x, pos.y].FrameUpdateElectricFinalize();
+                _blocksFront[pos.x, pos.y].FrameUpdateElectricFinalize();
+            }
+        }
+
+        public void INVOKE_SequentialLate() // 6
         {
             foreach (Vec2Int pos in ChunkIterator.IterateYX())
             {

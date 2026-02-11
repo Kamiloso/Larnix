@@ -11,7 +11,8 @@ namespace Larnix.Blocks
         public enum BreakMode : byte // must be byte for serialization
         {
             Replace = 0,
-            Effects = 1,
+            Effects = 1, // drops particles
+            Weak = 2, // no frame event reset
         }
         
         public uint FramesSinceServerStart();

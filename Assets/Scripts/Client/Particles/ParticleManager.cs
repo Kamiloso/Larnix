@@ -93,7 +93,7 @@ namespace Larnix.Client.Particles
         private GameObject GetParticlePrefab(ParticleID id)
         {
             GameObject prefab;
-            if ((prefab = Resources.GetPrefab("Particles", id.ToString())) != null)
+            if ((prefab = Prefabs.GetPrefab("Particles", id.ToString())) != null)
                 return prefab;
             
             return null;

@@ -17,8 +17,6 @@ namespace Larnix.Server
         private record RateLimitID(string Owner, Type Type);
         private readonly Dictionary<RateLimitID, int> _rateLimits = new();
         private float _rateLimitTimer = 0f;
-        
-        private readonly HashSet<string> _blackList = new();
 
         private WorldAPI WorldAPI => Ref<WorldAPI>();
         private QuickServer QuickServer => Ref<QuickServer>();
@@ -53,8 +51,8 @@ namespace Larnix.Server
         {
             QuickServer.Subscribe<T>((msg, owner) =>
             {
-                if (typeof(T) != typeof(Stop) && _blackList.Contains(owner))
-                    return; // discard packets from blacklisted clients
+                if (typeof(T) != typeof(Stop) && !QuickServer.IsActiveConnection(owner))
+                    return; // discard packets from kicked clients
 
                 if (maxPerSecond > 0) // rate limit
                 {
@@ -71,8 +69,7 @@ namespace Larnix.Server
                         if (!softLimit) // hard limit - disconnect client
                         {
                             Core.Debug.Log("Rate limit for packet " + typeof(T).Name + " from " + owner + " exceeded.");
-                            QuickServer.RequestFinishConnection(owner);
-                            _blackList.Add(owner);
+                            QuickServer.FinishConnectionRequest(owner);
                         }
                     }
                 }
@@ -91,7 +88,6 @@ namespace Larnix.Server
 
         private void _Stop(Stop msg, string owner)
         {
-            _blackList.Remove(owner);
             PlayerManager.DisconnectPlayer(owner);
             Core.Debug.Log(owner + " disconnected.");
         }

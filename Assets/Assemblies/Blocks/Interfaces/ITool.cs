@@ -22,6 +22,7 @@ namespace Larnix.Blocks
             Wood,
             Stone,
             Copper,
+            Steel,
             Ultimate // tier bypass (on tools)
         }
     }
