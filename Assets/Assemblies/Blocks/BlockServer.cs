@@ -36,19 +36,33 @@ namespace Larnix.Blocks
             _worldAPI = worldAPI;
         }
 
+        public void ReflagForEvents()
+        {
+            _markedToUpdate = true;
+        }
+
 #region Frame Events
 
         public event EventHandler PreFrameEvent;
+        public event EventHandler PreFrameEventSelfMutations;
         public event EventHandler FrameEventConway;
-        public event EventHandler FrameEventSequentialEarly;
+        public event EventHandler FrameEventSequential;
         public event EventHandler FrameEventRandom;
+        public event EventHandler FrameEventElectricPropagation;
+        public event EventHandler FrameEventElectricFinalize;
         public event EventHandler FrameEventSequentialLate;
         public event EventHandler PostFrameEvent;
 
-        public void PreFrameTrigger() // START
+        public void PreFrameTrigger() // START 1
         {
             _markedToUpdate = true;
             PreFrameEvent?.Invoke(this, EventArgs.Empty);
+        }
+
+        public void PreFrameTriggerSelfMutations() // START 2
+        {
+            if (_markedToUpdate)
+                PreFrameEventSelfMutations?.Invoke(this, EventArgs.Empty);
         }
 
         public void FrameUpdateConway() // 1
@@ -57,10 +71,10 @@ namespace Larnix.Blocks
                 FrameEventConway?.Invoke(this, EventArgs.Empty);
         }
 
-        public void FrameUpdateSequentialEarly() // 2
+        public void FrameUpdateSequential() // 2
         {
             if (_markedToUpdate)
-                FrameEventSequentialEarly?.Invoke(this, EventArgs.Empty);
+                FrameEventSequential?.Invoke(this, EventArgs.Empty);
         }
 
         public void FrameUpdateRandom() // 3
@@ -69,7 +83,19 @@ namespace Larnix.Blocks
                 FrameEventRandom?.Invoke(this, EventArgs.Empty);
         }
 
-        public void FrameUpdateSequentialLate() // 4
+        public void FrameUpdateElectricPropagation() // 4
+        {
+            if (_markedToUpdate)
+                FrameEventElectricPropagation?.Invoke(this, EventArgs.Empty);
+        }
+
+        public void FrameUpdateElectricFinalize() // 5
+        {
+            if (_markedToUpdate)
+                FrameEventElectricFinalize?.Invoke(this, EventArgs.Empty);
+        }
+
+        public void FrameUpdateSequentialLate() // 6
         {
             if (_markedToUpdate)
                 FrameEventSequentialLate?.Invoke(this, EventArgs.Empty);

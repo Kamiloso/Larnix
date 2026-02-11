@@ -187,8 +187,8 @@ namespace Larnix.Server
             if (PlayerManager.GetPlayerState(nickname) == PlayerState.None)
                 return (CmdResult.Error, $"Player {nickname} is not online.");
 
-            QuickServer.RequestFinishConnection(nickname);
-            return (CmdResult.Success, $"Player {nickname} has been marked to be kicked.");
+            QuickServer.FinishConnectionRequest(nickname);
+            return (CmdResult.Success, $"Player {nickname} has been kicked.");
         }
 
         private (CmdResult, string) Kill(string nickname)

@@ -233,6 +233,11 @@ namespace Larnix.Socket.Backend
             };
         }
 
+        public bool IsActiveConnection(string nickname)
+        {
+            return TryGetClientEndPoint(nickname, out _);
+        }
+
         public bool TryGetClientEndPoint(string nickname, out IPEndPoint endPoint)
         {
             IPEndPoint endPoint1 = _connDict.EndPointOf(nickname);
@@ -268,7 +273,7 @@ namespace Larnix.Socket.Backend
             return 0f;
         }
 
-        public void RequestFinishConnection(string nickname)
+        public void FinishConnectionRequest(string nickname)
         {
             if (TryGetClientEndPoint(nickname, out IPEndPoint endPoint))
             {

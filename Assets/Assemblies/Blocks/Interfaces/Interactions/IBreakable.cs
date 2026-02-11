@@ -2,6 +2,7 @@ using Larnix.Blocks;
 using System.Collections;
 using System.Collections.Generic;
 using Larnix.Blocks.Structs;
+using Larnix.Core.Binary;
 
 namespace Larnix.Blocks
 {
@@ -10,6 +11,11 @@ namespace Larnix.Blocks
         public ITool.Type MATERIAL_TYPE();
         public ITool.Tier MATERIAL_TIER();
         public bool HAS_BREAK_PARTICLES() => true;
+
+        public bool STATIC_IsBreakableItemMatch(BlockData1 block, BlockData1 item)
+        {
+            return ((IBinary<BlockData1>)block).BinaryEquals(item);
+        }
 
         public bool STATIC_IsBreakable(BlockData1 block, BlockData1 tool, bool front)
         {

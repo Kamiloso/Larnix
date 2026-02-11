@@ -15,9 +15,9 @@ namespace Larnix.Client.Terrain
     {
         private MainPlayer MainPlayer => Ref.MainPlayer;
 
-        private GameObject TilemapPrefabBorder => Resources.GetPrefab("Tilemaps", "TilemapBorder");
-        private GameObject TilemapPrefabFront => Resources.GetPrefab("Tilemaps", "TilemapFront");
-        private GameObject TilemapPrefabBack => Resources.GetPrefab("Tilemaps", "TilemapBack");
+        private GameObject TilemapPrefabBorder => Prefabs.GetPrefab("Tilemaps", "TilemapBorder");
+        private GameObject TilemapPrefabFront => Prefabs.GetPrefab("Tilemaps", "TilemapFront");
+        private GameObject TilemapPrefabBack => Prefabs.GetPrefab("Tilemaps", "TilemapBack");
 
         private class Tilemaps
         {

@@ -6,7 +6,7 @@ namespace Larnix.Blocks
     {
         void Init()
         {
-            This.FrameEventRandom += (sender, args) => Fall();
+            This.FrameEventSequential += (sender, args) => Fall();
         }
 
         int FALL_PERIOD();

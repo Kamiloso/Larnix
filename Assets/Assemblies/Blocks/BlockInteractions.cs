@@ -25,14 +25,11 @@ namespace Larnix.Blocks
             BlockData1 backBlock = blockPair.Back;
             BlockData1 block = front ? frontBlock : backBlock;
 
-            if (((IBinary<BlockData1>)block).BinaryEquals(item))
-            {
-                bool is_breakable = BlockFactory.GetSlaveInstance<IBreakable>(block.ID)?.STATIC_IsBreakable(block, tool, front) == true;
-                bool blocking_front = BlockFactory.GetSlaveInstance<IBlockingFront>(frontBlock.ID)?.IS_BLOCKING_FRONT() == true;
-
-                return is_breakable && (front || !blocking_front);
-            }
-            return false;
+            bool is_breakable = BlockFactory.GetSlaveInstance<IBreakable>(block.ID)?.STATIC_IsBreakable(block, tool, front) == true;
+            bool is_breakable_match = BlockFactory.GetSlaveInstance<IBreakable>(block.ID)?.STATIC_IsBreakableItemMatch(block, item) == true;
+            bool blocking_front = BlockFactory.GetSlaveInstance<IBlockingFront>(frontBlock.ID)?.IS_BLOCKING_FRONT() == true;
+                
+            return is_breakable && is_breakable_match && (front || !blocking_front);
         }
     }
 }

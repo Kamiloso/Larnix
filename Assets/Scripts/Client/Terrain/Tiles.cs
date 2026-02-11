@@ -18,7 +18,7 @@ namespace Larnix.Client.Terrain
 
             if (!_tileCache.TryGetValue(string_id, out Tile tile))
             {
-                tile = Resources.CreateTileObject(block.ID, block.Variant);
+                tile = Textures.CreateTileObject(block.ID, block.Variant);
                 _tileCache.Add(string_id, tile);
             }
             return tile;
@@ -46,7 +46,7 @@ namespace Larnix.Client.Terrain
                     string string_id = "border[" + borderByte + ":" + alphaByte + "]";
                     if (!_tileCache.TryGetValue(string_id, out Tile tile))
                     {
-                        tile = Resources.CreateBorderTileObject(borderByte, alphaByte);
+                        tile = Textures.CreateBorderTileObject(borderByte, alphaByte);
                         _tileCache.Add(string_id, tile);
                     }
                     return tile;

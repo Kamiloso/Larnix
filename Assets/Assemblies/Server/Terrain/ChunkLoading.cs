@@ -40,11 +40,14 @@ namespace Larnix.Server.Terrain
             var orderedChunks = activeChunks.OrderBy(kv => kv.Key.y).ThenBy(kv => kv.Key.x).ToList();
             var shuffledChunks = activeChunks.OrderBy(_ => Common.Rand().NextDouble()).ToList();
 
-            foreach (var kvp in activeChunks) kvp.Value.Instance.INVOKE_PreFrame(); // START
+            foreach (var kvp in activeChunks) kvp.Value.Instance.INVOKE_PreFrame(); // START 1
+            foreach (var kvp in activeChunks) kvp.Value.Instance.INVOKE_PreFrameSelfMutations(); // START 2
             foreach (var kvp in orderedChunks) kvp.Value.Instance.INVOKE_Conway(); // 1
-            foreach (var kvp in orderedChunks) kvp.Value.Instance.INVOKE_SequentialEarly(); // 2
+            foreach (var kvp in orderedChunks) kvp.Value.Instance.INVOKE_Sequential(); // 2
             foreach (var kvp in shuffledChunks) kvp.Value.Instance.INVOKE_Random(); // 3
-            foreach (var kvp in orderedChunks) kvp.Value.Instance.INVOKE_SequentialLate(); // 4
+            foreach (var kvp in orderedChunks) kvp.Value.Instance.INVOKE_ElectricPropagation(); // 4
+            foreach (var kvp in orderedChunks) kvp.Value.Instance.INVOKE_ElectricFinalize(); // 5
+            foreach (var kvp in orderedChunks) kvp.Value.Instance.INVOKE_SequentialLate(); // 6
             foreach (var kvp in activeChunks) kvp.Value.Instance.INVOKE_PostFrame(); // END
 
             // Chunk changes broadcasting
