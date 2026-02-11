@@ -9,10 +9,11 @@ using Larnix.Core.Vectors;
 using Larnix.Worldgen.Noise;
 using Random = System.Random;
 using Larnix.Blocks;
+using NUnit.Framework;
 
 namespace Larnix.Worldgen
 {
-    public enum ProtoBlock { Air, Stone, Soil, SoilSurface, Cave, Liquid }
+    public enum ProtoBlock { Air, Stone, Soil, SoilSurface, Cave, Liquid, Ore }
     public class Generator
     {
         private const int CHUNK_SIZE = BlockUtils.CHUNK_SIZE;
@@ -20,16 +21,21 @@ namespace Larnix.Worldgen
         // Variables
         private readonly Seed _seed;
         private readonly Dictionary<BiomeID, Biome> _biomes;
+        private readonly Dictionary<OreID, Ore> _ores;
         public long Seed => _seed.Value;
 
         // Raw noise
         private readonly ValueProvider NoiseSurface;
         private readonly ValueProvider NoiseCave;
+        private readonly ValueProvider NoiseBiomeOre;
+        private readonly ValueProvider NoiseOre;
         private readonly ValueProvider NoiseTemperature;
 
         // Value providers
         private readonly ValueProvider ProviderSurface;
         private readonly ValueProvider ProviderCave;
+        private readonly ValueProvider ProviderBiomeOre;
+        private readonly ValueProvider ProviderOre;
         private readonly ValueProvider ProviderTemperature;
 
         // Constants
@@ -38,6 +44,7 @@ namespace Larnix.Worldgen
         public Generator(long seed)
         {
             _biomes = BiomeFactory.GetBiomes();
+            _ores = OreFactory.GetOres(seed);
             _seed = new Seed(seed);
 
             // ------ BASE NOISES ------
@@ -61,6 +68,26 @@ namespace Larnix.Worldgen
                     Persistence = 0.3,
                 },
                 min: -1.0, max: 1.0, dim: 2).Stretch(1.25, 0.75);
+
+            NoiseBiomeOre = ValueProvider.CreatePerlin(
+                new Perlin(seed: (int)_seed.Hash("noise_biome_ore"))
+                {
+                    Octaves = 2,
+                    Frequency = 0.1,
+                    Lacunarity = 2.0,
+                    Persistence = 0.3,
+                },
+                min: -1, max: 1, dim: 2).Stretch(0.75,0.25);
+
+            NoiseOre = ValueProvider.CreatePerlin(
+                new Perlin(seed: (int)_seed.Hash("noise_ore"))
+                {
+                    Octaves = 2,
+                    Frequency = 0.1,
+                    Lacunarity = 2.0,
+                    Persistence = 0.3,
+                },
+                min: -1, max: 1, dim: 2).Stretch(0.75, 0.25);
 
             NoiseTemperature = ValueProvider.CreatePerlin(
                 new Perlin(seed: (int)_seed.Hash("noise_temperature"))
@@ -95,6 +122,13 @@ namespace Larnix.Worldgen
             ProviderCave = ValueProvider.CreateFunction((x, y, z) =>
                 (NoiseCave.GetValue(x, y) + 1.0) * _Condition_CAVES.GetValue(x, y) - 1.0);
 
+            // ------ ORE CLUSTERS PROVIDER ------
+
+
+            ProviderBiomeOre = ValueProvider.CreateFunction((x, y, z) =>
+                 (NoiseBiomeOre.GetValue(x,y)+1.0) * _UndergroundCheck_CAVES.GetValue(x, y) - 1.0);
+
+
             // ------ TEMPERATURE PROVIDER ------
 
             //ProviderTemperature = ValueProvider.CreateFunction((x, y, z) =>
@@ -120,6 +154,7 @@ namespace Larnix.Worldgen
 
             BlockData2[,] blocks = ConvertToBlockArray(protoBlocks, chunk);
 
+            AddOreClusters(protoBlocks, blocks, chunk);
             //Add_Ores();
             //Add_Vegetation();
 
@@ -128,34 +163,6 @@ namespace Larnix.Worldgen
 
         private void Build_BaseTerrain(ProtoBlock[,] protoBlocks, Vec2Int chunk)
         {
-            foreach (Vec2Int pos in ChunkIterator.IterateXY())
-            {
-                int x = pos.x;
-                int y = pos.y;
-
-                Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, pos);
-
-                const int SOIL_LAYER_SIZE = 3;
-
-                int surface_level = (int)Math.Floor(ProviderSurface.GetValue(POS.x));
-                int stone_level = surface_level - SOIL_LAYER_SIZE;
-
-                if (POS.y > surface_level) // air
-                {
-                    bool is_lake = POS.y <= WATER_LEVEL;
-                    protoBlocks[x, y] = is_lake ? ProtoBlock.Liquid : ProtoBlock.Air;
-                }
-                else if (POS.y > stone_level) // dirt
-                {
-                    bool is_top = POS.y + 1 > surface_level;
-                    protoBlocks[x, y] = is_top ? ProtoBlock.SoilSurface : ProtoBlock.Soil;
-                }
-                else // underground
-                {
-                    protoBlocks[x, y] = ProtoBlock.Stone;
-                }
-            }
-
             foreach (Vec2Int pos in ChunkIterator.IterateXY())
             {
                 int x = pos.x;
@@ -195,18 +202,41 @@ namespace Larnix.Worldgen
                 Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, pos);
 
                 const double CAVE_NOISE_WIDTH = 0.2f;
+                const double ORE_CLUSTER_SIZE = 0.5f;
                 double cave_value = ProviderCave.GetValue(POS.x, POS.y);
 
                 if (cave_value > -CAVE_NOISE_WIDTH && cave_value < CAVE_NOISE_WIDTH) // cave
                 {
                     ProtoBlock protoBlock = protoBlocks[x, y];
-                    switch(protoBlock)
+                    protoBlock = protoBlock switch
                     {
-                        case ProtoBlock.Stone: protoBlock = ProtoBlock.Cave; break;
-                        default: protoBlock = ProtoBlock.Air; break;
-                    }
+                        ProtoBlock.Stone => ProtoBlock.Cave,
+                        _ => ProtoBlock.Air,
+                    };
                     protoBlocks[x, y] = protoBlock;
                 }
+                else // biome ores
+                {
+                    double ore_value = ProviderBiomeOre.GetValue(POS.x, POS.y);
+                    if( ore_value > ORE_CLUSTER_SIZE) 
+                    {
+                        ProtoBlock protoBlock = protoBlocks[x, y];
+                        protoBlock = protoBlock switch
+                        {
+                            ProtoBlock.Stone => ProtoBlock.Ore,
+                            _ => ProtoBlock.Cave,
+                        };
+                        protoBlocks[x, y] = protoBlock;
+                    }
+                }
+            }
+        }
+
+        private void AddOreClusters(ProtoBlock[,] protoBlocks, BlockData2[,] blocks, Vec2Int chunk)
+        {
+            foreach (Ore ore in _ores.Values)
+            {
+                ore.GenerateOre(protoBlocks, blocks, chunk);
             }
         }
 

@@ -17,6 +17,7 @@ namespace Larnix.Worldgen.Biomes
                 case ProtoBlock.Air:
                     return new BlockData2();
 
+                case ProtoBlock.Ore:
                 case ProtoBlock.Stone:
                     return new BlockData2(
                         new(BlockID.Sandstone, 0),
