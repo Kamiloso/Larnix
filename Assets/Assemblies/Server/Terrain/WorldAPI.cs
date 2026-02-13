@@ -13,7 +13,7 @@ namespace Larnix.Server.Terrain
         private ChunkLoading ChunkLoading => Ref<ChunkLoading>();
         private Commands Commands => Ref<Commands>();
 
-        public uint FramesSinceServerStart() => Ref<Server>().FixedFrame;
+        public uint ServerFrame() => Ref<Server>().FixedFrame;
 
         public WorldAPI(Server server) : base(server) { }
 
@@ -28,7 +28,8 @@ namespace Larnix.Server.Terrain
             return null;
         }
 
-        public BlockServer ReplaceBlock(Vec2Int POS, bool isFront, BlockData1 blockTemplate, IWorldAPI.BreakMode breakMode)
+        public BlockServer ReplaceBlock(Vec2Int POS, bool isFront, BlockData1 blockTemplate,
+            IWorldAPI.BreakMode breakMode)
         {
             Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
             if (ChunkLoading.TryGetChunk(chunk, out var chunkObject))
@@ -40,7 +41,8 @@ namespace Larnix.Server.Terrain
             return null;
         }
 
-        public BlockServer SetBlockVariant(Vec2Int POS, bool isFront, byte variant)
+        public BlockServer SetBlockVariant(Vec2Int POS, bool isFront, byte variant,
+            IWorldAPI.BreakMode breakMode)
         {
             BlockData1 oldBlock = GetBlock(POS, isFront)?.BlockData;
             if (oldBlock == null) return null;
@@ -50,7 +52,7 @@ namespace Larnix.Server.Terrain
                 variant: variant,
                 data: oldBlock.Data);
             
-            return ReplaceBlock(POS, isFront, blockTemplate, IWorldAPI.BreakMode.Replace);
+            return ReplaceBlock(POS, isFront, blockTemplate, breakMode);
         }
 
         public bool CanPlaceBlock(Vec2Int POS, bool front, BlockData1 item)
@@ -89,8 +91,7 @@ namespace Larnix.Server.Terrain
             BlockData1 oldBlock = GetBlock(POS, front)?.BlockData;
             if (oldBlock == null) return;
 
-            // DROP ITEMS
-            // INSERT LATER
+            // TODO: Drop items code here
 
             ReplaceBlock(POS, front, new BlockData1(), IWorldAPI.BreakMode.Effects);
         }

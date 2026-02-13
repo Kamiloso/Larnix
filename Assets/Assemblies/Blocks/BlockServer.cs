@@ -13,14 +13,6 @@ namespace Larnix.Blocks
         public readonly bool IsFront;
         public readonly BlockData1 BlockData; // connected to block-saving system
 
-        private IWorldAPI _worldAPI = null;
-        public IWorldAPI WorldAPI
-        {
-            get => _worldAPI ?? throw new InvalidOperationException("Trying to use an uninitialized WorldAPI.");
-        }
-
-        private bool _markedToUpdate = false;
-
         public BlockServer(Vec2Int position, BlockData1 blockData, bool isFront)
         {
             Position = position;
@@ -28,20 +20,39 @@ namespace Larnix.Blocks
             IsFront = isFront;
         }
 
-        public void InitializeWorldAPI(IWorldAPI worldAPI)
+        private IWorldAPI _worldAPI = null;
+        public IWorldAPI WorldAPI
         {
-            if (_worldAPI != null)
-                throw new InvalidOperationException("WorldAPI already initialized.");
-
-            _worldAPI = worldAPI;
+            set => _worldAPI = _worldAPI == null ? value : throw new InvalidOperationException("WorldAPI already initialized.");
+            get => _worldAPI ?? throw new InvalidOperationException("Trying to use an uninitialized WorldAPI.");
         }
 
-        public void ReflagForEvents()
+        /// <summary>
+        /// Determines whether block is active for event in the current frame.
+        /// Resets to false when ID or Variant is changed. Can be prevented
+        /// by replacing block with BreakMode = Weak.
+        /// </summary>
+        public bool EventFlag { get; set; }
+        private readonly Dictionary<BlockEvent, EventHandler> _eventHandlers = new();
+
+        public void Subscribe(BlockEvent type, EventHandler handler)
         {
-            _markedToUpdate = true;
+            if (_eventHandlers.TryGetValue(type, out var existing))
+                _eventHandlers[type] = existing + handler;
+            else
+                _eventHandlers[type] = handler;
         }
 
-#region Frame Events
+        public void InvokeEvent(BlockEvent type)
+        {
+            if (EventFlag)
+            {
+                if (_eventHandlers.TryGetValue(type, out var handler))
+                    handler?.Invoke(this, EventArgs.Empty);
+            }
+        }
+
+/*#region Frame Events
 
         public event EventHandler PreFrameEvent;
         public event EventHandler PreFrameEventSelfMutations;
@@ -55,61 +66,61 @@ namespace Larnix.Blocks
 
         public void PreFrameTrigger() // START 1
         {
-            _markedToUpdate = true;
+            EventFlag = true;
             PreFrameEvent?.Invoke(this, EventArgs.Empty);
         }
 
         public void PreFrameTriggerSelfMutations() // START 2
         {
-            if (_markedToUpdate)
+            if (EventFlag)
                 PreFrameEventSelfMutations?.Invoke(this, EventArgs.Empty);
         }
 
         public void FrameUpdateConway() // 1
         {
-            if (_markedToUpdate)
+            if (EventFlag)
                 FrameEventConway?.Invoke(this, EventArgs.Empty);
         }
 
         public void FrameUpdateSequential() // 2
         {
-            if (_markedToUpdate)
+            if (EventFlag)
                 FrameEventSequential?.Invoke(this, EventArgs.Empty);
         }
 
         public void FrameUpdateRandom() // 3
         {
-            if (_markedToUpdate)
+            if (EventFlag)
                 FrameEventRandom?.Invoke(this, EventArgs.Empty);
         }
 
         public void FrameUpdateElectricPropagation() // 4
         {
-            if (_markedToUpdate)
+            if (EventFlag)
                 FrameEventElectricPropagation?.Invoke(this, EventArgs.Empty);
         }
 
         public void FrameUpdateElectricFinalize() // 5
         {
-            if (_markedToUpdate)
+            if (EventFlag)
                 FrameEventElectricFinalize?.Invoke(this, EventArgs.Empty);
         }
 
         public void FrameUpdateSequentialLate() // 6
         {
-            if (_markedToUpdate)
+            if (EventFlag)
                 FrameEventSequentialLate?.Invoke(this, EventArgs.Empty);
         }
 
         public void PostFrameTrigger() // END
         {
-            if (_markedToUpdate)
+            if (EventFlag)
                 PostFrameEvent?.Invoke(this, EventArgs.Empty);
             
-            _markedToUpdate = false;
+            EventFlag = false;
         }
 
-#endregion
+#endregion*/
 
     }
 }

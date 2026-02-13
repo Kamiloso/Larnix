@@ -66,11 +66,13 @@ namespace Larnix
                     {
                         byte[] fileData = File.ReadAllBytes(filePath);
 
-                        Texture2D texture = new Texture2D(2, 2, TextureFormat.RGBA32, false, false);
-                        texture.filterMode = FilterMode.Point;
-                        texture.wrapMode = TextureWrapMode.Clamp;
-                        texture.mipMapBias = 0;
-                        texture.anisoLevel = 0;
+                        Texture2D texture = new Texture2D(2, 2, TextureFormat.RGBA32, false, false)
+                        {
+                            filterMode = FilterMode.Point,
+                            wrapMode = TextureWrapMode.Clamp,
+                            mipMapBias = 0,
+                            anisoLevel = 0
+                        };
 
                         if (texture.LoadImage(fileData, false))
                         {

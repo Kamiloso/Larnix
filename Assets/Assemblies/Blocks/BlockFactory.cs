@@ -85,11 +85,13 @@ namespace Larnix.Blocks
         {
             BlockInfo info = GetBlockInfo(block.ID);
             BlockServer blockserv = info.Constructor(POS, block, isFront);
-            blockserv.InitializeWorldAPI(worldAPI);
+            blockserv.WorldAPI = worldAPI;
+
             foreach (var init in info.Inits)
             {
                 init(blockserv);
             }
+
             return blockserv;
         }
 

@@ -7,10 +7,10 @@ namespace Larnix.Blocks
     {
         void Init()
         {
-            This.FrameEventElectricPropagation += (sender, args) => StartPropagation();
+            This.Subscribe(BlockEvent.ElectricPropagation,
+                (_, _) => StartPropagation());
         }
 
-        int STATIC_RecursionLimit(byte variant);
         byte ElectricEmissionMask(); // up right down left
 
         private void StartPropagation()
@@ -40,14 +40,14 @@ namespace Larnix.Blocks
                 return;
             }
 
-            if (block is IElectricPropagator pipe)
+            if (block is IElectricPropagator prop)
             {
-                int recursion = STATIC_RecursionLimit(This.BlockData.Variant);
-                int pipeRecursion = pipe.Data["electric_propagator.recursion"].Int;
+                int recursion = IElectricPropagator.RECURSION_LIMIT;
+                int propRecursion = prop.Data["electric_propagator.recursion"].Int;
 
-                if (recursion > pipeRecursion)
+                if (recursion > propRecursion)
                 {
-                    pipe.ElectricPropagate(This.Position, recursion);
+                    prop.ElectricPropagate(This.Position, recursion);
                 }
             }
         }

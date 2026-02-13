@@ -11,7 +11,8 @@ namespace Larnix.Blocks
     {
         void Init()
         {
-            This.PreFrameEventSelfMutations += (sender, args) => MutateNearbyPipes();
+            This.Subscribe(BlockEvent.PreFrameSelfMutations,
+                 (_, _) => MutateNearbyPipes());
         }
 
         IEnumerable<Collider> IHasCollider.STATIC_GetAllColliders(BlockID ID, byte variant)
@@ -54,11 +55,6 @@ namespace Larnix.Blocks
             );
 
             return colliders;
-        }
-
-        bool IBreakable.STATIC_IsBreakableItemMatch(BlockData1 block, BlockData1 item)
-        {
-            return block.ID == item.ID;
         }
 
         double WIDTH();

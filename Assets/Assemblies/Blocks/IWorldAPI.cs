@@ -15,10 +15,14 @@ namespace Larnix.Blocks
             Weak = 2, // no frame event reset
         }
         
-        public uint FramesSinceServerStart();
+        public uint ServerFrame();
         public BlockServer GetBlock(Vec2Int POS, bool front);
-        public BlockServer ReplaceBlock(Vec2Int POS, bool front, BlockData1 blockTemplate, BreakMode breakMode = BreakMode.Replace);
-        public BlockServer SetBlockVariant(Vec2Int POS, bool front, byte variant);
+
+        public BlockServer ReplaceBlock(Vec2Int POS, bool front, BlockData1 blockTemplate,
+            BreakMode breakMode = BreakMode.Replace);
+        public BlockServer SetBlockVariant(Vec2Int POS, bool front, byte variant,
+            BreakMode breakMode = BreakMode.Replace);
+        
         public bool CanPlaceBlock(Vec2Int POS, bool front, BlockData1 item);
         public bool CanBreakBlock(Vec2Int POS, bool front, BlockData1 item, BlockData1 tool);
         public void PlaceBlockWithEffects(Vec2Int POS, bool front, BlockData1 item);

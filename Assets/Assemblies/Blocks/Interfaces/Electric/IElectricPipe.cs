@@ -8,13 +8,10 @@ namespace Larnix.Blocks
 {
     public interface IElectricPipe : IPipe, IElectricPropagator
     {
-        private static Vec2Int[] CARDINAL_DIRECTIONS = new[] {
-            Vec2Int.Up, Vec2Int.Right, Vec2Int.Down, Vec2Int.Left
-            };
-
         new void Init()
         {
-            This.FrameEventElectricFinalize += (sender, args) => RethinkLitState();
+            This.Subscribe(BlockEvent.ElectricFinalize,
+                (_, _) => RethinkLitState());
         }
 
         BlockID ID_UNLIT();
@@ -44,7 +41,10 @@ namespace Larnix.Blocks
 
         void RethinkLitState()
         {
-            bool shouldBeLit = Data["electric_propagator.recursion"].Int > 0;
+            // 0 - completely unlit
+            // 1 - cannot propagate
+            
+            bool shouldBeLit = Data["electric_propagator.recursion"].Int > 1;
             if (shouldBeLit != IS_LIT())
             {
                 BlockData1 blockTemplate = new(
@@ -58,6 +58,9 @@ namespace Larnix.Blocks
 
         void IElectricPropagator.ElectricPropagate(Vec2Int POS_src, int recursion)
         {
+            int oldRecursion = Data["electric_propagator.recursion"].Int;
+            if (oldRecursion >= recursion) return;
+
             Data["electric_propagator.recursion"].Int = recursion;
 
             Vec2Int POS = This.Position;
@@ -66,18 +69,13 @@ namespace Larnix.Blocks
             foreach (Vec2Int dir in CARDINAL_DIRECTIONS)
             {
                 Vec2Int POS_other = POS + dir;
-                if (POS_other == POS_src) continue;
-
-                bool? canPropagate = CanPropagateInto(POS_other, out int pipeRecursion);
+                bool? canPropagate = CanPropagateInto(POS_other);
                 if (canPropagate == false) continue;
 
                 if (canPropagate == true)
                 {
-                    if (nextRecursion > pipeRecursion)
-                    {
-                        IElectricPropagator pipe = (IElectricPropagator)WorldAPI.GetBlock(POS + dir, This.IsFront);
-                        pipe.ElectricPropagate(POS, nextRecursion);
-                    }
+                    IElectricPropagator pipe = (IElectricPropagator)WorldAPI.GetBlock(POS + dir, This.IsFront);
+                    pipe.ElectricPropagate(POS, nextRecursion);
                 }
 
                 if (canPropagate == null)
@@ -89,24 +87,13 @@ namespace Larnix.Blocks
             }
         }
 
-        private bool? CanPropagateInto(Vec2Int POS_other, out int recursion)
+        private bool? CanPropagateInto(Vec2Int POS_other)
         {
-            recursion = default;
-
             BlockServer block = WorldAPI.GetBlock(POS_other, This.IsFront);
             if (block == null) return null;
 
-            if (block is IElectricPipe pipe)
+            if (block is IElectricPropagator pipe)
             {
-                if (ELECTRIC_PIPE_ID() != pipe.ELECTRIC_PIPE_ID())
-                    return false;
-                
-                recursion = pipe.Data["electric_propagator.recursion"].Int;
-                return true;
-            }
-            if (block is IElectricDevice device)
-            {
-                recursion = device.Data["electric_propagator.recursion"].Int;
                 return true;
             }
             return false;

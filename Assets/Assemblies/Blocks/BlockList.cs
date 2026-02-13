@@ -29,5 +29,6 @@ namespace Larnix.Blocks
         ElectricPipe = 20,
         ElectricPipeLit = 21,
         Lamp = 22,
+        NotGate = 23,
     }
 }

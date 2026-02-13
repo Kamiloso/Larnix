@@ -7,7 +7,7 @@ namespace Larnix.Client.Relativity
     {
         public Vec2 Position { get; set; }
 
-        private void Update()
+        private void LateUpdate()
         {
             transform.SetLarnixPos(Position);
         }

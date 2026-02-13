@@ -5,9 +5,16 @@ namespace Larnix.Blocks
 {
     public interface IElectricPropagator : IBlockInterface
     {
+        protected static Vec2Int[] CARDINAL_DIRECTIONS = new[] {
+            Vec2Int.Up, Vec2Int.Right, Vec2Int.Down, Vec2Int.Left
+            };
+        
+        public static int RECURSION_LIMIT => 16;
+
         void Init()
         {
-            This.PreFrameEvent += (sender, args) => Data["electric_propagator.recursion"].Int = 0;
+            This.Subscribe(BlockEvent.PreFrame,
+                 (_, _) => Data["electric_propagator.recursion"].Int = 0);
         }
 
         void ElectricPropagate(Vec2Int POS_src, int recursion);

@@ -34,30 +34,6 @@ namespace Larnix.Server.Terrain
 
         public ChunkLoading(Server server) : base(server) {}
 
-        public override void FrameUpdate()
-        {
-            var activeChunks = _chunks.Where(kv => ChunkState(kv.Key) == LoadState.Active).ToList();
-            var orderedChunks = activeChunks.OrderBy(kv => kv.Key.y).ThenBy(kv => kv.Key.x).ToList();
-            var shuffledChunks = activeChunks.OrderBy(_ => Common.Rand().NextDouble()).ToList();
-
-            foreach (var kvp in activeChunks) kvp.Value.Instance.INVOKE_PreFrame(); // START 1
-            foreach (var kvp in activeChunks) kvp.Value.Instance.INVOKE_PreFrameSelfMutations(); // START 2
-            foreach (var kvp in orderedChunks) kvp.Value.Instance.INVOKE_Conway(); // 1
-            foreach (var kvp in orderedChunks) kvp.Value.Instance.INVOKE_Sequential(); // 2
-            foreach (var kvp in shuffledChunks) kvp.Value.Instance.INVOKE_Random(); // 3
-            foreach (var kvp in orderedChunks) kvp.Value.Instance.INVOKE_ElectricPropagation(); // 4
-            foreach (var kvp in orderedChunks) kvp.Value.Instance.INVOKE_ElectricFinalize(); // 5
-            foreach (var kvp in orderedChunks) kvp.Value.Instance.INVOKE_SequentialLate(); // 6
-            foreach (var kvp in activeChunks) kvp.Value.Instance.INVOKE_PostFrame(); // END
-
-            // Chunk changes broadcasting
-            const int BROADCAST_FIXED_PERIOD = 8;
-            if (Server.FixedFrame % BROADCAST_FIXED_PERIOD == 0)
-            {
-                BroadcastChunkChanges();
-            }
-        }
-
         public override void EarlyFrameUpdate()
         {
             // Chunk stimulating
@@ -95,6 +71,26 @@ namespace Larnix.Server.Terrain
             foreach (var kvp in _chunks.ToList())
             {
                 _chunks[kvp.Key].UnloadTime -= Common.FIXED_TIME;
+            }
+        }
+
+        public override void FrameUpdate()
+        {
+            var activeChunks = _chunks.Where(kv => ChunkState(kv.Key) == LoadState.Active).ToList();
+            var orderedChunks = activeChunks.OrderBy(kv => kv.Key.y).ThenBy(kv => kv.Key.x).ToList();
+
+            foreach (var kvp in orderedChunks)
+            {
+                // TODO: improve with IEnumerator + fix a chunk border bug
+                ChunkServer chunk = kvp.Value.Instance;
+                chunk.InvokeFrame();
+            }
+
+            // Chunk changes broadcasting
+            const int BROADCAST_FIXED_PERIOD = 8;
+            if (Server.FixedFrame % BROADCAST_FIXED_PERIOD == 0)
+            {
+                BroadcastChunkChanges();
             }
         }
 

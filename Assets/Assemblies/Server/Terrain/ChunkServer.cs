@@ -23,6 +23,7 @@ namespace Larnix.Server.Terrain
         private BlockSender BlockSender => Ref<BlockSender>();
 
         private readonly Vec2Int _chunkpos;
+        private readonly BlockEvents _blockEvents;
         private readonly BlockServer[,] _blocksFront = new BlockServer[CHUNK_SIZE, CHUNK_SIZE];
         private readonly BlockServer[,] _blocksBack = new BlockServer[CHUNK_SIZE, CHUNK_SIZE];
         private readonly Dictionary<Vec2Int, IEnumerable<StaticCollider>> _colliderCollections = new();
@@ -50,6 +51,8 @@ namespace Larnix.Server.Terrain
 
                 RefreshCollider(pos);
             }
+
+            _blockEvents = new BlockEvents(_blocksFront, _blocksBack);
 
             PhysicsManager.SetChunkActive(_chunkpos, true);
         }
@@ -110,11 +113,16 @@ namespace Larnix.Server.Terrain
             
             if (breakMode == IWorldAPI.BreakMode.Weak)
             {
-                _blocksFront[pos.x, pos.y].ReflagForEvents();
-                _blocksBack[pos.x, pos.y].ReflagForEvents();
+                _blocksFront[pos.x, pos.y].EventFlag = true;
+                _blocksBack[pos.x, pos.y].EventFlag = true;
             }
 
             return result;
+        }
+
+        public void InvokeFrame()
+        {
+            _blockEvents.InvokeAll();
         }
 
         private void RefreshCollider(Vec2Int pos)
@@ -165,91 +173,5 @@ namespace Larnix.Server.Terrain
                 BlockDataManager.ReturnChunkReference(_chunkpos);
             }
         }
-
-#region Frame Invokes
-
-        public void INVOKE_PreFrame() // START 1
-        {
-            foreach (Vec2Int pos in ChunkIterator.IterateYX())
-            {
-                _blocksBack[pos.x, pos.y].PreFrameTrigger();
-                _blocksFront[pos.x, pos.y].PreFrameTrigger();
-            }
-        }
-
-        public void INVOKE_PreFrameSelfMutations() // START 2
-        {
-            foreach (Vec2Int pos in ChunkIterator.IterateYX())
-            {
-                _blocksBack[pos.x, pos.y].PreFrameTriggerSelfMutations();
-                _blocksFront[pos.x, pos.y].PreFrameTriggerSelfMutations();
-            }
-        }
-
-        public void INVOKE_Conway() // 1
-        {
-            foreach (Vec2Int pos in ChunkIterator.IterateYX())
-            {
-                _blocksBack[pos.x, pos.y].FrameUpdateConway();
-                _blocksFront[pos.x, pos.y].FrameUpdateConway();
-            }
-        }
-
-        public void INVOKE_Sequential() // 2
-        {
-            foreach (Vec2Int pos in ChunkIterator.IterateYX())
-            {
-                _blocksBack[pos.x, pos.y].FrameUpdateSequential();
-                _blocksFront[pos.x, pos.y].FrameUpdateSequential();
-            }
-        }
-
-        public void INVOKE_Random() // 3
-        {
-            foreach (Vec2Int pos in ChunkIterator.IterateRandom())
-            {
-                _blocksBack[pos.x, pos.y].FrameUpdateRandom();
-                _blocksFront[pos.x, pos.y].FrameUpdateRandom();
-            }
-        }
-
-        public void INVOKE_ElectricPropagation() // 4
-        {
-            foreach (Vec2Int pos in ChunkIterator.IterateYX())
-            {
-                _blocksBack[pos.x, pos.y].FrameUpdateElectricPropagation();
-                _blocksFront[pos.x, pos.y].FrameUpdateElectricPropagation();
-            }
-        }
-
-        public void INVOKE_ElectricFinalize() // 5
-        {
-            foreach (Vec2Int pos in ChunkIterator.IterateYX())
-            {
-                _blocksBack[pos.x, pos.y].FrameUpdateElectricFinalize();
-                _blocksFront[pos.x, pos.y].FrameUpdateElectricFinalize();
-            }
-        }
-
-        public void INVOKE_SequentialLate() // 6
-        {
-            foreach (Vec2Int pos in ChunkIterator.IterateYX())
-            {
-                _blocksBack[pos.x, pos.y].FrameUpdateSequentialLate();
-                _blocksFront[pos.x, pos.y].FrameUpdateSequentialLate();
-            }
-        }
-
-        public void INVOKE_PostFrame() // END
-        {
-            foreach (Vec2Int pos in ChunkIterator.IterateYX())
-            {
-                _blocksBack[pos.x, pos.y].PostFrameTrigger();
-                _blocksFront[pos.x, pos.y].PostFrameTrigger();
-            }
-        }
-
-#endregion
-
     }
 }

@@ -10,7 +10,8 @@ namespace Larnix.Blocks
     {
         void Init()
         {
-            This.FrameEventSequentialLate += (sender, args) => ExecuteCommand();
+            This.Subscribe(BlockEvent.TechCmdExecute,
+                (_, _) => ExecuteCommand());
         }
 
         private void ExecuteCommand()

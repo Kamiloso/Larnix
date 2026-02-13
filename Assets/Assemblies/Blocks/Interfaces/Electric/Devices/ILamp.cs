@@ -6,28 +6,14 @@ namespace Larnix.Blocks
     {
         byte LAMP_LIT_BYTE() => 0b0001;
 
-        void IElectricDevice.StartDevice()
-        {
-            ;
-        }
-
-        void IElectricDevice.FrameDevice()
-        {
-            ;
-        }
-
-        void IElectricDevice.FinalizeFrameDevice(bool isPowered)
+        void IElectricDevice.DeviceTick(bool active, bool wentOn, bool wentOff, byte srcByte)
         {
             bool isLit = (This.BlockData.Variant & LAMP_LIT_BYTE()) != 0;
-
-            if (isPowered != isLit)
+            
+            if (active != isLit)
             {
-                BlockData1 blockTemplate = new(
-                    id: This.BlockData.ID,
-                    variant: (byte)(This.BlockData.Variant ^ LAMP_LIT_BYTE()),
-                    data: This.BlockData.Data
-                );
-                WorldAPI.ReplaceBlock(This.Position, This.IsFront, blockTemplate, IWorldAPI.BreakMode.Weak);
+                byte newVariant = (byte)(This.BlockData.Variant ^ LAMP_LIT_BYTE());
+                WorldAPI.SetBlockVariant(This.Position, This.IsFront, newVariant, IWorldAPI.BreakMode.Weak);
             }
         }
     }

@@ -15,8 +15,10 @@ namespace Larnix.Client.Relativity
             return transform;
         }
 
-        public static GameObject SetLarnixPos(this GameObject gameObject, Vec2 targetPos) =>
-            gameObject.transform.SetLarnixPos(targetPos).gameObject;
+        public static GameObject SetLarnixPos(this GameObject gameObject, Vec2 targetPos)
+        {
+            return gameObject.transform.SetLarnixPos(targetPos).gameObject;
+        }
 
         public static Transform Relativise(this Transform transform, Vec2 targetPos)
         {
@@ -28,7 +30,9 @@ namespace Larnix.Client.Relativity
             return transform;
         }
 
-        public static GameObject Relativise(this GameObject gameObject, Vec2 targetPos) =>
-            gameObject.transform.Relativise(targetPos).gameObject;
+        public static GameObject Relativise(this GameObject gameObject, Vec2 targetPos)
+        {
+            return gameObject.transform.Relativise(targetPos).gameObject;
+        }
     }
 }

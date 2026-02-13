@@ -10,7 +10,8 @@ namespace Larnix.Blocks
     {
         void Init()
         {
-            This.FrameEventRandom += (sender, args) => Flow();
+            This.Subscribe(BlockEvent.Random,
+                 (_, _) => Flow());
         }
 
         bool IReplaceable.STATIC_IsReplaceable(BlockData1 thisBlock, BlockData1 otherBlock, bool isFront)
@@ -41,7 +42,7 @@ namespace Larnix.Blocks
 
         private void Flow()
         {
-            if (WorldAPI.FramesSinceServerStart() % FLOW_PERIOD() != 0)
+            if (WorldAPI.ServerFrame() % FLOW_PERIOD() != 0)
                 return;
 
             Vec2Int localpos = This.Position;

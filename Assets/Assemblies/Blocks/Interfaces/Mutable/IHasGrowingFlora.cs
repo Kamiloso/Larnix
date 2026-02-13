@@ -10,8 +10,10 @@ namespace Larnix.Blocks
     {
         void Init()
         {
-            This.FrameEventRandom += (sender, args) => FloraDry();
-            This.FrameEventRandom += (sender, args) => FloraGrowth();
+            This.Subscribe(BlockEvent.Random, (_, _) => {
+                FloraDry();
+                FloraGrowth();
+            });
         }
 
         double DRY_CHANCE();
@@ -66,14 +68,14 @@ namespace Larnix.Blocks
 
         private bool? IsSuppressed()
         {
-            Vec2Int localpos = This.Position;
-            Vec2Int remotpos = This.Position + new Vec2Int(0, 1);
+            Vec2Int POS = This.Position;
+            Vec2Int POS_other = POS + new Vec2Int(0, 1);
 
-            BlockServer blockserv = WorldAPI.GetBlock(remotpos, This.IsFront);
-            if (blockserv == null)
+            BlockServer block = WorldAPI.GetBlock(POS_other, This.IsFront);
+            if (block == null)
                 return null;
 
-            return blockserv is ISolid || blockserv is ILiquid;
+            return block is ISolid || block is ILiquid;
         }
     }
 }

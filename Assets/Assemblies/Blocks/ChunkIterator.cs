@@ -7,7 +7,20 @@ namespace Larnix.Blocks
 {
     public static class ChunkIterator
     {
+        public enum Order { Any, XY, YX, Random }
         private const int CHUNK_SIZE = BlockUtils.CHUNK_SIZE;
+
+        public static IEnumerable<Vec2Int> Iterate(Order order)
+        {
+            return order switch
+            {
+                Order.Any => IterateXY(),
+                Order.XY => IterateXY(),
+                Order.YX => IterateYX(),
+                Order.Random => IterateRandom(),
+                _ => throw new ArgumentOutOfRangeException("Invalid iteration order!")
+            };
+        }
 
         public static IEnumerable<Vec2Int> IterateXY()
         {

@@ -10,15 +10,18 @@ namespace Larnix.Blocks
     {
         void Init()
         {
-            This.PreFrameEvent += (sender, args) => ConwayPrepare();
-            This.FrameEventConway += (sender, args) => ConwayFinalize();
+            This.Subscribe(BlockEvent.PreFrame,
+                (_, _) => ConwayPrepare());
+
+            This.Subscribe(BlockEvent.Conway,
+                (_, _) => ConwayFinalize());
         }
 
         int CONWAY_PERIOD();
 
         private void ConwayPrepare()
         {
-            if (WorldAPI.FramesSinceServerStart() % CONWAY_PERIOD() != 0)
+            if (WorldAPI.ServerFrame() % CONWAY_PERIOD() != 0)
                 return;
 
             // clean state
@@ -54,7 +57,7 @@ namespace Larnix.Blocks
 
         private void ConwayFinalize()
         {
-            if (WorldAPI.FramesSinceServerStart() % CONWAY_PERIOD() != 0)
+            if (WorldAPI.ServerFrame() % CONWAY_PERIOD() != 0)
                 return;
 
             for (int dx = -1; dx <= 1; dx++)
@@ -83,7 +86,7 @@ namespace Larnix.Blocks
     
                 case "DEATH":
                     if (IsAliveAt(POS, isFront) == true)
-                        WorldAPI.ReplaceBlock(POS, isFront, new BlockData1());
+                        WorldAPI.ReplaceBlock(POS, isFront, BlockData1.Air);
                     break;
             }
         }

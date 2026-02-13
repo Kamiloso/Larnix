@@ -3,30 +3,35 @@ using UnityEngine.Tilemaps;
 using UnityEngine.UI;
 using Larnix.Blocks;
 using Larnix;
+using Larnix.Core.Vectors;
+using Unity.VisualScripting;
 
 public class Textures
 {
     public static Tile CreateTileObject(BlockID ID, byte variant)
     {
-        string path = variant == 0 ? ("Blocks/" + ID.ToString()) : ("Blocks/" + ID.ToString() + "-" + variant + ".png");
+        Vec2Int rotation = Vec2Int.Up;
+
+        IRotational iface = BlockFactory.GetSlaveInstance<IRotational>(ID);
+        if (iface != null)
+        {
+            rotation = iface.STATIC_RotationDirection(variant);
+            variant = iface.STATIC_RotationVariant(variant);
+        }
+
+        string path = "Blocks/" + ID.ToString() + "-" + variant + ".png";
         string fallbackPath = "Blocks/" + ID.ToString() + ".png";
 
         Texture2D texture = StreamingTextureLoader.Instance.LoadTextureSync(path);
         if (texture == null) texture = StreamingTextureLoader.Instance.LoadTextureSync(fallbackPath);
         if (texture == null) texture = StreamingTextureLoader.PinkTexture;
 
-        return MakeTileFromTexture(texture);
+        return MakeTileFromTexture(RotateTexture(texture, rotation));
     }
 
     public static Tile CreateBorderTileObject(byte borderByte, byte alphaByte)
     {
         const int SIZE = 16;
-
-        Texture2D texture = new Texture2D(SIZE, SIZE, TextureFormat.RGBA32, false, false);
-        texture.filterMode = FilterMode.Point;
-        texture.wrapMode = TextureWrapMode.Clamp;
-        texture.mipMapBias = 0;
-        texture.anisoLevel = 0;
 
         Color transparent = new Color(0, 0, 0, 0);
         Color borderColor = new Color(0, 0, 0, alphaByte / 255f);
@@ -64,6 +69,14 @@ public class Textures
         if (!HasBit(5)) pixels[0] = borderColor;                                 // bottom-left
         if (!HasBit(7)) pixels[SIZE - 1] = borderColor;                          // bottom-right
 
+        Texture2D texture = new Texture2D(SIZE, SIZE, TextureFormat.RGBA32, false, false)
+        {
+            filterMode = FilterMode.Point,
+            wrapMode = TextureWrapMode.Clamp,
+            mipMapBias = 0,
+            anisoLevel = 0
+        };
+
         texture.SetPixels(pixels);
         texture.Apply();
 
@@ -87,5 +100,69 @@ public class Textures
         tile.colliderType = Tile.ColliderType.None;
 
         return tile;
+    }
+
+    private static Texture2D RotateTexture(Texture2D original, Vec2Int rotation)
+    {
+        if (rotation == Vec2Int.Up)
+            return original;
+
+        int width = original.width;
+        int height = original.height;
+
+        int rot = rotation == Vec2Int.Right ? 1 :
+                rotation == Vec2Int.Down  ? 2 :
+                rotation == Vec2Int.Left  ? 3 : 0;
+
+        int newWidth  = (rot % 2 == 0) ? width  : height;
+        int newHeight = (rot % 2 == 0) ? height : width;
+
+        Color[] src = original.GetPixels();
+        Color[] dst = new Color[src.Length];
+
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                int srcIndex = y * width + x;
+
+                int nx = x;
+                int ny = y;
+
+                switch (rot)
+                {
+                    case 1: // 90 CW
+                        nx = y;
+                        ny = width - 1 - x;
+                        break;
+
+                    case 2: // 180 CW
+                        nx = width - 1 - x;
+                        ny = height - 1 - y;
+                        break;
+
+                    case 3: // 270 CW
+                        nx = height - 1 - y;
+                        ny = x;
+                        break;
+                }
+
+                int dstIndex = ny * newWidth + nx;
+                dst[dstIndex] = src[srcIndex];
+            }
+        }
+
+        Texture2D rotated = new Texture2D(newWidth, newHeight, original.format, false, false)
+        {
+            filterMode = FilterMode.Point,
+            wrapMode = TextureWrapMode.Clamp,
+            mipMapBias = 0,
+            anisoLevel = 0
+        };
+
+        rotated.SetPixels(dst);
+        rotated.Apply(updateMipmaps: false, makeNoLongerReadable: false);
+
+        return rotated;
     }
 }

@@ -6,14 +6,15 @@ namespace Larnix.Blocks
     {
         void Init()
         {
-            This.FrameEventSequential += (sender, args) => Fall();
+            This.Subscribe(BlockEvent.Sequential,
+                (_, _) => Fall());
         }
 
         int FALL_PERIOD();
 
         private void Fall()
         {
-            if (WorldAPI.FramesSinceServerStart() % FALL_PERIOD() != 0)
+            if (WorldAPI.ServerFrame() % FALL_PERIOD() != 0)
                 return;
 
             Vec2Int localpos = This.Position;
