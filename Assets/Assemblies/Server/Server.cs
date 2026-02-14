@@ -45,6 +45,9 @@ namespace Larnix.Server
         private UserManager UserManager => Ref<UserManager>();
         private Receiver Receiver => Ref<Receiver>();
 
+        private float _totalTimeElapsed = 0f;
+        public float RealDeltaTime => _totalTimeElapsed;
+
         public readonly Action CloseServer;
         private bool _disposed = false;
 
@@ -217,9 +220,9 @@ namespace Larnix.Server
 
             // Tick technical singletons
 
-            float realTimeElapsed = GetTimeElapsed();
-            Receiver.Tick(realTimeElapsed); // for limits
-            _quickServer.ServerTick(realTimeElapsed); // refresh & process packets
+            _totalTimeElapsed = GetTimeElapsed();
+            Receiver.Tick(_totalTimeElapsed); // for limits
+            _quickServer.ServerTick(_totalTimeElapsed); // refresh & process packets
 
             // Process server logic
 

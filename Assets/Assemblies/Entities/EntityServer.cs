@@ -11,7 +11,7 @@ namespace Larnix.Entities
         public ulong uID { get; init; }
         public EntityData EntityData { get; init; } // connected to entity-saving system
 
-        public EntityServer(ulong uid, EntityData entityData)
+        internal EntityServer(ulong uid, EntityData entityData)
         {
             uID = uid;
             EntityData = entityData; // should consume a given object

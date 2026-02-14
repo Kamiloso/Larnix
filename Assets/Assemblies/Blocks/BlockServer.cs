@@ -13,7 +13,7 @@ namespace Larnix.Blocks
         public bool IsFront { get; init; }
         public BlockData1 BlockData { get; init; } // connected to block-saving system
 
-        public BlockServer(Vec2Int position, BlockData1 blockData, bool isFront)
+        internal BlockServer(Vec2Int position, BlockData1 blockData, bool isFront)
         {
             Position = position;
             BlockData = blockData; // should consume a given object

@@ -49,7 +49,8 @@ namespace Larnix.Menu.Worlds
 
         public void AddServer()
         {
-            BaseForm.GetInstance<ServerEditForm>().EnterForm("ADD");
+            ServerEditForm form = BaseForm.GetInstance<ServerEditForm>();
+            form.EnterForm("ADD");
         }
 
         public void JoinServer()
@@ -75,7 +76,8 @@ namespace Larnix.Menu.Worlds
         public void EditServer()
         {
             ServerThinker thinker = ServerThinkers[SelectedWorld];
-            BaseForm.GetInstance<ServerEditForm>().EnterForm("EDIT", SelectedWorld, thinker.serverData.AuthCodeRSA);
+            ServerEditForm form = BaseForm.GetInstance<ServerEditForm>();
+            form.EnterForm("EDIT", SelectedWorld, thinker.serverData.AuthCodeRSA);
         }
 
         public void RefreshServer()
@@ -86,7 +88,14 @@ namespace Larnix.Menu.Worlds
 
         public void RemoveServer()
         {
-            if(SelectedWorld != null)
+            ServerThinker thinker = ServerThinkers[SelectedWorld];
+            ServerRemoveForm form = BaseForm.GetInstance<ServerRemoveForm>();
+            form.EnterForm(thinker.serverData.Address);
+        }
+
+        public void TrueRemoveServer()
+        {
+            if (SelectedWorld != null)
             {
                 string folderName = ServerThinkers[SelectedWorld].serverData.FolderName;
                 Directory.Delete(Path.Combine(MultiplayerPath, folderName), true);

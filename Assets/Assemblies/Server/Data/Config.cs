@@ -7,13 +7,13 @@ namespace Larnix.Server.Data
 {
     internal class Config
     {
-        public ushort ConfigVersion = 6;
+        public ushort ConfigVersion = 8;
         public ushort MaxPlayers = 10;
         public ushort Port = Common.LARNIX_PORT;
         public string Motd = "Welcome to Larnix server!";
         public int DataSavingPeriodFrames = 15 * 50;
         public int EntityBroadcastPeriodFrames = 2;
-        public int ChunkSendingPeriodFrames = 8;
+        public int ChunkSendingPeriodFrames = 2;
         public int ClientIdentityPrefixSizeIPv4 = 32;
         public int ClientIdentityPrefixSizeIPv6 = 56;
         public bool UseRelay = false;
@@ -111,7 +111,7 @@ namespace Larnix.Server.Data
                 DataSavingPeriodFrames = defaults.DataSavingPeriodFrames;
                 EntityBroadcastPeriodFrames = defaults.EntityBroadcastPeriodFrames;
             }
-            if (ConfigVersion < 6)
+            if (ConfigVersion < 8)
             {
                 ChunkSendingPeriodFrames = defaults.ChunkSendingPeriodFrames;
             }

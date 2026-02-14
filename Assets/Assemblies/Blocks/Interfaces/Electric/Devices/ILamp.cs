@@ -4,15 +4,15 @@ namespace Larnix.Blocks.All
 {
     public interface ILamp : IElectricDevice
     {
-        byte LAMP_LIT_BYTE() => 0b0001;
+        byte LAMP_LIT_BIT() => 0b0001;
 
         void IElectricDevice.DeviceTick(bool active, bool wentOn, bool wentOff, byte srcByte)
         {
-            bool isLit = (This.BlockData.Variant & LAMP_LIT_BYTE()) != 0;
+            bool isLit = (This.BlockData.Variant & LAMP_LIT_BIT()) != 0;
             
             if (active != isLit)
             {
-                byte newVariant = (byte)(This.BlockData.Variant ^ LAMP_LIT_BYTE());
+                byte newVariant = (byte)(This.BlockData.Variant ^ LAMP_LIT_BIT());
                 WorldAPI.SetBlockVariant(This.Position, This.IsFront, newVariant, IWorldAPI.BreakMode.Weak);
             }
         }

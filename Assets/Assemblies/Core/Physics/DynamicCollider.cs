@@ -43,31 +43,31 @@ namespace Larnix.Core.Physics
 
     public class DynamicCollider
     {
-        private const double MaxTouchVel = 0.1f;
-
-        private readonly PhysicsManager Physics;
-        private readonly PhysicsProperties Properties;
+        private const double MAX_TOUCH_VELOCITY = 0.1f;
 
         internal Vec2? OldCenter;
         internal Vec2 Center;
-        private readonly Vec2 Offset;
+        internal readonly Vec2 Offset;
         internal readonly Vec2 Size;
 
-        private Vec2 Velocity;
-        private OutputData Report;
+        private readonly PhysicsManager _physics;
+        private readonly PhysicsProperties _properties;
+
+        private Vec2 _velocity;
+        private OutputData _report;
 
         public DynamicCollider(PhysicsManager physics, Vec2 center, Vec2 offset, Vec2 size, PhysicsProperties properties)
         {
-            Physics = physics;
-            Properties = properties;
+            _physics = physics;
+            _properties = properties;
 
             OldCenter = null;
             Center = center + offset;
             Offset = offset;
             Size = size;
 
-            Velocity = Vec2.Zero;
-            Report = new OutputData { Position = Center };
+            _velocity = Vec2.Zero;
+            _report = new OutputData { Position = Center };
         }
 
         public OutputData PhysicsUpdate(InputData inputData)
@@ -77,66 +77,68 @@ namespace Larnix.Core.Physics
             int wantSide = (inputData.Left ? -1 : 0) + (inputData.Right ? 1 : 0);
 
             if (wantSide != 0)
-                Velocity += wantSide * new Vec2(Properties.ControlForce, 0f);
+                _velocity += wantSide * new Vec2(_properties.ControlForce, 0f);
             else
             {
-                int sgn1 = Math.Sign(Velocity.x);
-                Velocity -= sgn1 * new Vec2(Properties.HorizontalDrag, 0f);
-                int sgn2 = Math.Sign(Velocity.x);
+                int sgn1 = Math.Sign(_velocity.x);
+                _velocity -= sgn1 * new Vec2(_properties.HorizontalDrag, 0f);
+                int sgn2 = Math.Sign(_velocity.x);
 
                 if (sgn1 != sgn2)
-                    Velocity = new Vec2(0f, Velocity.y);
+                    _velocity = new Vec2(0f, _velocity.y);
             }
 
             // Vertical physics
 
-            Velocity -= new Vec2(0, Properties.Gravity);
+            _velocity -= new Vec2(0, _properties.Gravity);
 
-            if (Report.OnGround)
+            if (_report.OnGround)
             {
                 if (inputData.Jump)
                 {
-                    Velocity = new Vec2(Velocity.x, Properties.JumpSize);
+                    _velocity = new Vec2(_velocity.x, _properties.JumpSize);
                 }
             }
 
             // Velocity clamp
 
-            if (Math.Abs(Velocity.x) > Properties.MaxHorizontalVelocity)
-                Velocity = new Vec2(Math.Sign(Velocity.x) * Properties.MaxHorizontalVelocity, Velocity.y);
+            if (Math.Abs(_velocity.x) > _properties.MaxHorizontalVelocity)
+                _velocity = new Vec2(Math.Sign(_velocity.x) * _properties.MaxHorizontalVelocity, _velocity.y);
 
-            if (Math.Abs(Velocity.y) > Properties.MaxVerticalVelocity)
-                Velocity = new Vec2(Velocity.x, Math.Sign(Velocity.y) * Properties.MaxVerticalVelocity);
+            if (Math.Abs(_velocity.y) > _properties.MaxVerticalVelocity)
+                _velocity = new Vec2(_velocity.x, Math.Sign(_velocity.y) * _properties.MaxVerticalVelocity);
 
             // Velocity wall reset
 
-            if (Report.OnGround && Velocity.y < -MaxTouchVel)
-                Velocity = new Vec2(Velocity.x, -MaxTouchVel);
+            const double MTV = MAX_TOUCH_VELOCITY;
 
-            if (Report.OnCeil && Velocity.y > MaxTouchVel)
-                Velocity = new Vec2(Velocity.x, MaxTouchVel);
+            if (_report.OnGround && _velocity.y < -MTV)
+                _velocity = new Vec2(_velocity.x, -MTV);
 
-            if (Report.OnLeftWall && Velocity.x < -MaxTouchVel)
-                Velocity = new Vec2(-MaxTouchVel, Velocity.y);
+            if (_report.OnCeil && _velocity.y > MTV)
+                _velocity = new Vec2(_velocity.x, MTV);
 
-            if (Report.OnRightWall && Velocity.x > MaxTouchVel)
-                Velocity = new Vec2(MaxTouchVel, Velocity.y);
+            if (_report.OnLeftWall && _velocity.x < -MTV)
+                _velocity = new Vec2(-MTV, _velocity.y);
+
+            if (_report.OnRightWall && _velocity.x > MTV)
+                _velocity = new Vec2(MTV, _velocity.y);
 
             // Generate report & update position
 
-            SetWill(Center, Center + Velocity * Common.FIXED_TIME);
-            Report = Physics.MoveCollider(this);
-            return RemoveOffset(Report);
+            SetWill(Center, Center + _velocity * Common.FIXED_TIME);
+            _report = _physics.MoveCollider(this);
+            return RemoveOffset(_report);
         }
 
         public OutputData NoPhysicsUpdate(Vec2 targetPos)
         {
             Vec2 colliderPos = targetPos + Offset;
-            Velocity = Vec2.Zero;
+            _velocity = Vec2.Zero;
 
             SetWill(Center, colliderPos);
-            Report = new OutputData { Position = colliderPos };
-            return RemoveOffset(Report);
+            _report = new OutputData { Position = colliderPos };
+            return RemoveOffset(_report);
         }
 
         internal void SetWill(Vec2 oldCenter, Vec2 newCenter)

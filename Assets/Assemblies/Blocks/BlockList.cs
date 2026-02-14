@@ -3,7 +3,6 @@ using System.Collections.Generic;
 
 namespace Larnix.Blocks
 {
-    public enum BlockLayer : byte { Front, Back }
     public enum BlockID : ushort
     {
         Air = 0,
@@ -29,6 +28,14 @@ namespace Larnix.Blocks
         ElectricPipe = 20,
         ElectricPipeLit = 21,
         Lamp = 22,
-        NotGate = 23,
+        BufGate = 23,
+        NotGate = 24,
+        OrGate = 25,
+        AndGate = 26,
+        XorGate = 27,
+        NorGate = 28,
+        NandGate = 29,
+        XnorGate = 30,
+        LayerRepeater = 31,
     }
 }

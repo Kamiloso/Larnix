@@ -94,7 +94,6 @@ namespace Larnix.Server
 
         private void _PlayerUpdate(PlayerUpdate msg, string owner)
         {
-            // check if most recent data (fast mode receiving = over raw udp)
             PlayerUpdate lastPacket = PlayerManager.GetRecentPlayerUpdate(owner);
             if (lastPacket == null || lastPacket.FixedFrame < msg.FixedFrame)
             {

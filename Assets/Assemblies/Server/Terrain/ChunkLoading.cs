@@ -16,7 +16,7 @@ namespace Larnix.Server.Terrain
 {
     internal class ChunkLoading : Singleton
     {
-        public const float UNLOADING_TIME = 4f; // seconds
+        public const float UNLOADING_TIME = 1f; // seconds
 
         private Server Server => Ref<Server>();
         private PlayerManager PlayerManager => Ref<PlayerManager>();
@@ -68,7 +68,7 @@ namespace Larnix.Server.Terrain
             // chunk unloading countdown
             foreach (var kvp in _chunks.ToList())
             {
-                _chunks[kvp.Key].UnloadTime -= Common.FIXED_TIME;
+                _chunks[kvp.Key].UnloadTime -= Server.RealDeltaTime;
             }
         }
 

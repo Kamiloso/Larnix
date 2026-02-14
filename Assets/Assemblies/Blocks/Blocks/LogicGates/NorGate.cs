@@ -1,0 +1,21 @@
+using Larnix.Blocks;
+using System.Collections;
+using System.Collections.Generic;
+using Larnix.Core.Vectors;
+using Larnix.Blocks.Structs;
+using E = Larnix.Blocks.All.IElectricDevice;
+
+namespace Larnix.Blocks.All
+{
+    public sealed class NorGate : BlockServer, ISolidElectric, ILogicGate
+    {
+        public NorGate(Vec2Int POS, BlockData1 block, bool isFront) : base(POS, block, isFront) { }
+
+        public byte LogicInToOut(byte input)
+        {
+            bool left = (input & E.LEFT) != 0;
+            bool right = (input & E.RIGHT) != 0;
+            return (byte)(left || right ? 0 : E.UP);
+        }
+    }
+}
