@@ -13,7 +13,7 @@ namespace Larnix.Worldgen.Ores
             DepthMin = -10;
             DepthMax = -20;
             OreClusterSizeCutoff = 0.5;
-            OreFront = new(BlockID.Planks,0);
+            OreBlockId = BlockID.Plastic;
             OreProvider = ValueProvider.CreatePerlin(
                 new Perlin(seed: (int)baseSeed.Hash("test_ore"))
                 {

@@ -5,7 +5,7 @@ namespace Larnix.Worldgen
 {
     public enum OreID : ushort
     {
-        Empty = 0,
-        TestOre = 1,
+        TestOre = 0,
+        BiomeTestOre = 1,
     }
 }

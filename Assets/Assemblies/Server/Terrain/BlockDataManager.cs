@@ -17,7 +17,7 @@ namespace Larnix.Server.Terrain
         private Database Database => Ref<Database>();
         private Generator Generator => Ref<Generator>();
 
-        private bool _debugUnlinkDatabase = false;
+        private bool _debugUnlinkDatabase = true;
 
         public BlockDataManager(Server server) : base(server) {}
 
