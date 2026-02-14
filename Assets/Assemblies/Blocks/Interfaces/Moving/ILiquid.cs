@@ -4,7 +4,7 @@ using Larnix.Core.Vectors;
 using Larnix.Core.Utils;
 using Larnix.Blocks.Structs;
 
-namespace Larnix.Blocks
+namespace Larnix.Blocks.All
 {
     public interface ILiquid : IMovingBehaviour, IPlaceable, IReplaceable, IBlockingFront
     {

@@ -6,6 +6,7 @@ using System.Runtime.Serialization;
 using Larnix.Core;
 using Larnix.Core.Physics;
 using Larnix.Entities.Structs;
+using Larnix.Entities.All;
 
 namespace Larnix.Entities
 {
@@ -14,8 +15,8 @@ namespace Larnix.Entities
         private static Dictionary<EntityID, EntityInfo> EntityCache = new();
         private static object _locker = new();
 
-        private static readonly string Namespace = typeof(EntityServer).Namespace;
-        private static readonly string AsmName = typeof(EntityServer).Assembly.GetName().Name;
+        private static readonly string Namespace = typeof(None).Namespace;
+        private static readonly string AsmName = typeof(None).Assembly.GetName().Name;
 
         private class EntityInfo
         {
@@ -84,11 +85,13 @@ namespace Larnix.Entities
         {
             EntityInfo info = GetEntityInfo(entity.ID);
             EntityServer entityserv = info.Constructor(uid, entity);
-            entityserv.InitializePhysics(physics);
+            entityserv.Physics = physics;
+
             foreach (var init in info.Inits)
             {
                 init(entityserv);
             }
+
             return entityserv;
         }
 

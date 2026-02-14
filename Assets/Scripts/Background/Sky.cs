@@ -1,5 +1,5 @@
 using UnityEngine;
-using Larnix.Worldgen;
+using Larnix.Worldgen.Biomes;
 using Larnix.Core.Vectors;
 using Larnix.Core;
 

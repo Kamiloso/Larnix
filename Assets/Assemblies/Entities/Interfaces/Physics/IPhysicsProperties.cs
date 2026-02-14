@@ -2,7 +2,7 @@ using Larnix.Core.Physics;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace Larnix.Entities
+namespace Larnix.Entities.All
 {
     public interface IPhysicsProperties : IEntityInterface
     {

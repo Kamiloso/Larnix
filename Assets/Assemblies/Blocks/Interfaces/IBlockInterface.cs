@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using Larnix.Core.Utils;
 using Larnix.Core.Json;
 
-namespace Larnix.Blocks
+namespace Larnix.Blocks.All
 {
     public interface IBlockInterface
     {

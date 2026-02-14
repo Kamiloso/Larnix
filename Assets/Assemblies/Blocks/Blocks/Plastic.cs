@@ -3,9 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
-using DMM = Larnix.Blocks.IBreakable.DropMatchMode;
+using DMM = Larnix.Blocks.All.IBreakable.DropMatchMode;
 
-namespace Larnix.Blocks
+namespace Larnix.Blocks.All
 {
     public sealed class Plastic : BlockServer, ISolid
     {

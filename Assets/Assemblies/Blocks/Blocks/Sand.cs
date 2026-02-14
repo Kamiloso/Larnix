@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
 
-namespace Larnix.Blocks
+namespace Larnix.Blocks.All
 {
     public sealed class Sand : BlockServer, ISolid, IFalling
     {

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Larnix.Core.Vectors;
 using Larnix.Entities.Structs;
 
-namespace Larnix.Entities
+namespace Larnix.Entities.All
 {
     public sealed class Player : EntityServer, IHasCollider, IPhysicsProperties
     {

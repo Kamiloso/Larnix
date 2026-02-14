@@ -3,9 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
-using E = Larnix.Blocks.IElectricDevice;
+using E = Larnix.Blocks.All.IElectricDevice;
 
-namespace Larnix.Blocks
+namespace Larnix.Blocks.All
 {
     public sealed class NotGate : BlockServer, ISolidElectric, ILogicGate
     {

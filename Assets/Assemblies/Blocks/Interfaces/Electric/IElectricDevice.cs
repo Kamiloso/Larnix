@@ -1,7 +1,7 @@
 using Larnix.Core;
 using Larnix.Core.Vectors;
 
-namespace Larnix.Blocks
+namespace Larnix.Blocks.All
 {
     public interface IElectricDevice : IElectricPropagator
     {

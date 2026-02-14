@@ -10,6 +10,7 @@ using Larnix.Blocks.Structs;
 using Larnix.Socket.Backend;
 using Larnix.Core.References;
 using Larnix.Packets;
+using Larnix.Server.Data;
 
 namespace Larnix.Server.Terrain
 {
@@ -21,6 +22,7 @@ namespace Larnix.Server.Terrain
         private PlayerManager PlayerManager => Ref<PlayerManager>();
         private QuickServer QuickServer => Ref<QuickServer>();
         private EntityManager EntityManager => Ref<EntityManager>();
+        private Config Config => Ref<Config>();
 
         private readonly Dictionary<Vec2Int, ChunkContainer> _chunks = new();
 
@@ -36,15 +38,13 @@ namespace Larnix.Server.Terrain
 
         public override void EarlyFrameUpdate()
         {
-            // Chunk stimulating
-
+            // chunk stimulating
             foreach(var chunk in GetStimulatedChunks())
             {
                 ChunkStimulate(chunk);
             }
 
-            // Chunk unloading
-
+            // chunk unloading
             foreach (var kvp in _chunks.ToList())
             {
                 var chunk = kvp.Key;
@@ -54,8 +54,7 @@ namespace Larnix.Server.Terrain
                     ChunkUnload(chunk);
             }
 
-            // Chunk activating
-
+            // chunk activating
             foreach (var chunk in SortByPriority(_chunks.Keys.Where(ch => ChunkState(ch) == LoadState.Loading).ToList()))
             {
                 var state = ChunkState(chunk);
@@ -66,8 +65,7 @@ namespace Larnix.Server.Terrain
                 break; // only one chunk per frame
             }
 
-            // Chunk unloading countdown
-
+            // chunk unloading countdown
             foreach (var kvp in _chunks.ToList())
             {
                 _chunks[kvp.Key].UnloadTime -= Common.FIXED_TIME;
@@ -76,19 +74,26 @@ namespace Larnix.Server.Terrain
 
         public override void FrameUpdate()
         {
-            var activeChunks = _chunks.Where(kv => ChunkState(kv.Key) == LoadState.Active).ToList();
-            var orderedChunks = activeChunks.OrderBy(kv => kv.Key.y).ThenBy(kv => kv.Key.x).ToList();
+            IEnumerator[] invokers = _chunks
+                .Where(kv => ChunkState(kv.Key) == LoadState.Active)
+                .OrderBy(kv => kv.Key.y)
+                .ThenBy(kv => kv.Key.x)
+                .Select(kv => kv.Value.Instance.GetFrameInvoker())
+                .Select(inv => inv.GetEnumerator())
+                .ToArray();
 
-            foreach (var kvp in orderedChunks)
-            {
-                // TODO: improve with IEnumerator + fix a chunk border bug
-                ChunkServer chunk = kvp.Value.Instance;
-                chunk.InvokeFrame();
-            }
+            if (invokers.Length >= 1)
+                while (true)
+                {
+                    foreach (IEnumerator inv in invokers)
+                    {
+                        bool result = inv.MoveNext();
+                        if (!result) goto end_while_true;
+                    }
+                }
+            end_while_true:;
 
-            // Chunk changes broadcasting
-            const int BROADCAST_FIXED_PERIOD = 8;
-            if (Server.FixedFrame % BROADCAST_FIXED_PERIOD == 0)
+            if (Server.FixedFrame % Config.ChunkSendingPeriodFrames == 0)
             {
                 BroadcastChunkChanges();
             }

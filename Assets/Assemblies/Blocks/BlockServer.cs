@@ -9,9 +9,9 @@ namespace Larnix.Blocks
 {
     public class BlockServer
     {
-        public readonly Vec2Int Position;
-        public readonly bool IsFront;
-        public readonly BlockData1 BlockData; // connected to block-saving system
+        public Vec2Int Position { get; init; }
+        public bool IsFront { get; init; }
+        public BlockData1 BlockData { get; init; } // connected to block-saving system
 
         public BlockServer(Vec2Int position, BlockData1 blockData, bool isFront)
         {
@@ -51,76 +51,5 @@ namespace Larnix.Blocks
                     handler?.Invoke(this, EventArgs.Empty);
             }
         }
-
-/*#region Frame Events
-
-        public event EventHandler PreFrameEvent;
-        public event EventHandler PreFrameEventSelfMutations;
-        public event EventHandler FrameEventConway;
-        public event EventHandler FrameEventSequential;
-        public event EventHandler FrameEventRandom;
-        public event EventHandler FrameEventElectricPropagation;
-        public event EventHandler FrameEventElectricFinalize;
-        public event EventHandler FrameEventSequentialLate;
-        public event EventHandler PostFrameEvent;
-
-        public void PreFrameTrigger() // START 1
-        {
-            EventFlag = true;
-            PreFrameEvent?.Invoke(this, EventArgs.Empty);
-        }
-
-        public void PreFrameTriggerSelfMutations() // START 2
-        {
-            if (EventFlag)
-                PreFrameEventSelfMutations?.Invoke(this, EventArgs.Empty);
-        }
-
-        public void FrameUpdateConway() // 1
-        {
-            if (EventFlag)
-                FrameEventConway?.Invoke(this, EventArgs.Empty);
-        }
-
-        public void FrameUpdateSequential() // 2
-        {
-            if (EventFlag)
-                FrameEventSequential?.Invoke(this, EventArgs.Empty);
-        }
-
-        public void FrameUpdateRandom() // 3
-        {
-            if (EventFlag)
-                FrameEventRandom?.Invoke(this, EventArgs.Empty);
-        }
-
-        public void FrameUpdateElectricPropagation() // 4
-        {
-            if (EventFlag)
-                FrameEventElectricPropagation?.Invoke(this, EventArgs.Empty);
-        }
-
-        public void FrameUpdateElectricFinalize() // 5
-        {
-            if (EventFlag)
-                FrameEventElectricFinalize?.Invoke(this, EventArgs.Empty);
-        }
-
-        public void FrameUpdateSequentialLate() // 6
-        {
-            if (EventFlag)
-                FrameEventSequentialLate?.Invoke(this, EventArgs.Empty);
-        }
-
-        public void PostFrameTrigger() // END
-        {
-            if (EventFlag)
-                PostFrameEvent?.Invoke(this, EventArgs.Empty);
-            
-            EventFlag = false;
-        }
-
-#endregion*/
-
     }
 }

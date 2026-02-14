@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using Larnix.Blocks.Structs;
 using Larnix.Core.Utils;
 
@@ -49,21 +50,28 @@ namespace Larnix.Blocks
             };
         }
 
-        public void InvokeAll()
+        public IEnumerable GetFrameInvoker()
         {
             foreach (var pos in ChunkIterator.Iterate(ChunkIterator.Order.Any)) // START FRAME
             {
                 _blocksBack[pos.x, pos.y].EventFlag = true;
                 _blocksFront[pos.x, pos.y].EventFlag = true;
             }
+            yield return null;
 
             foreach (var (type, order) in _blockEvents) // EXECUTE EVENTS
             {
                 foreach (var pos in ChunkIterator.Iterate(order))
+                {
                     _blocksBack[pos.x, pos.y].InvokeEvent(type);
+                }
+                yield return null;
 
                 foreach (var pos in ChunkIterator.Iterate(order))
+                {
                     _blocksFront[pos.x, pos.y].InvokeEvent(type);
+                }
+                yield return null;
             }
 
             foreach (var pos in ChunkIterator.Iterate(ChunkIterator.Order.Any)) // END FRAME
@@ -71,6 +79,7 @@ namespace Larnix.Blocks
                 _blocksBack[pos.x, pos.y].EventFlag = false;
                 _blocksFront[pos.x, pos.y].EventFlag = false;
             }
+            yield break;
         }
     }
 }

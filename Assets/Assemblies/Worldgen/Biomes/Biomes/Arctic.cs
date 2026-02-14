@@ -4,7 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Larnix.Blocks.Structs;
 
-namespace Larnix.Worldgen.Biomes
+namespace Larnix.Worldgen.Biomes.All
 {
     public sealed class Arctic : Biome
     {

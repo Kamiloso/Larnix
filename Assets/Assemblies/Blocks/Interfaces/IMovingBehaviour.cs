@@ -2,7 +2,7 @@ using Larnix.Blocks;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
 
-namespace Larnix.Blocks
+namespace Larnix.Blocks.All
 {
     public interface IMovingBehaviour : IBlockInterface
     {

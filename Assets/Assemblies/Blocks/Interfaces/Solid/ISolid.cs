@@ -2,11 +2,11 @@ using System.Collections;
 using System.Collections.Generic;
 using Larnix.Core.Vectors;
 
-namespace Larnix.Blocks
+namespace Larnix.Blocks.All
 {
     public interface ISolid : IHasCollider, IPlaceable, IBreakable, IBlockingFront, IHasConture
     {
-        IEnumerable<Collider> IHasCollider.STATIC_GetAllColliders(BlockID ID, byte variant)
+        Collider[] IHasCollider.STATIC_GetAllColliders(BlockID ID, byte variant)
         {
             return new Collider[] {
                 new(

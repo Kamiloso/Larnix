@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Larnix.Blocks.Structs;
 
-namespace Larnix.Blocks
+namespace Larnix.Blocks.All
 {
     public interface IReplaceable : IBlockInterface
     {

@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 
-namespace Larnix.Blocks
+namespace Larnix.Blocks.All
 {
     public interface ITool : IBlockInterface
     {

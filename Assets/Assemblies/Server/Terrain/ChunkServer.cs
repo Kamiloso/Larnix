@@ -10,6 +10,7 @@ using Larnix.Blocks.Structs;
 using Larnix.Core.References;
 using Larnix.Core.Binary;
 using Larnix.Packets.Structs;
+using Larnix.Blocks.All;
 
 namespace Larnix.Server.Terrain
 {
@@ -26,7 +27,7 @@ namespace Larnix.Server.Terrain
         private readonly BlockEvents _blockEvents;
         private readonly BlockServer[,] _blocksFront = new BlockServer[CHUNK_SIZE, CHUNK_SIZE];
         private readonly BlockServer[,] _blocksBack = new BlockServer[CHUNK_SIZE, CHUNK_SIZE];
-        private readonly Dictionary<Vec2Int, IEnumerable<StaticCollider>> _colliderCollections = new();
+        private readonly Dictionary<Vec2Int, StaticCollider[]> _colliderCollections = new();
 
         public readonly BlockData2[,] ActiveChunkReference;
 
@@ -120,9 +121,9 @@ namespace Larnix.Server.Terrain
             return result;
         }
 
-        public void InvokeFrame()
+        public IEnumerable GetFrameInvoker()
         {
-            _blockEvents.InvokeAll();
+            return _blockEvents.GetFrameInvoker();
         }
 
         private void RefreshCollider(Vec2Int pos)
@@ -145,10 +146,10 @@ namespace Larnix.Server.Terrain
             if (iface != null)
             {
                 Vec2Int POS = BlockUtils.GlobalBlockCoords(_chunkpos, pos);
-                IEnumerable<StaticCollider> staticColliders = iface
+                StaticCollider[] staticColliders = iface
                     .STATIC_GetAllColliders(blockData.ID, blockData.Variant)
                     .Select(col => IHasCollider.MakeStaticCollider(col, POS))
-                    .ToList();
+                    .ToArray();
 
                 _colliderCollections.Add(pos, staticColliders);
                 foreach (var collider in staticColliders)

@@ -1,6 +1,6 @@
 using Larnix.Blocks.Structs;
 
-namespace Larnix.Blocks
+namespace Larnix.Blocks.All
 {
     public interface ILamp : IElectricDevice
     {

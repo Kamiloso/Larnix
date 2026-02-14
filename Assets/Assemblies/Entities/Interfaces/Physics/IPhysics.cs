@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Larnix.Core.Physics;
 using Larnix.Core.Vectors;
 
-namespace Larnix.Entities
+namespace Larnix.Entities.All
 {
     public interface IPhysics : IManagesTransform, IHasCollider, IPhysicsProperties
     {

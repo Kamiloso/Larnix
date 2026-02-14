@@ -6,6 +6,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using Larnix.Blocks.Structs;
+using Larnix.Blocks.All;
 
 namespace Larnix.Client.UI
 {

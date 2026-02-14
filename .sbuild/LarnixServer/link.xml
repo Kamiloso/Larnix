@@ -1,13 +1,17 @@
 <linker>
   <assembly fullname="Larnix.Worldgen">
-    <type fullname="Larnix.Worldgen.Biomes.*" />
+    <type fullname="Larnix.Worldgen.Biomes.All.*" />
   </assembly>
   
   <assembly fullname="Larnix.Entities">
-	<type fullname="Larnix.Entities.*" />
+    <type fullname="Larnix.Entities.All.*" />
   </assembly>
   
   <assembly fullname="Larnix.Blocks">
-	<type fullname="Larnix.Blocks.*" />
+    <type fullname="Larnix.Blocks.All.*" />
+  </assembly>
+
+  <assembly fullname="Larnix.Packets">
+    <type fullname="Larnix.Packets.*" />
   </assembly>
 </linker>

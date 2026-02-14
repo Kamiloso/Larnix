@@ -4,7 +4,7 @@ using Larnix.Core.Physics;
 using Larnix.Core.Vectors;
 using Larnix.Entities.Structs;
 
-namespace Larnix.Entities
+namespace Larnix.Entities.All
 {
     public sealed class Wildpig : EntityServer, IWalking
     {

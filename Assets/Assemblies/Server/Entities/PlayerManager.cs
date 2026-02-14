@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using Larnix.Entities;
+using Larnix.Entities.All;
 using Larnix.Socket.Packets;
 using Larnix.Core.Vectors;
 using Larnix.Socket.Backend;

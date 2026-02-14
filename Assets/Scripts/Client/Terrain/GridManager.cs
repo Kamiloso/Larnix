@@ -11,6 +11,7 @@ using Larnix.Blocks.Structs;
 using Larnix.Core;
 using Larnix.Client.Particles;
 using Random = System.Random;
+using IHasCollider = Larnix.Blocks.All.IHasCollider;
 
 namespace Larnix.Client.Terrain
 {
@@ -18,7 +19,7 @@ namespace Larnix.Client.Terrain
     {
         private const double LOCK_TIMEOUT = 5.0; // seconds
 
-        private readonly Dictionary<Vec2Int, IEnumerable<StaticCollider>> _colliderCollections = new();
+        private readonly Dictionary<Vec2Int, StaticCollider[]> _colliderCollections = new();
         private readonly List<BlockLock> _lockedBlocks = new();
 
         private ParticleManager ParticleManager => Ref.ParticleManager;
@@ -171,10 +172,10 @@ namespace Larnix.Client.Terrain
                 IHasCollider iface = BlockFactory.GetSlaveInstance<IHasCollider>(block.Front.ID);
                 if (iface != null)
                 {
-                    IEnumerable<StaticCollider> staticColliders = iface
+                    StaticCollider[] staticColliders = iface
                         .STATIC_GetAllColliders(block.Front.ID, block.Front.Variant)
                         .Select(col => IHasCollider.MakeStaticCollider(col, POS))
-                        .ToList();
+                        .ToArray();
 
                     _colliderCollections.Add(POS, staticColliders);
                     foreach (var collider in staticColliders)

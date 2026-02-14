@@ -4,7 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Larnix.Core.Utils;
 
-namespace Larnix.Entities
+namespace Larnix.Entities.All
 {
     public interface IWalking : IPhysics
     {

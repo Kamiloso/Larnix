@@ -2,7 +2,7 @@ using Larnix.Blocks.Structs;
 using Larnix.Core.Vectors;
 using System;
 
-namespace Larnix.Blocks
+namespace Larnix.Blocks.All
 {
     public interface IRotational : IBlockInterface
     {

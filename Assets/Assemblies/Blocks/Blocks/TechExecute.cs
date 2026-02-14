@@ -5,7 +5,7 @@ using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
 using Larnix.Core.Json;
 
-namespace Larnix.Blocks
+namespace Larnix.Blocks.All
 {
     public sealed class TechExecute : BlockServer, ITechExecute
     {

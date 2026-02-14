@@ -5,7 +5,7 @@ using System.Linq;
 using System;
 using Larnix.Blocks.Structs;
 
-namespace Larnix.Blocks
+namespace Larnix.Blocks.All
 {
     public interface IPipe : IHasCollider, IPlaceable, IBreakable, IFragile
     {
@@ -15,7 +15,7 @@ namespace Larnix.Blocks
                  (_, _) => MutateNearbyPipes());
         }
 
-        IEnumerable<Collider> IHasCollider.STATIC_GetAllColliders(BlockID ID, byte variant)
+        Collider[] IHasCollider.STATIC_GetAllColliders(BlockID ID, byte variant)
         {
             double W = WIDTH();
             List<Collider> colliders = new()
@@ -54,11 +54,11 @@ namespace Larnix.Blocks
                 )
             );
 
-            return colliders;
+            return colliders.ToArray();
         }
 
         double WIDTH();
-        IEnumerable<Type> CONNECT_TO_TYPES();
+        Type[] CONNECT_TO_TYPES();
 
         private void MutateNearbyPipes()
         {

@@ -1,11 +1,11 @@
 ﻿<Solution>
   <Project Path="Assembly-CSharp.csproj" />
   <Project Path="Larnix.Blocks.csproj" />
+  <Project Path="Larnix.Worldgen.csproj" />
   <Project Path="Larnix.Entities.csproj" />
   <Project Path="Larnix.Core.csproj" />
   <Project Path="Larnix.Socket.csproj" />
   <Project Path="Larnix.Packets.csproj" />
   <Project Path="Larnix.Server.csproj" />
-  <Project Path="Larnix.Worldgen.csproj" />
   <Project Path="Assembly-CSharp-Editor.csproj" />
 </Solution>

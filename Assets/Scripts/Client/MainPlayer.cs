@@ -11,7 +11,7 @@ using Larnix.Core.Utils;
 using Larnix.Packets;
 using Larnix.Client.Terrain;
 using System;
-using IHasCollider = Larnix.Entities.IHasCollider;
+using Larnix.Entities.All;
 
 namespace Larnix.Client
 {

@@ -7,12 +7,13 @@ namespace Larnix.Server.Data
 {
     internal class Config
     {
-        public ushort ConfigVersion = 5;
+        public ushort ConfigVersion = 6;
         public ushort MaxPlayers = 10;
         public ushort Port = Common.LARNIX_PORT;
         public string Motd = "Welcome to Larnix server!";
         public int DataSavingPeriodFrames = 15 * 50;
         public int EntityBroadcastPeriodFrames = 2;
+        public int ChunkSendingPeriodFrames = 8;
         public int ClientIdentityPrefixSizeIPv4 = 32;
         public int ClientIdentityPrefixSizeIPv6 = 56;
         public bool UseRelay = false;
@@ -54,18 +55,20 @@ namespace Larnix.Server.Data
 
         private static Config FromJson(JSONNode json)
         {
-            Config cfg = new Config();
-
-            cfg.ConfigVersion = (ushort)json["ConfigVersion"].AsInt;
-            cfg.MaxPlayers = (ushort)json["MaxPlayers"].AsInt;
-            cfg.Port = (ushort)json["Port"].AsInt;
-            cfg.Motd = json["Motd"];
-            cfg.DataSavingPeriodFrames = json["DataSavingPeriodFrames"].AsInt;
-            cfg.EntityBroadcastPeriodFrames = json["EntityBroadcastPeriodFrames"].AsInt;
-            cfg.ClientIdentityPrefixSizeIPv4 = json["ClientIdentityPrefixSizeIPv4"].AsInt;
-            cfg.ClientIdentityPrefixSizeIPv6 = json["ClientIdentityPrefixSizeIPv6"].AsInt;
-            cfg.UseRelay = json["UseRelay"].AsBool;
-            cfg.RelayAddress = json["RelayAddress"];
+            Config cfg = new Config()
+            {
+                ConfigVersion = (ushort)json["ConfigVersion"].AsInt,
+                MaxPlayers = (ushort)json["MaxPlayers"].AsInt,
+                Port = (ushort)json["Port"].AsInt,
+                Motd = json["Motd"],
+                DataSavingPeriodFrames = json["DataSavingPeriodFrames"].AsInt,
+                EntityBroadcastPeriodFrames = json["EntityBroadcastPeriodFrames"].AsInt,
+                ClientIdentityPrefixSizeIPv4 = json["ClientIdentityPrefixSizeIPv4"].AsInt,
+                ClientIdentityPrefixSizeIPv6 = json["ClientIdentityPrefixSizeIPv6"].AsInt,
+                UseRelay = json["UseRelay"].AsBool,
+                RelayAddress = json["RelayAddress"],
+                ChunkSendingPeriodFrames = json["ChunkSendingPeriodFrames"].AsInt,
+            };
 
             return cfg;
         }
@@ -84,6 +87,7 @@ namespace Larnix.Server.Data
             json["ClientIdentityPrefixSizeIPv6"] = ClientIdentityPrefixSizeIPv6;
             json["UseRelay"] = UseRelay;
             json["RelayAddress"] = RelayAddress;
+            json["ChunkSendingPeriodFrames"] = ChunkSendingPeriodFrames;
 
             return json;
         }
@@ -106,6 +110,10 @@ namespace Larnix.Server.Data
             {
                 DataSavingPeriodFrames = defaults.DataSavingPeriodFrames;
                 EntityBroadcastPeriodFrames = defaults.EntityBroadcastPeriodFrames;
+            }
+            if (ConfigVersion < 6)
+            {
+                ChunkSendingPeriodFrames = defaults.ChunkSendingPeriodFrames;
             }
 
             ConfigVersion = defaults.ConfigVersion;

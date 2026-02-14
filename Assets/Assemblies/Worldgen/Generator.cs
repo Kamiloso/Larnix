@@ -9,6 +9,7 @@ using Larnix.Core.Vectors;
 using Larnix.Worldgen.Noise;
 using Random = System.Random;
 using Larnix.Blocks;
+using Larnix.Worldgen.Biomes;
 
 namespace Larnix.Worldgen
 {

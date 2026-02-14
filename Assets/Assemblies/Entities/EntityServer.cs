@@ -2,18 +2,14 @@ using Larnix.Core.Physics;
 using System;
 using Larnix.Core.Vectors;
 using Larnix.Entities.Structs;
+using Larnix.Entities.All;
 
 namespace Larnix.Entities
 {
     public class EntityServer
     {
-        public readonly ulong uID;
-        public readonly EntityData EntityData; // connected to entity-saving system
-
-        public PhysicsManager Physics { get => _Physics ?? throw new InvalidOperationException("Trying to use an uninitialized PhysicsManager."); }
-        private PhysicsManager _Physics = null;
-
-        public EventHandler OnFrameUpdate;
+        public ulong uID { get; init; }
+        public EntityData EntityData { get; init; } // connected to entity-saving system
 
         public EntityServer(ulong uid, EntityData entityData)
         {
@@ -21,13 +17,14 @@ namespace Larnix.Entities
             EntityData = entityData; // should consume a given object
         }
 
-        public void InitializePhysics(PhysicsManager physics)
+        private PhysicsManager _physics = null;
+        internal PhysicsManager Physics
         {
-            if (_Physics != null)
-                throw new InvalidOperationException("Physics already initialized.");
-
-            _Physics = physics;
+            set => _physics = _physics == null ? value : throw new InvalidOperationException("Physics already initialized.");
+            get => _physics ?? throw new InvalidOperationException("Trying to use an uninitialized PhysicsManager.");
         }
+
+        public EventHandler OnFrameUpdate;
 
         public void SetTransform(Vec2 position, float rotation)
         {

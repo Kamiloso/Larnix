@@ -4,7 +4,7 @@ using System;
 using Larnix.Blocks.Structs;
 using Larnix.Core.Vectors;
 
-namespace Larnix.Blocks
+namespace Larnix.Blocks.All
 {
     public interface IElectricPipe : IPipe, IElectricPropagator
     {
@@ -20,7 +20,7 @@ namespace Larnix.Blocks
         bool IS_LIT() => This.BlockData.ID == ID_LIT();
 
         double IPipe.WIDTH() => 6.0 / 16.0;
-        IEnumerable<Type> IPipe.CONNECT_TO_TYPES() => new Type[] {
+        Type[] IPipe.CONNECT_TO_TYPES() => new Type[] {
             typeof(IElectricPipe),
             typeof(IElectricSource),
             typeof(IElectricDevice),

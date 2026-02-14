@@ -7,6 +7,7 @@ using System.Runtime.Serialization;
 using Larnix.Core.Vectors;
 using Larnix.Core;
 using Larnix.Blocks.Structs;
+using Larnix.Blocks.All;
 
 namespace Larnix.Blocks
 {
@@ -15,8 +16,8 @@ namespace Larnix.Blocks
         private static Dictionary<BlockID, BlockInfo> BlockCache = new();
         private static object _locker = new();
 
-        private static readonly string Namespace = typeof(BlockServer).Namespace;
-        private static readonly string AsmName = typeof(BlockServer).Assembly.GetName().Name;
+        private static readonly string Namespace = typeof(Air).Namespace;
+        private static readonly string AsmName = typeof(Air).Assembly.GetName().Name;
 
         private class BlockInfo
         {

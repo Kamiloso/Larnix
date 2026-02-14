@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using Larnix.Core.Vectors;
 using Larnix.Core.Utils;
 
-namespace Larnix.Blocks
+namespace Larnix.Blocks.All
 {
     public interface IHasGrowingFlora : IBlockInterface
     {
