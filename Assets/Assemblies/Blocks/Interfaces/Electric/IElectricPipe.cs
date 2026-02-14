@@ -11,7 +11,7 @@ namespace Larnix.Blocks.All
         new void Init()
         {
             This.Subscribe(BlockEvent.ElectricFinalize,
-                (_, _) => RethinkLitState());
+                () => RethinkLitState());
         }
 
         BlockID ID_UNLIT();

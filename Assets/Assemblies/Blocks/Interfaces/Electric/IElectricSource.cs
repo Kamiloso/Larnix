@@ -8,7 +8,7 @@ namespace Larnix.Blocks.All
         void Init()
         {
             This.Subscribe(BlockEvent.ElectricPropagation,
-                (_, _) => StartPropagation());
+                () => StartPropagation());
         }
 
         byte ElectricEmissionMask(); // up right down left

@@ -14,7 +14,7 @@ namespace Larnix.Blocks.All
         void Init()
         {
             This.Subscribe(BlockEvent.PreFrame,
-                 (_, _) => Data["electric_propagator.recursion"].Int = 0);
+                 () => Data["electric_propagator.recursion"].Int = 0);
         }
 
         void ElectricPropagate(Vec2Int POS_src, int recursion);

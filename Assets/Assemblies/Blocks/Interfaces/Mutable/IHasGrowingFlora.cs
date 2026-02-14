@@ -10,7 +10,7 @@ namespace Larnix.Blocks.All
     {
         void Init()
         {
-            This.Subscribe(BlockEvent.Random, (_, _) => {
+            This.Subscribe(BlockEvent.Random, () => {
                 FloraDry();
                 FloraGrowth();
             });

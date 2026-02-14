@@ -33,22 +33,24 @@ namespace Larnix.Blocks
         /// by replacing block with BreakMode = Weak.
         /// </summary>
         public bool EventFlag { get; set; }
-        private readonly Dictionary<BlockEvent, EventHandler> _eventHandlers = new();
+        private static readonly int EV_COUNT = Enum.GetValues(typeof(BlockEvent)).Length;
+        private readonly Action[] _actions = new Action[EV_COUNT];
 
-        public void Subscribe(BlockEvent type, EventHandler handler)
+        public void Subscribe(BlockEvent type, Action action)
         {
-            if (_eventHandlers.TryGetValue(type, out var existing))
-                _eventHandlers[type] = existing + handler;
+            int idx = (int)type;
+            if (_actions[idx] != null)
+                _actions[idx] = _actions[idx] + action;
             else
-                _eventHandlers[type] = handler;
+                _actions[idx] = action;
         }
 
         public void InvokeEvent(BlockEvent type)
         {
             if (EventFlag)
             {
-                if (_eventHandlers.TryGetValue(type, out var handler))
-                    handler?.Invoke(this, EventArgs.Empty);
+                int idx = (int)type;
+                _actions[idx]?.Invoke();
             }
         }
     }

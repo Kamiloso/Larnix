@@ -12,16 +12,16 @@ namespace Larnix.Blocks.All
 
         new void Init()
         {
-            This.Subscribe(BlockEvent.PreFrame, (_, _) => {
+            This.Subscribe(BlockEvent.PreFrame, () => {
                 Data["electric_device.ticked"].Bool = false;
                 Data["electric_device.tick_byte"].Int = 0;
             });
 
-            This.Subscribe(BlockEvent.ElectricFinalize, (_, _) => {
+            This.Subscribe(BlockEvent.ElectricFinalize, () => {
                 Data["electric_device.ticked_before"].Bool = Data["electric_device.ticked"].Bool;
             });
 
-            This.Subscribe(BlockEvent.ElectricDevices, (_, _) => {
+            This.Subscribe(BlockEvent.ElectricDevices, () => {
                 bool active = Data["electric_device.ticked"].Bool;
                 bool wasActive = Data["electric_device.ticked_before"].Bool;
                 byte srcByte = (byte)Data["electric_device.tick_byte"].Int;

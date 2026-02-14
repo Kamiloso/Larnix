@@ -11,7 +11,7 @@ namespace Larnix.Blocks.All
         void Init()
         {
             This.Subscribe(BlockEvent.Random,
-                 (_, _) => Flow());
+                 () => Flow());
         }
 
         bool IReplaceable.STATIC_IsReplaceable(BlockData1 thisBlock, BlockData1 otherBlock, bool isFront)

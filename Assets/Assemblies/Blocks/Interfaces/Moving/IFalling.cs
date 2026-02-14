@@ -7,7 +7,7 @@ namespace Larnix.Blocks.All
         void Init()
         {
             This.Subscribe(BlockEvent.Sequential,
-                (_, _) => Fall());
+                () => Fall());
         }
 
         int FALL_PERIOD();

@@ -12,7 +12,7 @@ namespace Larnix.Blocks.All
         void Init()
         {
             This.Subscribe(BlockEvent.PreFrameSelfMutations,
-                 (_, _) => MutateNearbyPipes());
+                 () => MutateNearbyPipes());
         }
 
         Collider[] IHasCollider.STATIC_GetAllColliders(BlockID ID, byte variant)

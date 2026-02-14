@@ -11,10 +11,10 @@ namespace Larnix.Blocks.All
         void Init()
         {
             This.Subscribe(BlockEvent.PreFrame,
-                (_, _) => ConwayPrepare());
+                () => ConwayPrepare());
 
             This.Subscribe(BlockEvent.Conway,
-                (_, _) => ConwayFinalize());
+                () => ConwayFinalize());
         }
 
         int CONWAY_PERIOD();

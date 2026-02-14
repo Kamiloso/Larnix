@@ -11,7 +11,7 @@ namespace Larnix.Blocks.All
         void Init()
         {
             This.Subscribe(BlockEvent.TechCmdExecute,
-                (_, _) => ExecuteCommand());
+                () => ExecuteCommand());
         }
 
         private void ExecuteCommand()
