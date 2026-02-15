@@ -47,12 +47,7 @@ namespace Larnix.Blocks.All
             bool shouldBeLit = Data["electric_propagator.recursion"].Int > 1;
             if (shouldBeLit != IS_LIT())
             {
-                BlockData1 blockTemplate = new(
-                    id: shouldBeLit ? ID_LIT() : ID_UNLIT(),
-                    variant: This.BlockData.Variant,
-                    data: This.BlockData.Data
-                );
-                WorldAPI.ReplaceBlock(This.Position, This.IsFront, blockTemplate, IWorldAPI.BreakMode.WeakSelf);
+                SelfChangeID(shouldBeLit ? ID_LIT() : ID_UNLIT());
             }
         }
 

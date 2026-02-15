@@ -72,11 +72,7 @@ namespace Larnix.Blocks.All
 
             if (This.BlockData.Variant != nearby)
             {
-                WorldAPI.SetBlockVariant(
-                    This.Position,
-                    This.IsFront,
-                    nearby
-                    );
+                SelfChangeVariant(nearby);
             }
         }
 

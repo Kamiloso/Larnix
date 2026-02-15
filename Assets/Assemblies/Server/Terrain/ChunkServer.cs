@@ -94,7 +94,7 @@ namespace Larnix.Server.Terrain
 
             // --- Reflag for frame events ---
             
-            if (breakMode == IWorldAPI.BreakMode.WeakSelf)
+            if (breakMode == IWorldAPI.BreakMode.Weak)
             {
                 _blocksFront[pos.x, pos.y].EventFlag = true;
                 _blocksBack[pos.x, pos.y].EventFlag = true;

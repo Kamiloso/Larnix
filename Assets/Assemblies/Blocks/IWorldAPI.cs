@@ -12,7 +12,7 @@ namespace Larnix.Blocks
         {
             Replace = 0,
             Effects = 1, // drops particles
-            WeakSelf = 2, // no frame event reset (only for self modifications)
+            Weak = 2, // no frame event reset (only for self modifications)
         }
         
         public long ServerTick();
