@@ -54,7 +54,7 @@ namespace Larnix.Client.Terrain
                 }
             }
 
-            return GetTile(new BlockData1(), true);
+            return GetTile(BlockData1.Air, true);
         }
 
         public static Sprite GetBorderSprite(Vec2Int POS, bool isMenu) =>

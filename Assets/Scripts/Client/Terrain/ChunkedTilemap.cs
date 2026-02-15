@@ -13,6 +13,7 @@ namespace Larnix.Client.Terrain
 {
     public class ChunkedTilemap : MonoBehaviour
     {
+        private const int CHUNK_SIZE = BlockUtils.CHUNK_SIZE;
         private MainPlayer MainPlayer => Ref.MainPlayer;
 
         private GameObject TilemapPrefabBorder => Prefabs.GetPrefab("Tilemaps", "TilemapBorder");
@@ -44,7 +45,7 @@ namespace Larnix.Client.Terrain
 
             RedrawBorderTilesInRect(
                 BlockUtils.GlobalBlockCoords(chunk, new Vec2Int(0, 0)),
-                BlockUtils.GlobalBlockCoords(chunk, new Vec2Int(15, 15))
+                BlockUtils.GlobalBlockCoords(chunk, new Vec2Int(CHUNK_SIZE - 1, CHUNK_SIZE - 1))
             );
         }
 

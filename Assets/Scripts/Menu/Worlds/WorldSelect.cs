@@ -9,6 +9,7 @@ using TMPro;
 using Larnix.Menu.Forms;
 using Larnix.Core;
 using Version = Larnix.Core.Version;
+using Org.BouncyCastle.Asn1.X509;
 
 namespace Larnix.Menu.Worlds
 {
@@ -146,6 +147,7 @@ namespace Larnix.Menu.Worlds
                     Rect rect = new Rect(0, 0, tex.width, tex.height);
                     Vector2 pivot = new Vector2(0.5f, 0.5f);
                     Sprite sprite = Sprite.Create(tex, rect, pivot);
+                    CleanSprite(targetImage.sprite);
                     targetImage.sprite = sprite;
                     success = true;
                 }
@@ -160,8 +162,24 @@ namespace Larnix.Menu.Worlds
                 Rect rect = new Rect(0, 0, 1, 1);
                 Vector2 pivot = new Vector2(0.5f, 0.5f);
                 Sprite blackSprite = Sprite.Create(blackTex, rect, pivot);
+                CleanSprite(targetImage.sprite);
                 targetImage.sprite = blackSprite;
             }
+        }
+
+        private static void CleanSprite(Sprite sprite)
+        {
+            if (sprite != null)
+            {
+                Texture2D tex = sprite.texture;
+                UnityEngine.Object.Destroy(sprite);
+                UnityEngine.Object.Destroy(tex);
+            }
+        }
+
+        private void OnDestroy()
+        {
+            CleanSprite(TitleImage.sprite);
         }
     }
 }

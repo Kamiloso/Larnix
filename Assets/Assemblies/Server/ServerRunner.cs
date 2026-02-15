@@ -82,7 +82,17 @@ namespace Larnix.Server
                         frame++;
 
                     while (sw.Elapsed.TotalSeconds < frame * PERIOD)
-                        Thread.Sleep(1);
+                    {
+                        double sleepTime = frame * PERIOD - sw.Elapsed.TotalSeconds;
+                        if (sleepTime > 0.015)
+                        {
+                            Thread.Sleep(1);
+                        }
+                        else
+                        {
+                            Thread.Sleep(0);
+                        }
+                    }
                 }
             }
             catch (Exception ex)

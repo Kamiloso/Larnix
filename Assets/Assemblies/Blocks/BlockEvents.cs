@@ -63,9 +63,8 @@ namespace Larnix.Blocks
                         return a.Item2 ? 1 : -1; // back before front
                     
                     return ChunkIterator.Compare(a.Item1, b.Item1,
-                        isRandom ? IterationOrder.XY : order);
-                },
-                ignoreSnapshotOrder: isRandom);
+                        isRandom ? IterationOrder.XY : order, true);
+                });
             }
         }
 
@@ -91,7 +90,9 @@ namespace Larnix.Blocks
             foreach (var (type, order) in _blockEvents) // EXECUTE EVENTS
             {
                 yield return null;
-                foreach (var action in _eventActions[(int)type].OrderedSnapshot())
+                foreach (var action in _eventActions[(int)type].OrderedSnapshot(
+                    shuffle: order == IterationOrder.Random
+                ))
                 {
                     action();
                 }

@@ -28,13 +28,14 @@ namespace Larnix.Blocks
             }
         }
 
-        public static int Compare(Vec2Int a, Vec2Int b, IterationOrder order)
+        public static int Compare(Vec2Int a, Vec2Int b, IterationOrder order, bool suppressException = false)
         {
             return order switch
             {
                 IterationOrder.Any => Compare(a, b, IterationOrder.XY),
                 IterationOrder.XY => a.x != b.x ? a.x - b.x : a.y - b.y,
                 IterationOrder.YX => a.y != b.y ? a.y - b.y : a.x - b.x,
+                IterationOrder.Random => suppressException ? 0 : throw new InvalidOperationException("Cannot compare positions in random order!"),
                 _ => 0
             };
         }

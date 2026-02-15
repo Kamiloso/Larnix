@@ -25,7 +25,10 @@ public class Textures
         if (texture == null) texture = StreamingTextureLoader.Instance.LoadTextureSync(fallbackPath);
         if (texture == null) texture = StreamingTextureLoader.PinkTexture;
 
-        return MakeTileFromTexture(RotateTexture(texture, rotation));
+        Texture2D rotated = rotation == Vec2Int.Up ?
+            texture : RotateTexture(texture, rotation);
+        
+        return MakeTileFromTexture(rotated);
     }
 
     public static Tile CreateBorderTileObject(byte borderByte, byte alphaByte)

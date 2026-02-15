@@ -58,86 +58,96 @@ namespace Larnix.Server
             WorldPath = worldPath;
             CloseServer = closeServer;
 
-            // Self
-            AddRef(this);
-
-            // Other
-            AddRef(new PhysicsManager());
-
-            // Scripts
-            AddRef(new ChunkLoading(this)); // must be 1st (execution order)
-            AddRef(new EntityManager(this)); // must be 2nd (execution order)
-            AddRef(new WorldAPI(this));
-            AddRef(new EntityDataManager(this));
-            AddRef(new PlayerManager(this));
-            AddRef(new BlockDataManager(this));
-            AddRef(new BlockSender(this));
-            AddRef(new Commands(this));
-
-            // Try to lock world
+            // --- Try to lock the world ---
             Locker locker = Locker.TryLock(WorldPath, "world_locker.lock");
-            if (locker != null)
+            if (locker == null)
             {
-                // Establish locker
-                AddRef(locker);
-
-                // Satelite classes
-                AddRef(Config.Obtain(WorldPath));
-                AddRef(new Database(WorldPath, "database.sqlite"));
-                AddRef(new Generator(Database.GetSeed(seedSuggestion)));
-
-                // Server tick obtain
-                ServerTick = Database.GetServerTick();
-
-                // World metadata
-                _mdata = WorldMeta.ReadData(WorldPath, true);
-                _mdata = new WorldMeta(Version.Current, _mdata.nickname);
-                WorldMeta.SaveData(WorldPath, _mdata, true);
-
-                // QuickServer
-                _quickServer = new QuickServer(new QuickConfig(
-                    port: Type == ServerType.Remote ? Config.Port : (ushort)0,
-                    maxClients: Config.MaxPlayers,
-                    isLoopback: Type == ServerType.Local,
-                    dataPath: Path.Combine(WorldPath, "Socket"),
-                    userAPI: Database,
-                    motd: Config.Motd,
-                    hostUser: Type == ServerType.Remote ? "Player" : _mdata.nickname, // server owner ("Player" => detached)
-                    maskIPv4: Config.ClientIdentityPrefixSizeIPv4,
-                    maskIPv6: Config.ClientIdentityPrefixSizeIPv6
-                    ));
-                AddRef(_quickServer);
-
-                // Around-server managers
-                AddRef(_quickServer.UserManager);
-                AddRef(new Receiver(this));
-                AddRef(new Commands(this));
-
-                // Configure data for client
-                LocalAddress = "localhost:" + _quickServer.Config.Port;
-                Authcode = _quickServer.Authcode;
-
-                // Configure console
-                if (Type == ServerType.Remote)
-                {
-                    ConfigureConsole();
-                }
-                else
-                {
-                    Core.Debug.Log("Port: " + _quickServer.Config.Port + " | Authcode: " + _quickServer.Authcode);
-                }
-
-                // Try establish relay
-                if (Type == ServerType.Remote)
-                {
-                    if (Config.UseRelay)
-                        _ = Task.Run(() => EstablishRelayAsync(Config.RelayAddress));
-                }
-
-                // Info success
-                Core.Debug.LogSuccess("Server is ready!");
+                throw new Exception("Trying to access world that is already open.");
             }
-            else throw new Exception("Trying to access world that is already open.");
+            AddRef(locker);
+
+            // --- Construct singletons ---
+            {
+                Database db;
+                AddRefs(
+                    this,
+                    new PhysicsManager(),
+
+                    // SCRIPTS (execution order)
+                    new ChunkLoading(this), // must be 1st (execution order)
+                    new EntityManager(this), // must be 2nd (execution order)
+                    new WorldAPI(this),
+                    new EntityDataManager(this),
+                    new PlayerManager(this),
+                    new BlockDataManager(this),
+                    new BlockSender(this),
+                    new Commands(this),
+
+                    // SATELITE CLASSES
+                    Config.Obtain(WorldPath),
+                    db = new Database(WorldPath, "database.sqlite"),
+                    new Generator(db.GetSeed(seedSuggestion))
+                );
+            }
+
+            // --- Server tick obtain ---
+            ServerTick = Database.GetServerTick();
+
+            // --- World metadata ---
+            _mdata = WorldMeta.ReadData(WorldPath, true);
+            _mdata = new WorldMeta(Version.Current, _mdata.nickname);
+            WorldMeta.SaveData(WorldPath, _mdata, true);
+
+            // --- QuickServer ---
+            _quickServer = new QuickServer(new QuickConfig(
+                port: Type == ServerType.Remote ? Config.Port : (ushort)0,
+                maxClients: Config.MaxPlayers,
+                isLoopback: Type == ServerType.Local,
+                dataPath: Path.Combine(WorldPath, "Socket"),
+                userAPI: Database,
+                motd: Config.Motd,
+                hostUser: Type == ServerType.Remote ? "Player" : _mdata.nickname, // server owner ("Player" => detached)
+                maskIPv4: Config.ClientIdentityPrefixSizeIPv4,
+                maskIPv6: Config.ClientIdentityPrefixSizeIPv6
+                ));
+
+            // --- Constructs server singletons ---
+            {
+                AddRefs(
+                    // SERVER CLASSES
+                    _quickServer,
+                    _quickServer.UserManager
+                );
+                AddRefs(
+                    // SERVER-DEPENDENT CLASSES
+                    new Receiver(this),
+                    new Commands(this)
+                );
+            }
+
+            // --- Configure data for client ---
+            LocalAddress = "localhost:" + _quickServer.Config.Port;
+            Authcode = _quickServer.Authcode;
+
+            // --- Configure console ---
+            if (Type == ServerType.Remote)
+            {
+                ConfigureConsole();
+            }
+            else
+            {
+                Core.Debug.Log("Port: " + _quickServer.Config.Port + " | Authcode: " + _quickServer.Authcode);
+            }
+
+            // --- Try establish relay ---
+            if (Type == ServerType.Remote)
+            {
+                if (Config.UseRelay)
+                    _ = Task.Run(() => EstablishRelayAsync(Config.RelayAddress));
+            }
+
+            // --- Info success ---
+            Core.Debug.LogSuccess("Server is ready!");
         }
 
         private void ConfigureConsole()
@@ -205,21 +215,21 @@ namespace Larnix.Server
             }
         }
 
-        private float GetTimeElapsed()
-        {
-            double currentTime = _stopwatch.Elapsed.TotalSeconds;
-            double elapsedTime = currentTime - _lastTickTime;
-            _lastTickTime = currentTime;
-
-            return (float)elapsedTime;
-        }
-
         public void TickFixed()
         {
             ServerTick++;
             FixedFrame++;
 
             // Tick technical singletons
+
+            Func<float> GetTimeElapsed = () =>
+            {
+                double currentTime = _stopwatch.Elapsed.TotalSeconds;
+                double elapsedTime = currentTime - _lastTickTime;
+                _lastTickTime = currentTime;
+
+                return (float)elapsedTime;
+            };
 
             _totalTimeElapsed = GetTimeElapsed();
             Receiver.Tick(_totalTimeElapsed); // for limits

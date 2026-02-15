@@ -65,24 +65,39 @@ namespace Larnix.Client.Terrain
 
         public void RedrawGrid(bool instantLoad = false)
         {
+            const int MAX_LOAD_PER_FRAME = 1;
+            const int MAX_UNLOAD_PER_FRAME = 2;
+
             // Ascending - ADD
             List<Vec2Int> addChunks = _dirtyChunks.Where(c => _allChunks.ContainsKey(c)).ToList();
             addChunks.Sort((Vec2Int a, Vec2Int b) => ChunkDistance(a) - ChunkDistance(b));
+            int loadCount = 0;
+
             foreach (var chunk in addChunks)
             {
                 RedrawChunk(chunk, true);
                 _dirtyChunks.Remove(chunk);
-                if(!instantLoad) return; // only one per frame
+                if (!instantLoad)
+                {
+                    loadCount++;
+                    if (loadCount >= MAX_LOAD_PER_FRAME) break;
+                }
             }
 
             // Descending - REMOVE
             List<Vec2Int> removeChunks = _dirtyChunks.Where(c => !_allChunks.ContainsKey(c)).ToList();
             removeChunks.Sort((Vec2Int a, Vec2Int b) => ChunkDistance(b) - ChunkDistance(a));
+            int unloadCount = 0;
+            
             foreach (var chunk in removeChunks)
             {
                 RedrawChunk(chunk, false);
                 _dirtyChunks.Remove(chunk);
-                if(!instantLoad) return; // only one per frame
+                if (!instantLoad)
+                {
+                    unloadCount++;
+                    if (unloadCount >= MAX_UNLOAD_PER_FRAME) break;
+                }
             }
         }
 

@@ -6,9 +6,9 @@ namespace Larnix.Core.References
     public abstract class RefRoot
     {
         private readonly LinkedList<Type> _refOrder = new();
-        private readonly Dictionary<Type, Object> _registeredRefs = new();
+        private readonly Dictionary<Type, object> _registeredRefs = new();
 
-        public void AddRef(Object obj)
+        public void AddRef(object obj)
         {
             Type type = obj.GetType();
             if (!_registeredRefs.ContainsKey(type))
@@ -18,14 +18,22 @@ namespace Larnix.Core.References
             }
         }
 
-        public T Ref<T>() where T : class
+        public void AddRefs(params object[] objs)
         {
-            return _registeredRefs.TryGetValue(typeof(T), out Object obj) ? (T)obj : null;
+            foreach (object obj in objs)
+            {
+                AddRef(obj);
+            }
         }
 
-        protected LinkedList<Object> TakeRefSnapshot()
+        public T Ref<T>() where T : class
         {
-            LinkedList<Object> snapshot = new();
+            return _registeredRefs.TryGetValue(typeof(T), out object obj) ? (T)obj : null;
+        }
+
+        protected LinkedList<object> TakeRefSnapshot()
+        {
+            LinkedList<object> snapshot = new();
             foreach (Type t in _refOrder)
             {
                 snapshot.AddLast(_registeredRefs[t]);
