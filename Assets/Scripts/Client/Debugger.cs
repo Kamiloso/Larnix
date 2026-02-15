@@ -21,16 +21,27 @@ namespace Larnix.Client
         [SerializeField] public bool ClientBlockSwap;
         [SerializeField] TextMeshProUGUI DebugF3;
 
-        public BiomeID CurrentBiome { get; set; }
-        public long ServerTick { get; set; }
+        private BiomeID _currentBiome;
+        private long _serverTick;
+        private float _tps;
 
         private float? _lastFPS = null;
+        private float? _lastTPS = null;
         private float _lastPing = 0f;
         private List<float> _frameTimes = new();
+        private List<float> _tpsSamples = new();
 
         private void Awake()
         {
             Ref.Debugger = this;
+        }
+
+        public void InfoUpdate(long serverTick, BiomeID biomeID, float tps)
+        {
+            _serverTick = serverTick;
+            _currentBiome = biomeID;
+            _tps = tps;
+            _tpsSamples.Add(tps);
         }
 
         private void Update()
@@ -63,6 +74,20 @@ namespace Larnix.Client
                 _lastPing = (float)(Math.Round(Client.GetPing() * 10f) / 10f);
             }
 
+            // TPS calculate (average like FPS)
+            if (_lastTPS == null || Client.FixedFrame % 25 == 0)
+            {
+                if (_tpsSamples.Count > 0)
+                {
+                    _lastTPS = (float)(Math.Round(_tpsSamples.Average() * 10f) / 10f);
+                    _tpsSamples.Clear();
+                }
+                else
+                {
+                    _lastTPS = _tps;
+                }
+            }
+
             // Allocations
 
             long used = Profiler.GetMonoUsedSizeLong();
@@ -84,8 +109,9 @@ namespace Larnix.Client
                 $"Memory: {allocations}\n" +
                 $"X: {playerPos.x}\n" +
                 $"Y: {playerPos.y}\n" +
-                $"Biome: {CurrentBiome}\n" +
-                $"World Age: {TextAge(ServerTick)}\n";
+                $"Biome: {_currentBiome}\n" +
+                $"World Age: {TextAge(_serverTick)}\n" +
+                $"TPS: {(_lastTPS ?? _tps):F1}\n";
 
             DebugF3.text = ShowDebugInfo && MainPlayer.IsAlive ? debugText : "";
         }

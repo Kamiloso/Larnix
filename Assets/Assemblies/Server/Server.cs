@@ -47,6 +47,7 @@ namespace Larnix.Server
 
         private float _totalTimeElapsed = 0f;
         public float RealDeltaTime => _totalTimeElapsed;
+        public float TPS => _totalTimeElapsed > 0f ? (1f / _totalTimeElapsed) : 0f;
 
         public readonly Action CloseServer;
         private bool _disposed = false;

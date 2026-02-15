@@ -135,7 +135,8 @@ namespace Larnix.Server.Entities
                     Server.ServerTick,
                     Worldgen.SkyColorAt(renderingPosition),
                     Worldgen.BiomeAt(renderingPosition),
-                    Weather.Clear // TODO: implement weather
+                    Weather.Clear, // TODO: implement weather
+                    Server.TPS
                 );
                 QuickServer.Send(nickname, packet, false);
             }

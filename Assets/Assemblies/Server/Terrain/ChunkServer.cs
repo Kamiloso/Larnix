@@ -29,6 +29,7 @@ namespace Larnix.Server.Terrain
         private readonly BlockServer[,] _blocksBack = new BlockServer[CHUNK_SIZE, CHUNK_SIZE];
         private readonly Dictionary<Vec2Int, StaticCollider[]> _colliderCollections = new();
 
+        public IEnumerable FrameInvoker => _blockEvents.GetFrameInvoker();
         public readonly BlockData2[,] ActiveChunkReference;
 
         private bool _disposed = false;
@@ -36,26 +37,33 @@ namespace Larnix.Server.Terrain
         public ChunkServer(RefObject<Server> reff, Vec2Int chunkpos) : base(reff)
         {
             _chunkpos = chunkpos;
-            ActiveChunkReference = BlockDataManager.ObtainChunkReference(_chunkpos);
-
-            foreach (Vec2Int pos in ChunkIterator.IterateXY())
-            {
-                Vec2Int POS = BlockUtils.GlobalBlockCoords(_chunkpos, pos);
-
-                BlockData2 blockData = ActiveChunkReference[pos.x, pos.y];
-
-                BlockServer frontBlock = BlockFactory.ConstructBlockObject(POS, blockData.Front, true, WorldAPI);
-                _blocksFront[pos.x, pos.y] = frontBlock;
-
-                BlockServer backBlock = BlockFactory.ConstructBlockObject(POS, blockData.Back, false, WorldAPI);
-                _blocksBack[pos.x, pos.y] = backBlock;
-
-                RefreshCollider(pos);
-            }
-
             _blockEvents = new BlockEvents(_blocksFront, _blocksBack);
 
+            ActiveChunkReference = BlockDataManager.ObtainChunkReference(_chunkpos);
+
+            ChunkIterator.Iterate((x, y) =>
+            {
+                var pos = new Vec2Int(x, y);
+                BlockCreate(pos);
+                RefreshCollider(pos);
+            });
+
             PhysicsManager.SetChunkActive(_chunkpos, true);
+        }
+
+        private void BlockCreate(Vec2Int pos)
+        {
+            Vec2Int POS = BlockUtils.GlobalBlockCoords(_chunkpos, pos);
+
+            BlockData2 blockdata = ActiveChunkReference[pos.x, pos.y];
+            BlockServer frontblock = BlockFactory.ConstructBlockObject(POS, blockdata.Front, true, WorldAPI);
+            BlockServer backblock = BlockFactory.ConstructBlockObject(POS, blockdata.Back, false, WorldAPI);
+
+            frontblock.AttachTo(_blockEvents);
+            backblock.AttachTo(_blockEvents);
+
+            _blocksFront[pos.x, pos.y] = frontblock;
+            _blocksBack[pos.x, pos.y] = backblock;
         }
 
         public BlockServer GetBlock(Vec2Int pos, bool isFront)
@@ -67,42 +75,16 @@ namespace Larnix.Server.Terrain
         {
             BlockServer result;
 
-            // Change blocks
+            // --- Change blocks ---
 
             BlockData2 oldHeader = ((IBinary<BlockData2>)ActiveChunkReference[pos.x, pos.y]).BinaryCopy();
 
-            if (isFront)
-            {
-                ActiveChunkReference[pos.x, pos.y] = new(
-                    front: block,
-                    back: ActiveChunkReference[pos.x, pos.y].Back
-                );
-
-                _blocksFront[pos.x, pos.y] = BlockFactory.ConstructBlockObject(
-                    _blocksFront[pos.x, pos.y].Position,
-                    block, true, WorldAPI);
-                
-                result = _blocksFront[pos.x, pos.y];
-            }
-            else
-            {
-                ActiveChunkReference[pos.x, pos.y] = new(
-                    front: ActiveChunkReference[pos.x, pos.y].Front,
-                    back: block
-                );
-
-                _blocksBack[pos.x, pos.y] = BlockFactory.ConstructBlockObject(
-                    _blocksBack[pos.x, pos.y].Position,
-                    block, false, WorldAPI);
-
-                result = _blocksBack[pos.x, pos.y];
-            }
-
+            result = RefreshBlock(pos, block, isFront);
             RefreshCollider(pos);
 
             BlockData2 newHeader = ((IBinary<BlockData2>)ActiveChunkReference[pos.x, pos.y]).BinaryCopy();
 
-            // Push send update
+            // --- Push send update ---
 
             if (!((IBinary<BlockData2>)oldHeader).BinaryEquals(newHeader))
             {
@@ -110,7 +92,7 @@ namespace Larnix.Server.Terrain
                 BlockSender.AddBlockUpdate(new BlockUpdateRecord(POS, newHeader, breakMode));
             }
 
-            // Reflag for frame events
+            // --- Reflag for frame events ---
             
             if (breakMode == IWorldAPI.BreakMode.Weak)
             {
@@ -121,9 +103,42 @@ namespace Larnix.Server.Terrain
             return result;
         }
 
-        public IEnumerable GetFrameInvoker()
+        private BlockServer RefreshBlock(Vec2Int pos, BlockData1 block, bool isFront)
         {
-            return _blockEvents.GetFrameInvoker();
+            if (isFront)
+            {
+                ActiveChunkReference[pos.x, pos.y] = new(
+                    front: block,
+                    back: ActiveChunkReference[pos.x, pos.y].Back
+                );
+
+                _blocksFront[pos.x, pos.y].Detach();
+                
+                _blocksFront[pos.x, pos.y] = BlockFactory.ConstructBlockObject(
+                    _blocksFront[pos.x, pos.y].Position,
+                    block, true, WorldAPI);
+                
+                _blocksFront[pos.x, pos.y].AttachTo(_blockEvents);
+                
+                return _blocksFront[pos.x, pos.y];
+            }
+            else
+            {
+                ActiveChunkReference[pos.x, pos.y] = new(
+                    front: ActiveChunkReference[pos.x, pos.y].Front,
+                    back: block
+                );
+
+                _blocksBack[pos.x, pos.y].Detach();
+                
+                _blocksBack[pos.x, pos.y] = BlockFactory.ConstructBlockObject(
+                    _blocksBack[pos.x, pos.y].Position,
+                    block, false, WorldAPI);
+
+                _blocksBack[pos.x, pos.y].AttachTo(_blockEvents);
+
+                return _blocksBack[pos.x, pos.y];
+            }
         }
 
         private void RefreshCollider(Vec2Int pos)

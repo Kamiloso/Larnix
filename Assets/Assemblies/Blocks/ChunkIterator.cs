@@ -1,66 +1,83 @@
 using System;
-using System.Collections.Generic;
 using Larnix.Core.Utils;
 using Larnix.Core.Vectors;
 
 namespace Larnix.Blocks
 {
+    public enum IterationOrder { Any, XY, YX, Random }
     public static class ChunkIterator
     {
-        public enum Order { Any, XY, YX, Random }
         private const int CHUNK_SIZE = BlockUtils.CHUNK_SIZE;
 
-        public static IEnumerable<Vec2Int> Iterate(Order order)
+        public static void Iterate(Action<int, int> action, IterationOrder order = IterationOrder.Any)
+        {
+            switch (order)
+            {
+                case IterationOrder.Any:
+                case IterationOrder.XY:
+                    IterateXY(action);
+                    break;
+                
+                case IterationOrder.YX:
+                    IterateYX(action);
+                    break;
+
+                case IterationOrder.Random:
+                    IterateRandom(action);
+                    break;
+            }
+        }
+
+        public static int Compare(Vec2Int a, Vec2Int b, IterationOrder order)
         {
             return order switch
             {
-                Order.Any => IterateXY(),
-                Order.XY => IterateXY(),
-                Order.YX => IterateYX(),
-                Order.Random => IterateRandom(),
-                _ => throw new ArgumentOutOfRangeException("Invalid iteration order!")
+                IterationOrder.Any => Compare(a, b, IterationOrder.XY),
+                IterationOrder.XY => a.x != b.x ? a.x - b.x : a.y - b.y,
+                IterationOrder.YX => a.y != b.y ? a.y - b.y : a.x - b.x,
+                IterationOrder.Random => Common.Rand().Next() % 2 == 0 ? -1 : 1,
+                _ => 0
             };
         }
 
-        public static IEnumerable<Vec2Int> IterateXY()
+        private static void IterateXY(Action<int, int> action)
         {
             for (int x = 0; x < CHUNK_SIZE; x++)
                 for (int y = 0; y < CHUNK_SIZE; y++)
                 {
-                    yield return new Vec2Int(x, y);
+                    action(x, y);
                 }
         }
 
-        public static IEnumerable<Vec2Int> IterateYX()
+        private static void IterateYX(Action<int, int> action)
         {
             for (int y = 0; y < CHUNK_SIZE; y++)
                 for (int x = 0; x < CHUNK_SIZE; x++)
                 {
-                    yield return new Vec2Int(x, y);
+                    action(x, y);
                 }
         }
 
-        public static IEnumerable<Vec2Int> IterateRandom()
+        private static void IterateRandom(Action<int, int> action)
         {
-            var positions = new List<Vec2Int>(CHUNK_SIZE * CHUNK_SIZE);
-            for (int x = 0; x < CHUNK_SIZE; x++)
-                for (int y = 0; y < CHUNK_SIZE; y++)
-                {
-                    positions.Add(new Vec2Int(x, y));
-                }
+            var indexes = new int[CHUNK_SIZE * CHUNK_SIZE];
+            for (int i = 0; i < indexes.Length; i++)
+            {
+                indexes[i] = i;
+            }
 
             var rng = Common.Rand();
-            int n = positions.Count;
+            int n = indexes.Length;
             while (n > 1)
             {
                 n--;
                 int k = rng.Next(n + 1);
-                (positions[k], positions[n]) = (positions[n], positions[k]);
+                (indexes[k], indexes[n]) = (indexes[n], indexes[k]);
             }
 
-            foreach (var pos in positions)
+            foreach (int index in indexes)
             {
-                yield return pos;
+                action(index % CHUNK_SIZE, index / CHUNK_SIZE);
             }
         }
     }

@@ -138,8 +138,11 @@ namespace Larnix.Client
                     weather: msg.Weather
                     );
 
-                Debugger.ServerTick = frameTick;
-                Debugger.CurrentBiome = msg.BiomeID;
+                Debugger.InfoUpdate(
+                    serverTick: msg.ServerTick,
+                    biomeID: msg.BiomeID,
+                    tps: msg.Tps
+                );
             }
         }
     }

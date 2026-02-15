@@ -36,10 +36,11 @@ namespace Larnix.Client.Terrain
 
             if (blocks == null) return;
 
-            foreach (Vec2Int pos in ChunkIterator.IterateXY())
+            ChunkIterator.Iterate((x, y) =>
             {
+                var pos = new Vec2Int(x, y);
                 RedrawExistingTile(chunk, pos, blocks[pos.x, pos.y], false);
-            }
+            });
 
             RedrawBorderTilesInRect(
                 BlockUtils.GlobalBlockCoords(chunk, new Vec2Int(0, 0)),

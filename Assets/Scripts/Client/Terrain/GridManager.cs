@@ -142,14 +142,13 @@ namespace Larnix.Client.Terrain
             if (!_allChunks.TryGetValue(chunk, out BlockData2[,] chunkBlocks))
                 chunkBlocks = null;
 
-            foreach (Vec2Int pos in ChunkIterator.IterateXY())
+            ChunkIterator.Iterate((x, y) =>
             {
-                int x = pos.x;
-                int y = pos.y;
+                var pos = new Vec2Int(x, y);
 
                 Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, pos);
                 UpdateBlockCollider(POS, chunkBlocks != null ? chunkBlocks[x, y] : null);
-            }
+            });
 
             PhysicsManager.SetChunkActive(chunk, chunkBlocks != null);
         }

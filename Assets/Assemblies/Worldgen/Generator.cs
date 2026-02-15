@@ -129,10 +129,9 @@ namespace Larnix.Worldgen
 
         private void Build_BaseTerrain(ProtoBlock[,] protoBlocks, Vec2Int chunk)
         {
-            foreach (Vec2Int pos in ChunkIterator.IterateXY())
+            ChunkIterator.Iterate((x, y) =>
             {
-                int x = pos.x;
-                int y = pos.y;
+                var pos = new Vec2Int(x, y);
 
                 Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, pos);
 
@@ -155,12 +154,11 @@ namespace Larnix.Worldgen
                 {
                     protoBlocks[x, y] = ProtoBlock.Stone;
                 }
-            }
+            });
 
-            foreach (Vec2Int pos in ChunkIterator.IterateXY())
+            ChunkIterator.Iterate((x, y) =>
             {
-                int x = pos.x;
-                int y = pos.y;
+                var pos = new Vec2Int(x, y);
 
                 Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, pos);
 
@@ -183,15 +181,14 @@ namespace Larnix.Worldgen
                 {
                     protoBlocks[x, y] = ProtoBlock.Stone;
                 }
-            }
+            });
         }
 
         private void Build_Caves(ProtoBlock[,] protoBlocks, Vec2Int chunk)
         {
-            foreach (Vec2Int pos in ChunkIterator.IterateXY())
+            ChunkIterator.Iterate((x, y) =>
             {
-                int x = pos.x;
-                int y = pos.y;
+                var pos = new Vec2Int(x, y);
 
                 Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, pos);
 
@@ -208,17 +205,16 @@ namespace Larnix.Worldgen
                     }
                     protoBlocks[x, y] = protoBlock;
                 }
-            }
+            });
         }
 
         private BlockData2[,] ConvertToBlockArray(ProtoBlock[,] protoBlocks, Vec2Int chunk)
         {
             BlockData2[,] blocks = new BlockData2[CHUNK_SIZE, CHUNK_SIZE];
 
-            foreach (Vec2Int pos in ChunkIterator.IterateXY())
+            ChunkIterator.Iterate((x, y) =>
             {
-                int x = pos.x;
-                int y = pos.y;
+                var pos = new Vec2Int(x, y);
                 
                 const string PHRASE = "block_hash";
                 Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, pos);
@@ -249,7 +245,7 @@ namespace Larnix.Worldgen
 
                 Biome biome = _biomes[biomeID];
                 blocks[x, y] = biome.TranslateProtoBlock(protoBlocks[x, y]);
-            }
+            });
 
             return blocks;
         }

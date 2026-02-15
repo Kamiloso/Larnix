@@ -2,6 +2,8 @@ using System;
 using System.Collections;
 using Larnix.Blocks.Structs;
 using Larnix.Core.Utils;
+using Larnix.Core.Vectors;
+using System.Collections.Generic;
 
 namespace Larnix.Blocks
 {
@@ -18,11 +20,28 @@ namespace Larnix.Blocks
     public class BlockEvents
     {
         private const int CHUNK_SIZE = BlockUtils.CHUNK_SIZE;
-        private record EventInfo(BlockEvent Type, ChunkIterator.Order Order);
+        private record EventInfo(BlockEvent Type, IterationOrder Order);
 
-        private EventInfo[] _blockEvents;
-        private BlockServer[,] _blocksFront;
-        private BlockServer[,] _blocksBack;
+        private static readonly EventInfo[] _blockEvents = new[]
+        {
+            new EventInfo(BlockEvent.PreFrame, IterationOrder.YX),
+            new EventInfo(BlockEvent.PreFrameSelfMutations, IterationOrder.YX),
+            new EventInfo(BlockEvent.Conway, IterationOrder.YX),
+            new EventInfo(BlockEvent.Sequential, IterationOrder.YX),
+            new EventInfo(BlockEvent.Random, IterationOrder.Random),
+            new EventInfo(BlockEvent.ElectricPropagation, IterationOrder.YX),
+            new EventInfo(BlockEvent.ElectricFinalize, IterationOrder.YX),
+            new EventInfo(BlockEvent.ElectricDevices, IterationOrder.YX),
+            new EventInfo(BlockEvent.SequentialLate, IterationOrder.YX),
+            new EventInfo(BlockEvent.RandomLate, IterationOrder.Random),
+            new EventInfo(BlockEvent.TechCmdExecute, IterationOrder.YX)
+        };
+
+        private readonly BlockServer[,] _blocksFront;
+        private readonly BlockServer[,] _blocksBack;
+
+        private readonly PriorityQueue<Action, (Vec2Int, bool)>[] _eventActions =
+            new PriorityQueue<Action, (Vec2Int, bool)>[_blockEvents.Length];
 
         public BlockEvents(BlockServer[,] blocksFront, BlockServer[,] blocksBack)
         {
@@ -35,51 +54,47 @@ namespace Larnix.Blocks
             _blocksFront = blocksFront;
             _blocksBack = blocksBack;
 
-            _blockEvents = new[] {
-                new EventInfo(BlockEvent.PreFrame, ChunkIterator.Order.YX),
-                new EventInfo(BlockEvent.PreFrameSelfMutations, ChunkIterator.Order.YX),
-                new EventInfo(BlockEvent.Conway, ChunkIterator.Order.YX),
-                new EventInfo(BlockEvent.Sequential, ChunkIterator.Order.YX),
-                new EventInfo(BlockEvent.Random, ChunkIterator.Order.Random),
-                new EventInfo(BlockEvent.ElectricPropagation, ChunkIterator.Order.YX),
-                new EventInfo(BlockEvent.ElectricFinalize, ChunkIterator.Order.YX),
-                new EventInfo(BlockEvent.ElectricDevices, ChunkIterator.Order.YX),
-                new EventInfo(BlockEvent.SequentialLate, ChunkIterator.Order.YX),
-                new EventInfo(BlockEvent.RandomLate, ChunkIterator.Order.Random),
-                new EventInfo(BlockEvent.TechCmdExecute, ChunkIterator.Order.YX)
-            };
+            foreach (var (type, order) in _blockEvents)
+            {
+                _eventActions[(int)type] = new PriorityQueue<Action, (Vec2Int, bool)>((a, b) =>
+                {
+                    if (a.Item2 != b.Item2)
+                        return a.Item2 ? 1 : -1; // back before front
+                    
+                    return ChunkIterator.Compare(a.Item1, b.Item1, order);
+                });
+            }
+        }
+
+        public void Subscribe(Vec2Int pos, bool front, BlockEvent type, Action action)
+        {
+            var queue = _eventActions[(int)type];
+            queue.Enqueue(action, (pos, front));
+        }
+
+        public void Unsubscribe(BlockEvent type, Action action)
+        {
+            _eventActions[(int)type]?.Remove(action);
         }
 
         public IEnumerable GetFrameInvoker()
         {
-            foreach (var pos in ChunkIterator.Iterate(ChunkIterator.Order.Any)) // START FRAME
+            ChunkIterator.Iterate((x, y) => // START FRAME
             {
-                _blocksBack[pos.x, pos.y].EventFlag = true;
-                _blocksFront[pos.x, pos.y].EventFlag = true;
-            }
-            yield return null;
+                _blocksBack[x, y].EventFlag = true;
+                _blocksFront[x, y].EventFlag = true;
+            });
 
             foreach (var (type, order) in _blockEvents) // EXECUTE EVENTS
             {
-                foreach (var pos in ChunkIterator.Iterate(order))
-                {
-                    _blocksBack[pos.x, pos.y].InvokeEvent(type);
-                }
                 yield return null;
-
-                foreach (var pos in ChunkIterator.Iterate(order))
+                foreach (var action in _eventActions[(int)type].OrderedSnapshot())
                 {
-                    _blocksFront[pos.x, pos.y].InvokeEvent(type);
+                    action();
                 }
-                yield return null;
             }
 
-            foreach (var pos in ChunkIterator.Iterate(ChunkIterator.Order.Any)) // END FRAME
-            {
-                _blocksBack[pos.x, pos.y].EventFlag = false;
-                _blocksFront[pos.x, pos.y].EventFlag = false;
-            }
-            yield break;
+            yield break; // END FRAME (no need to reset flag)
         }
     }
 }

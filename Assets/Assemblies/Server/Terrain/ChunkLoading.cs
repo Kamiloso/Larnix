@@ -8,7 +8,6 @@ using Larnix.Core.Utils;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
 using Larnix.Socket.Backend;
-using Larnix.Core.References;
 using Larnix.Packets;
 using Larnix.Server.Data;
 
@@ -78,7 +77,7 @@ namespace Larnix.Server.Terrain
                 .Where(kv => ChunkState(kv.Key) == LoadState.Active)
                 .OrderBy(kv => kv.Key.y)
                 .ThenBy(kv => kv.Key.x)
-                .Select(kv => kv.Value.Instance.GetFrameInvoker())
+                .Select(kv => kv.Value.Instance.FrameInvoker)
                 .Select(inv => inv.GetEnumerator())
                 .ToArray();
 
