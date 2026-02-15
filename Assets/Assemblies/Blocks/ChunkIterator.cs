@@ -35,7 +35,6 @@ namespace Larnix.Blocks
                 IterationOrder.Any => Compare(a, b, IterationOrder.XY),
                 IterationOrder.XY => a.x != b.x ? a.x - b.x : a.y - b.y,
                 IterationOrder.YX => a.y != b.y ? a.y - b.y : a.x - b.x,
-                IterationOrder.Random => Common.Rand().Next() % 2 == 0 ? -1 : 1,
                 _ => 0
             };
         }

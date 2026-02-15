@@ -56,13 +56,16 @@ namespace Larnix.Blocks
 
             foreach (var (type, order) in _blockEvents)
             {
+                bool isRandom = order == IterationOrder.Random;
                 _eventActions[(int)type] = new PriorityQueue<Action, (Vec2Int, bool)>((a, b) =>
                 {
                     if (a.Item2 != b.Item2)
                         return a.Item2 ? 1 : -1; // back before front
                     
-                    return ChunkIterator.Compare(a.Item1, b.Item1, order);
-                });
+                    return ChunkIterator.Compare(a.Item1, b.Item1,
+                        isRandom ? IterationOrder.XY : order);
+                },
+                ignoreSnapshotOrder: isRandom);
             }
         }
 

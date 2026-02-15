@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Larnix.Core.Utils;
 
 public class PriorityQueue<TElement, TPriority>
 {
@@ -18,6 +19,7 @@ public class PriorityQueue<TElement, TPriority>
     private readonly List<Node> _heap = new();
     private readonly Dictionary<TElement, int> _indexMap = new();
     private readonly IComparer<TPriority> _comparer;
+    private readonly bool _ignoreSnapshotOrder;
 
     // Snapshot cache
     private List<TElement> _orderedSnapshot;
@@ -26,8 +28,10 @@ public class PriorityQueue<TElement, TPriority>
 
     public int Count => _heap.Count;
 
-    public PriorityQueue(Func<TPriority, TPriority, int> compare = null)
+    public PriorityQueue(Func<TPriority, TPriority, int> compare = null,
+        bool ignoreSnapshotOrder = false)
     {
+        _ignoreSnapshotOrder = ignoreSnapshotOrder;
         _comparer = compare != null
             ? Comparer<TPriority>.Create((a, b) => compare(a, b))
             : Comparer<TPriority>.Default;
@@ -88,6 +92,9 @@ public class PriorityQueue<TElement, TPriority>
 
             _snapshotDirty = false;
         }
+
+        if (_ignoreSnapshotOrder)
+            Shuffle(_orderedSnapshot);
 
         return _orderedSnapshot;
     }
@@ -171,5 +178,17 @@ public class PriorityQueue<TElement, TPriority>
 
         _indexMap[_heap[a].Element] = a;
         _indexMap[_heap[b].Element] = b;
+    }
+
+    private static void Shuffle<T>(IList<T> list)
+    {
+        var rng = Common.Rand();
+        int n = list.Count;
+        while (n > 1)
+        {
+            n--;
+            int k = rng.Next(n + 1);
+            (list[k], list[n]) = (list[n], list[k]);
+        }
     }
 }
