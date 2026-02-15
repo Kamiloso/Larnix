@@ -13,7 +13,7 @@ namespace Larnix.Blocks.All
             if (active != isLit)
             {
                 byte newVariant = (byte)(This.BlockData.Variant ^ LAMP_LIT_BIT());
-                WorldAPI.SetBlockVariant(This.Position, This.IsFront, newVariant, IWorldAPI.BreakMode.Weak);
+                WorldAPI.SetBlockVariant(This.Position, This.IsFront, newVariant, IWorldAPI.BreakMode.WeakSelf);
             }
         }
     }

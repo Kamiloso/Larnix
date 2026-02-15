@@ -7,6 +7,9 @@ namespace Larnix.Core.Utils
 {
     public static class Validation
     {
+        public static string WrongNicknameInfo => "Nickname should be 3-16 characters and only use: letters, digits, _ or -.";
+        public static string WrongPasswordInfo => "Password should be 7-32 characters and not end with NULL (0x00).";
+
         public static bool IsGoodNickname(string nickname) =>
             nickname != null &&
             !nickname.EndsWith('\0') &&

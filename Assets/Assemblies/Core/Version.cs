@@ -8,7 +8,7 @@ namespace Larnix.Core
 {
     public struct Version : IBinary<Version>
     {
-        public static readonly Version Current = new Version("0.0.34.4");
+        public static readonly Version Current = new Version("0.0.34.5");
 
         public const int SIZE = sizeof(uint);
         public uint ID { get; private set; }

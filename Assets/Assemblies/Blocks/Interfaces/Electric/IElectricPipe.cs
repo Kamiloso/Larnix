@@ -52,7 +52,7 @@ namespace Larnix.Blocks.All
                     variant: This.BlockData.Variant,
                     data: This.BlockData.Data
                 );
-                WorldAPI.ReplaceBlock(This.Position, This.IsFront, blockTemplate, IWorldAPI.BreakMode.Weak);
+                WorldAPI.ReplaceBlock(This.Position, This.IsFront, blockTemplate, IWorldAPI.BreakMode.WeakSelf);
             }
         }
 

@@ -27,6 +27,8 @@ namespace Larnix.Server
 {
     internal class Commands : Singleton, ICmdExecutor
     {
+        public enum PrivilegeLevel { User, Admin, Console }
+
         private QuickServer QuickServer => Ref<QuickServer>();
         private PlayerManager PlayerManager => Ref<PlayerManager>();
         private EntityManager EntityManager => Ref<EntityManager>();
@@ -64,7 +66,7 @@ namespace Larnix.Server
 
             if (sender is null) // from console
             {
-                (type, message) = InnerExecuteCmd(command, sender, true);
+                (type, message) = InnerExecuteCmd(command, sender, PrivilegeLevel.Console);
 
                 if (type == CmdResult.Clear)
                 {
@@ -77,7 +79,8 @@ namespace Larnix.Server
                 if (player_online)
                 {
                     bool player_admin = /*Config.AdminList.Contains(sender)*/ false;
-                    (type, message) = InnerExecuteCmd(command, sender, player_admin);
+                    (type, message) = InnerExecuteCmd(command, sender, player_admin ?
+                        PrivilegeLevel.Admin : PrivilegeLevel.User);
 
                     if (type != CmdResult.Ignore)
                     {
@@ -89,16 +92,16 @@ namespace Larnix.Server
             return (type, message);
         }
 
-        private (CmdResult, string) InnerExecuteCmd(string command, string sender, bool adminPrivileges)
+        private (CmdResult, string) InnerExecuteCmd(string command, string sender, PrivilegeLevel privilegeLevel)
         {
             string[] arg = command.Split(' ');
             int len = arg.Length;
 
-            if (!adminPrivileges && !(
-                arg[0] == "help" //||
-                //arg[0] == "..."
-            ))
-                return (CmdResult.Error, "You don't have permission to execute this command.");
+            if ((privilegeLevel == PrivilegeLevel.User && !new List<string> { "help" }.Contains(arg[0])) || // USER ALLOW
+                (privilegeLevel == PrivilegeLevel.Admin && !new List<string> { "passwd" }.Contains(arg[0]))) // ADMIN DENY
+            {
+                return (CmdResult.Error, "You don't have permission to execute this command. Your permission level: " + privilegeLevel);
+            }
 
             return arg[0] switch
             {
@@ -111,6 +114,7 @@ namespace Larnix.Server
                 "spawn" when len >= 4 => Spawn(arg[1], arg[2], arg[3], len >= 5 ? arg[4..] : null),
                 "place" when len >= 5 => Place(arg[1], arg[2], arg[3], arg[4], len >= 6 ? arg[5] : null, len >= 7 ? arg[6..] : null),
                 "particles" when len == 4 => Particles(arg[1], arg[2], arg[3]),
+                "passwd" when len == 3 => Passwd(arg[1], arg[2]),
                 "clear" when len == 1 => Clear(),
                 "info" when len == 1 => Info(),
                 _ => (CmdResult.Error, "Unknown command! Type 'help' for documentation.")
@@ -132,6 +136,7 @@ namespace Larnix.Server
             sb.Append($" | spawn [entity] [x] [y] [?json] - Spawns entity at a given position.\n");
             sb.Append($" | place [front/back] [x] [y] [block] [?variant] [?json] - Places block at a given position.\n");
             sb.Append($" | particles [name] [x] [y] - Spawns particles at a given position.\n");
+            sb.Append($" | passwd [nickname] [password] - Synchroneously overrides login data for a given nickname.\n");
             sb.Append($" | clear - Clears the console.\n");
             sb.Append($" | info - Displays server information.\n");
             sb.Append($"\n");
@@ -291,6 +296,24 @@ namespace Larnix.Server
             string realName = particleID.ToString();
             Vec2 dblPos = new(x, y);
             return (CmdResult.Success, $"Spawned {realName} particles at position {dblPos}.");
+        }
+
+        private (CmdResult, string) Passwd(string nickname, string password)
+        {
+            if (nickname == Common.LOOPBACK_ONLY_NICKNAME)
+                return (CmdResult.Error, "This nickname is reserved.");
+
+            if (password == Common.LOOPBACK_ONLY_PASSWORD)
+                return (CmdResult.Error, "This password is reserved.");
+
+            if (!Validation.IsGoodNickname(nickname))
+                return (CmdResult.Error, Validation.WrongNicknameInfo);
+
+            if (!Validation.IsGoodPassword(password))
+                return (CmdResult.Error, Validation.WrongPasswordInfo);
+    
+            QuickServer.UserManager.ChangePasswordSync(nickname, password);
+            return (CmdResult.Success, "Password for " + nickname + " has been set/updated.");
         }
 
         private (CmdResult, string) Clear()

@@ -27,7 +27,7 @@ namespace Larnix.Blocks.All
             if (isLit != shouldBeLit)
             {
                 byte newVariant = (byte)(This.BlockData.Variant ^ LOGIC_LIT_BIT());
-                WorldAPI.SetBlockVariant(This.Position, This.IsFront, newVariant, IWorldAPI.BreakMode.Weak);
+                WorldAPI.SetBlockVariant(This.Position, This.IsFront, newVariant, IWorldAPI.BreakMode.WeakSelf);
             }
         }
 

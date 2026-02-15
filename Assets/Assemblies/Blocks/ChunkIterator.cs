@@ -4,16 +4,15 @@ using Larnix.Core.Vectors;
 
 namespace Larnix.Blocks
 {
-    public enum IterationOrder { Any, XY, YX, Random }
+    public enum IterationOrder { XY, YX, Random }
     public static class ChunkIterator
     {
         private const int CHUNK_SIZE = BlockUtils.CHUNK_SIZE;
 
-        public static void Iterate(Action<int, int> action, IterationOrder order = IterationOrder.Any)
+        public static void Iterate(Action<int, int> action, IterationOrder order = IterationOrder.XY)
         {
             switch (order)
             {
-                case IterationOrder.Any:
                 case IterationOrder.XY:
                     IterateXY(action);
                     break;
@@ -32,11 +31,9 @@ namespace Larnix.Blocks
         {
             return order switch
             {
-                IterationOrder.Any => Compare(a, b, IterationOrder.XY),
                 IterationOrder.XY => a.x != b.x ? a.x - b.x : a.y - b.y,
                 IterationOrder.YX => a.y != b.y ? a.y - b.y : a.x - b.x,
-                IterationOrder.Random => suppressException ? 0 : throw new InvalidOperationException("Cannot compare positions in random order!"),
-                _ => 0
+                _ => suppressException ? 0 : throw new InvalidOperationException("Cannot compare positions in " + order + " order!")
             };
         }
 

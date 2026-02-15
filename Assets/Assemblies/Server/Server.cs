@@ -176,7 +176,7 @@ namespace Larnix.Server
                     }
                     else
                     {
-                        Core.Debug.LogRaw("Password should be 7-32 characters and not end with NULL (0x00).\n");
+                        Core.Debug.LogRaw(Validation.WrongPasswordInfo + "\n");
                     }
                     
                 } while (!changeSuccess);

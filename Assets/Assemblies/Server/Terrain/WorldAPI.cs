@@ -13,9 +13,12 @@ namespace Larnix.Server.Terrain
         private ChunkLoading ChunkLoading => Ref<ChunkLoading>();
         private Commands Commands => Ref<Commands>();
 
-        public uint ServerFrame() => Ref<Server>().FixedFrame;
-
         public WorldAPI(Server server) : base(server) { }
+
+        public long ServerTick()
+        {
+            return Ref<Server>().ServerTick;
+        }
 
         public BlockServer GetBlock(Vec2Int POS, bool isFront)
         {

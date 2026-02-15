@@ -12,10 +12,10 @@ namespace Larnix.Blocks
         {
             Replace = 0,
             Effects = 1, // drops particles
-            Weak = 2, // no frame event reset
+            WeakSelf = 2, // no frame event reset (only for self modifications)
         }
         
-        public uint ServerFrame();
+        public long ServerTick();
         public BlockServer GetBlock(Vec2Int POS, bool front);
 
         public BlockServer ReplaceBlock(Vec2Int POS, bool front, BlockData1 blockTemplate,
