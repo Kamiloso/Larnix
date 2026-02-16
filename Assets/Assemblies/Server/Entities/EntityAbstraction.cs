@@ -18,6 +18,8 @@ namespace Larnix.Server.Entities
         private EntityManager EntityManager => Ref<EntityManager>();
         private PhysicsManager PhysicsManager => Ref<PhysicsManager>();
 
+        public EntityServer Controller => _controller;
+
         private EntityServer _controller;
         private ulong _storedUID;
         private EntityData _storedEntityData;
@@ -79,20 +81,8 @@ namespace Larnix.Server.Entities
             _controller = EntityFactory.ConstructEntityObject(_storedUID, _storedEntityData, PhysicsManager);
         }
 
-        public EntityServer GetRealController()
-        {
-            return _controller;
-        }
-
-        public void DeleteEntityInstant()
-        {
-            EntityDataManager.DeleteEntityData(uID);
-        }
-
-        public void UnloadEntityInstant()
-        {
-            EntityDataManager.UnloadEntityData(uID);
-        }
+        public void DeleteEntityInstant() => EntityDataManager.DeleteEntityData(uID);
+        public void UnloadEntityInstant() => EntityDataManager.UnloadEntityData(uID);
 
         public void FromFrameUpdate()
         {

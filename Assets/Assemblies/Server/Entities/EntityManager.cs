@@ -11,7 +11,6 @@ using Larnix.Core.Utils;
 using Larnix.Entities.Structs;
 using Larnix.Socket.Backend;
 using Larnix.Server.Data;
-using Larnix.Core.References;
 using Larnix.Packets;
 using Larnix.Core.Json;
 using Larnix.Core;
@@ -32,7 +31,6 @@ namespace Larnix.Server.Entities
 
         private uint _lastFixedFrame = 0;
         private uint _updateCounter = 0; // just to check modulo when sending NearbyEntities packet
-        private ulong? _nextUID = null;
 
         public EntityManager(Server server) : base(server) { }
 
@@ -92,7 +90,7 @@ namespace Larnix.Server.Entities
             timer.Stop();
         }
 
-        public void SendEntityBroadcast() // It works, better don't touch it
+        public void SendEntityBroadcast()
         {
             if(Server.FixedFrame != _lastFixedFrame)
             {
@@ -104,10 +102,10 @@ namespace Larnix.Server.Entities
                     ulong playerUID = PlayerManager.GetPlayerUID(nickname);
                     Vec2 playerPos = PlayerManager.GetPlayerRenderingPosition(nickname);
 
-                    Dictionary<ulong, EntityData> EntityList = new();
-                    Dictionary<ulong, uint> PlayerFixedIndexes = new();
+                    Dictionary<ulong, EntityData> entityList = new();
+                    Dictionary<ulong, uint> playerFixedIndexes = new();
 
-                    HashSet<ulong> EntitiesWithInactive = new(); // contains inactive entities too (not inactive players)
+                    HashSet<ulong> entitiesWithInactive = new(); // contains inactive entities too (not inactive players)
 
                     foreach (ulong uid in _entityControllers.Keys)
                     {
@@ -124,20 +122,20 @@ namespace Larnix.Server.Entities
                         {
                             if (entity.IsActive)
                             {
-                                EntityList.Add(uid, entity.EntityData);
-                                EntitiesWithInactive.Add(uid);
+                                entityList.Add(uid, entity.EntityData);
+                                entitiesWithInactive.Add(uid);
 
                                 // -- adding indexes --
                                 if (isPlayer)
                                 {
-                                    PlayerFixedIndexes.Add(uid, FixedFrames[uid]);
+                                    playerFixedIndexes.Add(uid, FixedFrames[uid]);
                                 }
                             }
                             else
                             {
                                 if (!isPlayer)
                                 {
-                                    EntitiesWithInactive.Add(uid);
+                                    entitiesWithInactive.Add(uid);
                                 }
                             }
                         }
@@ -145,12 +143,12 @@ namespace Larnix.Server.Entities
 
                     PlayerManager.UpdateNearbyUIDs(
                         nickname,
-                        EntitiesWithInactive,
+                        entitiesWithInactive,
                         Server.FixedFrame,
                         _updateCounter % 6 == 0
                         );
 
-                    var fragments = EntityBroadcast.CreateList(Server.FixedFrame, EntityList, PlayerFixedIndexes);
+                    var fragments = EntityBroadcast.CreateList(Server.FixedFrame, entityList, playerFixedIndexes);
                     foreach (var brdcst in fragments)
                     {
                         broadcastsToSend.Add((nickname, brdcst));
@@ -235,7 +233,7 @@ namespace Larnix.Server.Entities
 
             if (_entityControllers[uid].EntityData.ID == EntityID.Player)
             {
-                foreach(string nickname in _playerControllers.Keys.ToList())
+                foreach (string nickname in _playerControllers.Keys.ToList())
                 {
                     if (_playerControllers[nickname].uID == uid)
                     {
@@ -266,6 +264,9 @@ namespace Larnix.Server.Entities
             _entityControllers.Remove(uid);
         }
 
+        // ----- UID Management -----
+
+        private ulong? _nextUID = null;
         public ulong GetNextUID()
         {
             if (_nextUID != null)

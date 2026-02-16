@@ -18,16 +18,16 @@ namespace Larnix.Server.Terrain
     {
         private const int CHUNK_SIZE = BlockUtils.CHUNK_SIZE;
 
-        private WorldAPI WorldAPI => Ref<WorldAPI>();
-        private BlockDataManager BlockDataManager => Ref<BlockDataManager>();
-        private PhysicsManager PhysicsManager => Ref<PhysicsManager>();
-        private BlockSender BlockSender => Ref<BlockSender>();
-
         private readonly Vec2Int _chunkpos;
         private readonly BlockEvents _blockEvents;
         private readonly BlockServer[,] _blocksFront = new BlockServer[CHUNK_SIZE, CHUNK_SIZE];
         private readonly BlockServer[,] _blocksBack = new BlockServer[CHUNK_SIZE, CHUNK_SIZE];
         private readonly Dictionary<Vec2Int, StaticCollider[]> _colliderCollections = new();
+
+        private WorldAPI WorldAPI => Ref<WorldAPI>();
+        private BlockDataManager BlockDataManager => Ref<BlockDataManager>();
+        private PhysicsManager PhysicsManager => Ref<PhysicsManager>();
+        private BlockSender BlockSender => Ref<BlockSender>();
 
         public IEnumerable FrameInvoker => _blockEvents.GetFrameInvoker();
         public readonly BlockData2[,] ActiveChunkReference;
@@ -71,33 +71,28 @@ namespace Larnix.Server.Terrain
             return isFront ? _blocksFront[pos.x, pos.y] : _blocksBack[pos.x, pos.y];
         }
 
+        public BlockServer UpdateBlockWeak(Vec2Int pos, bool isFront) => UpdateBlock(pos, isFront, null, IWorldAPI.BreakMode.Weak);
         public BlockServer UpdateBlock(Vec2Int pos, bool isFront, BlockData1 block, IWorldAPI.BreakMode breakMode)
         {
-            BlockServer result;
+            bool weak = breakMode == IWorldAPI.BreakMode.Weak;
 
             // --- Change blocks ---
 
-            BlockData2 oldHeader = ((IBinary<BlockData2>)ActiveChunkReference[pos.x, pos.y]).BinaryCopy();
+            BlockData2 oldHeader = !weak ?
+                ActiveChunkReference[pos.x, pos.y].BinaryCopy() : null;
 
-            result = RefreshBlock(pos, block, isFront);
+            BlockServer result = !weak ?
+                RefreshBlock(pos, block, isFront) : GetBlock(pos, isFront);
+
             RefreshCollider(pos);
-
-            BlockData2 newHeader = ((IBinary<BlockData2>)ActiveChunkReference[pos.x, pos.y]).BinaryCopy();
+            BlockData2 newHeader = ActiveChunkReference[pos.x, pos.y].BinaryCopy();
 
             // --- Push send update ---
 
-            if (!((IBinary<BlockData2>)oldHeader).BinaryEquals(newHeader))
+            if (weak || !oldHeader.BinaryEquals(newHeader))
             {
                 Vec2Int POS = BlockUtils.GlobalBlockCoords(_chunkpos, pos);
                 BlockSender.AddBlockUpdate(new BlockUpdateRecord(POS, newHeader, breakMode));
-            }
-
-            // --- Reflag for frame events ---
-            
-            if (breakMode == IWorldAPI.BreakMode.Weak)
-            {
-                _blocksFront[pos.x, pos.y].EventFlag = true;
-                _blocksBack[pos.x, pos.y].EventFlag = true;
             }
 
             return result;

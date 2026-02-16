@@ -12,7 +12,7 @@ namespace Larnix.Blocks
         {
             Replace = 0,
             Effects = 1, // drops particles
-            Weak = 2, // no frame event reset (only for self modifications)
+            Weak = 2, // object mutate, prevents unnecessary allocations
         }
         
         public long ServerTick();
@@ -20,8 +20,9 @@ namespace Larnix.Blocks
 
         public BlockServer ReplaceBlock(Vec2Int POS, bool front, BlockData1 blockTemplate,
             BreakMode breakMode = BreakMode.Replace);
-        public BlockServer SetBlockVariant(Vec2Int POS, bool front, byte variant,
-            BreakMode breakMode = BreakMode.Replace);
+        
+        public BlockServer MutateBlockID(Vec2Int POS, bool front, BlockID id);
+        public BlockServer MutateBlockVariant(Vec2Int POS, bool front, byte variant);
         
         public bool CanPlaceBlock(Vec2Int POS, bool front, BlockData1 item);
         public bool CanBreakBlock(Vec2Int POS, bool front, BlockData1 item, BlockData1 tool);

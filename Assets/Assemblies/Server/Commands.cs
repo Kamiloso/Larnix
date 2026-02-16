@@ -184,7 +184,7 @@ namespace Larnix.Server
             Vec2 fullTargetPos = targetPos + Common.UP_EPSILON;
 
             QuickServer.Send(nickname, new Teleport(fullTargetPos));
-            ((Player)EntityManager.GetPlayerController(nickname).GetRealController()).AcceptTeleport(fullTargetPos);
+            ((Player)EntityManager.GetPlayerController(nickname).Controller).AcceptTeleport(fullTargetPos);
             return (CmdResult.Success, $"Player {nickname} has been teleported to {targetPos}.");
         }
 

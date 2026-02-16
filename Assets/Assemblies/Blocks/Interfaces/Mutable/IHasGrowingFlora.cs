@@ -27,7 +27,7 @@ namespace Larnix.Blocks.All
                 {
                     bool? suppressed = IsSuppressed();
                     if (suppressed == true)
-                        WorldAPI.SetBlockVariant(This.Position, This.IsFront, 0);
+                        WorldAPI.MutateBlockVariant(This.Position, This.IsFront, 0);
                 }
             }
         }
@@ -59,7 +59,7 @@ namespace Larnix.Blocks.All
                         if(candidates.Count > 0)
                         {
                             int rand = Common.Rand().Next(0, candidates.Count);
-                            WorldAPI.SetBlockVariant(candidates[rand].Position, This.IsFront, This.BlockData.Variant);
+                            WorldAPI.MutateBlockVariant(candidates[rand].Position, This.IsFront, This.BlockData.Variant);
                         }
                     }
                 }

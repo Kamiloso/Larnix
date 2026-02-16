@@ -6,9 +6,10 @@ namespace Larnix.Core.Json
     public class Storage
     {
         private JSONObject _root;
+        private JSONObject Root => _root ??= new JSONObject();
 
-        public Storage() => _root = new JSONObject();
-        private Storage(JSONObject root) => _root = root ?? new JSONObject();
+        public Storage() {}
+        private Storage(JSONObject root) => _root = root;
 
 
         public Node this[string key] => IterateNode(key);
@@ -16,11 +17,11 @@ namespace Larnix.Core.Json
         private Node IterateNode(string key)
         {
             if (string.IsNullOrEmpty(key))
-                return new Node(_root);
+                return new Node(Root);
             
             string[] parts = key.Split('.');
 
-            JSONNode current = _root;
+            JSONNode current = Root;
             for (int i = 0; i < parts.Length; i++)
             {
                 string part = parts[i];
@@ -44,10 +45,10 @@ namespace Larnix.Core.Json
 
         public Storage DeepCopy()
         {
-            return new Storage(_root.Clone().AsObject);
+            return new Storage(Root.Clone().AsObject);
         }
 
-        public override string ToString() => _root.ToString();
+        public override string ToString() => Root.ToString();
         public static Storage FromString(string json)
         {
             try

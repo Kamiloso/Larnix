@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
 using ResultType = Larnix.Core.ICmdExecutor.CmdResult;
+using System;
 
 namespace Larnix.Server.Terrain
 {
@@ -34,6 +35,9 @@ namespace Larnix.Server.Terrain
         public BlockServer ReplaceBlock(Vec2Int POS, bool isFront, BlockData1 blockTemplate,
             IWorldAPI.BreakMode breakMode)
         {
+            if (breakMode == IWorldAPI.BreakMode.Weak)
+                throw new InvalidOperationException("Invalid break mode for ReplaceBlock.");
+
             Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
             if (ChunkLoading.TryGetChunk(chunk, out var chunkObject))
             {
@@ -44,18 +48,28 @@ namespace Larnix.Server.Terrain
             return null;
         }
 
-        public BlockServer SetBlockVariant(Vec2Int POS, bool isFront, byte variant,
-            IWorldAPI.BreakMode breakMode)
+        public BlockServer MutateBlockID(Vec2Int POS, bool isFront, BlockID id)
         {
-            BlockData1 oldBlock = GetBlock(POS, isFront)?.BlockData;
-            if (oldBlock == null) return null;
+            Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
+            if (ChunkLoading.TryGetChunk(chunk, out var chunkObject))
+            {
+                Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
+                GetBlock(POS, isFront).BlockData.__MutateID__(id);
+                return chunkObject.UpdateBlockWeak(pos, isFront);
+            }
+            return null;
+        }
 
-            BlockData1 blockTemplate = new BlockData1(
-                id: oldBlock.ID,
-                variant: variant,
-                data: oldBlock.Data);
-            
-            return ReplaceBlock(POS, isFront, blockTemplate, breakMode);
+        public BlockServer MutateBlockVariant(Vec2Int POS, bool isFront, byte variant)
+        {
+            Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
+            if (ChunkLoading.TryGetChunk(chunk, out var chunkObject))
+            {
+                Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
+                GetBlock(POS, isFront).BlockData.__MutateVariant__(variant);
+                return chunkObject.UpdateBlockWeak(pos, isFront);
+            }
+            return null;
         }
 
         public bool CanPlaceBlock(Vec2Int POS, bool front, BlockData1 item)

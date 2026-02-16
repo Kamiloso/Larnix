@@ -64,7 +64,7 @@ namespace Larnix.Server.Entities
                     playerController.Activate();
 
                 // Load data to player controller
-                ((Player)playerController.GetRealController()).UpdateTransform(
+                ((Player)playerController.Controller).UpdateTransform(
                     msg.Position, msg.Rotation);
 
                 // Update PlayerUpdate info

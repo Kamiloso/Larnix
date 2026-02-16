@@ -37,5 +37,6 @@ namespace Larnix.Blocks
         NandGate = 29,
         XnorGate = 30,
         LayerRepeater = 31,
+        Acid = 32,
     }
 }

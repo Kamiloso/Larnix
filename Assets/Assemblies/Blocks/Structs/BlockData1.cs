@@ -21,6 +21,10 @@ namespace Larnix.Blocks.Structs
         }
         public Storage Data { get; private set; }
 
+        // USE CAREFULLY! Breaks immutability, but prevents unnecessary allocations in some cases.
+        public void __MutateID__(BlockID id) => ID = id;
+        public void __MutateVariant__(byte variant) => Variant = variant;
+
         public static BlockData1 Air => new(BlockID.Air, 0);
         public static BlockData1 UltimateTool => new(BlockID.UltimateTool, 0);
 
@@ -52,6 +56,22 @@ namespace Larnix.Blocks.Structs
             offset += sizeof(byte);
 
             return true;
+        }
+
+        public BlockData1 BinaryCopy() => ((IBinary<BlockData1>)this).BinaryCopy();
+        BlockData1 IBinary<BlockData1>.BinaryCopy()
+        {
+            return new BlockData1
+            {
+                ID = ID,
+                Variant = Variant,
+            };
+        }
+
+        public bool BinaryEquals(BlockData1 other) => ((IBinary<BlockData1>)this).BinaryEquals(other);
+        bool IBinary<BlockData1>.BinaryEquals(BlockData1 other)
+        {
+            return ID == other.ID && Variant == other.Variant;
         }
 
         public BlockData1 DeepCopy()

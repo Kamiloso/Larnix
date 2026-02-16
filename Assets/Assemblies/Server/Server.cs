@@ -27,8 +27,8 @@ namespace Larnix.Server
         public string LocalAddress { get; init; }
         public string Authcode { get; init; }
 
-        public long ServerTick { get; private set; } = 0;
-        public uint FixedFrame { get; private set; } = 0;
+        public long ServerTick { get; private set; }
+        public uint FixedFrame { get; private set; }
 
         private WorldMeta _mdata;
         private readonly Stopwatch _stopwatch = Stopwatch.StartNew();
@@ -152,9 +152,11 @@ namespace Larnix.Server
 
         private void ConfigureConsole()
         {
+            const string BORDER_STRING = "------------------------------------------------------------";
+
             // Title set
             Console.SetTitle("Larnix Server " + Version.Current);
-            Core.Debug.LogRaw(new string('-', 60) + "\n");
+            Core.Debug.LogRaw(BORDER_STRING + "\n");
 
             // Force change default password
             if (_mdata.nickname != "Player")
@@ -182,13 +184,13 @@ namespace Larnix.Server
                 } while (!changeSuccess);
 
                 Core.Debug.LogRaw("Password changed.\n");
-                Core.Debug.LogRaw(new string('-', 60) + "\n");
+                Core.Debug.LogRaw(BORDER_STRING + "\n");
             }
 
             // Socket information
             Core.Debug.LogRaw("Socket created on port " + _quickServer.Config.Port + "\n");
             Core.Debug.LogRaw("Authcode: " + _quickServer.Authcode + "\n");
-            Core.Debug.LogRaw(new string('-', 60) + "\n");
+            Core.Debug.LogRaw(BORDER_STRING + "\n");
 
             // Input thread start
             Console.EnableInputThread();

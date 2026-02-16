@@ -15,13 +15,12 @@ namespace Larnix.Blocks.All
 
         void SelfChangeID(BlockID id)
         {
-            BlockData1 blockTemplate = new BlockData1(id, This.BlockData.Variant, This.BlockData.Data);
-            WorldAPI.ReplaceBlock(This.Position, This.IsFront, blockTemplate, IWorldAPI.BreakMode.Weak);
+            WorldAPI.MutateBlockID(This.Position, This.IsFront, id);
         }
 
         void SelfChangeVariant(byte variant)
         {
-            WorldAPI.SetBlockVariant(This.Position, This.IsFront, variant, IWorldAPI.BreakMode.Weak);
+            WorldAPI.MutateBlockVariant(This.Position, This.IsFront, variant);
         }
 
         string STATIC_GetBlockName(byte variant)

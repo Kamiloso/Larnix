@@ -21,6 +21,7 @@ namespace Larnix
         public static GridManager GridManager;
         public static TileSelector TileSelector;
         public static Inventory Inventory;
+        public static Chat Chat;
         public static LoadingScreen LoadingScreen;
         public static Loading Loading;
         public static Screenshots Screenshots;

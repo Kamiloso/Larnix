@@ -74,7 +74,7 @@ namespace Larnix.Blocks.All
                 byte byted_left = (byte)(byted_none | MEMORY_LEFT());
                 byte byted_right = (byte)(byted_none | MEMORY_RIGHT());
 
-                if(mem_direction == 0)
+                if (mem_direction == 0)
                 {
                     if (can_left && can_right)
                         mem_direction = Common.Rand().Next() % 2 == 0 ? -1 : 1;
@@ -88,7 +88,7 @@ namespace Larnix.Blocks.All
 
                 // actual move
 
-                if(mem_direction == -1)
+                if (mem_direction == -1)
                 {
                     if (can_left)
                     {
@@ -98,11 +98,11 @@ namespace Larnix.Blocks.All
                     }
                     else
                     {
-                        WorldAPI.SetBlockVariant(localpos, This.IsFront, byted_none);
+                        WorldAPI.MutateBlockVariant(localpos, This.IsFront, byted_none);
                     }
                 }
 
-                if(mem_direction == 1)
+                if (mem_direction == 1)
                 {
                     if (can_right)
                     {
@@ -112,7 +112,7 @@ namespace Larnix.Blocks.All
                     }
                     else
                     {
-                        WorldAPI.SetBlockVariant(localpos, This.IsFront, byted_none);
+                        WorldAPI.MutateBlockVariant(localpos, This.IsFront, byted_none);
                     }
                 }
             }
