@@ -71,29 +71,44 @@ namespace Larnix.Server.Terrain
             return isFront ? _blocksFront[pos.x, pos.y] : _blocksBack[pos.x, pos.y];
         }
 
-        public BlockServer UpdateBlockWeak(Vec2Int pos, bool isFront) => UpdateBlock(pos, isFront, null, IWorldAPI.BreakMode.Weak);
-        public BlockServer UpdateBlock(Vec2Int pos, bool isFront, BlockData1 block, IWorldAPI.BreakMode breakMode)
+        public BlockServer UpdateBlock(Vec2Int pos, bool isFront, BlockData1 newBlock, IWorldAPI.BreakMode breakMode)
         {
-            bool weak = breakMode == IWorldAPI.BreakMode.Weak;
+            // --- Chunk changes ---
 
-            // --- Change blocks ---
-
-            BlockData2 oldHeader = !weak ?
-                ActiveChunkReference[pos.x, pos.y].BinaryCopy() : null;
-
-            BlockServer result = !weak ?
-                RefreshBlock(pos, block, isFront) : GetBlock(pos, isFront);
-
+            BlockData2 oldHeader = ActiveChunkReference[pos.x, pos.y].BinaryCopy();
+            BlockServer result = RefreshBlock(pos, newBlock, isFront);
             RefreshCollider(pos);
             BlockData2 newHeader = ActiveChunkReference[pos.x, pos.y].BinaryCopy();
 
             // --- Push send update ---
 
-            if (weak || !oldHeader.BinaryEquals(newHeader))
+            if (!oldHeader.BinaryEquals(newHeader))
             {
                 Vec2Int POS = BlockUtils.GlobalBlockCoords(_chunkpos, pos);
-                BlockSender.AddBlockUpdate(new BlockUpdateRecord(POS, newHeader, breakMode));
+                BlockSender.AddBlockUpdate(new BlockUpdateRecord(
+                    POS, newHeader,
+                    breakMode
+                    ));
             }
+
+            return result;
+        }
+
+        public BlockServer UpdateBlockWeak(Vec2Int pos, bool isFront)
+        {
+            // --- Chunk changes ---
+
+            BlockServer result = GetBlock(pos, isFront);
+            RefreshCollider(pos);
+            BlockData2 newHeader = ActiveChunkReference[pos.x, pos.y].BinaryCopy();
+
+            // --- Push send update ---
+
+            Vec2Int POS = BlockUtils.GlobalBlockCoords(_chunkpos, pos);
+            BlockSender.AddBlockUpdate(new BlockUpdateRecord(
+                POS, newHeader,
+                IWorldAPI.BreakMode.Replace
+                ));
 
             return result;
         }

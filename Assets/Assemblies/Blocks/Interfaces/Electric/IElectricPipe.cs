@@ -10,7 +10,7 @@ namespace Larnix.Blocks.All
     {
         new void Init()
         {
-            This.Subscribe(BlockEvent.ElectricFinalize,
+            This.Subscribe(BlockOrder.ElectricFinalize,
                 () => RethinkLitState());
         }
 

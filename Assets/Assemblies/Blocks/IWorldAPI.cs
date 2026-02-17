@@ -12,7 +12,6 @@ namespace Larnix.Blocks
         {
             Replace = 0,
             Effects = 1, // drops particles
-            Weak = 2, // object mutate, prevents unnecessary allocations
         }
         
         public long ServerTick();

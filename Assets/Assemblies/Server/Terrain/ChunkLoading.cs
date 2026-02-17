@@ -145,14 +145,14 @@ namespace Larnix.Server.Terrain
 
         public LoadState ChunkState(Vec2Int chunk)
         {
-            if(_chunks.TryGetValue(chunk, out var container))
+            if (_chunks.TryGetValue(chunk, out var container))
                 return container.State;
             return LoadState.None;
         }
 
         public bool IsEntityInZone(EntityAbstraction entity, LoadState state)
         {
-            Vec2Int chunk = BlockUtils.CoordsToChunk(entity.EntityData.Position);
+            Vec2Int chunk = BlockUtils.CoordsToChunk(entity.ActiveData.Position);
             return ChunkState(chunk) == state;
         }
 
@@ -180,10 +180,10 @@ namespace Larnix.Server.Terrain
             if (BlockUtils.GetNearbyChunks(chunk, 0).Count == 0)
                 return false;
 
-            if(ChunkState(chunk) == LoadState.None)
+            if (ChunkState(chunk) == LoadState.None)
                 ChunkStimulate(chunk);
 
-            if(ChunkState(chunk) == LoadState.Loading)
+            if (ChunkState(chunk) == LoadState.Loading)
                 ChunkActivate(chunk);
 
             return true;

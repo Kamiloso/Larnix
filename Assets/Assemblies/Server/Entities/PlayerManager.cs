@@ -215,7 +215,7 @@ namespace Larnix.Server.Entities
             {
                 case PlayerState.Inactive:
                 case PlayerState.Alive:
-                    return EntityManager.GetPlayerController(nickname).EntityData.Position;
+                    return EntityManager.GetPlayerController(nickname).ActiveData.Position;
 
                 case PlayerState.Dead:
                     return _recentPlayerUpdates[nickname].Position;
@@ -236,7 +236,7 @@ namespace Larnix.Server.Entities
             return returns;
         }
 
-        public ulong GetPlayerUID(string nickname)
+        public ulong UidByNickname(string nickname)
         {
             if (_playerUIDs.TryGetValue(nickname, out ulong uid))
                 return uid;

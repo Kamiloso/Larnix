@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
 namespace Larnix.Blocks
 {
-    public enum BlockEvent
+    public enum BlockOrder
     {
         PreFrame, PreFrameSelfMutations,
         Conway,
@@ -20,21 +20,21 @@ namespace Larnix.Blocks
     public class BlockEvents
     {
         private const int CHUNK_SIZE = BlockUtils.CHUNK_SIZE;
-        private record EventInfo(BlockEvent Type, IterationOrder Order);
+        private record EventInfo(BlockOrder Type, IterationOrder Order);
 
         private static readonly EventInfo[] _blockEvents = new[]
         {
-            new EventInfo(BlockEvent.PreFrame, IterationOrder.YX),
-            new EventInfo(BlockEvent.PreFrameSelfMutations, IterationOrder.YX),
-            new EventInfo(BlockEvent.Conway, IterationOrder.YX),
-            new EventInfo(BlockEvent.Sequential, IterationOrder.YX),
-            new EventInfo(BlockEvent.Random, IterationOrder.Random),
-            new EventInfo(BlockEvent.ElectricPropagation, IterationOrder.YX),
-            new EventInfo(BlockEvent.ElectricFinalize, IterationOrder.YX),
-            new EventInfo(BlockEvent.ElectricDevices, IterationOrder.YX),
-            new EventInfo(BlockEvent.SequentialLate, IterationOrder.YX),
-            new EventInfo(BlockEvent.RandomLate, IterationOrder.Random),
-            new EventInfo(BlockEvent.TechCmdExecute, IterationOrder.YX)
+            new EventInfo(BlockOrder.PreFrame, IterationOrder.YX),
+            new EventInfo(BlockOrder.PreFrameSelfMutations, IterationOrder.YX),
+            new EventInfo(BlockOrder.Conway, IterationOrder.YX),
+            new EventInfo(BlockOrder.Sequential, IterationOrder.YX),
+            new EventInfo(BlockOrder.Random, IterationOrder.Random),
+            new EventInfo(BlockOrder.ElectricPropagation, IterationOrder.YX),
+            new EventInfo(BlockOrder.ElectricFinalize, IterationOrder.YX),
+            new EventInfo(BlockOrder.ElectricDevices, IterationOrder.YX),
+            new EventInfo(BlockOrder.SequentialLate, IterationOrder.YX),
+            new EventInfo(BlockOrder.RandomLate, IterationOrder.Random),
+            new EventInfo(BlockOrder.TechCmdExecute, IterationOrder.YX)
         };
 
         private readonly BlockServer[,] _blocksFront;
@@ -68,13 +68,13 @@ namespace Larnix.Blocks
             }
         }
 
-        public void Subscribe(Vec2Int pos, bool front, BlockEvent type, Action action)
+        public void Subscribe(Vec2Int pos, bool front, BlockOrder type, Action action)
         {
             var queue = _eventActions[(int)type];
             queue.Enqueue(action, (pos, front));
         }
 
-        public void Unsubscribe(BlockEvent type, Action action)
+        public void Unsubscribe(BlockOrder type, Action action)
         {
             _eventActions[(int)type]?.Remove(action);
         }

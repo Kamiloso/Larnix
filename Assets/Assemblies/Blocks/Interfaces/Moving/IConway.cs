@@ -10,10 +10,10 @@ namespace Larnix.Blocks.All
     {
         void Init()
         {
-            This.Subscribe(BlockEvent.PreFrame,
+            This.Subscribe(BlockOrder.PreFrame,
                 () => ConwayPrepare());
 
-            This.Subscribe(BlockEvent.Conway,
+            This.Subscribe(BlockOrder.Conway,
                 () => ConwayFinalize());
         }
 

@@ -35,9 +35,6 @@ namespace Larnix.Server.Terrain
         public BlockServer ReplaceBlock(Vec2Int POS, bool isFront, BlockData1 blockTemplate,
             IWorldAPI.BreakMode breakMode)
         {
-            if (breakMode == IWorldAPI.BreakMode.Weak)
-                throw new InvalidOperationException("Invalid break mode for ReplaceBlock.");
-
             Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
             if (ChunkLoading.TryGetChunk(chunk, out var chunkObject))
             {

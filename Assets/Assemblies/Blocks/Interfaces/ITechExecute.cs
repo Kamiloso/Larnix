@@ -10,7 +10,7 @@ namespace Larnix.Blocks.All
     {
         void Init()
         {
-            This.Subscribe(BlockEvent.TechCmdExecute,
+            This.Subscribe(BlockOrder.TechCmdExecute,
                 () => ExecuteCommand());
         }
 

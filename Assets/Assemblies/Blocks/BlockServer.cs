@@ -36,9 +36,9 @@ namespace Larnix.Blocks
         /// by replacing block with BreakMode = Weak.
         /// </summary>
         public bool EventFlag { get; set; }
-        private readonly Action[] _actions = new Action[Enum.GetValues(typeof(BlockEvent)).Length];
+        private readonly Action[] _actions = new Action[Enum.GetValues(typeof(BlockOrder)).Length];
 
-        internal void Subscribe(BlockEvent type, Action action)
+        internal void Subscribe(BlockOrder type, Action action)
         {
             if (_eventSystem != null)
                 throw new InvalidOperationException("Cannot subscribe to events after attaching to event system.");
@@ -47,7 +47,7 @@ namespace Larnix.Blocks
             _actions[(int)type] = prev + (() => InvokeEvent(type, action));
         }
 
-        private void InvokeEvent(BlockEvent type, Action action)
+        private void InvokeEvent(BlockOrder type, Action action)
         {
             if (_eventSystem == null)
                 return; // not attached, ignore
@@ -67,7 +67,7 @@ namespace Larnix.Blocks
                     Vec2Int pos = BlockUtils.LocalBlockCoords(Position);
                     bool front = IsFront;
                     
-                    _eventSystem.Subscribe(pos, front, (BlockEvent)i, action);
+                    _eventSystem.Subscribe(pos, front, (BlockOrder)i, action);
                 }
             }
         }
@@ -79,7 +79,7 @@ namespace Larnix.Blocks
                 var action = _actions[i];
                 if (action != null)
                 {
-                    _eventSystem.Unsubscribe((BlockEvent)i, action);
+                    _eventSystem.Unsubscribe((BlockOrder)i, action);
                 }
             }
 

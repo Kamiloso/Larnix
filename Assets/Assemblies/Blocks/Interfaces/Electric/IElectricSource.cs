@@ -7,7 +7,7 @@ namespace Larnix.Blocks.All
     {
         void Init()
         {
-            This.Subscribe(BlockEvent.ElectricPropagation,
+            This.Subscribe(BlockOrder.ElectricPropagation,
                 () => StartPropagation());
         }
 

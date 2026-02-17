@@ -6,7 +6,7 @@ namespace Larnix.Blocks.All
     {
         void Init()
         {
-            This.Subscribe(BlockEvent.Sequential,
+            This.Subscribe(BlockOrder.Sequential,
                 () => Fall());
         }
 

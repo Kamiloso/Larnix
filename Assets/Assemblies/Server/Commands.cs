@@ -202,7 +202,7 @@ namespace Larnix.Server
             if (PlayerManager.GetPlayerState(nickname) != PlayerState.Alive)
                 return (CmdResult.Error, $"Player {nickname} is not alive.");
 
-            ulong uid = PlayerManager.GetPlayerUID(nickname);
+            ulong uid = PlayerManager.UidByNickname(nickname);
             EntityManager.KillEntity(uid);
             return (CmdResult.Success, $"Player {nickname} has been killed.");
         }

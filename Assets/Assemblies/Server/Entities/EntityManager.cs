@@ -36,33 +36,35 @@ namespace Larnix.Server.Entities
 
         public override void FrameUpdate()
         {
-            // DON'T add .ToList() or anything like that here.
-            // We need a clear error message when accessing this dictionary inproperly.
-            foreach (var controller in _entityControllers.Values)
+            // Frame update for active entities
+            foreach (var controller in _entityControllers.Values.ToList())
+            {
                 if (controller.IsActive)
-                {
                     controller.FromFrameUpdate();
-                }
+            }
 
             // Kill entities when needed
-            foreach (ulong uid in _entityControllers.Keys.ToList())
-                if (_entityControllers[uid].IsActive)
+            foreach (var controller in _entityControllers.Values.ToList())
+            {
+                if (controller.IsActive)
                 {
-                    Storage storage = _entityControllers[uid].EntityData.Data;
+                    Storage storage = controller.ActiveData.Data;
                     if (Tags.TryConsume(storage, "tags", Tags.TO_BE_KILLED))
                     {
+                        ulong uid = controller.UID;
                         KillEntity(uid);
                     }
                 }
+            }
         }
 
         public override void EarlyFrameUpdate()
         {
             // Unload entities
-            foreach(ulong uid in _entityControllers.Keys.ToList())
+            foreach (ulong uid in _entityControllers.Keys.ToList())
             {
                 EntityAbstraction controller = _entityControllers[uid];
-                if (controller.IsActive && controller.EntityData.ID != EntityID.Player)
+                if (controller.IsActive && !controller.IsPlayer)
                 {
                     if (ChunkLoading.IsEntityInZone(controller, ChunkLoading.LoadState.None))
                         UnloadEntity(uid);
@@ -76,9 +78,9 @@ namespace Larnix.Server.Entities
             foreach (ulong uid in _entityControllers.Keys.ToList())
             {
                 EntityAbstraction controller = _entityControllers[uid];
-                if (!controller.IsActive && controller.EntityData.ID != EntityID.Player)
+                if (!controller.IsActive && !controller.IsPlayer)
                 {
-                    if(ChunkLoading.IsEntityInZone(controller, ChunkLoading.LoadState.Active))
+                    if (ChunkLoading.IsEntityInZone(controller, ChunkLoading.LoadState.Active))
                     {
                         if (timer.Elapsed.TotalMilliseconds < MAX_ACTIVATING_MS)
                             controller.Activate();
@@ -99,7 +101,7 @@ namespace Larnix.Server.Entities
 
                 foreach (string nickname in PlayerManager.AllPlayers())
                 {
-                    ulong playerUID = PlayerManager.GetPlayerUID(nickname);
+                    ulong playerUID = PlayerManager.UidByNickname(nickname);
                     Vec2 playerPos = PlayerManager.GetPlayerRenderingPosition(nickname);
 
                     Dictionary<ulong, EntityData> entityList = new();
@@ -114,26 +116,25 @@ namespace Larnix.Server.Entities
 
                         // -- checking entities to add --
                         EntityAbstraction entity = _entityControllers[uid];
-                        Vec2 entityPos = entity.EntityData.Position;
-                        bool isPlayer = entity.EntityData.ID == EntityID.Player;
+                        Vec2 entityPos = entity.ActiveData.Position;
 
                         const float MAX_DISTANCE = 50f;
                         if (Vec2.Distance(playerPos, entityPos) < MAX_DISTANCE)
                         {
                             if (entity.IsActive)
                             {
-                                entityList.Add(uid, entity.EntityData);
+                                entityList.Add(uid, entity.ActiveData);
                                 entitiesWithInactive.Add(uid);
 
                                 // -- adding indexes --
-                                if (isPlayer)
+                                if (entity.IsPlayer)
                                 {
                                     playerFixedIndexes.Add(uid, FixedFrames[uid]);
                                 }
                             }
                             else
                             {
-                                if (!isPlayer)
+                                if (!entity.IsPlayer)
                                 {
                                     entitiesWithInactive.Add(uid);
                                 }
@@ -168,13 +169,13 @@ namespace Larnix.Server.Entities
 
         public void CreatePlayerController(string nickname)
         {
-            EntityAbstraction playerController = EntityAbstraction.CreatePlayerController(this, nickname);
-            _playerControllers.Add(nickname, playerController);
-            _entityControllers.Add(playerController.uID, playerController);
+            EntityAbstraction controller = EntityAbstraction.CreatePlayerController(this, nickname);
+            _playerControllers.Add(nickname, controller);
+            _entityControllers.Add(controller.UID, controller);
 
             Payload packet = new PlayerInitialize(
-                position: playerController.EntityData.Position,
-                myUid: playerController.uID,
+                position: controller.ActiveData.Position,
+                myUid: controller.UID,
                 lastFixedFrame: _lastFixedFrame
             );
             QuickServer.Send(nickname, packet);
@@ -182,32 +183,33 @@ namespace Larnix.Server.Entities
 
         public EntityAbstraction GetPlayerController(string nickname)
         {
-            _playerControllers.TryGetValue(nickname, out var value);
-            return value;
+            if (_playerControllers.TryGetValue(nickname, out var value))
+                return value;
+            
+            return null;
         }
 
         public void UnloadPlayerController(string nickname)
         {
             if (_playerControllers.TryGetValue(nickname, out var value))
             {
-                EntityAbstraction playerController = value;
+                EntityAbstraction controller = value;
                 _playerControllers.Remove(nickname);
-                _entityControllers.Remove(playerController.uID);
-                playerController.UnloadEntityInstant();
+                _entityControllers.Remove(controller.UID);
+                controller.UnloadEntityInstant();
             }
             else throw new InvalidOperationException($"Controller of player {nickname} is not loaded!");
         }
-
-        public List<EntityAbstraction> GetAllPlayerControllers() => _playerControllers.Values.ToList();
-        public List<EntityAbstraction> GetAllEntityControllers() => _entityControllers.Values.ToList();
 
         public bool SummonEntity(EntityData entityData)
         {
             if (!ChunkLoading.IsLoadedPosition(entityData.Position))
                 return false;
 
-            EntityAbstraction entityController = EntityAbstraction.CreateEntityController(this, entityData);
-            _entityControllers.Add(entityController.uID, entityController);
+            ulong uid = GetNextUID(); // generate new
+
+            EntityAbstraction controller = EntityAbstraction.CreateEntityController(this, entityData, uid);
+            _entityControllers.Add(controller.UID, controller);
             return true;
         }
 
@@ -216,52 +218,43 @@ namespace Larnix.Server.Entities
             Dictionary<ulong, EntityData> entities = EntityDataManager.GetUnloadedEntitiesByChunk(chunkCoords);
             foreach (var kvp in entities)
             {
-                EntityAbstraction entityController = EntityAbstraction.CreateEntityController(this, kvp.Value, kvp.Key);
-                _entityControllers.Add(entityController.uID, entityController);
+                EntityAbstraction controller = EntityAbstraction.CreateEntityController(this, kvp.Value, kvp.Key);
+                _entityControllers.Add(controller.UID, controller);
             }
-        }
-
-        public bool IsEntityLoaded(ulong uid)
-        {
-            return _entityControllers.ContainsKey(uid);
         }
 
         public void KillEntity(ulong uid)
         {
-            if (!_entityControllers.ContainsKey(uid))
-                throw new InvalidOperationException("Entity with ID " + uid + " is not loaded!");
-
-            if (_entityControllers[uid].EntityData.ID == EntityID.Player)
+            if (_entityControllers.TryGetValue(uid, out var controller))
             {
-                foreach (string nickname in _playerControllers.Keys.ToList())
+                if (controller.IsPlayer)
                 {
-                    if (_playerControllers[nickname].uID == uid)
-                    {
-                        _playerControllers.Remove(nickname);
+                    string nickname = controller.Nickname;
+                    _playerControllers.Remove(nickname);
 
-                        CodeInfo packet = new CodeInfo(CodeInfo.Info.YouDie);
-                        QuickServer.Send(nickname, packet);
-
-                        break;
-                    }
+                    CodeInfo packet = new CodeInfo(CodeInfo.Info.YouDie);
+                    QuickServer.Send(nickname, packet);
                 }
-            }
 
-            _entityControllers[uid].DeleteEntityInstant();
-            _entityControllers.Remove(uid);
+                controller.DeleteEntityInstant();
+                _entityControllers.Remove(uid);
+            }
+            else throw new InvalidOperationException("Entity with ID " + uid + " is not loaded!");
         }
 
         private void UnloadEntity(ulong uid)
         {
-            if (!_entityControllers.ContainsKey(uid))
-                throw new InvalidOperationException("Entity with ID " + uid + " is not loaded!");
+            if (_entityControllers.TryGetValue(uid, out var controller))
+            {
+                if (controller.IsPlayer)
+                {
+                    throw new InvalidOperationException("Trying to unload a player entity!");
+                }
 
-            EntityAbstraction entityController = _entityControllers[uid];
-            if (entityController.EntityData.ID == EntityID.Player)
-                throw new InvalidOperationException("Cannot unload player this way!");
-
-            _entityControllers[uid].UnloadEntityInstant();
-            _entityControllers.Remove(uid);
+                controller.UnloadEntityInstant();
+                _entityControllers.Remove(uid);
+            }
+            else throw new InvalidOperationException("Entity with ID " + uid + " is not loaded!");
         }
 
         // ----- UID Management -----

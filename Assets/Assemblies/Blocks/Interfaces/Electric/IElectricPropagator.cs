@@ -13,7 +13,7 @@ namespace Larnix.Blocks.All
 
         void Init()
         {
-            This.Subscribe(BlockEvent.PreFrame,
+            This.Subscribe(BlockOrder.PreFrame,
                  () => Data["electric_propagator.recursion"].Int = 0);
         }
 
