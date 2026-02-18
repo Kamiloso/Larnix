@@ -13,11 +13,6 @@ namespace Larnix.Blocks.All
         IWorldAPI WorldAPI => This.WorldAPI;
         Storage Data => This.BlockData.Data;
 
-        void SelfChangeID(BlockID id)
-        {
-            WorldAPI.MutateBlockID(This.Position, This.IsFront, id);
-        }
-
         void SelfChangeVariant(byte variant)
         {
             WorldAPI.MutateBlockVariant(This.Position, This.IsFront, variant);

@@ -78,7 +78,7 @@ namespace Larnix.Blocks
         {
             HandleInputErrors(original);
 
-            BlockData2[,] copy = new BlockData2[CHUNK_SIZE, CHUNK_SIZE];
+            BlockData2[,] copy = ChunkIterator.Array2D<BlockData2>();
             for (int x = 0; x < CHUNK_SIZE; x++)
                 for (int y = 0; y < CHUNK_SIZE; y++)
                 {
@@ -156,7 +156,7 @@ namespace Larnix.Blocks
             if (bytes == null) throw new ArgumentNullException(nameof(bytes));
             if (bytes.Length - offset < 1) throw new ArgumentException("Bytes array must be at least 1 byte!");
 
-            BlockData2[,] blocks = new BlockData2[CHUNK_SIZE, CHUNK_SIZE];
+            BlockData2[,] blocks = ChunkIterator.Array2D<BlockData2>();
             if (bytes.Length - offset < 1280) // compressed
             {
                 Dictionary<byte, BlockData2> blockMap = new();

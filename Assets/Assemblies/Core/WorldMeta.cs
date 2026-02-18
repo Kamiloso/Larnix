@@ -8,46 +8,57 @@ namespace Larnix.Core
 {
     public struct WorldMeta
     {
-        public Version version;
-        public string nickname;
+        public Version Version { get; init; }
+        public string Nickname { get; init; }
+
+        public static WorldMeta Default => new WorldMeta(Version.Current, "Player");
 
         public WorldMeta(Version version, string nickname)
         {
-            this.version = version;
-            this.nickname = nickname;
+            Version = version;
+            Nickname = nickname;
         }
 
-        public WorldMeta(string text)
+        private static WorldMeta FromText(string text)
         {
-            string[] arg = text.Split('\n');
-            version = new Version(uint.Parse(arg[0]));
-            nickname = arg[1];
+            string[] args = text.Split('\n');
+            
+            return new WorldMeta(
+                version: new Version(uint.Parse(args[0])),
+                nickname: args[1]
+                );
         }
 
-        public string GetString()
+        public static void SaveToWorldFolder(string worldName, WorldMeta mdata)
         {
-            return version.ID + "\n" + nickname;
+            string path = Path.Combine(GamePath.SavesPath, worldName);
+            SaveToFolder(path, mdata);
         }
 
-        public static void SaveData(string worldName, WorldMeta mdata, bool fullPath = false)
+        public static WorldMeta ReadFromWorldFolder(string worldName)
         {
-            string path = fullPath ? worldName : Path.Combine(GamePath.SavesPath, worldName);
-            FileManager.Write(path, "metadata.txt", mdata.GetString());
+            string path = Path.Combine(GamePath.SavesPath, worldName);
+            return ReadFromFolder(path);
         }
 
-        public static WorldMeta ReadData(string worldName, bool fullPath = false)
+        public static void SaveToFolder(string path, WorldMeta mdata)
         {
-            string path = fullPath ? worldName : Path.Combine(GamePath.SavesPath, worldName);
+            string data = mdata.Version.ID + "\n" + mdata.Nickname;
+            FileManager.Write(path, "metadata.txt", data);
+        }
+
+        public static WorldMeta ReadFromFolder(string path)
+        {
             string contents = FileManager.Read(path, "metadata.txt");
-
+            
             try
             {
-                return new WorldMeta(contents);
+                return FromText(contents);
             }
             catch
             {
-                WorldMeta mdata = new WorldMeta(Version.Current, "Player");
-                SaveData(path, mdata, fullPath);
+                WorldMeta mdata = Default;
+                SaveToFolder(path, mdata);
                 return mdata;
             }
         }

@@ -57,7 +57,7 @@ namespace Larnix.Socket.Channel
             sendBytes = b => udp.Send(target, b);
 
             retransmitter = new Retransmitter(8);
-            rttTracker = new RTTTracker(600, 50);
+            rttTracker = new RTTTracker(600, 100);
             _rsaKey = rsaKey; _aesKey = aesKey;
             Role = role;
 

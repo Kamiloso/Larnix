@@ -3,7 +3,7 @@ using Larnix.Core.Vectors;
 
 namespace Larnix.Blocks.All
 {
-    public interface IElectricPropagator : IBlockInterface
+    public interface IElectricPropagator : ISecureAtomic
     {
         protected static Vec2Int[] CARDINAL_DIRECTIONS = new[] {
             Vec2Int.Up, Vec2Int.Right, Vec2Int.Down, Vec2Int.Left

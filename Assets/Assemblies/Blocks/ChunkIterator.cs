@@ -8,6 +8,7 @@ namespace Larnix.Blocks
     public static class ChunkIterator
     {
         private const int CHUNK_SIZE = BlockUtils.CHUNK_SIZE;
+        public static T[,] Array2D<T>() => new T[CHUNK_SIZE, CHUNK_SIZE];
 
         public static void Iterate(Action<int, int> action, IterationOrder order = IterationOrder.XY)
         {

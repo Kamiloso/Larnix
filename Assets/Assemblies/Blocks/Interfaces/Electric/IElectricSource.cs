@@ -3,7 +3,7 @@ using Larnix.Core.Vectors;
 
 namespace Larnix.Blocks.All
 {
-    public interface IElectricSource : IBlockInterface
+    public interface IElectricSource : ISecureAtomic
     {
         void Init()
         {

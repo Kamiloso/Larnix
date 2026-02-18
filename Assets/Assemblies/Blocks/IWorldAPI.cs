@@ -15,12 +15,14 @@ namespace Larnix.Blocks
         }
         
         public long ServerTick();
-        public Block GetBlock(Vec2Int POS, bool front);
+        public bool IsChunkLoaded(Vec2Int chunk);
+        public bool IsChunkAtomicLoaded(Vec2Int chunk);
 
+        public Block GetBlock(Vec2Int POS, bool front);
+        
         public Block ReplaceBlock(Vec2Int POS, bool front, BlockData1 blockTemplate,
             BreakMode breakMode = BreakMode.Replace);
         
-        public Block MutateBlockID(Vec2Int POS, bool front, BlockID id);
         public Block MutateBlockVariant(Vec2Int POS, bool front, byte variant);
         
         public bool CanPlaceBlock(Vec2Int POS, bool front, BlockData1 item);

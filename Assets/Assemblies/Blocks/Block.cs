@@ -5,6 +5,7 @@ using System;
 using Larnix.Blocks.Structs;
 using Larnix.Core.Vectors;
 using Larnix.Core.Utils;
+using Larnix.Blocks.All;
 
 namespace Larnix.Blocks
 {
@@ -77,7 +78,7 @@ namespace Larnix.Blocks
                     Vec2Int pos = BlockUtils.LocalBlockCoords(Position);
                     bool front = IsFront;
                     
-                    _eventSystem.Subscribe(pos, front, (BlockOrder)i, action);
+                    _eventSystem.Subscribe(pos, front, (BlockOrder)i, action, this is ISecureAtomic);
                 }
             }
         }

@@ -114,7 +114,7 @@ namespace Larnix.Worldgen
 
         public BlockData2[,] GenerateChunk(Vec2Int chunk)
         {
-            ProtoBlock[,] protoBlocks = new ProtoBlock[CHUNK_SIZE, CHUNK_SIZE];
+            ProtoBlock[,] protoBlocks = ChunkIterator.Array2D<ProtoBlock>();
 
             Build_BaseTerrain(protoBlocks, chunk);
             Build_Caves(protoBlocks, chunk);
@@ -210,7 +210,7 @@ namespace Larnix.Worldgen
 
         private BlockData2[,] ConvertToBlockArray(ProtoBlock[,] protoBlocks, Vec2Int chunk)
         {
-            BlockData2[,] blocks = new BlockData2[CHUNK_SIZE, CHUNK_SIZE];
+            BlockData2[,] blocks = ChunkIterator.Array2D<BlockData2>();
 
             ChunkIterator.Iterate((x, y) =>
             {

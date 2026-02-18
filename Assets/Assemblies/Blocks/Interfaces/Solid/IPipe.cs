@@ -64,16 +64,30 @@ namespace Larnix.Blocks.All
         {
             Vec2Int POS = This.Position;
             byte nearby = (byte)(
-                (ConnectableTo(POS + Vec2Int.Up) == true ? 1 : 0) << 0 |
-                (ConnectableTo(POS + Vec2Int.Right) == true ? 1 : 0) << 1 |
-                (ConnectableTo(POS + Vec2Int.Down) == true ? 1 : 0) << 2 |
-                (ConnectableTo(POS + Vec2Int.Left) == true ? 1 : 0) << 3
+                PartialConnectionBit(Vec2Int.Up, 0) |
+                PartialConnectionBit(Vec2Int.Right, 1) |
+                PartialConnectionBit(Vec2Int.Down, 2) |
+                PartialConnectionBit(Vec2Int.Left, 3)
             );
 
             if (This.BlockData.Variant != nearby)
             {
                 SelfChangeVariant(nearby);
             }
+        }
+
+        private int PartialConnectionBit(Vec2Int direction, int offset)
+        {
+            Vec2Int POS = This.Position + direction;
+            byte variant = This.BlockData.Variant;
+
+            bool? connectable = ConnectableTo(POS);
+            return connectable switch
+            {
+                true => 1 << offset,
+                false => 0,
+                null => variant & (1 << offset)
+            };
         }
 
         private bool? ConnectableTo(Vec2Int POS_other)

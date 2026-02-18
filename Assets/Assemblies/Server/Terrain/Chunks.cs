@@ -2,15 +2,10 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using Larnix.Socket.Packets;
 using Larnix.Server.Entities;
 using Larnix.Core.Utils;
 using Larnix.Core.Vectors;
-using Larnix.Blocks.Structs;
-using Larnix.Socket.Backend;
-using Larnix.Packets;
 using Larnix.Server.Data;
-using System.Diagnostics;
 
 namespace Larnix.Server.Terrain
 {
@@ -20,8 +15,8 @@ namespace Larnix.Server.Terrain
 
         private Server Server => Ref<Server>();
         private PlayerManager PlayerManager => Ref<PlayerManager>();
-        private QuickServer QuickServer => Ref<QuickServer>();
         private EntityManager EntityManager => Ref<EntityManager>();
+        private BlockSender BlockSender => Ref<BlockSender>();
         private Config Config => Ref<Config>();
 
         private readonly Dictionary<Vec2Int, ChunkContainer> _chunks = new();
@@ -55,14 +50,12 @@ namespace Larnix.Server.Terrain
             }
 
             // Chunk activating
-            foreach (var chunk in SortByPriority(_chunks.Keys.Where(ch => ChunkState(ch) == LoadState.Loading).ToList()))
+            IEnumerable<Vec2Int> loadingChunks = _chunks.Keys
+                .Where(ch => ChunkState(ch) == LoadState.Loading);
+
+            if (TryGetHighestPriorityLoadingChunk(loadingChunks, out var nextChunk))
             {
-                var state = ChunkState(chunk);
-
-                if (state == LoadState.Loading)
-                    ChunkActivate(chunk);
-
-                break; // only one chunk per frame
+                ChunkActivate(nextChunk);
             }
 
             // Chunk unloading countdown
@@ -74,8 +67,9 @@ namespace Larnix.Server.Terrain
 
         public override void FrameUpdate()
         {
+            // Invoke block events
             IEnumerator[] invokers = _chunks
-                .Where(kv => ChunkState(kv.Key) == LoadState.Active)
+                .Where(kv => IsLoadedChunk(kv.Key))
                 .OrderBy(kv => kv.Key.y)
                 .ThenBy(kv => kv.Key.x)
                 .Select(kv => kv.Value.Instance.FrameInvoker)
@@ -93,62 +87,30 @@ namespace Larnix.Server.Terrain
                 }
             end_while_true:;
 
+            // Updating player chunk data
             if (Server.FixedFrame % Config.ChunkSendingPeriodFrames == 0)
             {
-                BroadcastChunkChanges();
+                BlockSender.BroadcastChunkChanges();
             }
-        }
-
-        private void BroadcastChunkChanges()
-        {
-            // Updating player chunk data
-
-            foreach (string nickname in PlayerManager.AllPlayers())
-            {
-                Vec2Int chunkpos = BlockUtils.CoordsToChunk(PlayerManager.RenderingPosition(nickname));
-                var player_state = PlayerManager.StateOf(nickname);
-
-                HashSet<Vec2Int> chunksMemory = PlayerManager.LoadedChunksCopy(nickname);
-                HashSet<Vec2Int> chunksNearby = BlockUtils.GetNearbyChunks(chunkpos, BlockUtils.LOADING_DISTANCE)
-                    .Where(c => ChunkState(c) == LoadState.Active)
-                    .ToHashSet();
-
-                HashSet<Vec2Int> added = new(chunksNearby);
-                added.ExceptWith(chunksMemory);
-
-                HashSet<Vec2Int> removed = new(chunksMemory);
-                removed.ExceptWith(chunksNearby);
-
-                // send added
-                foreach (var chunk in added)
-                {
-                    BlockData2[,] chunkArray = _chunks[chunk].Instance.ActiveChunkReference;
-                    Payload packet = new ChunkInfo(chunk, chunkArray);
-                    QuickServer.Send(nickname, packet);
-                }
-
-                // send removed
-                foreach (var chunk in removed)
-                {
-                    Payload packet = new ChunkInfo(chunk, null);
-                    QuickServer.Send(nickname, packet);
-                }
-
-                PlayerManager.UpdateClientChunks(nickname, chunksNearby);
-            }
-        }
-
-        public bool IsLoadedPosition(Vec2 position)
-        {
-            Vec2Int chunk = BlockUtils.CoordsToChunk(position);
-            return ChunkState(chunk) == LoadState.Active;
         }
 
         public LoadState ChunkState(Vec2Int chunk)
         {
             if (_chunks.TryGetValue(chunk, out var container))
                 return container.State;
+            
             return LoadState.None;
+        }
+
+        public bool IsLoadedChunk(Vec2Int chunk)
+        {
+            return ChunkState(chunk) == LoadState.Active;
+        }
+
+        public bool IsLoadedPosition(Vec2 position)
+        {
+            Vec2Int chunk = BlockUtils.CoordsToChunk(position);
+            return IsLoadedChunk(chunk);
         }
 
         public bool IsEntityInZone(EntityAbstraction entity, LoadState state)
@@ -157,37 +119,24 @@ namespace Larnix.Server.Terrain
             return ChunkState(chunk) == state;
         }
 
-        public bool TryGetChunk(Vec2Int chunk, out ChunkServer chunkObject)
+        public ChunkServer GetChunk(Vec2Int chunk)
         {
-            var state = ChunkState(chunk);
-            switch (state)
-            {
-                case LoadState.None:
-                case LoadState.Loading:
-                    chunkObject = null;
-                    return false;
+            if (TryGetChunk(chunk, out var result))
+                return result;
 
-                case LoadState.Active:
-                    chunkObject = _chunks[chunk].Instance;
-                    return true;
-
-                default:
-                    throw new NotImplementedException("Impossible chunk state!");
-            }
+            throw new InvalidOperationException($"Chunk {chunk} is not active!");
         }
 
-        public bool TryForceLoadChunk(Vec2Int chunk)
+        public bool TryGetChunk(Vec2Int chunk, out ChunkServer result)
         {
-            if (BlockUtils.GetNearbyChunks(chunk, 0).Count == 0)
-                return false;
+            if (ChunkState(chunk) == LoadState.Active)
+            {
+                result = _chunks[chunk].Instance;
+                return true;
+            }
 
-            if (ChunkState(chunk) == LoadState.None)
-                ChunkStimulate(chunk);
-
-            if (ChunkState(chunk) == LoadState.Loading)
-                ChunkActivate(chunk);
-
-            return true;
+            result = null;
+            return false;
         }
 
         private void ChunkStimulate(Vec2Int chunk)
@@ -208,29 +157,23 @@ namespace Larnix.Server.Terrain
                 case LoadState.Active:
                     _chunks[chunk].UnloadTime = UNLOADING_TIME;
                     break;
-
-                default:
-                    throw new NotImplementedException("Impossible chunk state!");
             }
         }
 
         private void ChunkActivate(Vec2Int chunk)
         {
             // Check if loading
-
             LoadState state = ChunkState(chunk);
             if (state != LoadState.Loading)
                 throw new InvalidOperationException($"Chunk {chunk} must be in loading state to activate it!");
 
             // Create block chunk
-
             _chunks[chunk].Instance = new ChunkServer(this, chunk);
         }
 
         private void ChunkUnload(Vec2Int chunk)
         {
             // Remove chunks entry
-
             LoadState state = ChunkState(chunk);
             switch(state)
             {
@@ -252,30 +195,41 @@ namespace Larnix.Server.Terrain
             // --- entities will unload from EntityManager just after chunk update ---
         }
 
-        private List<Vec2Int> SortByPriority(List<Vec2Int> chunkList)
+        private bool TryGetHighestPriorityLoadingChunk(IEnumerable<Vec2Int> chunkCandidates, out Vec2Int bestChunk)
         {
-            List<(Vec2Int chunk, int distance)> pairs = new();
+            bestChunk = default;
 
-            foreach(var chunk in chunkList)
+            var playerChunks = PlayerManager.AllPlayers()
+                .Select(n => BlockUtils.CoordsToChunk(PlayerManager.RenderingPosition(n)))
+                .ToList();
+
+            if (playerChunks.Count == 0)
+                return false;
+
+            bool found = false;
+            int bestDistance = int.MaxValue;
+
+            foreach (var candidate in chunkCandidates)
             {
-                int dist_min = int.MaxValue;
+                int distMin = int.MaxValue;
 
-                foreach(string nickname in PlayerManager.AllPlayers())
+                foreach (var pChunk in playerChunks)
                 {
-                    Vec2 playerPos = PlayerManager.RenderingPosition(nickname);
-                    Vec2Int playerChunk = BlockUtils.CoordsToChunk(playerPos);
-
-                    int dist = GeometryUtils.ManhattanDistance(chunk, playerChunk);
-
-                    if (dist < dist_min)
-                        dist_min = dist;
+                    int dist = GeometryUtils.ManhattanDistance(candidate, pChunk);
+                    if (dist < distMin) distMin = dist;
+                    if (distMin == 0) break; // can't get better for this candidate
                 }
 
-                pairs.Add((chunk, dist_min));
+                if (distMin < bestDistance)
+                {
+                    bestDistance = distMin;
+                    bestChunk = candidate;
+                    found = true;
+                    if (bestDistance == 0) break; // optimal overall
+                }
             }
 
-            pairs.Sort((a, b) => a.distance - b.distance);
-            return pairs.Select(c => c.chunk).ToList();
+            return found;
         }
 
         private HashSet<Vec2Int> GetStimulatedChunks()

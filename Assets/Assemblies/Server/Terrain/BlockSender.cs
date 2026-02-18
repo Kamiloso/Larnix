@@ -24,6 +24,7 @@ namespace Larnix.Server.Terrain
         private WorldAPI WorldAPI => Ref<WorldAPI>();
         private PlayerManager PlayerManager => Ref<PlayerManager>();
         private QuickServer QuickServer => Ref<QuickServer>();
+        private Chunks Chunks => Ref<Chunks>();
 
         public BlockSender(Server server) : base(server) {}
 
@@ -104,6 +105,43 @@ namespace Larnix.Server.Terrain
                     Payload packet = new RetBlockChange(POS, operation, currentBlock, front, success);
                     QuickServer.Send(nickname, packet);
                 }
+            }
+        }
+
+        public void BroadcastChunkChanges()
+        {
+            foreach (string nickname in PlayerManager.AllPlayers())
+            {
+                Vec2Int chunkpos = BlockUtils.CoordsToChunk(PlayerManager.RenderingPosition(nickname));
+                var player_state = PlayerManager.StateOf(nickname);
+
+                HashSet<Vec2Int> chunksMemory = PlayerManager.LoadedChunksCopy(nickname);
+                HashSet<Vec2Int> chunksNearby = BlockUtils.GetNearbyChunks(chunkpos, BlockUtils.LOADING_DISTANCE)
+                    .Where(c => Chunks.IsLoadedChunk(c))
+                    .ToHashSet();
+
+                HashSet<Vec2Int> added = new(chunksNearby);
+                added.ExceptWith(chunksMemory);
+
+                HashSet<Vec2Int> removed = new(chunksMemory);
+                removed.ExceptWith(chunksNearby);
+
+                // Send added
+                foreach (var chunk in added)
+                {
+                    BlockData2[,] chunkArray = Chunks.GetChunk(chunk).ActiveChunkReference;
+                    Payload packet = new ChunkInfo(chunk, chunkArray);
+                    QuickServer.Send(nickname, packet);
+                }
+
+                // Send removed
+                foreach (var chunk in removed)
+                {
+                    Payload packet = new ChunkInfo(chunk, null);
+                    QuickServer.Send(nickname, packet);
+                }
+
+                PlayerManager.UpdateClientChunks(nickname, chunksNearby);
             }
         }
     }

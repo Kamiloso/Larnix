@@ -20,8 +20,8 @@ namespace Larnix.Server.Terrain
 
         private readonly Vec2Int _chunkpos;
         private readonly BlockEvents _blockEvents;
-        private readonly Block[,] _blocksFront = new Block[CHUNK_SIZE, CHUNK_SIZE];
-        private readonly Block[,] _blocksBack = new Block[CHUNK_SIZE, CHUNK_SIZE];
+        private readonly Block[,] _blocksFront = ChunkIterator.Array2D<Block>();
+        private readonly Block[,] _blocksBack = ChunkIterator.Array2D<Block>();
         private readonly Dictionary<Vec2Int, StaticCollider[]> _colliderCollections = new();
 
         private WorldAPI WorldAPI => Ref<WorldAPI>();
@@ -37,7 +37,7 @@ namespace Larnix.Server.Terrain
         public ChunkServer(RefObject<Server> reff, Vec2Int chunkpos) : base(reff)
         {
             _chunkpos = chunkpos;
-            _blockEvents = new BlockEvents(_blocksFront, _blocksBack);
+            _blockEvents = new BlockEvents(_chunkpos, WorldAPI, _blocksFront, _blocksBack);
 
             ActiveChunkReference = BlockDataManager.ObtainChunkReference(_chunkpos);
 

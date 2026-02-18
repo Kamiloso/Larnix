@@ -73,9 +73,10 @@ namespace Larnix.Server
                     this,
                     new PhysicsManager(),
 
-                    // SCRIPTS (execution order)
-                    new Chunks(this), // must be 1st (execution order)
-                    new EntityManager(this), // must be 2nd (execution order)
+                    // SCRIPTS (in execution order)
+                    new AtomicChunks(this),
+                    new Chunks(this), // --- EXEC ORDER IMPORTANT ---
+                    new EntityManager(this), // --- EXEC ORDER IMPORTANT ---
                     new WorldAPI(this),
                     new EntityDataManager(this),
                     new PlayerManager(this),
@@ -94,9 +95,9 @@ namespace Larnix.Server
             ServerTick = Database.GetServerTick();
 
             // --- World metadata ---
-            _mdata = WorldMeta.ReadData(WorldPath, true);
-            _mdata = new WorldMeta(Version.Current, _mdata.nickname);
-            WorldMeta.SaveData(WorldPath, _mdata, true);
+            _mdata = WorldMeta.ReadFromFolder(WorldPath);
+            _mdata = new WorldMeta(Version.Current, _mdata.Nickname);
+            WorldMeta.SaveToFolder(WorldPath, _mdata);
 
             // --- QuickServer ---
             _quickServer = new QuickServer(new QuickConfig(
@@ -106,7 +107,7 @@ namespace Larnix.Server
                 dataPath: Path.Combine(WorldPath, "Socket"),
                 userAPI: Database,
                 motd: Config.Motd,
-                hostUser: Type == ServerType.Remote ? "Player" : _mdata.nickname, // server owner ("Player" => detached)
+                hostUser: Type == ServerType.Remote ? "Player" : _mdata.Nickname, // server owner ("Player" => detached)
                 maskIPv4: Config.ClientIdentityPrefixSizeIPv4,
                 maskIPv6: Config.ClientIdentityPrefixSizeIPv6
                 ));
@@ -152,16 +153,16 @@ namespace Larnix.Server
 
         private void ConfigureConsole()
         {
-            const string BORDER_STRING = "------------------------------------------------------------";
+            const string BORDER_STR = "------------------------------------------------------------";
 
             // Title set
             Console.SetTitle("Larnix Server " + Version.Current);
-            Core.Debug.LogRaw(BORDER_STRING + "\n");
+            Core.Debug.LogRaw(BORDER_STR + "\n");
 
             // Force change default password
-            if (_mdata.nickname != "Player")
+            if (_mdata.Nickname != "Player")
             {
-                Core.Debug.LogRaw("This world was previously in use by " + _mdata.nickname + ".\n");
+                Core.Debug.LogRaw("This world was previously in use by " + _mdata.Nickname + ".\n");
                 Core.Debug.LogRaw("Choose a password for this player to start the server.\n");
 
                 bool changeSuccess = false;
@@ -171,9 +172,9 @@ namespace Larnix.Server
                     string password = Console.GetInputSync();
                     if (Validation.IsGoodPassword(password))
                     {
-                        UserManager.ChangePasswordSync(_mdata.nickname, password);
+                        UserManager.ChangePasswordSync(_mdata.Nickname, password);
                         _mdata = new WorldMeta(Version.Current, "Player");
-                        WorldMeta.SaveData(WorldPath, _mdata, true);
+                        WorldMeta.SaveToFolder(WorldPath, _mdata);
                         changeSuccess = true;
                     }
                     else
@@ -184,13 +185,13 @@ namespace Larnix.Server
                 } while (!changeSuccess);
 
                 Core.Debug.LogRaw("Password changed.\n");
-                Core.Debug.LogRaw(BORDER_STRING + "\n");
+                Core.Debug.LogRaw(BORDER_STR + "\n");
             }
 
             // Socket information
             Core.Debug.LogRaw("Socket created on port " + _quickServer.Config.Port + "\n");
             Core.Debug.LogRaw("Authcode: " + _quickServer.Authcode + "\n");
-            Core.Debug.LogRaw(BORDER_STRING + "\n");
+            Core.Debug.LogRaw(BORDER_STR + "\n");
 
             // Input thread start
             Console.EnableInputThread();

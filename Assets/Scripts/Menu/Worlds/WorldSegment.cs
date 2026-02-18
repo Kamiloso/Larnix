@@ -51,8 +51,8 @@ namespace Larnix.Menu.Worlds
             {
                 if (!_versionChecked)
                 {
-                    WorldMeta mdata = WorldMeta.ReadData(Name);
-                    PlayButton.interactable = mdata.version <= Version.Current;
+                    WorldMeta mdata = WorldMeta.ReadFromWorldFolder(Name);
+                    PlayButton.interactable = mdata.Version <= Version.Current;
                     _versionChecked = true;
                 }
             }

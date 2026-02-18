@@ -12,6 +12,7 @@ namespace Larnix.Server.Terrain
     internal class WorldAPI : Singleton, IWorldAPI
     {
         private Chunks Chunks => Ref<Chunks>();
+        private AtomicChunks AtomicChunks => Ref<AtomicChunks>();
         private Commands Commands => Ref<Commands>();
 
         public WorldAPI(Server server) : base(server) { }
@@ -19,6 +20,17 @@ namespace Larnix.Server.Terrain
         public long ServerTick()
         {
             return Ref<Server>().ServerTick;
+        }
+
+        public bool IsChunkLoaded(Vec2Int chunk)
+        {
+            return Chunks.IsLoadedChunk(chunk);
+        }
+
+        public bool IsChunkAtomicLoaded(Vec2Int chunk)
+        {
+            AtomicChunks.SuggestAtomicLoad(chunk);
+            return AtomicChunks.IsAtomicLoaded(chunk);
         }
 
         public Block GetBlock(Vec2Int POS, bool isFront)
@@ -41,18 +53,6 @@ namespace Larnix.Server.Terrain
                 Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
                 BlockData1 blockDeepCopy = blockTemplate.DeepCopy();
                 return chunkObject.UpdateBlock(pos, isFront, blockDeepCopy, breakMode);
-            }
-            return null;
-        }
-
-        public Block MutateBlockID(Vec2Int POS, bool isFront, BlockID id)
-        {
-            Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
-            if (Chunks.TryGetChunk(chunk, out var chunkObject))
-            {
-                Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
-                GetBlock(POS, isFront).BlockData.__MutateID__(id);
-                return chunkObject.UpdateBlockWeak(pos, isFront);
             }
             return null;
         }

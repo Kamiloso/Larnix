@@ -56,7 +56,7 @@ namespace Larnix.Socket.Helpers
 
         private class ReferenceEqualityComparer : IEqualityComparer<PayloadBox>
         {
-            public static readonly ReferenceEqualityComparer Instance = new ReferenceEqualityComparer();
+            public static readonly ReferenceEqualityComparer Instance = new();
 
             public bool Equals(PayloadBox x, PayloadBox y)
             {
