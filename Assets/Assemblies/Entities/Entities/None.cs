@@ -4,9 +4,8 @@ using System.Collections.Generic;
 
 namespace Larnix.Entities.All
 {
-    public sealed class None : EntityServer, IEntityInterface
+    public sealed class None : Entity, IEntityInterface
     {
-        public None(ulong uid, EntityData entityData)
-            : base(uid, entityData) { }
+        
     }
 }

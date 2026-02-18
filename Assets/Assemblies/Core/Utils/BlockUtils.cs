@@ -62,16 +62,6 @@ namespace Larnix.Core.Utils
             return (POS.x >> 4) == chunkpos.x && (POS.y >> 4) == chunkpos.y;
         }
 
-        public static HashSet<Vec2Int> GetCenterChunks(List<Vec2> positions)
-        {
-            HashSet<Vec2Int> returns = new();
-            foreach (Vec2 pos in positions)
-            {
-                returns.Add(CoordsToChunk(pos));
-            }
-            return returns;
-        }
-
         public static HashSet<Vec2Int> GetNearbyChunks(Vec2Int center, int simDistance)
         {
             int min_x = Math.Clamp(center.x - simDistance, MIN_CHUNK, int.MaxValue);

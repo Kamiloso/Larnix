@@ -41,9 +41,9 @@ namespace Larnix.Blocks.All
                     bool? self_suppressed = IsSuppressed();
                     if (self_suppressed == false)
                     {
-                        List<BlockServer> candidates = new();
+                        List<Block> candidates = new();
 
-                        foreach (BlockServer neighbour in WorldAPI.GetBlocksAround(This.Position, This.IsFront))
+                        foreach (Block neighbour in WorldAPI.GetBlocksAround(This.Position, This.IsFront))
                         {
                             IHasGrowingFlora other = neighbour as IHasGrowingFlora;
                             if (other != null && This.BlockData.ID == neighbour.BlockData.ID && neighbour.BlockData.Variant == 0)
@@ -71,7 +71,7 @@ namespace Larnix.Blocks.All
             Vec2Int POS = This.Position;
             Vec2Int POS_other = POS + new Vec2Int(0, 1);
 
-            BlockServer block = WorldAPI.GetBlock(POS_other, This.IsFront);
+            Block block = WorldAPI.GetBlock(POS_other, This.IsFront);
             if (block == null)
                 return null;
 

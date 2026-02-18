@@ -22,12 +22,16 @@ using Larnix.Core.Json;
 using Console = Larnix.Core.Console;
 using CmdResult = Larnix.Core.ICmdExecutor.CmdResult;
 using PlayerState = Larnix.Server.Entities.PlayerManager.PlayerState;
+using System.Linq;
 
 namespace Larnix.Server
 {
     internal class Commands : Singleton, ICmdExecutor
     {
         public enum PrivilegeLevel { User, Admin, Console }
+
+        private static readonly string[] USER_ALLOW = { "help", "clear" };
+        private static readonly string[] ADMIN_DENY = { "passwd" };
 
         private QuickServer QuickServer => Ref<QuickServer>();
         private PlayerManager PlayerManager => Ref<PlayerManager>();
@@ -75,7 +79,7 @@ namespace Larnix.Server
             }
             else // from player
             {
-                bool player_online = PlayerManager.GetPlayerState(sender) != PlayerState.None;
+                bool player_online = PlayerManager.StateOf(sender) != PlayerState.None;
                 if (player_online)
                 {
                     bool player_admin = /*Config.AdminList.Contains(sender)*/ false;
@@ -97,8 +101,8 @@ namespace Larnix.Server
             string[] arg = command.Split(' ');
             int len = arg.Length;
 
-            if ((privilegeLevel == PrivilegeLevel.User && !new List<string> { "help" }.Contains(arg[0])) || // USER ALLOW
-                (privilegeLevel == PrivilegeLevel.Admin && !new List<string> { "passwd" }.Contains(arg[0]))) // ADMIN DENY
+            if ((privilegeLevel == PrivilegeLevel.User && !USER_ALLOW.Contains(arg[0])) || // USER ALLOW
+                (privilegeLevel == PrivilegeLevel.Admin && ADMIN_DENY.Contains(arg[0]))) // ADMIN DENY
             {
                 return (CmdResult.Error, "You don't have permission to execute this command. Your permission level: " + privilegeLevel);
             }
@@ -159,7 +163,7 @@ namespace Larnix.Server
 
             foreach (string nickname in PlayerManager.AllPlayers())
             {
-                string playerState = PlayerManager.GetPlayerState(nickname).ToString().ToUpper();
+                string playerState = PlayerManager.StateOf(nickname).ToString().ToUpper();
                 
                 if (!QuickServer.TryGetClientEndPoint(nickname, out IPEndPoint endPoint))
                     endPoint = new IPEndPoint(IPAddress.Any, 0); // unknown
@@ -174,7 +178,7 @@ namespace Larnix.Server
 
         private (CmdResult, string) Tp(string nickname, string xt, string yt)
         {
-            if (PlayerManager.GetPlayerState(nickname) != PlayerState.Alive)
+            if (PlayerManager.StateOf(nickname) != PlayerState.Alive)
                 return (CmdResult.Error, $"Player {nickname} is not alive.");
 
             if (!DoubleUtils.TryParse(xt, out double x) || !DoubleUtils.TryParse(yt, out double y))
@@ -190,7 +194,7 @@ namespace Larnix.Server
 
         private (CmdResult, string) Kick(string nickname)
         {
-            if (PlayerManager.GetPlayerState(nickname) == PlayerState.None)
+            if (PlayerManager.StateOf(nickname) == PlayerState.None)
                 return (CmdResult.Error, $"Player {nickname} is not online.");
 
             QuickServer.FinishConnectionRequest(nickname);
@@ -199,7 +203,7 @@ namespace Larnix.Server
 
         private (CmdResult, string) Kill(string nickname)
         {
-            if (PlayerManager.GetPlayerState(nickname) != PlayerState.Alive)
+            if (PlayerManager.StateOf(nickname) != PlayerState.Alive)
                 return (CmdResult.Error, $"Player {nickname} is not alive.");
 
             ulong uid = PlayerManager.UidByNickname(nickname);
@@ -287,7 +291,7 @@ namespace Larnix.Server
                 particleID: particleID
             );
 
-            IEnumerable<string> nearbyPlayers = PlayerManager.AllObserversInRange(position, Common.PARTICLE_VIEW_DISTANCE);
+            IEnumerable<string> nearbyPlayers = PlayerManager.AllPlayersInRange(position, Common.PARTICLE_VIEW_DISTANCE);
             foreach (string nickname in nearbyPlayers)
             {
                 QuickServer.Send(nickname, particles);

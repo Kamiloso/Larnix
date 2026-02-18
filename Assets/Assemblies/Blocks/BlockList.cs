@@ -38,5 +38,8 @@ namespace Larnix.Blocks
         XnorGate = 30,
         LayerRepeater = 31,
         Acid = 32,
+        Bedrock = 33,
+        Void = 34,
+        Barrier = 35,
     }
 }

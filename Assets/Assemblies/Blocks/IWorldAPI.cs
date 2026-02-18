@@ -15,29 +15,29 @@ namespace Larnix.Blocks
         }
         
         public long ServerTick();
-        public BlockServer GetBlock(Vec2Int POS, bool front);
+        public Block GetBlock(Vec2Int POS, bool front);
 
-        public BlockServer ReplaceBlock(Vec2Int POS, bool front, BlockData1 blockTemplate,
+        public Block ReplaceBlock(Vec2Int POS, bool front, BlockData1 blockTemplate,
             BreakMode breakMode = BreakMode.Replace);
         
-        public BlockServer MutateBlockID(Vec2Int POS, bool front, BlockID id);
-        public BlockServer MutateBlockVariant(Vec2Int POS, bool front, byte variant);
+        public Block MutateBlockID(Vec2Int POS, bool front, BlockID id);
+        public Block MutateBlockVariant(Vec2Int POS, bool front, byte variant);
         
         public bool CanPlaceBlock(Vec2Int POS, bool front, BlockData1 item);
         public bool CanBreakBlock(Vec2Int POS, bool front, BlockData1 item, BlockData1 tool);
         public void PlaceBlockWithEffects(Vec2Int POS, bool front, BlockData1 item);
         public void BreakBlockWithEffects(Vec2Int POS, bool front, BlockData1 tool);
 
-        public List<BlockServer> GetBlocksAround(Vec2Int POS, bool front)
+        public List<Block> GetBlocksAround(Vec2Int POS, bool front)
         {
-            List<BlockServer> result = new(8);
+            List<Block> result = new(8);
 
             for (int dx = -1; dx <= 1; dx++)
                 for (int dy = -1; dy <= 1; dy++)
                 {
                     if (dx == 0 && dy == 0) continue;
-                    Vec2Int _POS = new Vec2Int(POS.x + dx, POS.y + dy);
-                    BlockServer block = GetBlock(_POS, front);
+                    Vec2Int POS_1 = new Vec2Int(POS.x + dx, POS.y + dy);
+                    Block block = GetBlock(POS_1, front);
                     if (block != null)
                     {
                         result.Add(block);

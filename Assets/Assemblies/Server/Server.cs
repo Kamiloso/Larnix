@@ -74,7 +74,7 @@ namespace Larnix.Server
                     new PhysicsManager(),
 
                     // SCRIPTS (execution order)
-                    new ChunkLoading(this), // must be 1st (execution order)
+                    new Chunks(this), // must be 1st (execution order)
                     new EntityManager(this), // must be 2nd (execution order)
                     new WorldAPI(this),
                     new EntityDataManager(this),

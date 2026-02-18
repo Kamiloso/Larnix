@@ -9,7 +9,7 @@ namespace Larnix.Blocks.All
 {
     public interface IBlockInterface
     {
-        BlockServer This => (BlockServer)this;
+        Block This => (Block)this;
         IWorldAPI WorldAPI => This.WorldAPI;
         Storage Data => This.BlockData.Data;
 

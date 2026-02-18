@@ -37,13 +37,13 @@ namespace Larnix.Blocks
             new EventInfo(BlockOrder.TechCmdExecute, IterationOrder.YX)
         };
 
-        private readonly BlockServer[,] _blocksFront;
-        private readonly BlockServer[,] _blocksBack;
+        private readonly Block[,] _blocksFront;
+        private readonly Block[,] _blocksBack;
 
         private readonly PriorityQueue<Action, (Vec2Int, bool)>[] _eventActions =
             new PriorityQueue<Action, (Vec2Int, bool)>[_blockEvents.Length];
 
-        public BlockEvents(BlockServer[,] blocksFront, BlockServer[,] blocksBack)
+        public BlockEvents(Block[,] blocksFront, Block[,] blocksBack)
         {
             if (blocksFront.GetLength(0) != CHUNK_SIZE || blocksFront.GetLength(1) != CHUNK_SIZE ||
                 blocksBack.GetLength(0) != CHUNK_SIZE || blocksBack.GetLength(1) != CHUNK_SIZE)

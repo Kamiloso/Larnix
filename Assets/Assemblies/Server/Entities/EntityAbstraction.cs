@@ -8,6 +8,7 @@ using Larnix.Core.References;
 using Larnix.Core.Vectors;
 using System;
 using Larnix.Core.Utils;
+using EntityInits = Larnix.Entities.Entity.EntityInits;
 
 namespace Larnix.Server.Entities
 {
@@ -21,8 +22,8 @@ namespace Larnix.Server.Entities
         private readonly string _nickname;
         public string Nickname => IsPlayer ? _nickname : throw new InvalidOperationException("Only player entities have nicknames!");
 
-        private EntityServer _controller;
-        public EntityServer Controller => _controller;
+        private Entity _controller;
+        public Entity Controller => _controller;
 
         public EntityLoadState LoadState { get; private set; } = EntityLoadState.Loading;
         public bool IsActive => LoadState == EntityLoadState.Active;
@@ -68,17 +69,18 @@ namespace Larnix.Server.Entities
         {
             if (!IsActive)
             {
-                _controller = EntityFactory.ConstructEntityObject(UID, ActiveData, PhysicsManager);
+                _controller = EntityFactory.ConstructEntityObject(
+                    new EntityInits(UID, ActiveData, PhysicsManager));
                 LoadState = EntityLoadState.Active;
             }
             else throw new InvalidOperationException("Entity abstraction is already active!");
         }
 
-        public void FromFrameUpdate()
+        public void FrameUpdate()
         {
             if (IsActive)
             {
-                _controller.FromFrameUpdate();
+                _controller.FrameUpdate();
             }
             else throw new InvalidOperationException("Entity abstraction is not active!");
         }

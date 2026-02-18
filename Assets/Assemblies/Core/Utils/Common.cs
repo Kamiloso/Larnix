@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
@@ -70,6 +71,13 @@ namespace Larnix.Core.Utils
 
             var step1 = Regex.Replace(input, @"([A-Z])(?=[A-Z][a-z])", "$1 ");
             return Regex.Replace(step1, @"(?<=[a-z])(?=[A-Z])", " ");
+        }
+
+        public static void DoForSeconds(double seconds, Action<Stopwatch, double> action)
+        {
+            var timer = Stopwatch.StartNew();
+            action(timer, seconds);
+            timer.Stop();
         }
     }
 }

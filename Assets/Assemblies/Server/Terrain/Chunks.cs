@@ -10,10 +10,11 @@ using Larnix.Blocks.Structs;
 using Larnix.Socket.Backend;
 using Larnix.Packets;
 using Larnix.Server.Data;
+using System.Diagnostics;
 
 namespace Larnix.Server.Terrain
 {
-    internal class ChunkLoading : Singleton
+    internal class Chunks : Singleton
     {
         public const float UNLOADING_TIME = 1f; // seconds
 
@@ -33,17 +34,17 @@ namespace Larnix.Server.Terrain
             public ChunkServer Instance;
         }
 
-        public ChunkLoading(Server server) : base(server) {}
+        public Chunks(Server server) : base(server) {}
 
         public override void EarlyFrameUpdate()
         {
-            // chunk stimulating
+            // Chunk stimulating
             foreach(var chunk in GetStimulatedChunks())
             {
                 ChunkStimulate(chunk);
             }
 
-            // chunk unloading
+            // Chunk unloading
             foreach (var kvp in _chunks.ToList())
             {
                 var chunk = kvp.Key;
@@ -53,7 +54,7 @@ namespace Larnix.Server.Terrain
                     ChunkUnload(chunk);
             }
 
-            // chunk activating
+            // Chunk activating
             foreach (var chunk in SortByPriority(_chunks.Keys.Where(ch => ChunkState(ch) == LoadState.Loading).ToList()))
             {
                 var state = ChunkState(chunk);
@@ -64,7 +65,7 @@ namespace Larnix.Server.Terrain
                 break; // only one chunk per frame
             }
 
-            // chunk unloading countdown
+            // Chunk unloading countdown
             foreach (var kvp in _chunks.ToList())
             {
                 _chunks[kvp.Key].UnloadTime -= Server.RealDeltaTime;
@@ -104,8 +105,8 @@ namespace Larnix.Server.Terrain
 
             foreach (string nickname in PlayerManager.AllPlayers())
             {
-                Vec2Int chunkpos = BlockUtils.CoordsToChunk(PlayerManager.GetPlayerRenderingPosition(nickname));
-                var player_state = PlayerManager.GetPlayerState(nickname);
+                Vec2Int chunkpos = BlockUtils.CoordsToChunk(PlayerManager.RenderingPosition(nickname));
+                var player_state = PlayerManager.StateOf(nickname);
 
                 HashSet<Vec2Int> chunksMemory = PlayerManager.LoadedChunksCopy(nickname);
                 HashSet<Vec2Int> chunksNearby = BlockUtils.GetNearbyChunks(chunkpos, BlockUtils.LOADING_DISTANCE)
@@ -261,10 +262,10 @@ namespace Larnix.Server.Terrain
 
                 foreach(string nickname in PlayerManager.AllPlayers())
                 {
-                    int dist = GeometryUtils.ManhattanDistance(
-                        chunk,
-                        BlockUtils.CoordsToChunk(PlayerManager.GetPlayerRenderingPosition(nickname))
-                        );
+                    Vec2 playerPos = PlayerManager.RenderingPosition(nickname);
+                    Vec2Int playerChunk = BlockUtils.CoordsToChunk(playerPos);
+
+                    int dist = GeometryUtils.ManhattanDistance(chunk, playerChunk);
 
                     if (dist < dist_min)
                         dist_min = dist;
@@ -281,13 +282,14 @@ namespace Larnix.Server.Terrain
         {
             HashSet<Vec2Int> targetLoads = new();
 
-            List<Vec2> positions = new();
-            foreach (string nickname in PlayerManager.AllPlayers())
-                positions.Add(PlayerManager.GetPlayerRenderingPosition(nickname));
+            IEnumerable<Vec2Int> centers = PlayerManager.AllPlayers()
+                .Select(nickname => PlayerManager.RenderingPosition(nickname))
+                .Select(pos => BlockUtils.CoordsToChunk(pos));
 
-            foreach (Vec2Int center in BlockUtils.GetCenterChunks(positions))
+            foreach (Vec2Int center in centers)
             {
-                targetLoads.UnionWith(BlockUtils.GetNearbyChunks(center, BlockUtils.LOADING_DISTANCE));
+                HashSet<Vec2Int> nearbyChunks = BlockUtils.GetNearbyChunks(center, BlockUtils.LOADING_DISTANCE);
+                targetLoads.UnionWith(nearbyChunks);
             }
 
             return targetLoads;

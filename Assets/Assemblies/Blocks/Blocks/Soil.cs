@@ -6,10 +6,8 @@ using Larnix.Blocks.Structs;
 
 namespace Larnix.Blocks.All
 {
-    public sealed class Soil : BlockServer, ISolid, IHasGrowingFlora, IFalling
+    public sealed class Soil : Block, ISolid, IHasGrowingFlora, IFalling
     {
-        public Soil(Vec2Int POS, BlockData1 block, bool isFront) : base(POS, block, isFront) { }
-
         public bool ALLOW_PLACE_BACK() => false;
 
         public ITool.Type MATERIAL_TYPE() => ITool.Type.Normal;

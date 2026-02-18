@@ -90,11 +90,11 @@ namespace Larnix.Server.Terrain
                 bool success = element.Success;
                 long operation = element.Operation;
 
-                BlockServer blockFront = WorldAPI.GetBlock(POS, true);
-                BlockServer blockBack = WorldAPI.GetBlock(POS, false);
+                Block blockFront = WorldAPI.GetBlock(POS, true);
+                Block blockBack = WorldAPI.GetBlock(POS, false);
 
                 if (
-                    PlayerManager.GetPlayerState(nickname) != Entities.PlayerManager.PlayerState.None &&
+                    PlayerManager.StateOf(nickname) != Entities.PlayerManager.PlayerState.None &&
                     PlayerManager.PlayerHasChunk(nickname, chunk) &&
                     blockFront != null && blockBack != null
                     )

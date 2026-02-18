@@ -6,10 +6,8 @@ using Larnix.Blocks.Structs;
 
 namespace Larnix.Blocks.All
 {
-    public sealed class Leaves : BlockServer, ISolid
+    public sealed class Leaves : Block, ISolid
     {
-        public Leaves(Vec2Int POS, BlockData1 block, bool isFront) : base(POS, block, isFront) { }
-
         public bool ALLOW_PLACE_BACK() => true;
 
         public ITool.Type MATERIAL_TYPE() => ITool.Type.Normal;

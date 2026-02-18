@@ -94,7 +94,7 @@ namespace Larnix.Server
 
         private void _PlayerUpdate(PlayerUpdate msg, string owner)
         {
-            PlayerUpdate lastPacket = PlayerManager.GetRecentPlayerUpdate(owner);
+            PlayerUpdate lastPacket = PlayerManager.RecentPlayerUpdate(owner);
             if (lastPacket == null || lastPacket.FixedFrame < msg.FixedFrame)
             {
                 PlayerManager.UpdatePlayerDataIfHasController(owner, msg);
@@ -107,7 +107,7 @@ namespace Larnix.Server
 
             if (code == CodeInfo.Info.RespawnMe)
             {
-                if (PlayerManager.GetPlayerState(owner) == PlayerManager.PlayerState.Dead)
+                if (PlayerManager.StateOf(owner) == PlayerManager.PlayerState.Dead)
                     PlayerManager.CreatePlayerInstance(owner);
             }
         }

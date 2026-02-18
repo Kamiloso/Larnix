@@ -7,10 +7,8 @@ using E = Larnix.Blocks.All.IElectricDevice;
 
 namespace Larnix.Blocks.All
 {
-    public sealed class BufGate : BlockServer, ISolidElectric, ILogicGate
+    public sealed class BufGate : Block, ISolidElectric, ILogicGate
     {
-        public BufGate(Vec2Int POS, BlockData1 block, bool isFront) : base(POS, block, isFront) { }
-
         public byte LogicInToOut(byte input)
         {
             bool down = (input & E.DOWN) != 0;

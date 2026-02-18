@@ -7,7 +7,7 @@ namespace Larnix.Entities.All
 {
     public interface IEntityInterface
     {
-        EntityServer This => (EntityServer)this;
+        Entity This => (Entity)this;
         PhysicsManager Physics => This.Physics;
         Storage Data => This.EntityData.Data;
     }

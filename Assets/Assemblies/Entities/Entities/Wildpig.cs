@@ -6,11 +6,8 @@ using Larnix.Entities.Structs;
 
 namespace Larnix.Entities.All
 {
-    public sealed class Wildpig : EntityServer, IWalking
+    public sealed class Wildpig : Entity, IWalking
     {
-        public Wildpig(ulong uid, EntityData entityData)
-            : base(uid, entityData) { }
-
         DynamicCollider IPhysics.dynamicCollider { get; set; }
         OutputData? IPhysics.outputData { get; set; }
 

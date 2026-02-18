@@ -11,7 +11,7 @@ namespace Larnix.Server.Terrain
 {
     internal class WorldAPI : Singleton, IWorldAPI
     {
-        private ChunkLoading ChunkLoading => Ref<ChunkLoading>();
+        private Chunks Chunks => Ref<Chunks>();
         private Commands Commands => Ref<Commands>();
 
         public WorldAPI(Server server) : base(server) { }
@@ -21,10 +21,10 @@ namespace Larnix.Server.Terrain
             return Ref<Server>().ServerTick;
         }
 
-        public BlockServer GetBlock(Vec2Int POS, bool isFront)
+        public Block GetBlock(Vec2Int POS, bool isFront)
         {
             Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
-            if (ChunkLoading.TryGetChunk(chunk, out var chunkObject))
+            if (Chunks.TryGetChunk(chunk, out var chunkObject))
             {
                 Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
                 return chunkObject.GetBlock(pos, isFront);
@@ -32,11 +32,11 @@ namespace Larnix.Server.Terrain
             return null;
         }
 
-        public BlockServer ReplaceBlock(Vec2Int POS, bool isFront, BlockData1 blockTemplate,
+        public Block ReplaceBlock(Vec2Int POS, bool isFront, BlockData1 blockTemplate,
             IWorldAPI.BreakMode breakMode)
         {
             Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
-            if (ChunkLoading.TryGetChunk(chunk, out var chunkObject))
+            if (Chunks.TryGetChunk(chunk, out var chunkObject))
             {
                 Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
                 BlockData1 blockDeepCopy = blockTemplate.DeepCopy();
@@ -45,10 +45,10 @@ namespace Larnix.Server.Terrain
             return null;
         }
 
-        public BlockServer MutateBlockID(Vec2Int POS, bool isFront, BlockID id)
+        public Block MutateBlockID(Vec2Int POS, bool isFront, BlockID id)
         {
             Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
-            if (ChunkLoading.TryGetChunk(chunk, out var chunkObject))
+            if (Chunks.TryGetChunk(chunk, out var chunkObject))
             {
                 Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
                 GetBlock(POS, isFront).BlockData.__MutateID__(id);
@@ -57,10 +57,10 @@ namespace Larnix.Server.Terrain
             return null;
         }
 
-        public BlockServer MutateBlockVariant(Vec2Int POS, bool isFront, byte variant)
+        public Block MutateBlockVariant(Vec2Int POS, bool isFront, byte variant)
         {
             Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
-            if (ChunkLoading.TryGetChunk(chunk, out var chunkObject))
+            if (Chunks.TryGetChunk(chunk, out var chunkObject))
             {
                 Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
                 GetBlock(POS, isFront).BlockData.__MutateVariant__(variant);

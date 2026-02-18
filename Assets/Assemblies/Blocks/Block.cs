@@ -8,24 +8,29 @@ using Larnix.Core.Utils;
 
 namespace Larnix.Blocks
 {
-    public class BlockServer
+    public class Block
     {
-        public Vec2Int Position { get; init; }
-        public bool IsFront { get; init; }
-        public BlockData1 BlockData { get; init; } // connected to block-saving system
+        public Vec2Int Position { get; private set; }
+        public bool IsFront { get; private set; }
+        public BlockData1 BlockData { get; private set; } // connected to block-saving system
+        public IWorldAPI WorldAPI { get; private set; }
 
-        internal BlockServer(Vec2Int position, BlockData1 blockData, bool isFront)
-        {
-            Position = position;
-            BlockData = blockData; // should consume a given object
-            IsFront = isFront;
-        }
+        private bool _constructed = false;
 
-        private IWorldAPI _worldAPI = null;
-        public IWorldAPI WorldAPI
+        internal Block() {}
+        public record BlockInits(Vec2Int Position, bool IsFront, BlockData1 BlockData, IWorldAPI WorldAPI);
+        internal void Construct(BlockInits blockInits)
         {
-            set => _worldAPI = _worldAPI == null ? value : throw new InvalidOperationException("WorldAPI already initialized.");
-            get => _worldAPI ?? throw new InvalidOperationException("Trying to use an uninitialized WorldAPI.");
+            if (!_constructed)
+            {
+                Position = blockInits.Position;
+                IsFront = blockInits.IsFront;
+                BlockData = blockInits.BlockData;
+                WorldAPI = blockInits.WorldAPI;
+
+                _constructed = true;
+            }
+            else throw new InvalidOperationException("Block already constructed.");
         }
 
         private BlockEvents _eventSystem = null;
@@ -35,7 +40,7 @@ namespace Larnix.Blocks
         /// Resets to false when ID or Variant is changed. Can be prevented
         /// by replacing block with BreakMode = Weak.
         /// </summary>
-        public bool EventFlag { get; set; }
+        public bool EventFlag { get; set; } = false;
         private readonly Action[] _actions = new Action[Enum.GetValues(typeof(BlockOrder)).Length];
 
         internal void Subscribe(BlockOrder type, Action action)
@@ -44,7 +49,12 @@ namespace Larnix.Blocks
                 throw new InvalidOperationException("Cannot subscribe to events after attaching to event system.");
 
             Action prev = _actions[(int)type] ?? (() => { });
-            _actions[(int)type] = prev + (() => InvokeEvent(type, action));
+            _actions[(int)type] = prev + (() => {
+                if (EventFlag)
+                {
+                    InvokeEvent(type, action);
+                }
+                });
         }
 
         private void InvokeEvent(BlockOrder type, Action action)

@@ -6,8 +6,8 @@ using Larnix.Blocks.Structs;
 
 namespace Larnix.Blocks.All
 {
-    public sealed class Sword : BlockServer, IBlockInterface
+    public sealed class Sword : Block, IBlockInterface
     {
-        public Sword(Vec2Int POS, BlockData1 block, bool isFront) : base(POS, block, isFront) { }
+        
     }
 }

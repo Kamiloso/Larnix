@@ -27,12 +27,45 @@ namespace Larnix.Server.Entities
         private QuickServer QuickServer => Ref<QuickServer>();
         private EntityDataManager EntityDataManager => Ref<EntityDataManager>();
         private Database Database => Ref<Database>();
-        private ChunkLoading ChunkLoading => Ref<ChunkLoading>();
+        private Chunks Chunks => Ref<Chunks>();
 
         private uint _lastFixedFrame = 0;
         private uint _updateCounter = 0; // just to check modulo when sending NearbyEntities packet
 
         public EntityManager(Server server) : base(server) { }
+
+        public override void EarlyFrameUpdate()
+        {
+            // Unload entities that are in unloaded chunks
+            foreach (ulong uid in _entityControllers.Keys.ToList())
+            {
+                EntityAbstraction controller = _entityControllers[uid];
+                if (controller.IsActive && !controller.IsPlayer)
+                {
+                    if (Chunks.IsEntityInZone(controller, Chunks.LoadState.None))
+                        UnloadEntity(uid);
+                }
+            }
+
+            // Activate entities that are in loaded chunks, but not active yet
+            Common.DoForSeconds(3.0, (timer, seconds) =>
+            {
+                foreach (ulong uid in _entityControllers.Keys.ToList())
+                {
+                    EntityAbstraction controller = _entityControllers[uid];
+                    if (!controller.IsActive && !controller.IsPlayer)
+                    {
+                        if (Chunks.IsEntityInZone(controller, Chunks.LoadState.Active))
+                        {
+                            controller.Activate();
+                            
+                            double elapsed = timer.Elapsed.TotalSeconds;
+                            if (elapsed >= seconds) return;
+                        }
+                    }
+                }
+            });
+        }
 
         public override void FrameUpdate()
         {
@@ -40,7 +73,7 @@ namespace Larnix.Server.Entities
             foreach (var controller in _entityControllers.Values.ToList())
             {
                 if (controller.IsActive)
-                    controller.FromFrameUpdate();
+                    controller.FrameUpdate();
             }
 
             // Kill entities when needed
@@ -58,51 +91,16 @@ namespace Larnix.Server.Entities
             }
         }
 
-        public override void EarlyFrameUpdate()
-        {
-            // Unload entities
-            foreach (ulong uid in _entityControllers.Keys.ToList())
-            {
-                EntityAbstraction controller = _entityControllers[uid];
-                if (controller.IsActive && !controller.IsPlayer)
-                {
-                    if (ChunkLoading.IsEntityInZone(controller, ChunkLoading.LoadState.None))
-                        UnloadEntity(uid);
-                }
-            }
-
-            // Activate entities
-            const double MAX_ACTIVATING_MS = 3.0f;
-            Stopwatch timer = Stopwatch.StartNew();
-
-            foreach (ulong uid in _entityControllers.Keys.ToList())
-            {
-                EntityAbstraction controller = _entityControllers[uid];
-                if (!controller.IsActive && !controller.IsPlayer)
-                {
-                    if (ChunkLoading.IsEntityInZone(controller, ChunkLoading.LoadState.Active))
-                    {
-                        if (timer.Elapsed.TotalMilliseconds < MAX_ACTIVATING_MS)
-                            controller.Activate();
-                        else break;
-                    }
-                }
-            }
-
-            timer.Stop();
-        }
-
         public void SendEntityBroadcast()
         {
-            if(Server.FixedFrame != _lastFixedFrame)
+            if (Server.FixedFrame != _lastFixedFrame)
             {
-                Dictionary<ulong, uint> FixedFrames = PlayerManager.GetFixedFramesByUID();
-                List<(string, EntityBroadcast)> broadcastsToSend = new();
+                List<(string Nickname, EntityBroadcast Packet)> broadcastsToSend = new();
 
                 foreach (string nickname in PlayerManager.AllPlayers())
                 {
                     ulong playerUID = PlayerManager.UidByNickname(nickname);
-                    Vec2 playerPos = PlayerManager.GetPlayerRenderingPosition(nickname);
+                    Vec2 playerPos = PlayerManager.RenderingPosition(nickname);
 
                     Dictionary<ulong, EntityData> entityList = new();
                     Dictionary<ulong, uint> playerFixedIndexes = new();
@@ -129,7 +127,10 @@ namespace Larnix.Server.Entities
                                 // -- adding indexes --
                                 if (entity.IsPlayer)
                                 {
-                                    playerFixedIndexes.Add(uid, FixedFrames[uid]);
+                                    PlayerUpdate recentUpdate = PlayerManager.RecentPlayerUpdate(entity.Nickname);
+                                    uint fixedFrame = recentUpdate.FixedFrame;
+
+                                    playerFixedIndexes.Add(uid, fixedFrame);
                                 }
                             }
                             else
@@ -159,7 +160,7 @@ namespace Larnix.Server.Entities
                 broadcastsToSend = broadcastsToSend.OrderBy(x => Common.Rand().Next()).ToList();
                 foreach (var pair in broadcastsToSend)
                 {
-                    QuickServer.Send(pair.Item1, pair.Item2, false); // unsafe mode (over raw UDP)
+                    QuickServer.Send(pair.Nickname, pair.Packet, false); // fast mode (over raw UDP)
                 }
 
                 _updateCounter++;
@@ -203,7 +204,7 @@ namespace Larnix.Server.Entities
 
         public bool SummonEntity(EntityData entityData)
         {
-            if (!ChunkLoading.IsLoadedPosition(entityData.Position))
+            if (!Chunks.IsLoadedPosition(entityData.Position))
                 return false;
 
             ulong uid = GetNextUID(); // generate new

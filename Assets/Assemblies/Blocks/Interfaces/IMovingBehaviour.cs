@@ -8,8 +8,8 @@ namespace Larnix.Blocks.All
     {
         public bool CanMove(Vec2Int POS_source, Vec2Int POS_destin, bool isFront)
         {
-            BlockServer block1 = WorldAPI.GetBlock(POS_source, isFront);
-            BlockServer block2 = WorldAPI.GetBlock(POS_destin, isFront);
+            Block block1 = WorldAPI.GetBlock(POS_source, isFront);
+            Block block2 = WorldAPI.GetBlock(POS_destin, isFront);
 
             int weight1 = (block1 as ILiquid)?.LIQUID_DENSITY() ?? (block1 is Air || block1 is IFragile ? int.MinValue : int.MaxValue);
             int weight2 = (block2 as ILiquid)?.LIQUID_DENSITY() ?? (block2 is Air || block2 is IFragile ? int.MinValue : int.MaxValue);
@@ -29,8 +29,8 @@ namespace Larnix.Blocks.All
         public void Move(Vec2Int POS_source, Vec2Int POS_destin, bool isFront,
             byte? sourceNewVariant = null, bool clone = false)
         {
-            BlockServer block1 = WorldAPI.GetBlock(POS_source, isFront);
-            BlockServer block2 = WorldAPI.GetBlock(POS_destin, isFront);
+            Block block1 = WorldAPI.GetBlock(POS_source, isFront);
+            Block block2 = WorldAPI.GetBlock(POS_destin, isFront);
 
             BlockData1 data1 = block1.BlockData;
             BlockData1 data2 = block2.BlockData;

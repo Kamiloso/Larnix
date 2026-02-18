@@ -51,7 +51,9 @@ namespace Larnix.Server.Entities
             
             // Set to PlayerState.Inactive
             if(_recentPlayerUpdates.ContainsKey(nickname))
+            {
                 _recentPlayerUpdates.Remove(nickname);
+            }
         }
 
         public void UpdatePlayerDataIfHasController(string nickname, PlayerUpdate msg)
@@ -72,10 +74,19 @@ namespace Larnix.Server.Entities
             }
         }
 
-        public PlayerUpdate GetRecentPlayerUpdate(string nickname)
+        public ulong UidByNickname(string nickname)
+        {
+            if (_playerUIDs.TryGetValue(nickname, out ulong uid))
+                return uid;
+            
+            throw new KeyNotFoundException("Player " + nickname + " is not connected!");
+        }
+
+        public PlayerUpdate RecentPlayerUpdate(string nickname)
         {
             if (_recentPlayerUpdates.TryGetValue(nickname, out PlayerUpdate lastPacket))
                 return lastPacket;
+            
             return null;
         }
 
@@ -129,7 +140,7 @@ namespace Larnix.Server.Entities
         {
             foreach (string nickname in _playerUIDs.Keys)
             {
-                Vec2 renderingPosition = GetPlayerRenderingPosition(nickname);
+                Vec2 renderingPosition = RenderingPosition(nickname);
 
                 Payload packet = new FrameInfo(
                     Server.ServerTick,
@@ -140,6 +151,14 @@ namespace Larnix.Server.Entities
                 );
                 QuickServer.Send(nickname, packet, false);
             }
+        }
+
+        public bool PlayerHasChunk(string nickname, Vec2Int chunk)
+        {
+            if (_clientChunks.TryGetValue(nickname, out var chunks))
+                return chunks.Contains(chunk);
+            
+            return false;
         }
 
         public void UpdateClientChunks(string nickname, HashSet<Vec2Int> chunks)
@@ -156,61 +175,33 @@ namespace Larnix.Server.Entities
             return new HashSet<Vec2Int>(_clientChunks[nickname]);
         }
 
-        public bool PlayerHasChunk(string nickname, Vec2Int chunk)
-        {
-            if (_clientChunks.TryGetValue(nickname, out var chunks))
-            {
-                return chunks.Contains(chunk);
-            }
-            return false;
-        }
-
-        public PlayerState GetPlayerState(string nickname)
-        {
-            if (!_playerUIDs.ContainsKey(nickname))
-                return PlayerState.None;
-
-            if (!_recentPlayerUpdates.ContainsKey(nickname))
-                return PlayerState.Inactive;
-
-            if (EntityManager.GetPlayerController(nickname) != null)
-                return PlayerState.Alive;
-
-            return PlayerState.Dead;
-        }
-
-        public IEnumerable<string> AllPlayers()
-        {
-            return new HashSet<string>(_playerUIDs.Keys);
-        }
-
+        public IEnumerable<string> AllPlayers() => _playerUIDs.Keys;
         public IEnumerable<string> AllPlayersThatAre(PlayerState state)
         {
-            HashSet<string> result = new();
             foreach (string nickname in _playerUIDs.Keys)
             {
-                if (GetPlayerState(nickname) == state)
-                    result.Add(nickname);
+                if (StateOf(nickname) == state)
+                {
+                    yield return nickname;
+                }
             }
-            return result;
         }
 
-        public IEnumerable<string> AllObserversInRange(Vec2 position, double range)
+        public IEnumerable<string> AllPlayersInRange(Vec2 position, double range)
         {
-            HashSet<string> result = new();
             foreach (string nickname in _playerUIDs.Keys)
             {
-                Vec2 playerPos = GetPlayerRenderingPosition(nickname);
+                Vec2 playerPos = RenderingPosition(nickname);
                 if (Vec2.Distance(playerPos, position) <= range)
-                    result.Add(nickname);
+                {
+                    yield return nickname;
+                }
             }
-            return result;
         }
 
-        public Vec2 GetPlayerRenderingPosition(string nickname)
+        public Vec2 RenderingPosition(string nickname)
         {
-            PlayerState state = GetPlayerState(nickname);
-
+            PlayerState state = StateOf(nickname);
             switch(state)
             {
                 case PlayerState.Inactive:
@@ -225,23 +216,18 @@ namespace Larnix.Server.Entities
             }
         }
 
-        public Dictionary<ulong, uint> GetFixedFramesByUID()
+        public PlayerState StateOf(string nickname)
         {
-            Dictionary<ulong, uint> returns = new();
-            foreach(string nickname in _playerUIDs.Keys)
-            {
-                if(_recentPlayerUpdates.ContainsKey(nickname))
-                    returns[_playerUIDs[nickname]] = _recentPlayerUpdates[nickname].FixedFrame;
-            }
-            return returns;
-        }
+            if (!_playerUIDs.ContainsKey(nickname))
+                return PlayerState.None;
 
-        public ulong UidByNickname(string nickname)
-        {
-            if (_playerUIDs.TryGetValue(nickname, out ulong uid))
-                return uid;
-                
-            throw new InvalidOperationException("Player " + nickname + " is not connected!");
+            if (!_recentPlayerUpdates.ContainsKey(nickname))
+                return PlayerState.Inactive;
+
+            if (EntityManager.GetPlayerController(nickname) != null)
+                return PlayerState.Alive;
+
+            return PlayerState.Dead;
         }
     }
 }

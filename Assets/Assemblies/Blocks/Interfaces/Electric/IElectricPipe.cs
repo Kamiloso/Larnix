@@ -84,7 +84,7 @@ namespace Larnix.Blocks.All
 
         private bool? CanPropagateInto(Vec2Int POS_other)
         {
-            BlockServer block = WorldAPI.GetBlock(POS_other, This.IsFront);
+            Block block = WorldAPI.GetBlock(POS_other, This.IsFront);
             if (block == null) return null;
 
             if (block is IElectricPropagator pipe)

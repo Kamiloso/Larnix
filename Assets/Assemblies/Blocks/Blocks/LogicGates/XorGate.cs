@@ -7,10 +7,8 @@ using E = Larnix.Blocks.All.IElectricDevice;
 
 namespace Larnix.Blocks.All
 {
-    public sealed class XorGate : BlockServer, ISolidElectric, ILogicGate
+    public sealed class XorGate : Block, ISolidElectric, ILogicGate
     {
-        public XorGate(Vec2Int POS, BlockData1 block, bool isFront) : base(POS, block, isFront) { }
-
         public byte LogicInToOut(byte input)
         {
             bool left = (input & E.LEFT) != 0;

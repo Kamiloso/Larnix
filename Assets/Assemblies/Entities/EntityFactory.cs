@@ -7,6 +7,7 @@ using Larnix.Core;
 using Larnix.Core.Physics;
 using Larnix.Entities.Structs;
 using Larnix.Entities.All;
+using EntityInits = Larnix.Entities.Entity.EntityInits;
 
 namespace Larnix.Entities
 {
@@ -22,22 +23,28 @@ namespace Larnix.Entities
         {
             public string Name;
             public Type Type;
-            public Func<ulong, EntityData, EntityServer> Constructor;
-            public List<Action<EntityServer>> Inits = new();
+            public Func<EntityInits, Entity> Constructor;
+            public List<Action<Entity>> Inits = new();
 
-            public EntityServer SlaveInstance { get; init; }
+            public Entity SlaveInstance { get; init; }
 
             public EntityInfo(EntityID ID)
             {
                 Name = ID.ToString();
                 Type = Type.GetType(Namespace + "." + Name + ", " + AsmName);
 
-                var ctorInfo = Type?.GetConstructor(new Type[] { typeof(ulong), typeof(EntityData) });
+                var ctorInfo = Type?.GetConstructor(Array.Empty<Type>());
                 var ctor = Type != null ? RuntimeCompilation.CompileConstructor(ctorInfo) : null;
-                if (ctor != null && typeof(EntityServer).IsAssignableFrom(Type))
+
+                if (ctor != null && typeof(Entity).IsAssignableFrom(Type))
                 {
-                    Constructor = (a, b) => (EntityServer)ctor(new object[] { a, b });
-                    SlaveInstance = (EntityServer)FormatterServices.GetUninitializedObject(Type);
+                    Constructor = inits =>
+                    {
+                        var obj = (Entity)ctor(Array.Empty<object>());
+                        obj.Construct(inits);
+                        return obj;
+                    };
+                    SlaveInstance = (Entity)FormatterServices.GetUninitializedObject(Type);
 
                     var ifaces = Type?.GetInterfaces() ?? Array.Empty<Type>();
                     foreach (var iface in ifaces)
@@ -55,11 +62,15 @@ namespace Larnix.Entities
                 }
                 else
                 {
-                    Core.Debug.LogWarning($"Class {Namespace}.{Name} must exist and have a constructor " +
-                        $"with arguments: (ulong, EntityData). Loading base class instead...");
+                    Core.Debug.LogWarning($"Class {Namespace}.{Name} must exist. Loading base class instead...");
 
-                    Constructor = (a, b) => new EntityServer(a, b);
-                    SlaveInstance = (EntityServer)FormatterServices.GetUninitializedObject(typeof(EntityServer));
+                    Constructor = inits =>
+                    {
+                        var obj = new Entity();
+                        obj.Construct(inits);
+                        return obj;
+                    };
+                    SlaveInstance = (Entity)FormatterServices.GetUninitializedObject(typeof(Entity));
                 }
             }
         }
@@ -81,11 +92,11 @@ namespace Larnix.Entities
             }
         }
 
-        public static EntityServer ConstructEntityObject(ulong uid, EntityData entity, PhysicsManager physics)
+        public static Entity ConstructEntityObject(EntityInits entityInits)
         {
-            EntityInfo info = GetEntityInfo(entity.ID);
-            EntityServer entityserv = info.Constructor(uid, entity);
-            entityserv.Physics = physics;
+            EntityID id = entityInits.EntityData.ID;
+            EntityInfo info = GetEntityInfo(id);
+            Entity entityserv = info.Constructor(entityInits);
 
             foreach (var init in info.Inits)
             {

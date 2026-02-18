@@ -40,7 +40,7 @@ namespace Larnix.Blocks.All
             bool isAlive = IsAliveAt(POS, isFront) == true;
             Vec2Int delta = POS - This.Position;
 
-            List<BlockServer> blocksAround = WorldAPI.GetBlocksAround(POS, isFront);
+            List<Block> blocksAround = WorldAPI.GetBlocksAround(POS, isFront);
             int aliveNeighbors = blocksAround.Count(block => IsAliveAt(block.Position, block.IsFront) == true);
 
             if (!isAlive)
@@ -93,7 +93,7 @@ namespace Larnix.Blocks.All
 
         private bool? IsAliveAt(Vec2Int POS, bool isFront)
         {
-            BlockServer block = WorldAPI.GetBlock(POS, isFront);
+            Block block = WorldAPI.GetBlock(POS, isFront);
             if (block == null) return null;
 
             return block.GetType() == This.GetType();

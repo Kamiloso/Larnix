@@ -7,10 +7,8 @@ using DMM = Larnix.Blocks.All.IBreakable.DropMatchMode;
 
 namespace Larnix.Blocks.All
 {
-    public sealed class Plastic : BlockServer, ISolid
+    public sealed class Plastic : Block, ISolid
     {
-        public Plastic(Vec2Int POS, BlockData1 block, bool isFront) : base(POS, block, isFront) { }
-
         public bool ALLOW_PLACE_BACK() => true;
 
         public ITool.Type MATERIAL_TYPE() => ITool.Type.Normal;

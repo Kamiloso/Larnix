@@ -39,7 +39,7 @@ namespace Larnix.Blocks.All
 
         private void SendSignal(Vec2Int POS_other, bool translayer = false)
         {
-            BlockServer block = WorldAPI.GetBlock(POS_other, This.IsFront ^ translayer);
+            Block block = WorldAPI.GetBlock(POS_other, This.IsFront ^ translayer);
             if (block is null)
             {
                 Core.Debug.LogWarning("TODO: Fix electric signal sending to non-loaded blocks.");

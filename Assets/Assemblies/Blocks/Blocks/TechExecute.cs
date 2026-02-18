@@ -7,10 +7,8 @@ using Larnix.Core.Json;
 
 namespace Larnix.Blocks.All
 {
-    public sealed class TechExecute : BlockServer, ITechExecute
+    public sealed class TechExecute : Block, ITechExecute
     {
-        public TechExecute(Vec2Int POS, BlockData1 block, bool isFront) : base(POS, block, isFront) { }
-
         /// <summary>
         /// Configure TechExecute block with a command. Use replaceable parameters:
         /// $x, $y for block position

@@ -78,7 +78,7 @@ namespace Larnix.Blocks.All
 
         private bool? ConnectableTo(Vec2Int POS_other)
         {
-            BlockServer block = WorldAPI.GetBlock(POS_other, This.IsFront);
+            Block block = WorldAPI.GetBlock(POS_other, This.IsFront);
             if (block == null) return null;
 
             foreach (Type type in CONNECT_TO_TYPES())
