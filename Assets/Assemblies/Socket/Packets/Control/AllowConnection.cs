@@ -22,8 +22,8 @@ namespace Larnix.Socket.Packets.Control
         internal AllowConnection(string nickname, string password, byte[] keyAES, long serverSecret, long challengeID, long timestamp, long runID, byte code = 0)
         {
             InitializePayload(ArrayUtils.MegaConcat(
-                Primitives.GetBytes<String32>(nickname),
-                Primitives.GetBytes<String64>(password),
+                Primitives.GetBytes((String32)nickname),
+                Primitives.GetBytes((String64)password),
                 keyAES?.Length == 32 ? keyAES : throw new ArgumentException("KeyAES must have length of exactly 32 bytes."),
                 Primitives.GetBytes(serverSecret),
                 Primitives.GetBytes(challengeID),

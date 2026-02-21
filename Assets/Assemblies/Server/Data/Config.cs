@@ -7,17 +7,45 @@ namespace Larnix.Server.Data
 {
     internal class Config
     {
-        public ushort ConfigVersion = 8;
-        public ushort MaxPlayers = 10;
-        public ushort Port = Common.LARNIX_PORT;
-        public string Motd = "Welcome to Larnix server!";
-        public int DataSavingPeriodFrames = 15 * 50;
-        public int EntityBroadcastPeriodFrames = 2;
-        public int ChunkSendingPeriodFrames = 2;
-        public int ClientIdentityPrefixSizeIPv4 = 32;
-        public int ClientIdentityPrefixSizeIPv6 = 56;
-        public bool UseRelay = false;
-        public string RelayAddress = Common.DEFAULT_RELAY_ADDRESS;
+        public int ConfigVersion { get; set; } = 11;
+
+        // Server settings
+        public ushort MaxPlayers { get; set; } = 10;
+        public ushort Port { get; set; } = Common.LARNIX_PORT;
+        public string Motd { get; set; } = "Welcome to Larnix server!";
+
+        // Atomic / Electric contraption settings
+        public int MaxElectricContraptionChunks { get; set; } = 128;
+        public bool ElectricContraptionSizeWarningSuppress { get; set; } = false;
+
+        // Periodic task settings
+        private int _dataSavingPeriodFrames = 15 * 50;
+        public int DataSavingPeriodFrames
+        {
+            get => _dataSavingPeriodFrames;
+            set => _dataSavingPeriodFrames = value >= 1 ? value : 1;
+        }
+
+        private int _entityBroadcastPeriodFrames = 2;
+        public int EntityBroadcastPeriodFrames
+        {
+            get => _entityBroadcastPeriodFrames;
+            set => _entityBroadcastPeriodFrames = value >= 1 ? value : 1;
+        }
+
+        private int _chunkSendingPeriodFrames = 2;
+        public int ChunkSendingPeriodFrames
+        {
+            get => _chunkSendingPeriodFrames;
+            set => _chunkSendingPeriodFrames = value >= 1 ? value : 1;
+        }
+
+        // Network settings
+        public int ClientIdentityPrefixSizeIPv4 { get; set; } = 32;
+        public int ClientIdentityPrefixSizeIPv6 { get; set; } = 56;
+        public bool AllowRegistration { get; set; } = true;
+        public bool UseRelay { get; set; } = false;
+        public string RelayAddress { get; set; } = Common.DEFAULT_RELAY_ADDRESS;
 
         private Config() { }
 
@@ -57,7 +85,7 @@ namespace Larnix.Server.Data
         {
             Config cfg = new Config()
             {
-                ConfigVersion = (ushort)json["ConfigVersion"].AsInt,
+                ConfigVersion = json["ConfigVersion"].AsInt,
                 MaxPlayers = (ushort)json["MaxPlayers"].AsInt,
                 Port = (ushort)json["Port"].AsInt,
                 Motd = json["Motd"],
@@ -68,6 +96,9 @@ namespace Larnix.Server.Data
                 UseRelay = json["UseRelay"].AsBool,
                 RelayAddress = json["RelayAddress"],
                 ChunkSendingPeriodFrames = json["ChunkSendingPeriodFrames"].AsInt,
+                MaxElectricContraptionChunks = json["MaxElectricContraptionChunks"].AsInt,
+                ElectricContraptionSizeWarningSuppress = json["ElectricContraptionSizeWarningSuppress"].AsBool,
+                AllowRegistration = json["AllowRegistration"].AsBool,
             };
 
             return cfg;
@@ -77,7 +108,7 @@ namespace Larnix.Server.Data
         {
             JSONObject json = new JSONObject();
 
-            json["ConfigVersion"] = (int)ConfigVersion;
+            json["ConfigVersion"] = ConfigVersion;
             json["MaxPlayers"] = (int)MaxPlayers;
             json["Port"] = (int)Port;
             json["Motd"] = Motd;
@@ -88,6 +119,9 @@ namespace Larnix.Server.Data
             json["UseRelay"] = UseRelay;
             json["RelayAddress"] = RelayAddress;
             json["ChunkSendingPeriodFrames"] = ChunkSendingPeriodFrames;
+            json["MaxElectricContraptionChunks"] = MaxElectricContraptionChunks;
+            json["ElectricContraptionSizeWarningSuppress"] = ElectricContraptionSizeWarningSuppress;
+            json["AllowRegistration"] = AllowRegistration;
 
             return json;
         }
@@ -114,6 +148,15 @@ namespace Larnix.Server.Data
             if (ConfigVersion < 8)
             {
                 ChunkSendingPeriodFrames = defaults.ChunkSendingPeriodFrames;
+            }
+            if (ConfigVersion < 10)
+            {
+                MaxElectricContraptionChunks = defaults.MaxElectricContraptionChunks;
+                ElectricContraptionSizeWarningSuppress = defaults.ElectricContraptionSizeWarningSuppress;
+            }
+            if (ConfigVersion < 11)
+            {
+                AllowRegistration = defaults.AllowRegistration;
             }
 
             ConfigVersion = defaults.ConfigVersion;

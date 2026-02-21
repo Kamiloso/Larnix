@@ -10,7 +10,7 @@ using TMPro;
 using Unity.VisualScripting;
 using Larnix.Core.Files;
 using Larnix.Menu.Forms;
-using Version = Larnix.Core.Version;
+using Larnix.Core.Utils;
 
 namespace Larnix.Menu.Worlds
 {
@@ -196,11 +196,13 @@ namespace Larnix.Menu.Worlds
         {
             ThinkerState state = ThinkerState.None;
             LoginState logState = LoginState.None;
+            bool mayRegister = false;
 
             if (serverThinker != null)
             {
                 state = serverThinker.State;
                 logState = serverThinker.GetLoginState();
+                mayRegister = serverThinker.MayRegister();
             }
 
             if (state == ThinkerState.None)
@@ -231,7 +233,8 @@ namespace Larnix.Menu.Worlds
             {
                 string versionDisplay = serverThinker.serverInfo.GameVersion.ToString();
                 string nicknameText = serverThinker.serverInfo.HostUser;
-                string hostDisplay = nicknameText != "Player" ? $"Host: {nicknameText}" : "Detached Server";
+                string hostDisplay = nicknameText != Common.LOOPBACK_ONLY_NICKNAME ?
+                    $"Host: {nicknameText}" : "Detached Server";
 
                 NameText.text = SelectedWorld ?? "";
                 TX_Description.text = $"Version: {versionDisplay}\n{hostDisplay}";
@@ -283,15 +286,15 @@ namespace Larnix.Menu.Worlds
             // Account buttons
 
             bool showLogin = logState != LoginState.Good;
-            bool activeLogin = logState == LoginState.Ready || logState == LoginState.Bad;
             bool showLogged = !showLogin;
+            bool activeLogin = logState == LoginState.Ready || logState == LoginState.Bad;
             bool activeLogged = showLogged;
 
             LoginParent.gameObject.SetActive(showLogin);
             LoggedParent.gameObject.SetActive(showLogged);
 
             BT_Login.interactable = activeLogin;
-            BT_Register.interactable = activeLogin;
+            BT_Register.interactable = activeLogin && mayRegister;
             BT_Logout.interactable = activeLogged;
             BT_ChangePassword.interactable = activeLogged;
 

@@ -57,6 +57,13 @@ namespace Larnix.Socket
             }
         }
 
+        public override string ToString()
+        {
+            byte[] masked = MaskBytes(Address.GetAddressBytes(), Subnet);
+            IPAddress network = new IPAddress(masked);
+            return $"{network}/{Subnet}";
+        }
+
         private static byte[] MaskBytes(byte[] bytes, int n)
         {
             if (n < 0) n = 0;

@@ -20,9 +20,8 @@ namespace Larnix.Blocks.Structs
             private set => _variant = (byte)(value & 0b00001111);
         }
         public Storage Data { get; private set; }
-
-        // USE CAREFULLY! Breaks immutability, but prevents unnecessary allocations in some cases.
-        public void __MutateID__(BlockID id) => ID = id;
+        
+        // USE CAREFULLY! Breaks immutability, but may increase performance.
         public void __MutateVariant__(byte variant) => Variant = variant;
 
         public static BlockData1 Air => new(BlockID.Air, 0);

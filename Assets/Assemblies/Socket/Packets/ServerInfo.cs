@@ -12,6 +12,7 @@ namespace Larnix.Socket.Packets
         public Version GameVersion => _infoPacket.GameVersion;
         public string Motd => _infoPacket.Motd;
         public string HostUser => _infoPacket.HostUser;
+        public bool MayRegister => _infoPacket.MayRegister;
 
         internal ServerInfo(A_ServerInfo infoPacket)
         {

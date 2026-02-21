@@ -36,13 +36,16 @@ namespace Larnix.Server.Entities
 
         public override void EarlyFrameUpdate()
         {
+            // MUST EXECUTE AFTER Chunks.EarlyFrameUpdate() TO
+            // UNLOAD ENTITIES INSTANTLY AFTER CHUNK UNLOADING!!!
+
             // Unload entities that are in unloaded chunks
             foreach (ulong uid in _entityControllers.Keys.ToList())
             {
                 EntityAbstraction controller = _entityControllers[uid];
                 if (controller.IsActive && !controller.IsPlayer)
                 {
-                    if (Chunks.IsEntityInZone(controller, Chunks.LoadState.None))
+                    if (Chunks.IsEntityInZone(controller, ChunkLoadState.None))
                         UnloadEntity(uid);
                 }
             }
@@ -55,7 +58,7 @@ namespace Larnix.Server.Entities
                     EntityAbstraction controller = _entityControllers[uid];
                     if (!controller.IsActive && !controller.IsPlayer)
                     {
-                        if (Chunks.IsEntityInZone(controller, Chunks.LoadState.Active))
+                        if (Chunks.IsEntityInZone(controller, ChunkLoadState.Active))
                         {
                             controller.Activate();
                             
@@ -214,7 +217,7 @@ namespace Larnix.Server.Entities
             return true;
         }
 
-        public void LoadEntitiesByChunk(Vec2Int chunkCoords)
+        public void PrepareEntitiesByChunk(Vec2Int chunkCoords)
         {
             Dictionary<ulong, EntityData> entities = EntityDataManager.GetUnloadedEntitiesByChunk(chunkCoords);
             foreach (var kvp in entities)

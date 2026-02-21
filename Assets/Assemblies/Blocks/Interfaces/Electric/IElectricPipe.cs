@@ -49,13 +49,14 @@ namespace Larnix.Blocks.All
             {
                 BlockID newID = shouldBeLit ? ID_LIT() : ID_UNLIT();
                 BlockData1 blockTemplate = new BlockData1(
-                    newID, This.BlockData.Variant, This.BlockData.Data);
+                    newID, This.BlockData.Variant, Data);
 
-                WorldAPI.ReplaceBlock(This.Position, This.IsFront, blockTemplate);
+                WorldAPI.ReplaceBlock(This.Position, This.IsFront, blockTemplate,
+                    IWorldAPI.BreakMode.Weak);
             }
         }
 
-        void IElectricPropagator.ElectricPropagate(Vec2Int POS_src, int recursion)
+        void IElectricPropagator.OnElectricSignal(Vec2Int POS_src, int recursion)
         {
             int oldRecursion = Data["electric_propagator.recursion"].Int;
             if (oldRecursion >= recursion) return;
@@ -74,14 +75,12 @@ namespace Larnix.Blocks.All
                 if (canPropagate == true)
                 {
                     IElectricPropagator pipe = (IElectricPropagator)WorldAPI.GetBlock(POS + dir, This.IsFront);
-                    pipe.ElectricPropagate(POS, nextRecursion);
+                    pipe.ElectricSignalSend(POS, nextRecursion);
                 }
 
                 if (canPropagate == null)
                 {
-                    // TODO: fix later, should load chunks or something
-                    Core.Debug.LogWarning("Electric propagation reached unloaded block!");
-                    //ElectricPropagate(recursion);
+                    Core.Debug.LogWarning($"Tried sending electric signal to unloaded block at {POS_other}!");
                 }
             }
         }

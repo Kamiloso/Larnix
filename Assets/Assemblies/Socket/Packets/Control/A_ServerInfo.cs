@@ -21,10 +21,11 @@ namespace Larnix.Socket.Packets.Control
         public long RunID => Primitives.FromBytes<long>(Bytes, 288);
         public String256 Motd => Primitives.FromBytes<String256>(Bytes, 296);
         public String32 HostUser => Primitives.FromBytes<String32>(Bytes, 552);
+        public bool MayRegister => (Code & (1 << 0)) != 0;
 
         public A_ServerInfo() { }
         public A_ServerInfo(byte[] publicKey, ushort currentPlayers, ushort maxPlayers, Version gameVersion, long challengeID, long timestamp, long runID,
-            string motd = "", string hostUser = "", byte code = 0)
+            string motd, string hostUser, bool mayRegister)
         {
             InitializePayload(ArrayUtils.MegaConcat(
                 publicKey?.Length == 264 ? publicKey : throw new ArgumentException("PublicKey must have length of exactly 264 bytes."),
@@ -34,9 +35,11 @@ namespace Larnix.Socket.Packets.Control
                 Primitives.GetBytes(challengeID),
                 Primitives.GetBytes(timestamp),
                 Primitives.GetBytes(runID),
-                Primitives.GetBytes<String256>(motd),
-                Primitives.GetBytes<String32>(hostUser)
-                ), code);
+                Primitives.GetBytes((String256)motd),
+                Primitives.GetBytes((String32)hostUser)
+                ), code: (byte)(
+                    mayRegister ? 0b0000001 : 0
+                    ));
         }
 
         protected override bool IsValid()

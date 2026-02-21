@@ -117,7 +117,7 @@ namespace Larnix.Server.Terrain
 
                 HashSet<Vec2Int> chunksMemory = PlayerManager.LoadedChunksCopy(nickname);
                 HashSet<Vec2Int> chunksNearby = BlockUtils.GetNearbyChunks(chunkpos, BlockUtils.LOADING_DISTANCE)
-                    .Where(c => Chunks.IsLoadedChunk(c))
+                    .Where(c => Chunks.IsChunkLoaded(c))
                     .ToHashSet();
 
                 HashSet<Vec2Int> added = new(chunksNearby);

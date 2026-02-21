@@ -1,11 +1,8 @@
 using System;
 using System.Collections;
-using Larnix.Blocks.Structs;
 using Larnix.Core.Utils;
 using Larnix.Core.Vectors;
-using System.Collections.Generic;
-using System.Linq;
-using Larnix.Blocks.All;
+using Larnix.Core.DataStructures;
 
 namespace Larnix.Blocks
 {
@@ -125,6 +122,8 @@ namespace Larnix.Blocks
                 _blocksFront[x, y].EventFlag = true;
             });
 
+            bool isAtomicLoaded = _worldAPI.IsChunkAtomicLoaded(_chunkpos);
+
             foreach (var (type, order) in _blockEvents) // EXECUTE EVENTS
             {
                 yield return null;
@@ -135,7 +134,7 @@ namespace Larnix.Blocks
                     Action action = actionPair.Action;
                     bool isSecAtomic = actionPair.IsSecAtomic;
 
-                    if (!isSecAtomic || _worldAPI.IsChunkAtomicLoaded(_chunkpos))
+                    if (!isSecAtomic || isAtomicLoaded)
                     {
                         action();
                     }

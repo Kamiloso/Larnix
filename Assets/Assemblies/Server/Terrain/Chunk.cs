@@ -14,7 +14,7 @@ using BlockInits = Larnix.Blocks.Block.BlockInits;
 
 namespace Larnix.Server.Terrain
 {
-    internal class ChunkServer : RefObject<Server>, IDisposable
+    internal class Chunk : RefObject<Server>, IDisposable
     {
         private const int CHUNK_SIZE = BlockUtils.CHUNK_SIZE;
 
@@ -34,7 +34,7 @@ namespace Larnix.Server.Terrain
 
         private bool _disposed = false;
 
-        public ChunkServer(RefObject<Server> reff, Vec2Int chunkpos) : base(reff)
+        public Chunk(RefObject<Server> reff, Vec2Int chunkpos) : base(reff)
         {
             _chunkpos = chunkpos;
             _blockEvents = new BlockEvents(_chunkpos, WorldAPI, _blocksFront, _blocksBack);
@@ -82,6 +82,11 @@ namespace Larnix.Server.Terrain
             RefreshCollider(pos);
             BlockData2 newHeader = ActiveChunkReference[pos.x, pos.y].BinaryCopy();
 
+            // --- Rearm EventFlag ---
+
+            if (breakMode == IWorldAPI.BreakMode.Weak)
+                result.EventFlag = true;
+
             // --- Push send update ---
 
             if (!oldHeader.BinaryEquals(newHeader))
@@ -96,7 +101,7 @@ namespace Larnix.Server.Terrain
             return result;
         }
 
-        public Block UpdateBlockWeak(Vec2Int pos, bool isFront)
+        public Block UpdateBlockMutated(Vec2Int pos, bool isFront)
         {
             // --- Chunk changes ---
 

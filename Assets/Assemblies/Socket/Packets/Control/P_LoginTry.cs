@@ -23,9 +23,9 @@ namespace Larnix.Socket.Packets.Control
         public P_LoginTry(string nickname, string password, long serverSecret, long challengeID, long timestamp, long runID, string newPassword = null, byte code = 0)
         {
             InitializePayload(ArrayUtils.MegaConcat(
-                Primitives.GetBytes<String32>(nickname),
-                Primitives.GetBytes<String64>(password),
-                Primitives.GetBytes<String64>(newPassword ?? password),
+                Primitives.GetBytes((String32)nickname),
+                Primitives.GetBytes((String64)password),
+                Primitives.GetBytes((String64)(newPassword ?? password)),
                 Primitives.GetBytes(serverSecret),
                 Primitives.GetBytes(challengeID),
                 Primitives.GetBytes(timestamp),

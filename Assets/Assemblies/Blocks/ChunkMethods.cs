@@ -63,12 +63,12 @@ namespace Larnix.Blocks
                     string key, value;
 
                     key = "F_" + x + "_" + y;
-                    value = chunk[x, y].Front.Data.ToString();
-                    if (value != "{}") root[key] = new JSONString(value);
+                    if ((value = chunk[x, y].Front.Data.ToString()) != "{}")
+                        root[key] = new JSONString(value);
 
                     key = "B_" + x + "_" + y;
-                    value = chunk[x, y].Back.Data.ToString();
-                    if (value != "{}") root[key] = new JSONString(value);
+                    if ((value = chunk[x, y].Back.Data.ToString()) != "{}")
+                        root[key] = new JSONString(value);
                 }
 
             return root.ToString();

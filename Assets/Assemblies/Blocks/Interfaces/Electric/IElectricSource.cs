@@ -42,8 +42,7 @@ namespace Larnix.Blocks.All
             Block block = WorldAPI.GetBlock(POS_other, This.IsFront ^ translayer);
             if (block is null)
             {
-                Core.Debug.LogWarning("TODO: Fix electric signal sending to non-loaded blocks.");
-                // SendSignal(POS_other)
+                Core.Debug.LogWarning($"Tried sending electric signal to unloaded block at {POS_other}!");
                 return;
             }
 
@@ -54,7 +53,7 @@ namespace Larnix.Blocks.All
 
                 if (recursion > propRecursion)
                 {
-                    prop.ElectricPropagate(This.Position, recursion);
+                    prop.ElectricSignalSend(This.Position, recursion);
                 }
             }
         }

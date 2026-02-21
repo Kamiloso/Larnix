@@ -10,6 +10,7 @@ using Larnix.Menu.Forms;
 using Larnix.Core;
 using Version = Larnix.Core.Version;
 using Org.BouncyCastle.Asn1.X509;
+using Larnix.Core.Utils;
 
 namespace Larnix.Menu.Worlds
 {
@@ -47,7 +48,7 @@ namespace Larnix.Menu.Worlds
         {
             WorldMeta mdata = WorldMeta.ReadFromWorldFolder(name);
 
-            if(mdata.Nickname != "Player")
+            if(mdata.Nickname != Common.LOOPBACK_ONLY_NICKNAME)
                 Settings.Settings.Instance.SetValue("$last-nickname-SGP", mdata.Nickname, true);
 
             WorldLoad.StartLocal(name, mdata.Nickname, seedSuggestion);
@@ -57,7 +58,7 @@ namespace Larnix.Menu.Worlds
         {
             WorldMeta mdata = WorldMeta.ReadFromWorldFolder(name);
 
-            if (mdata.Nickname != "Player")
+            if (mdata.Nickname != Common.LOOPBACK_ONLY_NICKNAME)
                 Settings.Settings.Instance.SetValue("$last-nickname-SGP", mdata.Nickname, true);
 
             WorldLoad.StartHost(name, mdata.Nickname, serverTuple);
@@ -122,7 +123,7 @@ namespace Larnix.Menu.Worlds
 
                 LoadImageOrClear(Path.Combine(SavesPath, worldName, "last_image.png"), TitleImage);
                 string description = $"Version: {versionDisplay}[REPLACE]\n" +
-                                     (playerDisplay != "Player" ? $"Player: {playerDisplay}" : "Detached World");
+                                     (playerDisplay != Common.LOOPBACK_ONLY_NICKNAME ? $"Player: {playerDisplay}" : "Detached World");
 
                 DescriptionText.text = description.Replace("[REPLACE]", compatible ? "" : " - Incompatible");
             }

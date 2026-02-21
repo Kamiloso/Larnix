@@ -54,7 +54,7 @@ namespace Larnix.Socket.Backend
             // classes
             _keyRSA = new KeyRSA(serverConfig.DataPath, "private_key.pem"); // 1
             _udpSocket = new TripleSocket(serverConfig.Port, serverConfig.IsLoopback); // 2
-            _connDict = new ConnDict(_udpSocket, serverConfig.MaxClients); // 3
+            _connDict = new ConnDict(_udpSocket, this, serverConfig.MaxClients); // 3
             _coroutineRunner = new CoroutineRunner(); // 4
 
             // public API
@@ -412,7 +412,7 @@ namespace Larnix.Socket.Backend
             }
             else
             {
-                if (_hashLimiter.TryIncrease(internetID))
+                if (_config.AllowRegistration && _hashLimiter.TryIncrease(internetID))
                 {
                     Task<string> hashing = Hasher.HashPasswordAsync(password);
                     while (!hashing.IsCompleted) yield return null;
@@ -468,11 +468,12 @@ namespace Larnix.Socket.Backend
                 timestamp: Timestamp.GetTimestamp(),
                 runID: RunID,
                 motd: _config.Motd,
-                hostUser: _config.HostUser
+                hostUser: _config.HostUser,
+                mayRegister: _config.AllowRegistration
                 );
         }
 
-        private InternetID MakeInternetID(IPEndPoint endPoint)
+        internal InternetID MakeInternetID(IPEndPoint endPoint)
         {
             return new InternetID(
                 endPoint.Address,

@@ -36,7 +36,7 @@ namespace Larnix.Blocks.All
 
         void DeviceTick(bool active, bool wentOn, bool wentOff, byte srcByte);
 
-        void IElectricPropagator.ElectricPropagate(Vec2Int POS_src, int recursion)
+        void IElectricPropagator.OnElectricSignal(Vec2Int POS_src, int recursion)
         {
             int oldRecursion = Data["electric_propagator.recursion"].Int;
             if (recursion > oldRecursion)
@@ -45,11 +45,14 @@ namespace Larnix.Blocks.All
                 Data["electric_device.ticked"].Bool = true;
             }
 
-            Vec2Int dir = POS_src - This.Position;
-            if (dir == Vec2Int.Up) Data["electric_device.tick_byte"].Int |= UP;
-            else if (dir == Vec2Int.Right) Data["electric_device.tick_byte"].Int |= RIGHT;
-            else if (dir == Vec2Int.Down) Data["electric_device.tick_byte"].Int |= DOWN;
-            else if (dir == Vec2Int.Left) Data["electric_device.tick_byte"].Int |= LEFT;
+            if (recursion > 0)
+            {
+                Vec2Int dir = POS_src - This.Position;
+                if (dir == Vec2Int.Up) Data["electric_device.tick_byte"].Int |= UP;
+                else if (dir == Vec2Int.Right) Data["electric_device.tick_byte"].Int |= RIGHT;
+                else if (dir == Vec2Int.Down) Data["electric_device.tick_byte"].Int |= DOWN;
+                else if (dir == Vec2Int.Left) Data["electric_device.tick_byte"].Int |= LEFT;
+            }
         }
     }
 }

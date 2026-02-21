@@ -11,7 +11,8 @@ namespace Larnix.Core
         public Version Version { get; init; }
         public string Nickname { get; init; }
 
-        public static WorldMeta Default => new WorldMeta(Version.Current, "Player");
+        public static WorldMeta Default => new WorldMeta(
+            Version.Current, Common.LOOPBACK_ONLY_NICKNAME);
 
         public WorldMeta(Version version, string nickname)
         {

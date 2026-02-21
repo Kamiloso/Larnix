@@ -22,11 +22,17 @@ namespace Larnix.Socket
         public IEnumerable<IPEndPoint> EndPoints => _epToNick.Keys;
 
         private readonly INetworkInteractions _socket;
+        private readonly QuickServer _quickServer;
 
         private readonly Dictionary<string, IPEndPoint> _nickToEp = new();
         private readonly Dictionary<IPEndPoint, string> _epToNick = new();
         private readonly Dictionary<IPEndPoint, Connection> _connections = new();
         private readonly Dictionary<IPEndPoint, PreLoginBuffer> _preLogins = new();
+
+        private readonly TrafficLimiter<InternetID> _connectionLimiter = new(
+            maxTrafficLocal: 3,
+            maxTrafficGlobal: uint.MaxValue
+            );
 
         private bool _disposed = false;
 
@@ -47,9 +53,10 @@ namespace Larnix.Socket
         public IPEndPoint EndPointOf(string nickname) => _nickToEp.TryGetValue(nickname, out var endPoint) ? endPoint : null;
 
         // --- Functional ---
-        public ConnDict(INetworkInteractions socket, ushort maxPlayers)
+        public ConnDict(INetworkInteractions socket, QuickServer quickServer, ushort maxPlayers)
         {
             _socket = socket;
+            _quickServer = quickServer;
             MAX_PLAYERS = maxPlayers;
         }
 
@@ -67,18 +74,34 @@ namespace Larnix.Socket
 
         public bool TryPromoteConnection(IPEndPoint endPoint)
         {
+            InternetID internetID = _quickServer.MakeInternetID(endPoint);
+
             if (Count < MAX_PLAYERS && _preLogins.TryGetValue(endPoint, out var preLogin))
             {
-                var nickname = preLogin.AllowConnection.Nickname;
-                var keyAES = new KeyAES(preLogin.AllowConnection.KeyAES);
-                var connection = Connection.CreateServer(_socket, endPoint, keyAES);
+                string nickname = preLogin.AllowConnection.Nickname;
 
                 IPEndPoint alreadyConnectedEp = EndPointOf(nickname);
                 if (alreadyConnectedEp != null)
                 {
+                    Core.Debug.LogWarning($"Player {nickname} tried to connect, but is already connected.");
+
                     KickRequest(alreadyConnectedEp);
                     return false; // reject, player may connect once again anyway (rewriting this code to accept would be a nightmare)
                 }
+
+                if (!_connectionLimiter.TryIncrease(internetID))
+                {
+                    uint LIMIT = _connectionLimiter.MAX_TRAFFIC_LOCAL;
+                    Core.Debug.LogWarning($"Network {internetID} has reached the limit of {LIMIT} simultaneous connections." +
+                        $"\nCannot accept {nickname} while connecting from {endPoint}");
+                    
+                    return false; // reject, too many connections from internet ID
+                }
+
+                // --- ADD CONNECTION ---
+
+                var keyAES = new KeyAES(preLogin.AllowConnection.KeyAES);
+                var connection = Connection.CreateServer(_socket, endPoint, keyAES);
 
                 byte[] bytes;
                 while ((bytes = preLogin.TryReceive(out var isSyn)) != null)
@@ -171,6 +194,9 @@ namespace Larnix.Socket
                     _nickToEp.Remove(nickname);
                     _epToNick.Remove(endPoint);
                     _connections.Remove(endPoint);
+
+                    InternetID internetID = _quickServer.MakeInternetID(endPoint);
+                    _connectionLimiter.Decrease(internetID);
                 }
             }
             return received;

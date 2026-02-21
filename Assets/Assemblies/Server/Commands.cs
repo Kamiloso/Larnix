@@ -118,7 +118,7 @@ namespace Larnix.Server
                 "spawn" when len >= 4 => Spawn(arg[1], arg[2], arg[3], len >= 5 ? arg[4..] : null),
                 "place" when len >= 5 => Place(arg[1], arg[2], arg[3], arg[4], len >= 6 ? arg[5] : null, len >= 7 ? arg[6..] : null),
                 "particles" when len == 4 => Particles(arg[1], arg[2], arg[3]),
-                "passwd" when len == 3 => Passwd(arg[1], arg[2]),
+                "passwd" when len >= 3 => Passwd(arg[1], arg[2..]),
                 "clear" when len == 1 => Clear(),
                 "info" when len == 1 => Info(),
                 _ => (CmdResult.Error, "Unknown command! Type 'help' for documentation.")
@@ -302,10 +302,12 @@ namespace Larnix.Server
             return (CmdResult.Success, $"Spawned {realName} particles at position {dblPos}.");
         }
 
-        private (CmdResult, string) Passwd(string nickname, string password)
+        private (CmdResult, string) Passwd(string nickname, string[] stringlist)
         {
             if (nickname == Common.LOOPBACK_ONLY_NICKNAME)
                 return (CmdResult.Error, "This nickname is reserved.");
+
+            string password = string.Join(' ', stringlist);
 
             if (password == Common.LOOPBACK_ONLY_PASSWORD)
                 return (CmdResult.Error, "This password is reserved.");

@@ -62,7 +62,6 @@ namespace Larnix.Blocks.All
 
         private void MutateNearbyPipes()
         {
-            Vec2Int POS = This.Position;
             byte nearby = (byte)(
                 PartialConnectionBit(Vec2Int.Up, 0) |
                 PartialConnectionBit(Vec2Int.Right, 1) |

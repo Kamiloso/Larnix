@@ -47,7 +47,10 @@ namespace Larnix.Core.Utils
 
         public static Vec2Int GlobalBlockCoords(Vec2Int chunkpos, Vec2Int pos)
         {
-            return new Vec2Int(chunkpos.x << 4, chunkpos.y << 4) + pos;
+            return new Vec2Int(
+                chunkpos.x << 4,
+                chunkpos.y << 4
+                ) + pos;
         }
 
         public static Vec2Int LocalBlockCoords(Vec2Int POS)
@@ -59,7 +62,14 @@ namespace Larnix.Core.Utils
 
         public static bool InChunk(Vec2Int chunkpos, Vec2Int POS)
         {
-            return (POS.x >> 4) == chunkpos.x && (POS.y >> 4) == chunkpos.y;
+            return (POS.x >> 4) == chunkpos.x &&
+                   (POS.y >> 4) == chunkpos.y;
+        }
+
+        public static bool ChunkExists(Vec2Int chunkpos)
+        {
+            return chunkpos.x >= MIN_CHUNK && chunkpos.x <= MAX_CHUNK &&
+                   chunkpos.y >= MIN_CHUNK && chunkpos.y <= MAX_CHUNK;
         }
 
         public static HashSet<Vec2Int> GetNearbyChunks(Vec2Int center, int simDistance)

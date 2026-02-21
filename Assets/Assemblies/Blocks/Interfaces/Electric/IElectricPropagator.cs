@@ -17,6 +17,14 @@ namespace Larnix.Blocks.All
                  () => Data["electric_propagator.recursion"].Int = 0);
         }
 
-        void ElectricPropagate(Vec2Int POS_src, int recursion);
+        void ElectricSignalSend(Vec2Int POS_src, int recursion)
+        {
+            if (This.EventFlag)
+            {
+                OnElectricSignal(POS_src, recursion);
+            }
+        }
+
+        void OnElectricSignal(Vec2Int POS_src, int recursion);
     }
 }

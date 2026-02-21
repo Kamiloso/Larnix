@@ -45,15 +45,30 @@ namespace Larnix.Core.Json
 
         public Storage DeepCopy()
         {
-            return new Storage(Root.Clone().AsObject);
+            if (_root != null)
+            {
+                return new Storage(
+                    Root.Clone().AsObject
+                    );
+            }
+            else
+            {
+                return new Storage();
+            }
         }
 
-        public override string ToString() => Root.ToString();
+        public override string ToString()
+        {
+            return _root?.ToString() ?? "{}";
+        }
+
         public static Storage FromString(string json)
         {
             try
             {
-                return new Storage(JSON.Parse(json).AsObject);
+                return new Storage(
+                    JSON.Parse(json).AsObject
+                    );
             }
             catch
             {

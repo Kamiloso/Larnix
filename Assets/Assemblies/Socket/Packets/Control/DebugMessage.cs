@@ -15,7 +15,7 @@ namespace Larnix.Socket.Packets.Control
         public DebugMessage(string message, byte code = 0)
         {
             InitializePayload(ArrayUtils.MegaConcat(
-                Primitives.GetBytes<String512>(message)
+                Primitives.GetBytes((String512)message)
                 ), code);
         }
 

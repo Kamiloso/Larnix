@@ -55,7 +55,7 @@ namespace Larnix.Menu.Forms
             if (!Validation.IsGoodNickname(nickname))
                 return ErrorCode.NICKNAME_FORMAT;
 
-            if (nickname == "Player")
+            if (nickname == Common.LOOPBACK_ONLY_NICKNAME)
                 return ErrorCode.NICKNAME_IS_PLAYER;
 
             if (!Validation.IsGoodPassword(password))

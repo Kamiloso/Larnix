@@ -15,7 +15,7 @@ namespace Larnix.Socket.Packets.Control
         public P_ServerInfo(string message, byte code = 0)
         {
             InitializePayload(ArrayUtils.MegaConcat(
-                Primitives.GetBytes<String32>(message)
+                Primitives.GetBytes((String32)message)
                 ), code);
         }
 

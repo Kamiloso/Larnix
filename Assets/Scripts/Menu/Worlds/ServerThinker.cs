@@ -5,6 +5,7 @@ using UnityEngine;
 using Larnix.Socket.Frontend;
 using Larnix.Socket.Packets;
 using Version = Larnix.Core.Version;
+using Larnix.Core.Utils;
 
 namespace Larnix.Menu.Worlds
 {
@@ -127,9 +128,23 @@ namespace Larnix.Menu.Worlds
                 return LoginState.None;
 
             if (LoginSuccess != null)
-                return (bool)LoginSuccess ? LoginState.Good : LoginState.Bad;
+            {
+                return LoginSuccess.Value ?
+                    LoginState.Good :
+                    LoginState.Bad;
+            }
+            else
+            {
+                return loginCoroutine == null ?
+                    LoginState.Ready :
+                    LoginState.Waiting;
+            }
+        }
 
-            return loginCoroutine == null ? LoginState.Ready : LoginState.Waiting;
+        public bool MayRegister()
+        {
+            return State == ThinkerState.Ready &&
+                   serverInfo?.MayRegister == true;
         }
 
         private IEnumerator RefreshCoroutine()
@@ -149,7 +164,7 @@ namespace Larnix.Menu.Worlds
             bool knowsUserData = nickname != "" && password != "";
 
             var downloading = Task.Run(() =>
-                Resolver.DownloadServerInfoAsync(address, authcode, knowsUserData ? nickname : "Player", true));
+                Resolver.DownloadServerInfoAsync(address, authcode, knowsUserData ? nickname : Common.LOOPBACK_ONLY_NICKNAME, true));
 
             while (!downloading.IsCompleted)
                 yield return null;
@@ -172,7 +187,9 @@ namespace Larnix.Menu.Worlds
             else // success
             {
                 serverInfo = downloading.Result.info;
-                State = Version.Current.CompatibleWith(serverInfo.GameVersion) ? ThinkerState.Ready : ThinkerState.Incompatible;
+                State = Version.Current.CompatibleWith(serverInfo.GameVersion) ?
+                    ThinkerState.Ready :
+                    ThinkerState.Incompatible;
 
                 if (knowsUserData && State != ThinkerState.Incompatible)
                 {

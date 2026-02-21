@@ -12,6 +12,7 @@ namespace Larnix.Blocks
         {
             Replace = 0,
             Effects = 1, // drops particles
+            Weak = 2, // rearm EventFlag
         }
         
         public long ServerTick();

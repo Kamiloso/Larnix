@@ -36,7 +36,7 @@ namespace Larnix.Menu.Forms
             ErrorCode.WORLD_NAME_FORMAT => "World name should be 1-32 characters, be already trimmed and only use: letters, digits, space, _ or -.",
             ErrorCode.WORLD_EXISTS => "World with such name already exists.",
             ErrorCode.NICKNAME_FORMAT => Validation.WrongNicknameInfo,
-            ErrorCode.NICKNAME_IS_PLAYER => "Nickname \"Player\" is reserved.",
+            ErrorCode.NICKNAME_IS_PLAYER => $"Nickname \"{Common.LOOPBACK_ONLY_NICKNAME}\" is reserved.",
             ErrorCode.PASSWORD_FORMAT => Validation.WrongPasswordInfo,
             ErrorCode.ADDRESS_EXISTS => "This address already exists in the server list.",
             ErrorCode.AUTHCODE_FORMAT => "It is not a correct authcode.",

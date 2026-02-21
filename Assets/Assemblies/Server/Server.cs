@@ -75,8 +75,8 @@ namespace Larnix.Server
 
                     // SCRIPTS (in execution order)
                     new AtomicChunks(this),
-                    new Chunks(this), // --- EXEC ORDER IMPORTANT ---
-                    new EntityManager(this), // --- EXEC ORDER IMPORTANT ---
+                    new Chunks(this), // 1st
+                    new EntityManager(this), // 2nd
                     new WorldAPI(this),
                     new EntityDataManager(this),
                     new PlayerManager(this),
@@ -101,15 +101,22 @@ namespace Larnix.Server
 
             // --- QuickServer ---
             _quickServer = new QuickServer(new QuickConfig(
-                port: Type == ServerType.Remote ? Config.Port : (ushort)0,
+                port: Type == ServerType.Remote ?
+                    Config.Port : (ushort)0,
+
                 maxClients: Config.MaxPlayers,
                 isLoopback: Type == ServerType.Local,
                 dataPath: Path.Combine(WorldPath, "Socket"),
                 userAPI: Database,
-                motd: Config.Motd,
-                hostUser: Type == ServerType.Remote ? "Player" : _mdata.Nickname, // server owner ("Player" => detached)
+                motd: (String256)Config.Motd,
+
+                hostUser: Type == ServerType.Remote ?
+                    (String32)Common.LOOPBACK_ONLY_NICKNAME :
+                    (String32)_mdata.Nickname,
+                
                 maskIPv4: Config.ClientIdentityPrefixSizeIPv4,
-                maskIPv6: Config.ClientIdentityPrefixSizeIPv6
+                maskIPv6: Config.ClientIdentityPrefixSizeIPv6,
+                allowRegistration: Config.AllowRegistration
                 ));
 
             // --- Constructs server singletons ---
@@ -160,7 +167,7 @@ namespace Larnix.Server
             Core.Debug.LogRaw(BORDER_STR + "\n");
 
             // Force change default password
-            if (_mdata.Nickname != "Player")
+            if (_mdata.Nickname != Common.LOOPBACK_ONLY_NICKNAME)
             {
                 Core.Debug.LogRaw("This world was previously in use by " + _mdata.Nickname + ".\n");
                 Core.Debug.LogRaw("Choose a password for this player to start the server.\n");
@@ -173,7 +180,7 @@ namespace Larnix.Server
                     if (Validation.IsGoodPassword(password))
                     {
                         UserManager.ChangePasswordSync(_mdata.Nickname, password);
-                        _mdata = new WorldMeta(Version.Current, "Player");
+                        _mdata = new WorldMeta(Version.Current, Common.LOOPBACK_ONLY_NICKNAME);
                         WorldMeta.SaveToFolder(WorldPath, _mdata);
                         changeSuccess = true;
                     }

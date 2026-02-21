@@ -24,12 +24,11 @@ namespace Larnix.Server.Terrain
 
         public bool IsChunkLoaded(Vec2Int chunk)
         {
-            return Chunks.IsLoadedChunk(chunk);
+            return Chunks.IsChunkLoaded(chunk);
         }
 
         public bool IsChunkAtomicLoaded(Vec2Int chunk)
         {
-            AtomicChunks.SuggestAtomicLoad(chunk);
             return AtomicChunks.IsAtomicLoaded(chunk);
         }
 
@@ -64,7 +63,7 @@ namespace Larnix.Server.Terrain
             {
                 Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
                 GetBlock(POS, isFront).BlockData.__MutateVariant__(variant);
-                return chunkObject.UpdateBlockWeak(pos, isFront);
+                return chunkObject.UpdateBlockMutated(pos, isFront);
             }
             return null;
         }

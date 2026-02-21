@@ -32,6 +32,20 @@ namespace Larnix.Socket
             return true;
         }
 
+        public void Decrease(T key)
+        {
+            if (!_localTraffic.TryGetValue(key, out uint localTraffic))
+                throw new InvalidOperationException("Local traffic for this key is already zero.");
+
+            localTraffic--;
+            if (localTraffic > 0)
+                _localTraffic[key] = localTraffic;
+            else
+                _localTraffic.Remove(key);
+
+            _globalTraffic--;
+        }
+
         public void Reset()
         {
             _localTraffic.Clear();

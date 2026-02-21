@@ -2,7 +2,7 @@ using Larnix.Core.Utils;
 
 namespace Larnix.Socket.Backend
 {
-    public struct QuickConfig
+    public readonly struct QuickConfig
     {
         public readonly ushort Port;
         public readonly ushort MaxClients;
@@ -12,10 +12,11 @@ namespace Larnix.Socket.Backend
         public readonly String32 HostUser;
         public readonly int MaskIPv4;
         public readonly int MaskIPv6;
+        public readonly bool AllowRegistration;
         public readonly IUserAPI UserAPI;
 
         public QuickConfig(ushort port, ushort maxClients, bool isLoopback, string dataPath,
-            String256 motd, String32 hostUser, int maskIPv4, int maskIPv6, IUserAPI userAPI)
+            String256 motd, String32 hostUser, int maskIPv4, int maskIPv6, bool allowRegistration, IUserAPI userAPI)
         {
             Port = port;
             MaxClients = maxClients;
@@ -25,6 +26,7 @@ namespace Larnix.Socket.Backend
             HostUser = hostUser;
             MaskIPv4 = maskIPv4;
             MaskIPv6 = maskIPv6;
+            AllowRegistration = allowRegistration;
             UserAPI = userAPI;
         }
 
@@ -39,6 +41,7 @@ namespace Larnix.Socket.Backend
                 hostUser: HostUser,
                 maskIPv4: MaskIPv4,
                 maskIPv6: MaskIPv6,
+                allowRegistration: AllowRegistration,
                 userAPI: UserAPI
                 );
         }
