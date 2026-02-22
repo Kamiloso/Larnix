@@ -9,21 +9,22 @@ using Larnix.Socket.Packets.Control;
 using Larnix.Core.Vectors;
 using System;
 using Larnix.Socket.Packets;
+using Larnix.Blocks;
 
 namespace Larnix.Server
 {
-    internal class Receiver : Singleton
+    internal class Receiver
     {
         private record RateLimitID(string Owner, Type Type);
         private readonly Dictionary<RateLimitID, int> _rateLimits = new();
         private float _rateLimitTimer = 0f;
 
-        private WorldAPI WorldAPI => Ref<WorldAPI>();
-        private QuickServer QuickServer => Ref<QuickServer>();
-        private PlayerManager PlayerManager => Ref<PlayerManager>();
-        private BlockSender BlockSender => Ref<BlockSender>();
+        private IWorldAPI WorldAPI => Ref.IWorldAPI;
+        private QuickServer QuickServer => Ref.QuickServer;
+        private PlayerManager PlayerManager => Ref.PlayerManager;
+        private BlockSender BlockSender => Ref.BlockSender;
 
-        public Receiver(Server server) : base(server)
+        public Receiver()
         {
             Subscribe<AllowConnection>(_AllowConnection); // START (server validated)
             Subscribe<Stop>(_Stop); // STOP (server generated)

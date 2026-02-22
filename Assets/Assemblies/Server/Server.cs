@@ -13,44 +13,51 @@ using Larnix.Core.Files;
 using Larnix.Socket.Backend;
 using Larnix.Core.Utils;
 using Larnix.Worldgen;
-using Larnix.Core.References;
 using Larnix.Server.Commands;
 using Version = Larnix.Core.Version;
 using Console = Larnix.Core.Console;
-using Object = System.Object;
+using Larnix.Blocks;
 
 namespace Larnix.Server
 {
-    internal class Server : RefRoot
+    internal class Server
     {
         public ServerType Type { get; init; }
         public string WorldPath { get; init; }
-        public string LocalAddress { get; init; }
-        public string Authcode { get; init; }
+
+        public ushort Port => _quickServer.Config.Port;
+        public string LocalAddress => "localhost:" + Port;
+        public string Authcode => _quickServer.Authcode;
 
         public long ServerTick { get; private set; }
         public uint FixedFrame { get; private set; }
 
-        private WorldMeta _mdata;
-        private readonly Stopwatch _stopwatch = Stopwatch.StartNew();
-        private double _lastTickTime = 0;
-
         private readonly QuickServer _quickServer;
-
-        private Config Config => Ref<Config>();
-        private Database Database => Ref<Database>();
-        private EntityManager EntityManager => Ref<EntityManager>();
-        private PlayerManager PlayerManager => Ref<PlayerManager>();
-        private EntityDataManager EntityDataManager => Ref<EntityDataManager>();
-        private BlockDataManager BlockDataManager => Ref<BlockDataManager>();
-        private UserManager UserManager => Ref<UserManager>();
-        private Receiver Receiver => Ref<Receiver>();
-
-        private float _totalTimeElapsed = 0f;
-        public float RealDeltaTime => _totalTimeElapsed;
-        public float TPS => _totalTimeElapsed > 0f ? (1f / _totalTimeElapsed) : 0f;
-
+        private readonly Stopwatch _stopwatch = Stopwatch.StartNew();
+        private readonly IScript[] _scripts;
         public readonly Action CloseServer;
+
+        private WorldMeta _mdata;
+
+        private QuickServer QuickServer => Ref.QuickServer;
+        private Locker Locker => Ref.Locker;
+        private Config Config => Ref.Config;
+        private Database Database => Ref.Database;
+        private EntityManager EntityManager => Ref.EntityManager;
+        private PlayerManager PlayerManager => Ref.PlayerManager;
+        private EntityDataManager EntityDataManager => Ref.EntityDataManager;
+        private BlockDataManager BlockDataManager => Ref.BlockDataManager;
+        private UserManager UserManager => Ref.UserManager;
+        private Receiver Receiver => Ref.Receiver;
+
+        private double _lastTickTime = 0;
+        private float _totalTimeElapsed = 0f;
+
+        public float RealDeltaTime => _totalTimeElapsed > 0f ?
+            _totalTimeElapsed : Common.FIXED_TIME;
+        public float TPS => _totalTimeElapsed > 0f ?
+            (1f / _totalTimeElapsed) : 0f;
+
         private bool _disposed = false;
 
         public Server(ServerType type, string worldPath, long? seedSuggestion, Action closeServer)
@@ -59,38 +66,36 @@ namespace Larnix.Server
             WorldPath = worldPath;
             CloseServer = closeServer;
 
-            // --- Try to lock the world ---
+            // --- Try lock the world ---
             Locker locker = Locker.TryLock(WorldPath, "world_locker.lock");
             if (locker == null)
             {
-                throw new Exception("Trying to access world that is already open.");
+                throw new InvalidOperationException("Trying to access world that is already open.");
             }
-            AddRef(locker);
+            GlobRef.Set(locker);
 
-            // --- Construct singletons ---
+            // --- [ MAIN SINGLETONS ] ---
+            GlobRef.Set(this);
+            GlobRef.Set(new PhysicsManager());
+            GlobRef.Set<IWorldAPI>(new WorldAPI());
+
+            // --- [ SCRIPTS ] ---
+            _scripts = new IScript[] // in execution order
             {
-                Database db;
-                AddRefs(
-                    this,
-                    new PhysicsManager(),
+                GlobRef.Set(new AtomicChunks()),
+                GlobRef.Set(new Chunks()), // 1st
+                GlobRef.Set(new EntityManager()), // 2nd
+                GlobRef.Set(new EntityDataManager()),
+                GlobRef.Set(new PlayerManager()),
+                GlobRef.Set(new BlockDataManager()),
+                GlobRef.Set(new BlockSender()),
+                GlobRef.Set(new CmdManager())
+            };
 
-                    // SCRIPTS (in execution order)
-                    new AtomicChunks(this),
-                    new Chunks(this), // 1st
-                    new EntityManager(this), // 2nd
-                    new WorldAPI(this),
-                    new EntityDataManager(this),
-                    new PlayerManager(this),
-                    new BlockDataManager(this),
-                    new BlockSender(this),
-                    new CmdManager(this),
-
-                    // SATELITE CLASSES
-                    Config.Obtain(WorldPath),
-                    db = new Database(WorldPath, "database.sqlite"),
-                    new Generator(db.GetSeed(seedSuggestion))
-                );
-            }
+            // --- [ SATELITE CLASSES ] ---
+            GlobRef.Set(Config.Obtain(WorldPath));
+            GlobRef.Set(new Database(WorldPath, "database.sqlite"));
+            GlobRef.Set(new Generator(Database.GetSeed(seedSuggestion)));
 
             // --- Server tick obtain ---
             ServerTick = Database.GetServerTick();
@@ -101,42 +106,32 @@ namespace Larnix.Server
             WorldMeta.SaveToFolder(WorldPath, _mdata);
 
             // --- QuickServer ---
-            _quickServer = new QuickServer(new QuickConfig(
-                port: Type == ServerType.Remote ?
-                    Config.Port : (ushort)0,
+            _quickServer = new QuickServer(
+                new QuickConfig(
+                    port: Type == ServerType.Remote ?
+                        Config.Port : (ushort)0,
 
-                maxClients: Config.MaxPlayers,
-                isLoopback: Type == ServerType.Local,
-                dataPath: Path.Combine(WorldPath, "Socket"),
-                userAPI: Database,
-                motd: (String256)Config.Motd,
+                    maxClients: Config.MaxPlayers,
+                    isLoopback: Type == ServerType.Local,
+                    dataPath: Path.Combine(WorldPath, "Socket"),
+                    userAPI: Database,
+                    motd: (String256)Config.Motd,
 
-                hostUser: Type == ServerType.Remote ?
-                    (String32)Common.LOOPBACK_ONLY_NICKNAME :
-                    (String32)_mdata.Nickname,
-                
-                maskIPv4: Config.ClientIdentityPrefixSizeIPv4,
-                maskIPv6: Config.ClientIdentityPrefixSizeIPv6,
-                allowRegistration: Config.AllowRegistration
-                ));
+                    hostUser: Type == ServerType.Remote ?
+                        (String32)Common.LOOPBACK_ONLY_NICKNAME :
+                        (String32)_mdata.Nickname,
+                    
+                    maskIPv4: Config.ClientIdentityPrefixSizeIPv4,
+                    maskIPv6: Config.ClientIdentityPrefixSizeIPv6,
+                    allowRegistration: Config.AllowRegistration
+                )
+            );
 
-            // --- Constructs server singletons ---
-            {
-                AddRefs(
-                    // SERVER CLASSES
-                    _quickServer,
-                    _quickServer.UserManager
-                );
-                AddRefs(
-                    // SERVER-DEPENDENT CLASSES
-                    new Receiver(this),
-                    new CmdManager(this)
-                );
-            }
-
-            // --- Configure data for client ---
-            LocalAddress = "localhost:" + _quickServer.Config.Port;
-            Authcode = _quickServer.Authcode;
+            // --- [ SERVER SINGLETONS ] ---
+            GlobRef.Set(_quickServer);
+            GlobRef.Set(_quickServer.UserManager);
+            GlobRef.Set(new Receiver());
+            GlobRef.Set(new CmdManager());
 
             // --- Configure console ---
             if (Type == ServerType.Remote)
@@ -145,7 +140,7 @@ namespace Larnix.Server
             }
             else
             {
-                Core.Debug.Log("Port: " + _quickServer.Config.Port + " | Authcode: " + _quickServer.Authcode);
+                Core.Debug.Log($"Port: {Port} | Authcode: {Authcode}");
             }
 
             // --- Try establish relay ---
@@ -232,8 +227,7 @@ namespace Larnix.Server
             FixedFrame++;
 
             // Tick technical singletons
-
-            Func<float> GetTimeElapsed = () =>
+            float GetTimeElapsed()
             {
                 double currentTime = _stopwatch.Elapsed.TotalSeconds;
                 double elapsedTime = currentTime - _lastTickTime;
@@ -247,24 +241,19 @@ namespace Larnix.Server
             _quickServer.ServerTick(_totalTimeElapsed); // refresh & process packets
 
             // Process server logic
-
             for (int i = 1; i <= 5; i++)
             {
-                foreach (Object obj in TakeRefSnapshot())
+                foreach (IScript singleton in _scripts)
                 {
-                    if (obj is Singleton singleton)
-                    {
-                        if (i == 1) singleton.EarlyFrameUpdate();
-                        if (i == 2) singleton.PostEarlyFrameUpdate();
-                        if (i == 3) singleton.FrameUpdate();
-                        if (i == 4) singleton.LateFrameUpdate();
-                        if (i == 5) singleton.PostLateFrameUpdate();
-                    }
+                    if (i == 1) singleton.EarlyFrameUpdate();
+                    if (i == 2) singleton.PostEarlyFrameUpdate();
+                    if (i == 3) singleton.FrameUpdate();
+                    if (i == 4) singleton.LateFrameUpdate();
+                    if (i == 5) singleton.PostLateFrameUpdate();
                 }
             }
 
             // Cyclic actions
-
             if (FixedFrame % Config.EntityBroadcastPeriodFrames == 0)
             {
                 EntityManager.SendEntityBroadcast();
@@ -311,17 +300,9 @@ namespace Larnix.Server
                     Core.Debug.Log("Data has been saved.");
                 }
 
-                LinkedList<Object> snapshot = TakeRefSnapshot();
-                while (snapshot.Count > 0)
-                {
-                    Object obj = snapshot.Last.Value;
-                    if (obj is IDisposable disp)
-                    {
-                        disp.Dispose();
-                    }
-
-                    snapshot.RemoveLast();
-                }
+                QuickServer?.Dispose();
+                Database?.Dispose();
+                Locker?.Dispose();
 
                 Core.Debug.Log(emergency ?
                     "Server has crashed!" :

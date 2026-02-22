@@ -23,7 +23,7 @@ namespace Larnix.Client.Particles
 
         private void Awake()
         {
-            Ref.ParticleManager = this;
+            GlobRef.Set(this);
         }
 
         private void Update()

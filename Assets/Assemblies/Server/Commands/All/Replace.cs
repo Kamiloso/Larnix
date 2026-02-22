@@ -15,7 +15,7 @@ namespace Larnix.Server.Commands.All
         public override string Pattern => $"{Name} <front|back> <type|type:variant> <x> <y> [json]";
         public override string ShortDescription => "Replaces a block.";
 
-        private WorldAPI WorldAPI => Ref<WorldAPI>();
+        private IWorldAPI WorldAPI => Ref.IWorldAPI;
 
         private bool _front;
         private BlockID _blockID;

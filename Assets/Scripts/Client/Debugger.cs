@@ -7,6 +7,7 @@ using System.Linq;
 using UnityEngine.Profiling;
 using Larnix.Core.Vectors;
 using Larnix.Worldgen.Biomes;
+using Larnix.Core;
 
 namespace Larnix.Client
 {
@@ -33,7 +34,7 @@ namespace Larnix.Client
 
         private void Awake()
         {
-            Ref.Debugger = this;
+            GlobRef.Set(this);
         }
 
         public void InfoUpdate(long serverTick, BiomeID biomeID, float tps)

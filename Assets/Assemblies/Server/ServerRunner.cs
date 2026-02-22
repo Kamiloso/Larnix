@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Larnix.Core;
 using Larnix.Core.Utils;
 
 namespace Larnix.Server
@@ -25,18 +26,8 @@ namespace Larnix.Server
 
         private volatile bool _stopFlag;
 
-        private ServerRunner() { }
-        private static ServerRunner _singleton;
-        public static ServerRunner Instance
-        {
-            get
-            {
-                if (_singleton == null)
-                    _singleton = new ServerRunner();
-
-                return _singleton;
-            }
-        }
+        public ServerRunner() { }
+        public static ServerRunner Instance { get; } = new(); // singleton for old code compatibility
 
         public (string address, string authcode) Start(
             ServerType type,
@@ -45,15 +36,36 @@ namespace Larnix.Server
         {
             Stop();
 
-            _server = new Server(
-                type,
-                worldPath,
-                seedSuggestion,
-                () => _stopFlag = true);
+            long clientKey = GlobRef.GetKey(); // remember client scope
+            long serverKey = GlobRef.NewScope(); // create server scope
+
+            try
+            {
+                _server = new Server(
+                    type,
+                    worldPath,
+                    seedSuggestion,
+                    () => _stopFlag = true);
+            }
+            finally
+            {
+                GlobRef.SetKey(clientKey); // restore client scope
+            }
 
             var result = (_server.LocalAddress, _server.Authcode);
 
-            _thread = new Thread(ServerLoop)
+            _thread = new Thread(() =>
+            {
+                GlobRef.SetKey(serverKey); // activate server scope
+                try
+                {
+                    ServerLoop();
+                }
+                finally
+                {
+                    GlobRef.Clear(); // clear server scope
+                }
+            })
             {
                 IsBackground = true,
                 Name = "Larnix::ServerThread"

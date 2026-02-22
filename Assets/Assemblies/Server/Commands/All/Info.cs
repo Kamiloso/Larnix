@@ -13,8 +13,8 @@ namespace Larnix.Server.Commands.All
         public override string Pattern => $"{Name}";
         public override string ShortDescription => "Displays the server information.";
 
-        private QuickServer QuickServer => Ref<QuickServer>();
-        private Generator Generator => Ref<Generator>();
+        private QuickServer QuickServer => Ref.QuickServer;
+        private Generator Generator => Ref.Generator;
 
         public override void Inject(string command)
         {

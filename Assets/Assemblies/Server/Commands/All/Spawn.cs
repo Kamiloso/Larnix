@@ -15,7 +15,7 @@ namespace Larnix.Server.Commands.All
         public override string Pattern => $"{Name} <type> <x> <y> [json]";
         public override string ShortDescription => "Spawns a new entity.";
 
-        private EntityManager EntityManager => Ref<EntityManager>();
+        private EntityManager EntityManager => Ref.EntityManager;
 
         private EntityID _entityID;
         private Vec2 _position;

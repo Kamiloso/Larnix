@@ -12,6 +12,7 @@ using Larnix.Blocks.Structs;
 using Larnix.Client.Relativity;
 using Larnix.Client.UI;
 using Larnix.Blocks.All;
+using Larnix.Core;
 
 namespace Larnix.Client.Terrain
 {
@@ -36,7 +37,7 @@ namespace Larnix.Client.Terrain
 
         private void Awake()
         {
-            Ref.TileSelector = this;
+            GlobRef.Set(this);
         }
 
         private void OnApplicationFocus(bool hasFocus)

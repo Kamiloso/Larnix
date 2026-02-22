@@ -9,17 +9,16 @@ using Larnix.Server.Commands;
 
 namespace Larnix.Server.Terrain
 {
-    internal class WorldAPI : Singleton, IWorldAPI
+    internal class WorldAPI : IWorldAPI
     {
-        private Chunks Chunks => Ref<Chunks>();
-        private AtomicChunks AtomicChunks => Ref<AtomicChunks>();
-        private CmdManager Commands => Ref<CmdManager>();
-
-        public WorldAPI(Server server) : base(server) { }
+        private Chunks Chunks => Ref.Chunks;
+        private AtomicChunks AtomicChunks => Ref.AtomicChunks;
+        private CmdManager Commands => Ref.CmdManager;
+        private Server Server => Ref.Server;
 
         public long ServerTick()
         {
-            return Ref<Server>().ServerTick;
+            return Server.ServerTick;
         }
 
         public bool IsChunkLoaded(Vec2Int chunk)

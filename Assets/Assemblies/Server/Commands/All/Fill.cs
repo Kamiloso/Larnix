@@ -14,7 +14,7 @@ namespace Larnix.Server.Commands.All
         public override string Pattern => $"{Name} <front|back> <type|type:variant> <x1> <y1> <x2> <y2> [json]";
         public override string ShortDescription => "Fills rectangular area with a block.";
 
-        private WorldAPI WorldAPI => Ref<WorldAPI>();
+        private IWorldAPI WorldAPI => Ref.IWorldAPI;
 
         private bool _front;
         private BlockID _blockID;

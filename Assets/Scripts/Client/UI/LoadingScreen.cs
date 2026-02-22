@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using Larnix.Core;
 
 namespace Larnix.Client.UI
 {
@@ -21,7 +22,7 @@ namespace Larnix.Client.UI
 
         private void Awake()
         {
-            Ref.LoadingScreen = this;
+            GlobRef.Set(this);
         }
 
         private void Start()

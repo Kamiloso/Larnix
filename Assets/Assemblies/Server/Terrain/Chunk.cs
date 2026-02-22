@@ -7,14 +7,13 @@ using Larnix.Core.Utils;
 using Larnix.Core.Physics;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
-using Larnix.Core.References;
 using Larnix.Packets.Structs;
 using Larnix.Blocks.All;
 using BlockInits = Larnix.Blocks.Block.BlockInits;
 
 namespace Larnix.Server.Terrain
 {
-    internal class Chunk : RefObject<Server>, IDisposable
+    internal class Chunk : IDisposable
     {
         private const int CHUNK_SIZE = BlockUtils.CHUNK_SIZE;
 
@@ -24,17 +23,17 @@ namespace Larnix.Server.Terrain
         private readonly Block[,] _blocksBack = ChunkIterator.Array2D<Block>();
         private readonly Dictionary<Vec2Int, StaticCollider[]> _colliderCollections = new();
 
-        private WorldAPI WorldAPI => Ref<WorldAPI>();
-        private BlockDataManager BlockDataManager => Ref<BlockDataManager>();
-        private PhysicsManager PhysicsManager => Ref<PhysicsManager>();
-        private BlockSender BlockSender => Ref<BlockSender>();
+        private IWorldAPI WorldAPI => Ref.IWorldAPI;
+        private BlockDataManager BlockDataManager => Ref.BlockDataManager;
+        private PhysicsManager PhysicsManager => Ref.PhysicsManager;
+        private BlockSender BlockSender => Ref.BlockSender;
 
         public IEnumerable FrameInvoker => _blockEvents.GetFrameInvoker();
         public readonly BlockData2[,] ActiveChunkReference;
 
         private bool _disposed = false;
 
-        public Chunk(RefObject<Server> reff, Vec2Int chunkpos) : base(reff)
+        public Chunk(Vec2Int chunkpos)
         {
             _chunkpos = chunkpos;
             _blockEvents = new BlockEvents(_chunkpos, WorldAPI, _blocksFront, _blocksBack);

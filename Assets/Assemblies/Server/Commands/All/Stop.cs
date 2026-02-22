@@ -13,7 +13,7 @@ namespace Larnix.Server.Commands.All
         public override string Pattern => $"{Name}";
         public override string ShortDescription => "Turns off the server.";
 
-        private Server Server => Ref<Server>();
+        private Server Server => Ref.Server;
 
         public override void Inject(string command)
         {

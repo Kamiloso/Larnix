@@ -37,7 +37,7 @@ namespace Larnix.Client.Terrain
             base.Awake();
 
             if (!IsMenu)
-                Ref.GridManager = this;
+                GlobRef.Set(this);
         }
 
         protected override void Update()

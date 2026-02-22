@@ -1,22 +1,21 @@
-using Larnix.Core.References;
 using Larnix.Core.Vectors;
 using System;
 using System.Collections.Generic;
 
 namespace Larnix.Server.Terrain
 {
-    internal class ChunkContainer : RefObject<Server>
+    internal class ChunkContainer
     {
         public Vec2Int Chunkpos { get; init; }
         public ChunkLoadState State { get; private set; }
         public Chunk Instance { get; private set; }
 
-        private AtomicChunks AtomicChunks => Ref<AtomicChunks>();
+        private AtomicChunks AtomicChunks => Ref.AtomicChunks;
         
         private float _unloadTime;
         private float UNLOADING_TIME => 1f;
 
-        public ChunkContainer(RefObject<Server> reff, Vec2Int chunkpos) : base(reff)
+        public ChunkContainer(Vec2Int chunkpos)
         {
             Chunkpos = chunkpos;
             State = ChunkLoadState.Loading;

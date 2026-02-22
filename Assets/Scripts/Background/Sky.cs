@@ -11,7 +11,7 @@ namespace Larnix.Background
 
         private void Awake()
         {
-            Ref.Sky = this;
+            GlobRef.Set(this);
         }
 
         public void UpdateSky(BiomeID biomeID, Col32 skyColor, Weather weather)

@@ -30,7 +30,7 @@ namespace Larnix.Menu.Worlds
 
         private void Awake()
         {
-            Ref.WorldSelect = this;
+            GlobRef.Set(this);
             ReloadWorldList();
         }
 

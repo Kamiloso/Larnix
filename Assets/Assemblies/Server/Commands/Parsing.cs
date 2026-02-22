@@ -1,6 +1,7 @@
 using System;
 using Larnix.Blocks;
 using Larnix.Blocks.Structs;
+using Larnix.Core.Utils;
 
 namespace Larnix.Server.Commands
 {
@@ -11,6 +12,24 @@ namespace Larnix.Server.Commands
             string lower = input.ToLowerInvariant();
             front = lower == "front";
             return front || lower == "back";
+        }
+
+        public static bool TryParseUid(string input, out ulong uid)
+        {
+            if (ulong.TryParse(input, out ulong u_uid))
+            {
+                uid = u_uid;
+                return true;
+            }
+            
+            if (long.TryParse(input, out long s_uid))
+            {
+                uid = (ulong)s_uid;
+                return true;
+            }
+
+            uid = default;
+            return false;
         }
 
         public static bool TryParseBlock(string input, out BlockID blockID, out byte variant)

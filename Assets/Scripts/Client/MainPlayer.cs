@@ -12,6 +12,7 @@ using Larnix.Packets;
 using Larnix.Client.Terrain;
 using System;
 using Larnix.Entities.All;
+using Larnix.Core;
 
 namespace Larnix.Client
 {
@@ -50,7 +51,7 @@ namespace Larnix.Client
 
         private void Awake()
         {
-            Ref.MainPlayer = this;
+            GlobRef.Set(this);
             transform.parent.gameObject.SetActive(false);
         }
 

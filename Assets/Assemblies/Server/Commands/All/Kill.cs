@@ -14,8 +14,8 @@ namespace Larnix.Server.Commands.All
         public override string Pattern => $"{Name} <nickname>";
         public override string ShortDescription => "Kills a player.";
 
-        private EntityManager EntityManager => Ref<EntityManager>();
-        private PlayerManager PlayerManager => Ref<PlayerManager>();
+        private EntityManager EntityManager => Ref.EntityManager;
+        private PlayerManager PlayerManager => Ref.PlayerManager;
 
         private string _nickname;
 

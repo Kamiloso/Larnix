@@ -5,6 +5,7 @@ using System.Linq;
 using System.Diagnostics;
 using Larnix.Packets;
 using Larnix.Entities.Structs;
+using Larnix.Core;
 
 namespace Larnix.Client.Entities
 {
@@ -24,7 +25,7 @@ namespace Larnix.Client.Entities
 
         private void Awake()
         {
-            Ref.EntityProjections = this;
+            GlobRef.Set(this);
         }
 
         public void ChangeNearbyUIDs(NearbyEntities msg)

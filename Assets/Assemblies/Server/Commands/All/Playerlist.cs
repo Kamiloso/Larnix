@@ -14,8 +14,8 @@ namespace Larnix.Server.Commands.All
         public override string Pattern => $"{Name}";
         public override string ShortDescription => "Displays a list of all connected players.";
 
-        private QuickServer QuickServer => Ref<QuickServer>();
-        private PlayerManager PlayerManager => Ref<PlayerManager>();
+        private QuickServer QuickServer => Ref.QuickServer;
+        private PlayerManager PlayerManager => Ref.PlayerManager;
 
         public override void Inject(string command)
         {

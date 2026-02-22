@@ -17,9 +17,9 @@ namespace Larnix.Server.Commands.All
         public override string Pattern => $"{Name} <nickname> <x> <y>";
         public override string ShortDescription => "Teleports a player to a specific position.";
 
-        private QuickServer QuickServer => Ref<QuickServer>();
-        private EntityManager EntityManager => Ref<EntityManager>();
-        private PlayerManager PlayerManager => Ref<PlayerManager>();
+        private QuickServer QuickServer => Ref.QuickServer;
+        private EntityManager EntityManager => Ref.EntityManager;
+        private PlayerManager PlayerManager => Ref.PlayerManager;
 
         private string _nickname;
         private Vec2 _position;

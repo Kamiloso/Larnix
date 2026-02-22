@@ -1,11 +1,8 @@
 using UnityEngine;
 using TMPro;
 using System.Collections.Generic;
-using System;
-using UnityEngine.UI;
-using System.Text;
+using Larnix.Core;
 using System.Linq;
-using UnityEngine.EventSystems;
 
 namespace Larnix.Client
 {
@@ -29,7 +26,7 @@ namespace Larnix.Client
 
         private void Awake()
         {
-            Ref.Chat = this;
+            GlobRef.Set(this);
         }
 
         private void Update()

@@ -16,13 +16,11 @@ namespace Larnix.Server.Commands
         Console // full access, only from console
     }
 
-    internal class CmdManager : Singleton, ICmdExecutor
+    internal class CmdManager : IScript, ICmdExecutor
     {
-        private PlayerManager PlayerManager => Ref<PlayerManager>();
+        private PlayerManager PlayerManager => Ref.PlayerManager;
 
-        public CmdManager(Server server) : base(server) { }
-
-        public override void PostEarlyFrameUpdate()
+        void IScript.PostEarlyFrameUpdate()
         {
             while (true)
             {
@@ -80,7 +78,7 @@ namespace Larnix.Server.Commands
         {
             string cmd = FirstWord(command);
 
-            if (BaseCmd.TryCreateCommandObject(this, cmd, out var cmdObj))
+            if (BaseCmd.TryCreateCommandObject(cmd, out var cmdObj))
             {
                 if (cmdObj.PrivilegeLevel <= privilege)
                 {

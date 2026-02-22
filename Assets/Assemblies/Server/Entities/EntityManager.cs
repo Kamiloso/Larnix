@@ -17,24 +17,22 @@ using Larnix.Core;
 
 namespace Larnix.Server.Entities
 {
-    internal class EntityManager : Singleton
+    internal class EntityManager : IScript
     {
         private readonly Dictionary<string, EntityAbstraction> _playerControllers = new();
         private readonly Dictionary<ulong, EntityAbstraction> _entityControllers = new();
 
-        private Server Server => Ref<Server>();
-        private PlayerManager PlayerManager => Ref<PlayerManager>();
-        private QuickServer QuickServer => Ref<QuickServer>();
-        private EntityDataManager EntityDataManager => Ref<EntityDataManager>();
-        private Database Database => Ref<Database>();
-        private Chunks Chunks => Ref<Chunks>();
+        private Server Server => Ref.Server;
+        private PlayerManager PlayerManager => Ref.PlayerManager;
+        private QuickServer QuickServer => Ref.QuickServer;
+        private EntityDataManager EntityDataManager => Ref.EntityDataManager;
+        private Database Database => Ref.Database;
+        private Chunks Chunks => Ref.Chunks;
 
         private uint _lastFixedFrame = 0;
         private uint _updateCounter = 0; // just to check modulo when sending NearbyEntities packet
 
-        public EntityManager(Server server) : base(server) { }
-
-        public override void EarlyFrameUpdate()
+        void IScript.EarlyFrameUpdate()
         {
             // MUST EXECUTE AFTER Chunks.EarlyFrameUpdate() TO
             // UNLOAD ENTITIES INSTANTLY AFTER CHUNK UNLOADING!!!
@@ -70,7 +68,7 @@ namespace Larnix.Server.Entities
             });
         }
 
-        public override void FrameUpdate()
+        void IScript.FrameUpdate()
         {
             // Frame update for active entities
             foreach (var controller in _entityControllers.Values.ToList())
@@ -173,7 +171,7 @@ namespace Larnix.Server.Entities
 
         public void CreatePlayerController(string nickname)
         {
-            EntityAbstraction controller = EntityAbstraction.CreatePlayerController(this, nickname);
+            EntityAbstraction controller = EntityAbstraction.CreatePlayerController(nickname);
             _playerControllers.Add(nickname, controller);
             _entityControllers.Add(controller.UID, controller);
 
@@ -212,7 +210,7 @@ namespace Larnix.Server.Entities
 
             ulong uid = GetNextUID(); // generate new
 
-            EntityAbstraction controller = EntityAbstraction.CreateEntityController(this, entityData, uid);
+            EntityAbstraction controller = EntityAbstraction.CreateEntityController(entityData, uid);
             _entityControllers.Add(controller.UID, controller);
             return true;
         }
@@ -222,7 +220,7 @@ namespace Larnix.Server.Entities
             Dictionary<ulong, EntityData> entities = EntityDataManager.GetUnloadedEntitiesByChunk(chunkCoords);
             foreach (var kvp in entities)
             {
-                EntityAbstraction controller = EntityAbstraction.CreateEntityController(this, kvp.Value, kvp.Key);
+                EntityAbstraction controller = EntityAbstraction.CreateEntityController(kvp.Value, kvp.Key);
                 _entityControllers.Add(controller.UID, controller);
             }
         }

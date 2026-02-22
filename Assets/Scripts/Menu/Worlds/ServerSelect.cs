@@ -11,15 +11,16 @@ using Unity.VisualScripting;
 using Larnix.Core.Files;
 using Larnix.Menu.Forms;
 using Larnix.Core.Utils;
+using Larnix.Core;
 
 namespace Larnix.Menu.Worlds
 {
     public class ServerSelect : UniversalSelect
     {
-        public static string MultiplayerPath { get => Path.Combine(Application.persistentDataPath, "Multiplayer"); }
+        public static string MultiplayerPath => Path.Combine(Application.persistentDataPath, "Multiplayer");
 
-        private readonly Dictionary<string, ServerThinker> ServerThinkers = new();
-        private ServerThinker serverThinker = null;
+        private readonly Dictionary<string, ServerThinker> _serverThinkers = new();
+        private ServerThinker _serverThinker = null;
 
         [SerializeField] TextMeshProUGUI DescriptionText;
 
@@ -43,7 +44,7 @@ namespace Larnix.Menu.Worlds
 
         private void Awake()
         {
-            Ref.ServerSelect = this;
+            GlobRef.Set(this);
             ReloadWorldList();
         }
 
@@ -60,7 +61,7 @@ namespace Larnix.Menu.Worlds
 
         public void JoinByName(string name = null)
         {
-            ServerThinker thinker = ServerThinkers[name ?? SelectedWorld];
+            ServerThinker thinker = _serverThinkers[name ?? SelectedWorld];
 
             // Save only to change last edit date
             SaveServerData(thinker.serverData);
@@ -75,20 +76,20 @@ namespace Larnix.Menu.Worlds
 
         public void EditServer()
         {
-            ServerThinker thinker = ServerThinkers[SelectedWorld];
+            ServerThinker thinker = _serverThinkers[SelectedWorld];
             ServerEditForm form = BaseForm.GetInstance<ServerEditForm>();
             form.EnterForm("EDIT", SelectedWorld, thinker.serverData.AuthCodeRSA);
         }
 
         public void RefreshServer()
         {
-            if (serverThinker != null)
-                serverThinker.SafeRefresh();
+            if (_serverThinker != null)
+                _serverThinker.SafeRefresh();
         }
 
         public void RemoveServer()
         {
-            ServerThinker thinker = ServerThinkers[SelectedWorld];
+            ServerThinker thinker = _serverThinkers[SelectedWorld];
             ServerRemoveForm form = BaseForm.GetInstance<ServerRemoveForm>();
             form.EnterForm(thinker.serverData.Address);
         }
@@ -97,17 +98,17 @@ namespace Larnix.Menu.Worlds
         {
             if (SelectedWorld != null)
             {
-                string folderName = ServerThinkers[SelectedWorld].serverData.FolderName;
+                string folderName = _serverThinkers[SelectedWorld].serverData.FolderName;
                 Directory.Delete(Path.Combine(MultiplayerPath, folderName), true);
-                ScrollView.RemoveWhere(rt => ReferenceEquals(rt, ServerThinkers[SelectedWorld].transform as RectTransform));
-                ServerThinkers.Remove(SelectedWorld);
+                ScrollView.RemoveWhere(rt => ReferenceEquals(rt, _serverThinkers[SelectedWorld].transform as RectTransform));
+                _serverThinkers.Remove(SelectedWorld);
                 SelectWorld(null);
             }
         }
 
         public void Login()
         {
-            ServerThinker thinker = ServerThinkers[SelectedWorld];
+            ServerThinker thinker = _serverThinkers[SelectedWorld];
             ServerLoginForm form = BaseForm.GetInstance<ServerLoginForm>();
 
             form.ProvideServerThinker(thinker);
@@ -120,7 +121,7 @@ namespace Larnix.Menu.Worlds
 
         public void Register()
         {
-            ServerThinker thinker = ServerThinkers[SelectedWorld];
+            ServerThinker thinker = _serverThinkers[SelectedWorld];
             ServerRegisterForm form = BaseForm.GetInstance<ServerRegisterForm>();
 
             form.ProvideServerThinker(thinker);
@@ -129,12 +130,12 @@ namespace Larnix.Menu.Worlds
 
         public void Logout()
         {
-            serverThinker.Logout();
+            _serverThinker.Logout();
         }
 
         public void PasswordChange()
         {
-            ServerThinker thinker = ServerThinkers[SelectedWorld];
+            ServerThinker thinker = _serverThinkers[SelectedWorld];
             PasswordChangeForm form = BaseForm.GetInstance<PasswordChangeForm>();
 
             form.ProvideServerThinker(thinker);
@@ -143,7 +144,7 @@ namespace Larnix.Menu.Worlds
 
         protected override void OnWorldSelect(string worldName)
         {
-            serverThinker = worldName != null ? ServerThinkers[worldName] : null;
+            _serverThinker = worldName != null ? _serverThinkers[worldName] : null;
             UpdateUI();
         }
 
@@ -157,11 +158,11 @@ namespace Larnix.Menu.Worlds
             SelectWorld(null);
             ScrollView.ClearAll();
 
-            foreach (ServerThinker thinker in ServerThinkers.Values)
+            foreach (ServerThinker thinker in _serverThinkers.Values)
             {
                 Destroy(thinker.gameObject);
             }
-            ServerThinkers.Clear();
+            _serverThinkers.Clear();
 
             // Server Segments
             Dictionary<string, ServerData> servers = ReadServerDataDictionary();
@@ -173,7 +174,7 @@ namespace Larnix.Menu.Worlds
 
         public void AddServerSegment(string name, ServerData serverData, bool asFirst)
         {
-            if (ServerThinkers.ContainsKey(name))
+            if (_serverThinkers.ContainsKey(name))
                 throw new InvalidOperationException("Trying to add server segment with a duplicate name: " + name);
 
             RectTransform rt = Instantiate(WorldSegmentPrefab).transform as RectTransform;
@@ -189,7 +190,7 @@ namespace Larnix.Menu.Worlds
             ServerThinker thinker = rt.AddComponent<ServerThinker>();
             thinker.SetServerData(serverData);
 
-            ServerThinkers[name] = thinker;
+            _serverThinkers[name] = thinker;
         }
 
         private void UpdateUI()
@@ -198,11 +199,11 @@ namespace Larnix.Menu.Worlds
             LoginState logState = LoginState.None;
             bool mayRegister = false;
 
-            if (serverThinker != null)
+            if (_serverThinker != null)
             {
-                state = serverThinker.State;
-                logState = serverThinker.GetLoginState();
-                mayRegister = serverThinker.MayRegister();
+                state = _serverThinker.State;
+                logState = _serverThinker.GetLoginState();
+                mayRegister = _serverThinker.MayRegister();
             }
 
             if (state == ThinkerState.None)
@@ -231,23 +232,23 @@ namespace Larnix.Menu.Worlds
             }
             else if (state == ThinkerState.Ready || state == ThinkerState.Incompatible)
             {
-                string versionDisplay = serverThinker.serverInfo.GameVersion.ToString();
-                string nicknameText = serverThinker.serverInfo.HostUser;
+                string versionDisplay = _serverThinker.serverInfo.GameVersion.ToString();
+                string nicknameText = _serverThinker.serverInfo.HostUser;
                 string hostDisplay = nicknameText != Common.LOOPBACK_ONLY_NICKNAME ?
                     $"Host: {nicknameText}" : "Detached Server";
 
                 NameText.text = SelectedWorld ?? "";
                 TX_Description.text = $"Version: {versionDisplay}\n{hostDisplay}";
-                TX_Motd.text = serverThinker.serverInfo.Motd;
-                TX_PlayerAmount.text = $"ACTIVE\n{serverThinker.serverInfo.CurrentPlayers} / {serverThinker.serverInfo.MaxPlayers}";
+                TX_Motd.text = _serverThinker.serverInfo.Motd;
+                TX_PlayerAmount.text = $"ACTIVE\n{_serverThinker.serverInfo.CurrentPlayers} / {_serverThinker.serverInfo.MaxPlayers}";
 
-                bool regist = serverThinker.WasRegistration;
+                bool regist = _serverThinker.WasRegistration;
                 switch (logState)
                 {
                     case LoginState.None: TX_LoginInfo.text = ""; break;
                     case LoginState.Ready: TX_LoginInfo.text = "Login or register to continue..."; break;
                     case LoginState.Waiting: TX_LoginInfo.text = regist ? "Signing up..." : "Logging in..."; break;
-                    case LoginState.Good: TX_LoginInfo.text = $"Playing as {serverThinker.serverData.Nickname}"; break;
+                    case LoginState.Good: TX_LoginInfo.text = $"Playing as {_serverThinker.serverData.Nickname}"; break;
                     case LoginState.Bad: TX_LoginInfo.text = regist ? "Register failed!" : "Login failed!"; break;
                 }
 
@@ -355,21 +356,21 @@ namespace Larnix.Menu.Worlds
 
         public bool ContainsAddress(string address)
         {
-            return ServerThinkers.ContainsKey(address);
+            return _serverThinkers.ContainsKey(address);
         }
 
         public bool ContainsAuthcode(string authcode)
         {
-            return ServerThinkers.Values.Any(st => st?.serverData?.AuthCodeRSA == authcode);
+            return _serverThinkers.Values.Any(st => st?.serverData?.AuthCodeRSA == authcode);
         }
 
         public void EditSegment(string address, string newAddress, string newAuthcode)
         {
-            ServerThinker thinker = ServerThinkers[address];
+            ServerThinker thinker = _serverThinkers[address];
             if (address != newAddress)
             {
-                ServerThinkers.Remove(address);
-                ServerThinkers[newAddress] = thinker;
+                _serverThinkers.Remove(address);
+                _serverThinkers[newAddress] = thinker;
             }
             thinker.SubmitServer(newAddress, newAuthcode);
 

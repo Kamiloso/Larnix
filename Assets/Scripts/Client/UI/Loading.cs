@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Larnix.Client.Entities;
 using Larnix.Client.Terrain;
 using UnityEngine;
+using Larnix.Core;
 
 namespace Larnix.Client.UI
 {
@@ -18,7 +19,7 @@ namespace Larnix.Client.UI
 
         private void Awake()
         {
-            Ref.Loading = this;
+            GlobRef.Set(this);
         }
 
         private void Update()

@@ -4,7 +4,6 @@ using Larnix.Entities;
 using Larnix.Entities.Structs;
 using Larnix.Socket.Backend;
 using Larnix.Core.Physics;
-using Larnix.Core.References;
 using Larnix.Core.Vectors;
 using System;
 using Larnix.Core.Utils;
@@ -13,7 +12,7 @@ using EntityInits = Larnix.Entities.Entity.EntityInits;
 namespace Larnix.Server.Entities
 {
     internal enum EntityLoadState { Loading, Active, Unloaded }
-    internal class EntityAbstraction : RefObject<Server>
+    internal class EntityAbstraction
     {
         public ulong UID { get; init; }
         public EntityData ActiveData { get; init; }
@@ -29,14 +28,14 @@ namespace Larnix.Server.Entities
         public bool IsActive => LoadState == EntityLoadState.Active;
         public bool IsUnloaded => LoadState == EntityLoadState.Unloaded;
 
-        private UserManager UserManager => Ref<UserManager>();
-        private EntityDataManager EntityDataManager => Ref<EntityDataManager>();
-        private PhysicsManager PhysicsManager => Ref<PhysicsManager>();
+        private UserManager UserManager => Ref.UserManager;
+        private EntityDataManager EntityDataManager => Ref.EntityDataManager;
+        private PhysicsManager PhysicsManager => Ref.PhysicsManager;
 
-        public static EntityAbstraction CreatePlayerController(RefObject<Server> reff, string nickname) =>
-            new EntityAbstraction(reff, nickname);
+        public static EntityAbstraction CreatePlayerController(string nickname) =>
+            new EntityAbstraction(nickname);
 
-        private EntityAbstraction(RefObject<Server> reff, string nickname) : base(reff)
+        private EntityAbstraction(string nickname)
         {
             UID = (ulong)UserManager.GetUserID(nickname);
             ActiveData = EntityDataManager.TryFindEntityData(UID) ?? new EntityData(
@@ -50,10 +49,10 @@ namespace Larnix.Server.Entities
             EntityDataManager.SetEntityData(UID, ActiveData);
         }
 
-        public static EntityAbstraction CreateEntityController(RefObject<Server> reff, EntityData entityData, ulong uid) =>
-            new EntityAbstraction(reff, entityData, uid);
+        public static EntityAbstraction CreateEntityController(EntityData entityData, ulong uid) =>
+            new EntityAbstraction(entityData, uid);
 
-        private EntityAbstraction(RefObject<Server> reff, EntityData entityData, ulong uid) : base(reff)
+        private EntityAbstraction(EntityData entityData, ulong uid)
         {
             if (entityData.ID == EntityID.Player)
                 throw new ArgumentException("Cannot create player instance as a generic entity!");

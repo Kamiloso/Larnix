@@ -4,20 +4,34 @@ using System;
 using System.Text;
 using System.Linq;
 using Larnix.Server.Commands.All;
-using Larnix.Core.References;
+using Larnix.Packets;
 
 namespace Larnix.Server.Commands
 {
     internal abstract class BaseCmd
     {
         protected BaseCmd() { }
-
-        private class _Ref : RefObject<Server>
+        static BaseCmd()
         {
-            public _Ref(RefObject<Server> reff) : base(reff) { }
-            public new T Ref<T>() where T : class => base.Ref<T>();
+            // Register in alphabetical order
+            // for no particular reason other than aesthetics of the source code.
+
+            lock (_lock)
+            {
+                RegisterCommand<Clear>();
+                RegisterCommand<Fill>();
+                RegisterCommand<Help>();
+                RegisterCommand<Info>();
+                RegisterCommand<Kick>();
+                RegisterCommand<Kill>();
+                RegisterCommand<Particles>();
+                RegisterCommand<Playerlist>();
+                RegisterCommand<Replace>();
+                RegisterCommand<Spawn>();
+                RegisterCommand<Stop>();
+                RegisterCommand<Tp>();
+            }
         }
-        private _Ref _reff;
 
         public string Name => GetType().Name.ToLowerInvariant();
         public string ShortDocLine => Pattern + " - " + ShortDescription;
@@ -90,25 +104,18 @@ namespace Larnix.Server.Commands
             return new FormatException(errorInfo);
         }
 
-        protected T Ref<T>() where T : class
-        {
-            return _reff?.Ref<T>() ??
-                throw new InvalidOperationException("Reference not set for command object.");
-        }
-
 #region Static factory
 
         private static readonly Dictionary<string, BaseCmd> _cmdObjs = new();
         private static readonly object _lock = new();
 
-        public static bool TryCreateCommandObject(RefObject<Server> reff, string cmd, out BaseCmd cmdObj)
+        public static bool TryCreateCommandObject(string cmd, out BaseCmd cmdObj)
         {
             lock (_lock)
             {
                 if (_cmdObjs.TryGetValue(cmd, out cmdObj))
                 {
                     cmdObj = (BaseCmd)cmdObj.MemberwiseClone();
-                    cmdObj._reff = new _Ref(reff);
                     return true;
                 }
                 
@@ -163,27 +170,6 @@ namespace Larnix.Server.Commands
                 {
                     throw new InvalidOperationException($"Command {cmd} is already registered.");
                 }
-            }
-        }
-
-        static BaseCmd()
-        {
-            // Register in alphabetical order
-            // for no particular reason other than aesthetics of the source code.
-
-            lock (_lock)
-            {
-                RegisterCommand<Clear>();
-                RegisterCommand<Fill>();
-                RegisterCommand<Help>();
-                RegisterCommand<Info>();
-                RegisterCommand<Kick>();
-                RegisterCommand<Kill>();
-                RegisterCommand<Playerlist>();
-                RegisterCommand<Replace>();
-                RegisterCommand<Spawn>();
-                RegisterCommand<Stop>();
-                RegisterCommand<Tp>();
             }
         }
 

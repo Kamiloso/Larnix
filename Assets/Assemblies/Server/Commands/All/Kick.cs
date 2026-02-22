@@ -15,8 +15,8 @@ namespace Larnix.Server.Commands.All
         public override string Pattern => $"{Name} <nickname>";
         public override string ShortDescription => "Kicks a player.";
 
-        private QuickServer QuickServer => Ref<QuickServer>();
-        private PlayerManager PlayerManager => Ref<PlayerManager>();
+        private QuickServer QuickServer => Ref.QuickServer;
+        private PlayerManager PlayerManager => Ref.PlayerManager;
 
         private string _nickname;
 

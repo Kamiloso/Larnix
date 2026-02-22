@@ -6,6 +6,7 @@ using System.Linq;
 using Larnix.Core.Utils;
 using Larnix.Blocks;
 using Larnix.Blocks.All;
+using Larnix.Core;
 
 namespace Larnix.Client.Terrain
 {
@@ -24,7 +25,7 @@ namespace Larnix.Client.Terrain
         protected virtual void Awake()
         {
             if (IsMenu)
-                Ref.BasicGridManager = this;
+                GlobRef.Set(this);
         }
 
         protected virtual void Update()

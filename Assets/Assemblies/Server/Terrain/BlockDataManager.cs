@@ -9,17 +9,15 @@ using System;
 
 namespace Larnix.Server.Terrain
 {
-    internal class BlockDataManager : Singleton
+    internal class BlockDataManager : IScript
     {
         private readonly Dictionary<Vec2Int, BlockData2[,]> _chunkCache = new();
         private readonly HashSet<Vec2Int> _referencedChunks = new();
 
-        private Database Database => Ref<Database>();
-        private Generator Generator => Ref<Generator>();
+        private Database Database => Ref.Database;
+        private Generator Generator => Ref.Generator;
 
         private bool _debugUnlinkDatabase = false;
-
-        public BlockDataManager(Server server) : base(server) {}
 
         /// <summary>
         /// Modify this reference during FixedUpdate time and it will automatically update in this script.

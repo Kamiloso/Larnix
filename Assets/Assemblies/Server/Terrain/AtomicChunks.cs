@@ -12,7 +12,7 @@ using Larnix.Server.Data;
 
 namespace Larnix.Server.Terrain
 {
-    internal class AtomicChunks : Singleton
+    internal class AtomicChunks : IScript
     {
         private const int CHUNK_SIZE = BlockUtils.CHUNK_SIZE;
         private static readonly Vec2Int WARN_CHUNK = new Vec2Int(int.MinValue, int.MinValue);
@@ -53,13 +53,11 @@ namespace Larnix.Server.Terrain
         public Vec2Int? WishChunk { get; private set; } = null;
         public bool DiscoversChunks { get; set; } = false;
 
-        private Chunks Chunks => Ref<Chunks>();
-        private WorldAPI WorldAPI => Ref<WorldAPI>();
-        private Config Config => Ref<Config>();
+        private Chunks Chunks => Ref.Chunks;
+        private IWorldAPI WorldAPI => Ref.IWorldAPI;
+        private Config Config => Ref.Config;
 
-        public AtomicChunks(Server server) : base(server) {}
-
-        public override void PostEarlyFrameUpdate()
+        void IScript.PostEarlyFrameUpdate()
         {
             // Reset info before next frame
             _atomicLoadedCache.Clear();

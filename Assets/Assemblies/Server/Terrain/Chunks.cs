@@ -11,20 +11,18 @@ using Larnix.Blocks;
 namespace Larnix.Server.Terrain
 {
     public enum ChunkLoadState { None, Loading, Active }
-    internal class Chunks : Singleton
+    internal class Chunks : IScript
     {
-        private Server Server => Ref<Server>();
-        private PlayerManager PlayerManager => Ref<PlayerManager>();
-        private EntityManager EntityManager => Ref<EntityManager>();
-        private BlockSender BlockSender => Ref<BlockSender>();
-        private AtomicChunks AtomicChunks => Ref<AtomicChunks>();
-        private Config Config => Ref<Config>();
+        private Server Server => Ref.Server;
+        private PlayerManager PlayerManager => Ref.PlayerManager;
+        private EntityManager EntityManager => Ref.EntityManager;
+        private BlockSender BlockSender => Ref.BlockSender;
+        private AtomicChunks AtomicChunks => Ref.AtomicChunks;
+        private Config Config => Ref.Config;
 
         private readonly Dictionary<Vec2Int, ChunkContainer> _chunks = new();
 
-        public Chunks(Server server) : base(server) {}
-
-        public override void EarlyFrameUpdate()
+        void IScript.EarlyFrameUpdate()
         {
             HashSet<Vec2Int> stimulated = GetStimulatedChunks();
 
@@ -71,7 +69,7 @@ namespace Larnix.Server.Terrain
             switch(state)
             {
                 case ChunkLoadState.None:
-                    _chunks[chunk] = new ChunkContainer(this, chunk);
+                    _chunks[chunk] = new ChunkContainer(chunk);
                     EntityManager.PrepareEntitiesByChunk(chunk);
                     return;
 
@@ -104,13 +102,13 @@ namespace Larnix.Server.Terrain
             switch (state)
             {
                 case ChunkLoadState.Loading:
-                    var chunkObj = new Chunk(this, chunk);
+                    var chunkObj = new Chunk(chunk);
                     _chunks[chunk].Activate(chunkObj);
                     return;
             }
         }
 
-        public override void FrameUpdate()
+        void IScript.FrameUpdate()
         {
             // Invoke block events
             IEnumerator[] invokers = _chunks

@@ -12,6 +12,7 @@ using Larnix.Packets;
 using Larnix.Client.UI;
 using Larnix.Client.Terrain;
 using Larnix.Client.Entities;
+using Larnix.Core;
 
 namespace Larnix.Client
 {
@@ -50,8 +51,8 @@ namespace Larnix.Client
 
             EarlyUpdateInjector.InjectEarlyUpdate(this.EarlyUpdate);
 
-            Ref.Client = this;
-            Ref.PhysicsManager = new PhysicsManager();
+            GlobRef.Set(this);
+            GlobRef.Set(new PhysicsManager());
 
             WorldPath = WorldLoad.WorldPath;
             IsMultiplayer = WorldLoad.IsMultiplayer;

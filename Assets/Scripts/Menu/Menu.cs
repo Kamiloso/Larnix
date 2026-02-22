@@ -4,6 +4,7 @@ using UnityEngine;
 using Larnix.Menu.Worlds;
 using TMPro;
 using Larnix.Server;
+using Larnix.Core;
 using Ver = Larnix.Core.Version;
 
 namespace Larnix.Menu
@@ -21,7 +22,7 @@ namespace Larnix.Menu
         public void Awake()
         {
             Application.runInBackground = true;
-            Ref.Menu = this;
+            GlobRef.Set(this);
 
             Core.Debug.Log("Menu loaded");
         }

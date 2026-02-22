@@ -16,17 +16,15 @@ namespace Larnix.Server.Terrain
     internal record BlockChangeItem(
         string Owner, long Operation, Vec2Int POS, bool Front, bool Success);
 
-    internal class BlockSender : Singleton
+    internal class BlockSender : IScript
     {
         private readonly Queue<BlockUpdateRecord> _blockUpdates = new();
         private readonly Queue<BlockChangeItem> _blockChanges = new();
 
-        private WorldAPI WorldAPI => Ref<WorldAPI>();
-        private PlayerManager PlayerManager => Ref<PlayerManager>();
-        private QuickServer QuickServer => Ref<QuickServer>();
-        private Chunks Chunks => Ref<Chunks>();
-
-        public BlockSender(Server server) : base(server) {}
+        private IWorldAPI WorldAPI => Ref.IWorldAPI;
+        private PlayerManager PlayerManager => Ref.PlayerManager;
+        private QuickServer QuickServer => Ref.QuickServer;
+        private Chunks Chunks => Ref.Chunks;
 
         public void AddBlockUpdate(BlockUpdateRecord element)
         {
@@ -38,7 +36,7 @@ namespace Larnix.Server.Terrain
             _blockChanges.Enqueue(element);
         }
 
-        public override void PostLateFrameUpdate()
+        void IScript.PostLateFrameUpdate()
         {
             SendBlockUpdate(); // common block updates (server / players)
             SendBlockChanges(); // unlocking client-side & telling the real block state

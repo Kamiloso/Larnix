@@ -9,15 +9,13 @@ using System;
 
 namespace Larnix.Server.Entities
 {
-    internal class EntityDataManager : Singleton
+    internal class EntityDataManager : IScript
     {
         private readonly Dictionary<ulong, EntityData> _entityData = new();
         private readonly Dictionary<ulong, EntityData> _unloadedEntityData = new();
         private readonly Dictionary<ulong, EntityData> _deletedEntityData = new();
 
-        private Database Database => Ref<Database>();
-
-        public EntityDataManager(Server server) : base(server) { }
+        private Database Database => Ref.Database;
 
         public EntityData TryFindEntityData(ulong uid)
         {
