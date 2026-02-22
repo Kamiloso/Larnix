@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Larnix.Socket
 {
-    public class ConcurrentLimiter<T>
+    public class WeirdConcurrentLimiter<T>
     {
         /*
             WARNING:
@@ -11,13 +11,13 @@ namespace Larnix.Socket
             is different from TrafficLimiter. Be careful when using it!
         */
         
-        public readonly uint MAX_CONCURRENT_LOCAL;
-        public readonly uint MAX_CONCURRENT_GLOBAL;
+        public readonly ulong MAX_CONCURRENT_LOCAL;
+        public readonly ulong MAX_CONCURRENT_GLOBAL;
 
-        private readonly Dictionary<T, uint> _localConcurrent = new();
-        private uint _globalConcurrent = 0;
+        private readonly Dictionary<T, ulong> _localConcurrent = new();
+        private ulong _globalConcurrent = 0;
 
-        public ConcurrentLimiter(uint maxConcurrentLocal, uint maxConcurrentGlobal)
+        public WeirdConcurrentLimiter(ulong maxConcurrentLocal, ulong maxConcurrentGlobal)
         {
             MAX_CONCURRENT_LOCAL = maxConcurrentLocal;
             MAX_CONCURRENT_GLOBAL = maxConcurrentGlobal;
@@ -28,7 +28,7 @@ namespace Larnix.Socket
             if (_globalConcurrent >= MAX_CONCURRENT_GLOBAL)
                 return false;
 
-            _localConcurrent.TryGetValue(key, out uint localConcurrent);
+            _localConcurrent.TryGetValue(key, out ulong localConcurrent);
             if (localConcurrent >= MAX_CONCURRENT_LOCAL)
                 return false;
 

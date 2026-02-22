@@ -31,6 +31,15 @@ namespace Larnix.Core
             }
         }
 
+        public static void LogInfo(string msg)
+        {
+            lock (_lock)
+            {
+                LogRaw(GetTimestamp() + " ");
+                LogRaw("INFO: " + msg + "\n", ConsoleColor.Blue);
+            }
+        }
+
         public static void LogWarning(string msg)
         {
             lock (_lock)
@@ -103,17 +112,6 @@ namespace Larnix.Core
                     return _cmdBuffer.Dequeue();
             }
             return null;
-        }
-
-        public static void PushCommandFromCode(string cmd)
-        {
-            if (cmd == null)
-                throw new ArgumentNullException("Argument 'cmd' can't be null!");
-
-            lock (_lock)
-            {
-                _cmdBuffer.Enqueue(cmd);
-            }
         }
 
         private static void InputLoop()

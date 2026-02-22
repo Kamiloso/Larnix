@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 
-namespace Larnix.Socket
+namespace Larnix.Socket.Security.Keys
 {
     public interface IEncryptionKey
     {

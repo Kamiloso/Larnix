@@ -104,7 +104,7 @@ namespace Larnix.Worldgen
 
         public Col32 SkyColorAt(Vec2 position)
         {
-            return new Col32(105, 165, 255, 0);
+            return new Col32(197, 235, 255, 0);
         }
 
         public BiomeID BiomeAt(Vec2 position)

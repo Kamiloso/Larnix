@@ -25,15 +25,16 @@ namespace Larnix.Server
 
         private volatile bool _stopFlag;
 
-        private static ServerRunner _badSingleton;
+        private ServerRunner() { }
+        private static ServerRunner _singleton;
         public static ServerRunner Instance
         {
             get
             {
-                if (_badSingleton == null)
-                    _badSingleton = new ServerRunner();
+                if (_singleton == null)
+                    _singleton = new ServerRunner();
 
-                return _badSingleton;
+                return _singleton;
             }
         }
 
@@ -55,7 +56,7 @@ namespace Larnix.Server
             _thread = new Thread(ServerLoop)
             {
                 IsBackground = true,
-                Name = "Larnix.ServerThread"
+                Name = "Larnix::ServerThread"
             };
 
             _thread.Start();

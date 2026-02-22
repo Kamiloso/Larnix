@@ -11,13 +11,14 @@ namespace Larnix.Blocks.Structs
     public class BlockData1 : IBinary<BlockData1>
     {
         public const int SIZE = sizeof(BlockID) + sizeof(byte);
+        public const byte MAX_VARIANT = 0b00001111; // 15
 
         public BlockID ID { get; private set; }
         private byte _variant;
         public byte Variant
         {
             get => _variant;
-            private set => _variant = (byte)(value & 0b00001111);
+            private set => _variant = (byte)(value & MAX_VARIANT);
         }
         public Storage Data { get; private set; }
         
@@ -81,6 +82,14 @@ namespace Larnix.Blocks.Structs
                 Variant = Variant,
                 Data = Data.DeepCopy(),
             };
+        }
+
+        public override string ToString() => ToString(":");
+        public string ToString(string separator)
+        {
+            return Variant > 0 ?
+                $"{ID}{separator}{Variant}" :
+                $"{ID}";
         }
     }
 }

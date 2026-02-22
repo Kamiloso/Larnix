@@ -59,6 +59,9 @@ namespace Larnix.Core.Vectors
 
         public static Vec2Int[] CardinalDirections => new[] { Up, Right, Down, Left };
 
+        public static Vec2Int MinCorner(Vec2Int a, Vec2Int b) => new Vec2Int(Math.Min(a.x, b.x), Math.Min(a.y, b.y));
+        public static Vec2Int MaxCorner(Vec2Int a, Vec2Int b) => new Vec2Int(Math.Max(a.x, b.x), Math.Max(a.y, b.y));
+
         public override string ToString() => $"({x}, {y})";
         public static implicit operator string(Vec2Int value) => value.ToString();
 

@@ -25,21 +25,6 @@ namespace Larnix.Core.Utils
         
         public static Vec2 UP_EPSILON => new Vec2(0.00, 0.01);
 
-        private static IEnumerable<string> _denyWorldNames = new HashSet<string>
-        {
-            "CON", "PRN", "AUX", "NUL",
-            "COM1","COM2","COM3","COM4","COM5","COM6","COM7","COM8","COM9",
-            "LPT1","LPT2","LPT3","LPT4","LPT5","LPT6","LPT7","LPT8","LPT9"
-        };
-
-        public static bool IsValidWorldName(string worldName) =>
-            worldName != null &&
-            !worldName.Contains('\0') &&
-            worldName.Length is >= 1 and <= 32 &&
-            worldName.All(c => char.IsLetterOrDigit(c) || c == '-' || c == '_' || c == ' ') &&
-            worldName == worldName.Trim() &&
-            !_denyWorldNames.Contains(worldName.ToUpperInvariant());
-
         private static readonly ThreadLocal<Random> _threadRandom = new(() => new Random());
         public static Random Rand() => _threadRandom.Value;
 

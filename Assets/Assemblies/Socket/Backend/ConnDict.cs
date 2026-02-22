@@ -31,7 +31,7 @@ namespace Larnix.Socket
 
         private readonly TrafficLimiter<InternetID> _connectionLimiter = new(
             maxTrafficLocal: 3,
-            maxTrafficGlobal: uint.MaxValue
+            maxTrafficGlobal: ulong.MaxValue
             );
 
         private bool _disposed = false;
@@ -91,7 +91,7 @@ namespace Larnix.Socket
 
                 if (!_connectionLimiter.TryIncrease(internetID))
                 {
-                    uint LIMIT = _connectionLimiter.MAX_TRAFFIC_LOCAL;
+                    ulong LIMIT = _connectionLimiter.MAX_TRAFFIC_LOCAL;
                     Core.Debug.LogWarning($"Network {internetID} has reached the limit of {LIMIT} simultaneous connections." +
                         $"\nCannot accept {nickname} while connecting from {endPoint}");
                     
@@ -159,11 +159,19 @@ namespace Larnix.Socket
             }
         }
 
+        /// <summary>
+        /// AllowConnection packet always starts the connection.
+        /// Stop packet always ends the connection.
+        /// Stop packet can only appear once in a returned packet queue.
+        /// </summary>
         public Queue<PacketPair> TickAndReceive(float deltaTime)
         {
             Queue<PacketPair> received = new();
 
-            foreach (IPEndPoint endPoint in _connections.Keys.OrderBy(_ => Common.Rand()))
+            List<IPEndPoint> shuffledEndpoints = _connections.Keys
+                .OrderBy(_ => Common.Rand()).ToList();
+            
+            foreach (IPEndPoint endPoint in shuffledEndpoints)
             {
                 var connection = _connections[endPoint];
 

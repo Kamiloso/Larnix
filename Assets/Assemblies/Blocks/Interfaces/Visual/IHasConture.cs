@@ -13,7 +13,9 @@ namespace Larnix.Blocks.All
     {
         Disabled = 0,
         Invisible = 1,
+        LightSemiTransparent = 64,
         SemiTransparent = 128,
+        DarkSemiTransparent = 192,
         Opaque = 255
     }
 }

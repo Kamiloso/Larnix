@@ -32,17 +32,28 @@ namespace Larnix.Socket.Backend
         private readonly TripleSocket _udpSocket;
         private readonly ConnDict _connDict;
         private readonly CoroutineRunner _coroutineRunner;
-        private readonly QuickConfig _config;
         private readonly UserManager _userManager;
-
-        // --- Limiters ---
-        private readonly TrafficLimiter<InternetID> _heavyPacketLimiter;
-        private readonly ConcurrentLimiter<InternetID> _hashLimiter;
+        private readonly QuickConfig _config;
 
         // --- Timers ---
         private readonly CycleTimer _packetLimiterReset;
+        private readonly CycleTimer _registerReset;
         private readonly CycleTimer _hashCountClean;
-        private readonly CycleTimer _relayKeepAlive;
+        private readonly CycleTimer _relayKeepAlive; // for udp socket
+
+        // --- Limiters ---
+        private readonly TrafficLimiter<InternetID> _heavyPacketLimiter = new(
+            maxTrafficLocal: 5, // max heavy packets (SYN, RSA, NCN) per 1 second
+            maxTrafficGlobal: 50 // max heavy packets globally per 1 second
+            );
+        private readonly TrafficLimiter<InternetID> _registerLimiter = new(
+            maxTrafficLocal: 6, // max registrations per internet ID per 6 hours
+            ulong.MaxValue // no global limit
+            );
+        private readonly WeirdConcurrentLimiter<InternetID> _hashLimiter = new(
+            maxConcurrentLocal: 6, // max hashings per internet ID per minute
+            maxConcurrentGlobal: 6 // max hashings globally concurrently
+            );
 
         // --- Other ---
         private enum LoginMode { Discovery, Establishment, PasswordChange }
@@ -51,43 +62,26 @@ namespace Larnix.Socket.Backend
 
         public QuickServer(QuickConfig serverConfig)
         {
-            // classes
+            // Managed classes
             _keyRSA = new KeyRSA(serverConfig.DataPath, "private_key.pem"); // 1
             _udpSocket = new TripleSocket(serverConfig.Port, serverConfig.IsLoopback); // 2
             _connDict = new ConnDict(_udpSocket, this, serverConfig.MaxClients); // 3
             _coroutineRunner = new CoroutineRunner(); // 4
 
-            // public API
+            // Classes
             _userManager = new UserManager(serverConfig.UserAPI);
             _config = serverConfig.WithPort(_udpSocket.Port);
 
+            // Constant properties
             Secret = Security.Authcode.ObtainSecret(serverConfig.DataPath, "server_secret.txt");
             Authcode = Security.Authcode.ProduceAuthCodeRSA(_keyRSA.ExportPublicKey(), Secret);
             RunID = Common.GetSecureLong();
 
-            // limiters
-            _heavyPacketLimiter = new TrafficLimiter<InternetID>(
-                maxTrafficLocal: 5, // MAX_HEAVY_PACKETS_PER_INTERNET_ID_PER_SECOND
-                maxTrafficGlobal: 50 // MAX_HEAVY_PACKETS_GLOBAL_PER_SECOND
-            );
-            _hashLimiter = new ConcurrentLimiter<InternetID>(
-                maxConcurrentLocal: 6, // MAX_HASHINGS_PER_INTERNET_ID_PER_MINUTE
-                maxConcurrentGlobal: 6 // MAX_PARALLEL_HASHINGS_CONCURRENTLY
-            );
-
-            // cyclic objects
-            _packetLimiterReset = new CycleTimer(1f, () =>
-            {
-                _heavyPacketLimiter.Reset();
-            });
-            _hashCountClean = new CycleTimer(60f, () =>
-            {
-                _hashLimiter.ResetLocal();
-            });
-            _relayKeepAlive = new CycleTimer(5f, () =>
-            {
-                _udpSocket?.KeepAlive();
-            });
+            // Cyclic objects
+            _packetLimiterReset = new CycleTimer(1f /* 1 SECOND */, () => _heavyPacketLimiter.Reset());
+            _hashCountClean = new CycleTimer(60f /* 1 MINUTE */, () => _hashLimiter.ResetLocal());
+            _relayKeepAlive = new CycleTimer(5f /* 5 SECONDS */, () => _udpSocket.KeepAlive());
+            _registerReset = new CycleTimer(60f * 60f * 6f /* 6 HOURS */, () => _registerLimiter.Reset());
         }
 
         public async Task<ushort?> ConfigureRelayAsync(string relayAddress)
@@ -101,6 +95,7 @@ namespace Larnix.Socket.Backend
             _packetLimiterReset.Tick(deltaTime);
             _relayKeepAlive.Tick(deltaTime);
             _hashCountClean.Tick(deltaTime);
+            _registerReset.Tick(deltaTime);
 
             // Interpret bytes from socket
             while (_udpSocket.TryReceive(out var item))
@@ -135,7 +130,7 @@ namespace Larnix.Socket.Backend
             {
                 InternetID internetID = MakeInternetID(target);
 
-                // heavy packet limiter
+                // Heavy packet limiter
                 if (header.HasFlag(PacketFlag.SYN) ||
                     header.HasFlag(PacketFlag.RSA) ||
                     header.HasFlag(PacketFlag.NCN))
@@ -144,7 +139,7 @@ namespace Larnix.Socket.Backend
                         return; // drop heavy packet
                 }
 
-                // decrypt RSA
+                // Decrypt RSA
                 if (header.HasFlag(PacketFlag.RSA))
                 {
                     if (!PayloadBox.TryDeserialize(bytes, _keyRSA, out var decrypted))
@@ -156,7 +151,7 @@ namespace Larnix.Socket.Backend
 
                 if (header.HasFlag(PacketFlag.NCN))
                 {
-                    // non-connection packet - NCN
+                    // Non-connection packet - NCN
                     if (PayloadBox.TryDeserialize(bytes, KeyEmpty.GetInstance(), out var box))
                         ProcessNCN(target, box.SeqNum, new HeaderSpan(box.Bytes));
                 }
@@ -164,7 +159,7 @@ namespace Larnix.Socket.Backend
                 {
                     if (header.HasFlag(PacketFlag.SYN))
                     {
-                        // start new connection
+                        // Start new connection
                         if (PayloadBox.TryDeserialize(bytes, KeyEmpty.GetInstance(), out var synBox) &&
                             Payload.TryConstructPayload<AllowConnection>(synBox.Bytes, out var allowcon) &&
                             _connDict.TryAddPreLogin(target, synBox))
@@ -175,7 +170,7 @@ namespace Larnix.Socket.Backend
                     }
                     else
                     {
-                        // established connection packet
+                        // Established connection packet
                         _connDict.EnqueueReceivedPacket(target, bytes);
                     }
                 }
@@ -221,6 +216,11 @@ namespace Larnix.Socket.Backend
             }
         }
 
+        /// <summary>
+        /// AllowConnection packet always starts the connection.
+        /// Stop packet always ends the connection.
+        /// Stop packet can only appear once in a returned packet queue.
+        /// </summary>
         public void Subscribe<T>(Action<T, string> InterpretPacket) where T : Payload, new()
         {
             CmdID ID = Payload.CmdID<T>();
@@ -412,7 +412,10 @@ namespace Larnix.Socket.Backend
             }
             else
             {
-                if (_config.AllowRegistration && _hashLimiter.TryIncrease(internetID))
+                if (_config.AllowRegistration &&
+                    _hashLimiter.TryIncrease(internetID) &&
+                    _registerLimiter.TryIncrease(internetID)
+                    )
                 {
                     Task<string> hashing = Hasher.HashPasswordAsync(password);
                     while (!hashing.IsCompleted) yield return null;

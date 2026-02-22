@@ -14,6 +14,7 @@ using Larnix.Socket.Backend;
 using Larnix.Core.Utils;
 using Larnix.Worldgen;
 using Larnix.Core.References;
+using Larnix.Server.Commands;
 using Version = Larnix.Core.Version;
 using Console = Larnix.Core.Console;
 using Object = System.Object;
@@ -82,7 +83,7 @@ namespace Larnix.Server
                     new PlayerManager(this),
                     new BlockDataManager(this),
                     new BlockSender(this),
-                    new Commands(this),
+                    new CmdManager(this),
 
                     // SATELITE CLASSES
                     Config.Obtain(WorldPath),
@@ -129,7 +130,7 @@ namespace Larnix.Server
                 AddRefs(
                     // SERVER-DEPENDENT CLASSES
                     new Receiver(this),
-                    new Commands(this)
+                    new CmdManager(this)
                 );
             }
 
@@ -303,21 +304,28 @@ namespace Larnix.Server
             if (!_disposed)
             {
                 _disposed = true;
-                if (!emergency) SaveAllNow();
+                
+                if (!emergency)
+                {
+                    SaveAllNow();
+                    Core.Debug.Log("Data has been saved.");
+                }
 
                 LinkedList<Object> snapshot = TakeRefSnapshot();
                 while (snapshot.Count > 0)
                 {
                     Object obj = snapshot.Last.Value;
-                    if (obj is IDisposable disposable)
+                    if (obj is IDisposable disp)
                     {
-                        disposable.Dispose();
+                        disp.Dispose();
                     }
 
                     snapshot.RemoveLast();
                 }
 
-                Core.Debug.Log("Server closed");
+                Core.Debug.Log(emergency ?
+                    "Server has crashed!" :
+                    "Server has been closed.");
             }
         }
     }

@@ -9,7 +9,7 @@ internal static class Program
 
     static void Main(string[] args)
     {
-        ServerRunner runner = new ServerRunner();
+        ServerRunner runner = ServerRunner.Instance;
         runner.Start(ServerType.Remote, worldPath: WorldDir, null);
 
         while (runner.IsRunning)

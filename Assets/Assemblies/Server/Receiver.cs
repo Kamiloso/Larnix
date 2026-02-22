@@ -47,7 +47,8 @@ namespace Larnix.Server
             }
         }
 
-        private void Subscribe<T>(Action<T, string> callback, int maxPerSecond = 0, bool softLimit = false) where T : Payload, new()
+        private void Subscribe<T>(Action<T, string> callback, int maxPerSecond = 0,
+            bool softLimit = false) where T : Payload, new()
         {
             QuickServer.Subscribe<T>((msg, owner) =>
             {

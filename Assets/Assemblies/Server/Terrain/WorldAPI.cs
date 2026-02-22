@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
 using ResultType = Larnix.Core.ICmdExecutor.CmdResult;
-using System;
+using Larnix.Server.Commands;
 
 namespace Larnix.Server.Terrain
 {
@@ -13,7 +13,7 @@ namespace Larnix.Server.Terrain
     {
         private Chunks Chunks => Ref<Chunks>();
         private AtomicChunks AtomicChunks => Ref<AtomicChunks>();
-        private Commands Commands => Ref<Commands>();
+        private CmdManager Commands => Ref<CmdManager>();
 
         public WorldAPI(Server server) : base(server) { }
 

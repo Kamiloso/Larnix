@@ -9,8 +9,8 @@ namespace Larnix.Socket.Security
     {
         private const int MAX_CACHE_COUNT = 256;
 
-        private static Dictionary<string, byte[]> HashingCache = new();
-        private static object locker = new();
+        private static Dictionary<string, byte[]> _hashingCache = new();
+        private static object _lock = new();
 
         private static string InputHashingString(string str, byte[] salt)
         {
@@ -21,9 +21,9 @@ namespace Larnix.Socket.Security
         {
             string ihs = InputHashingString(str, salt);
 
-            lock (locker)
+            lock (_lock)
             {
-                if (HashingCache.TryGetValue(ihs, out var cached))
+                if (_hashingCache.TryGetValue(ihs, out var cached))
                     return cached;
             }
 
@@ -31,12 +31,12 @@ namespace Larnix.Socket.Security
             {
                 byte[] hash = pbkdf2.GetBytes(32);
 
-                lock (locker)
+                lock (_lock)
                 {
-                    if (HashingCache.Count > MAX_CACHE_COUNT)
-                        HashingCache.Clear();
+                    if (_hashingCache.Count > MAX_CACHE_COUNT)
+                        _hashingCache.Clear();
 
-                    HashingCache[ihs] = hash;
+                    _hashingCache[ihs] = hash;
                 }
 
                 return hash;
@@ -60,14 +60,14 @@ namespace Larnix.Socket.Security
 
         public static bool InCache(string password, string storedSaltedHash)
         {
-            if (!SplitSaltedHash(storedSaltedHash, out byte[] salt, out byte[] storedHash))
+            if (!SplitSaltedHash(storedSaltedHash, out byte[] salt, out _))
                 return false;
 
             string ihs = InputHashingString(password, salt);
 
-            lock (locker)
+            lock (_lock)
             {
-                return HashingCache.ContainsKey(ihs);
+                return _hashingCache.ContainsKey(ihs);
             }
         }
 

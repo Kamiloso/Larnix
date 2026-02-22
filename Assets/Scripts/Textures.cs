@@ -35,8 +35,8 @@ public class Textures
     {
         const int SIZE = 16;
 
-        Color transparent = new Color(0, 0, 0, 0);
-        Color borderColor = new Color(0, 0, 0, alphaByte / 255f);
+        Color transparent = new Color32(0, 0, 0, 0);
+        Color borderColor = new Color32(0, 0, 0, alphaByte);
 
         // clear texture
         Color[] pixels = new Color[SIZE * SIZE];

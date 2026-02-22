@@ -29,7 +29,7 @@ namespace Larnix.Menu.Forms
 
         protected override ErrorCode GetErrorCode()
         {
-            if (!Common.IsValidWorldName(IF_NewName.text))
+            if (!Validation.IsValidWorldName(IF_NewName.text))
                 return ErrorCode.WORLD_NAME_FORMAT;
 
             string oldDir = Path.Combine(WorldSelect.SavesPath, IF_OldName.text);

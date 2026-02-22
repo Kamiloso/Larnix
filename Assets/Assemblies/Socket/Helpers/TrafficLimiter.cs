@@ -5,13 +5,13 @@ namespace Larnix.Socket
 {
     public class TrafficLimiter<T>
     {
-        public readonly uint MAX_TRAFFIC_LOCAL;
-        public readonly uint MAX_TRAFFIC_GLOBAL;
+        public readonly ulong MAX_TRAFFIC_LOCAL;
+        public readonly ulong MAX_TRAFFIC_GLOBAL;
 
-        private readonly Dictionary<T, uint> _localTraffic = new();
-        private uint _globalTraffic = 0;
+        private readonly Dictionary<T, ulong> _localTraffic = new();
+        private ulong _globalTraffic = 0;
 
-        public TrafficLimiter(uint maxTrafficLocal, uint maxTrafficGlobal)
+        public TrafficLimiter(ulong maxTrafficLocal, ulong maxTrafficGlobal)
         {
             MAX_TRAFFIC_LOCAL = maxTrafficLocal;
             MAX_TRAFFIC_GLOBAL = maxTrafficGlobal;
@@ -22,7 +22,7 @@ namespace Larnix.Socket
             if (_globalTraffic >= MAX_TRAFFIC_GLOBAL)
                 return false;
 
-            _localTraffic.TryGetValue(key, out uint localTraffic);
+            _localTraffic.TryGetValue(key, out ulong localTraffic);
             if (localTraffic >= MAX_TRAFFIC_LOCAL)
                 return false;
 
@@ -34,7 +34,7 @@ namespace Larnix.Socket
 
         public void Decrease(T key)
         {
-            if (!_localTraffic.TryGetValue(key, out uint localTraffic))
+            if (!_localTraffic.TryGetValue(key, out ulong localTraffic))
                 throw new InvalidOperationException("Local traffic for this key is already zero.");
 
             localTraffic--;

@@ -229,5 +229,8 @@ namespace Larnix.Server.Entities
 
             return PlayerState.Dead;
         }
+
+        public bool IsConnected(string nickname) => StateOf(nickname) != PlayerState.None;
+        public bool IsAlive(string nickname) => StateOf(nickname) == PlayerState.Alive;
     }
 }
