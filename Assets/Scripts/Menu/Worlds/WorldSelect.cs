@@ -9,8 +9,9 @@ using TMPro;
 using Larnix.Menu.Forms;
 using Larnix.Core;
 using Version = Larnix.Core.Version;
-using Org.BouncyCastle.Asn1.X509;
 using Larnix.Core.Utils;
+using ServerAnswer = Larnix.Server.ServerRunner.ServerAnswer;
+using RunSuggestions = Larnix.Server.ServerRunner.RunSuggestions;
 
 namespace Larnix.Menu.Worlds
 {
@@ -26,7 +27,7 @@ namespace Larnix.Menu.Worlds
         [SerializeField] Button BT_Rename;
         [SerializeField] Button BT_Delete;
 
-        private readonly Dictionary<string, WorldMeta> MetadatasSGP = new();
+        private readonly Dictionary<string, WorldMeta> _metadatas = new();
 
         private void Awake()
         {
@@ -51,17 +52,19 @@ namespace Larnix.Menu.Worlds
             if(mdata.Nickname != Common.LOOPBACK_ONLY_NICKNAME)
                 Settings.Settings.Instance.SetValue("$last-nickname-SGP", mdata.Nickname, true);
 
-            WorldLoad.StartLocal(name, mdata.Nickname, seedSuggestion);
+            var suggestions = new RunSuggestions(seedSuggestion);
+
+            WorldLoad.StartLocal(name, mdata.Nickname, suggestions);
         }
 
-        public static void HostAndPlayWorldByName(string name, (string address, string authcode) serverTuple)
+        public static void HostAndPlayWorldByName(string name, ServerAnswer answer)
         {
             WorldMeta mdata = WorldMeta.ReadFromWorldFolder(name);
 
             if (mdata.Nickname != Common.LOOPBACK_ONLY_NICKNAME)
                 Settings.Settings.Instance.SetValue("$last-nickname-SGP", mdata.Nickname, true);
 
-            WorldLoad.StartHost(name, mdata.Nickname, serverTuple);
+            WorldLoad.StartHost(name, mdata.Nickname, answer);
         }
 
         public void HostWorld()
@@ -84,7 +87,7 @@ namespace Larnix.Menu.Worlds
         {
             SelectWorld(null);
             ScrollView.ClearAll();
-            MetadatasSGP.Clear();
+            _metadatas.Clear();
 
             // World Segments
             List<string> availableWorldPaths = GetSortedWorldPaths(SavesPath, "database.sqlite");
@@ -100,7 +103,7 @@ namespace Larnix.Menu.Worlds
                 rt.GetComponent<WorldSegment>().Init(worldName, this);
                 ScrollView.BottomAddElement(rt);
 
-                MetadatasSGP[worldName] = WorldMeta.ReadFromWorldFolder(worldPath);
+                _metadatas[worldName] = WorldMeta.ReadFromWorldFolder(worldPath);
             }
         }
 
@@ -109,7 +112,7 @@ namespace Larnix.Menu.Worlds
             NameText.text = worldName ?? "";
 
             bool enable = worldName != null;
-            bool compatible = enable ? MetadatasSGP[worldName].Version <= Version.Current : false;
+            bool compatible = enable ? _metadatas[worldName].Version <= Version.Current : false;
 
             BT_Play.interactable = enable && compatible;
             BT_Host.interactable = enable && compatible;
@@ -118,8 +121,8 @@ namespace Larnix.Menu.Worlds
 
             if (enable)
             {
-                string versionDisplay = MetadatasSGP[worldName].Version.ToString();
-                string playerDisplay = MetadatasSGP[worldName].Nickname;
+                string versionDisplay = _metadatas[worldName].Version.ToString();
+                string playerDisplay = _metadatas[worldName].Nickname;
 
                 LoadImageOrClear(Path.Combine(SavesPath, worldName, "last_image.png"), TitleImage);
                 string description = $"Version: {versionDisplay}[REPLACE]\n" +

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
 using Larnix.Core;
+using Larnix.Core.Utils;
 
 namespace Larnix.Blocks
 {
@@ -16,8 +17,13 @@ namespace Larnix.Blocks
         }
         
         public long ServerTick();
-        public bool IsChunkLoaded(Vec2Int chunk);
-        public bool IsChunkAtomicLoaded(Vec2Int chunk);
+        public bool IsChunkLoaded(Vec2Int chunk, bool atomic = false);
+
+        public bool IsBlockLoaded(Vec2Int POS)
+        {
+            Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
+            return IsChunkLoaded(chunk);
+        }
 
         public Block GetBlock(Vec2Int POS, bool front);
         

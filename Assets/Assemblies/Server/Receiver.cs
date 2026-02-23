@@ -10,6 +10,7 @@ using Larnix.Core.Vectors;
 using System;
 using Larnix.Socket.Packets;
 using Larnix.Blocks;
+using Larnix.Core;
 
 namespace Larnix.Server
 {
@@ -19,10 +20,10 @@ namespace Larnix.Server
         private readonly Dictionary<RateLimitID, int> _rateLimits = new();
         private float _rateLimitTimer = 0f;
 
-        private IWorldAPI WorldAPI => Ref.IWorldAPI;
-        private QuickServer QuickServer => Ref.QuickServer;
-        private PlayerManager PlayerManager => Ref.PlayerManager;
-        private BlockSender BlockSender => Ref.BlockSender;
+        private IWorldAPI WorldAPI => GlobRef.Get<IWorldAPI>();
+        private QuickServer QuickServer => GlobRef.Get<QuickServer>();
+        private PlayerManager PlayerManager => GlobRef.Get<PlayerManager>();
+        private BlockSender BlockSender => GlobRef.Get<BlockSender>();
 
         public Receiver()
         {

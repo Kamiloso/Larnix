@@ -17,7 +17,7 @@ namespace Larnix.Menu
         [SerializeField] Vector3 CameraSpeed;
 
         private Generator Generator;
-        private Sky Sky => Ref.Sky;
+        private Sky Sky => GlobRef.Get<Sky>();
 
         private HashSet<Vec2Int> ActiveChunks = new();
         private bool firstGeneration = true;

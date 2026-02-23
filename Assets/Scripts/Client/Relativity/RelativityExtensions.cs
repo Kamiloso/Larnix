@@ -1,13 +1,13 @@
 using System.Collections.Generic;
 using Larnix.Core.Vectors;
-using Unity.VisualScripting;
+using Larnix.Core;
 using UnityEngine;
 
 namespace Larnix.Client.Relativity
 {
     public static class RelativityExtensions
     {
-        private static MainPlayer MainPlayer => Ref.MainPlayer;
+        private static MainPlayer MainPlayer => GlobRef.Get<MainPlayer>();
 
         public static Transform SetLarnixPos(this Transform transform, Vec2 targetPos)
         {

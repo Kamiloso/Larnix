@@ -18,7 +18,7 @@ namespace Larnix.Client.UI
         [SerializeField] BlockID[] BlocksInSlots;
         [SerializeField] byte[] VariantsInSlots;
 
-        private Debugger Debugger => Ref.Debugger;
+        private Debugger Debugger => GlobRef.Get<Debugger>();
 
         public int SelectedSlot { get; private set; } = 0;
 

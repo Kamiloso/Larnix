@@ -8,6 +8,8 @@ using Larnix.Menu.Worlds;
 using Larnix.Server;
 using System.Threading.Tasks;
 using Larnix.Core;
+using ServerAnswer = Larnix.Server.ServerRunner.ServerAnswer;
+using RunSuggestions = Larnix.Server.ServerRunner.RunSuggestions;
 
 namespace Larnix.Menu.Forms
 {
@@ -21,11 +23,16 @@ namespace Larnix.Menu.Forms
         [SerializeField] Button BT_RefreshRelay;
         [SerializeField] TMP_Text ButtonTitle;
 
-        private Menu Menu => Ref.Menu;
+        private Menu Menu => GlobRef.Get<Menu>();
 
-        private string _nickname;
-        private (string address, string authcode) _serverTuple;
-        private Task<string> _relayEstablishment = null;
+        private string Address => _serverAnswer?.Address;
+        private string Authcode => _serverAnswer?.Authcode;
+        private ushort Port => PortFromAddress(Address);
+        private Task<string> RelayEstablishment => _serverAnswer?.RelayEstablishment;
+
+        private ServerAnswer _serverAnswer;
+        private bool _relayEstablished;
+
         private int _state = 0;
 
         private void Awake()
@@ -38,18 +45,18 @@ namespace Larnix.Menu.Forms
             TX_ErrorText.text = "";
 
             IF_WorldName.text = args[0];
-            _nickname = args[1];
             IF_RelayAddress.text = Settings.Settings.Instance.GetValue("$relay-server");
 
-            _serverTuple = ("...", "...");
-            OF_ServerAddress.text = _serverTuple.address;
-            OF_Authcode.text = _serverTuple.authcode;
+            _serverAnswer = new ServerAnswer("...", "...");
+            _relayEstablished = false;
+
+            OF_ServerAddress.text = _serverAnswer.Address;
+            OF_Authcode.text = _serverAnswer.Authcode;
             OF_ServerAddress.interactable = false;
             OF_Authcode.interactable = false;
 
             IF_RelayAddress.interactable = true;
             ButtonTitle.text = "START SERVER";
-            _relayEstablishment = null;
 
             BT_RefreshRelay.interactable = true;
 
@@ -81,22 +88,29 @@ namespace Larnix.Menu.Forms
             if (_state == 0)
             {
                 string path = Path.Combine(GamePath.SavesPath, IF_WorldName.text);
-                _serverTuple = ServerRunner.Instance.Start(Server.ServerType.Host, path, null);
-                OF_ServerAddress.text = _serverTuple.address;
-                OF_Authcode.text = _serverTuple.authcode;
+
+                bool usesRelay = IF_RelayAddress.text != "";
+                string relayAddress = IF_RelayAddress.text;
+
+                RunSuggestions suggestions = new(
+                    Seed: null,
+                    RelayAddress: usesRelay ? relayAddress : null
+                );
+
+                _serverAnswer = ServerRunner.Instance.Start(
+                    Server.ServerType.Host, path, suggestions);
+
+                OF_ServerAddress.text = _serverAnswer.Address;
+                OF_Authcode.text = _serverAnswer.Authcode;
                 OF_ServerAddress.interactable = true;
                 OF_Authcode.interactable = true;
 
-                TX_ErrorText.text = $"Server is running on localhost:{PortFromAddress(_serverTuple.address)}\n " +
-                    (IF_RelayAddress.text != "" ? $"Connecting to relay..." : "Relay disabled.");
+                TX_ErrorText.text = $"Server is running on localhost:{Port}\n " +
+                    (usesRelay ? $"Connecting to relay..." : "Relay disabled.");
 
                 IF_RelayAddress.interactable = false;
                 ButtonTitle.text = "JOIN AS HOST";
 
-                if (IF_RelayAddress.text != "")
-                {
-                    _relayEstablishment = Task.Run(() => ServerRunner.Instance.ConnectToRelayAsync(IF_RelayAddress.text));
-                }
                 SaveRelayString();
 
                 BT_RefreshRelay.interactable = false;
@@ -105,7 +119,7 @@ namespace Larnix.Menu.Forms
             if (_state == 1)
             {
                 string worldName = IF_WorldName.text;
-                WorldSelect.HostAndPlayWorldByName(worldName, _serverTuple);
+                WorldSelect.HostAndPlayWorldByName(worldName, _serverAnswer);
             }
 
             _state++;
@@ -113,21 +127,21 @@ namespace Larnix.Menu.Forms
 
         private void Update()
         {
-            if (_relayEstablishment?.IsCompleted == true)
+            if (!_relayEstablished && RelayEstablishment?.IsCompleted == true)
             {
-                string connectAddress = _relayEstablishment.Result;
+                string connectAddress = RelayEstablishment.Result;
                 if (connectAddress == null)
                 {
-                    TX_ErrorText.text = $"Server is running on localhost:{PortFromAddress(_serverTuple.address)}\n " +
+                    TX_ErrorText.text = $"Server is running on localhost:{Port}\n " +
                         $"Relay connection failed :(";
                 }
                 else
                 {
-                    TX_ErrorText.text = $"Server is running on localhost:{PortFromAddress(_serverTuple.address)}\n " +
+                    TX_ErrorText.text = $"Server is running on localhost:{Port}\n " +
                         $"Players can join!";
                     OF_ServerAddress.text = connectAddress;
                 }
-                _relayEstablishment = null;
+                _relayEstablished = true;
             }
         }
 

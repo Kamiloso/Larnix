@@ -79,9 +79,7 @@ namespace Larnix.Socket.Channel
 
         public static Connection CreateClient(INetworkInteractions udp, IPEndPoint target, KeyAES aesKey, KeyRSA rsaKey, Payload synPacket)
         {
-            return new Connection(udp, target, aesKey, ConnectionRole.Client,
-                synPacket ?? throw new ArgumentNullException(nameof(synPacket)),
-                rsaKey ?? throw new ArgumentNullException(nameof(rsaKey)));
+            return new Connection(udp, target, aesKey, ConnectionRole.Client, synPacket, rsaKey);
         }
 
         public static Connection CreateServer(INetworkInteractions udp, IPEndPoint target, KeyAES aesKey)
@@ -121,7 +119,10 @@ namespace Larnix.Socket.Channel
             }
 
             // remove old
-            _recvBuffer.Keys.Where(k => k - GetNum <= 0).ToList().ForEach(k => _recvBuffer.Remove(k));
+            _recvBuffer.Keys
+                .Where(k => k - GetNum <= 0)
+                .ToList()
+                .ForEach(k => _recvBuffer.Remove(k));
         }
 
         private HashSet<int> RetransmitAll()

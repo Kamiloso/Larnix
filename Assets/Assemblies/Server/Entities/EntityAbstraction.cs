@@ -7,6 +7,7 @@ using Larnix.Core.Physics;
 using Larnix.Core.Vectors;
 using System;
 using Larnix.Core.Utils;
+using Larnix.Core;
 using EntityInits = Larnix.Entities.Entity.EntityInits;
 
 namespace Larnix.Server.Entities
@@ -28,9 +29,9 @@ namespace Larnix.Server.Entities
         public bool IsActive => LoadState == EntityLoadState.Active;
         public bool IsUnloaded => LoadState == EntityLoadState.Unloaded;
 
-        private UserManager UserManager => Ref.UserManager;
-        private EntityDataManager EntityDataManager => Ref.EntityDataManager;
-        private PhysicsManager PhysicsManager => Ref.PhysicsManager;
+        private UserManager UserManager => GlobRef.Get<UserManager>();
+        private EntityDataManager EntityDataManager => GlobRef.Get<EntityDataManager>();
+        private PhysicsManager PhysicsManager => GlobRef.Get<PhysicsManager>();
 
         public static EntityAbstraction CreatePlayerController(string nickname) =>
             new EntityAbstraction(nickname);

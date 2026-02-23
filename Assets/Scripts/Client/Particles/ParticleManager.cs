@@ -15,7 +15,7 @@ namespace Larnix.Client.Particles
     {
         [SerializeField] int MaxParticles = 1024;
 
-        private EntityProjections EntityProjections => Ref.EntityProjections;
+        private EntityProjections EntityProjections => GlobRef.Get<EntityProjections>();
         private HashSet<GameObject> ActiveParticles = new();
 
         private BlockData1 _optionBlock = new();

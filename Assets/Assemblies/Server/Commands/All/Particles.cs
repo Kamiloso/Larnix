@@ -17,8 +17,8 @@ namespace Larnix.Server.Commands.All
         public override string Pattern => $"{Name} <type> <x> <y> [uid]";
         public override string ShortDescription => "Spawns particles, optionally connected to entity.";
 
-        private QuickServer QuickServer => Ref.QuickServer;
-        private PlayerManager PlayerManager => Ref.PlayerManager;
+        private QuickServer QuickServer => GlobRef.Get<QuickServer>();
+        private PlayerManager PlayerManager => GlobRef.Get<PlayerManager>();
 
         private ParticleID _particleID;
         private Vec2 _position;

@@ -6,19 +6,19 @@ using Larnix.Server.Entities;
 using Larnix.Core.Utils;
 using Larnix.Core.Vectors;
 using Larnix.Server.Data;
-using Larnix.Blocks;
+using Larnix.Core;
 
 namespace Larnix.Server.Terrain
 {
     public enum ChunkLoadState { None, Loading, Active }
     internal class Chunks : IScript
     {
-        private Server Server => Ref.Server;
-        private PlayerManager PlayerManager => Ref.PlayerManager;
-        private EntityManager EntityManager => Ref.EntityManager;
-        private BlockSender BlockSender => Ref.BlockSender;
-        private AtomicChunks AtomicChunks => Ref.AtomicChunks;
-        private Config Config => Ref.Config;
+        private Server Server => GlobRef.Get<Server>();
+        private PlayerManager PlayerManager => GlobRef.Get<PlayerManager>();
+        private EntityManager EntityManager => GlobRef.Get<EntityManager>();
+        private BlockSender BlockSender => GlobRef.Get<BlockSender>();
+        private AtomicChunks AtomicChunks => GlobRef.Get<AtomicChunks>();
+        private Config Config => GlobRef.Get<Config>();
 
         private readonly Dictionary<Vec2Int, ChunkContainer> _chunks = new();
 

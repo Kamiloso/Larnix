@@ -1,6 +1,7 @@
 using Larnix.Core.Vectors;
 using System;
 using System.Collections.Generic;
+using Larnix.Core;
 
 namespace Larnix.Server.Terrain
 {
@@ -10,7 +11,7 @@ namespace Larnix.Server.Terrain
         public ChunkLoadState State { get; private set; }
         public Chunk Instance { get; private set; }
 
-        private AtomicChunks AtomicChunks => Ref.AtomicChunks;
+        private AtomicChunks AtomicChunks => GlobRef.Get<AtomicChunks>();
         
         private float _unloadTime;
         private float UNLOADING_TIME => 1f;

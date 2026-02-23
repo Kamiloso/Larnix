@@ -8,7 +8,7 @@ using Larnix.Client.Entities;
 using Larnix.Client.Terrain;
 using Larnix.Client.UI;
 using Larnix.Client.Particles;
-using UnityEngine;
+using Larnix.Core;
 using Larnix.Blocks;
 using Larnix.Background;
 
@@ -16,14 +16,13 @@ namespace Larnix.Client
 {
     public class Receiver
     {
-        private Client Client => Ref.Client;
-        private Loading Loading => Ref.Loading;
-        private MainPlayer MainPlayer => Ref.MainPlayer;
-        private GridManager GridManager => Ref.GridManager;
-        private EntityProjections EntityProjections => Ref.EntityProjections;
-        private ParticleManager ParticleManager => Ref.ParticleManager;
-        private Sky Sky => Ref.Sky;
-        private Debugger Debugger => Ref.Debugger;
+        private Loading Loading => GlobRef.Get<Loading>();
+        private MainPlayer MainPlayer => GlobRef.Get<MainPlayer>();
+        private GridManager GridManager => GlobRef.Get<GridManager>();
+        private EntityProjections EntityProjections => GlobRef.Get<EntityProjections>();
+        private ParticleManager ParticleManager => GlobRef.Get<ParticleManager>();
+        private Sky Sky => GlobRef.Get<Sky>();
+        private Debugger Debugger => GlobRef.Get<Debugger>();
 
         public Receiver(QuickClient client)
         {

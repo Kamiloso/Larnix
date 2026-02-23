@@ -122,7 +122,7 @@ namespace Larnix.Blocks
                 _blocksFront[x, y].EventFlag = true;
             });
 
-            bool isAtomicLoaded = _worldAPI.IsChunkAtomicLoaded(_chunkpos);
+            bool isAtomicLoaded = _worldAPI.IsChunkLoaded(_chunkpos, atomic: true);
 
             foreach (var (type, order) in _blockEvents) // EXECUTE EVENTS
             {

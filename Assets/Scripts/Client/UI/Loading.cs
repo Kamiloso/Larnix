@@ -9,10 +9,10 @@ namespace Larnix.Client.UI
 {
     public class Loading : MonoBehaviour
     {
-        private LoadingScreen LoadingScreen => Ref.LoadingScreen;
-        private MainPlayer MainPlayer => Ref.MainPlayer;
-        private EntityProjections EntityProjections => Ref.EntityProjections;
-        private GridManager GridManager => Ref.GridManager;
+        private LoadingScreen LoadingScreen => GlobRef.Get<LoadingScreen>();
+        private MainPlayer MainPlayer => GlobRef.Get<MainPlayer>();
+        private EntityProjections EntityProjections => GlobRef.Get<EntityProjections>();
+        private GridManager GridManager => GlobRef.Get<GridManager>();
 
         private bool _tryingToEnd = false;
         private uint _fixFrame = 0; // frame at which waiting will start

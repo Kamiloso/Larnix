@@ -7,14 +7,14 @@ using UnityEngine.Tilemaps;
 using Larnix.Core.Vectors;
 using Larnix.Core.Utils;
 using Larnix.Blocks.Structs;
-using System;
+using Larnix.Core;
 
 namespace Larnix.Client.Terrain
 {
     public class ChunkedTilemap : MonoBehaviour
     {
         private const int CHUNK_SIZE = BlockUtils.CHUNK_SIZE;
-        private MainPlayer MainPlayer => Ref.MainPlayer;
+        private MainPlayer MainPlayer => GlobRef.Get<MainPlayer>();
 
         private GameObject TilemapPrefabBorder => Prefabs.GetPrefab("Tilemaps", "TilemapBorder");
         private GameObject TilemapPrefabFront => Prefabs.GetPrefab("Tilemaps", "TilemapFront");

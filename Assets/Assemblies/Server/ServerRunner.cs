@@ -15,8 +15,11 @@ namespace Larnix.Server
         Remote, // multiplayer console server
     }
 
-    public sealed class ServerRunner
+    public sealed class ServerRunner : IDisposable
     {
+        public record ServerAnswer(string Address, string Authcode, Task<string> RelayEstablishment = null);
+        public record RunSuggestions(long? Seed = null, string RelayAddress = null);
+
         public bool HasServer => _server != null;
         public bool IsRunning => HasServer && _thread.IsAlive;
 
@@ -24,35 +27,30 @@ namespace Larnix.Server
         private Thread _thread;
         private Exception _threadException;
 
+        public void StopSignal() => _stopFlag = true;
         private volatile bool _stopFlag;
 
-        public ServerRunner() { }
+        public ServerRunner() { } // can be instantiated and managed
         public static ServerRunner Instance { get; } = new(); // singleton for old code compatibility
 
-        public (string address, string authcode) Start(
-            ServerType type,
-            string worldPath,
-            long? seedSuggestion)
+        public ServerAnswer Start(ServerType type, string worldPath, RunSuggestions suggestions)
         {
             Stop();
 
             long clientKey = GlobRef.GetKey(); // remember client scope
             long serverKey = GlobRef.NewScope(); // create server scope
 
+            ServerAnswer answer;
+
             try
             {
-                _server = new Server(
-                    type,
-                    worldPath,
-                    seedSuggestion,
-                    () => _stopFlag = true);
+                _server = new Server(type, worldPath, suggestions, StopSignal,
+                    out answer);
             }
             finally
             {
                 GlobRef.SetKey(clientKey); // restore client scope
             }
-
-            var result = (_server.LocalAddress, _server.Authcode);
 
             _thread = new Thread(() =>
             {
@@ -72,7 +70,7 @@ namespace Larnix.Server
             };
 
             _thread.Start();
-            return result;
+            return answer;
         }
 
         private void ServerLoop()
@@ -120,32 +118,31 @@ namespace Larnix.Server
             }
         }
 
-        public async Task<string> ConnectToRelayAsync(string address)
-        {
-            var server = _server;
-            return await server?.EstablishRelayAsync(address);
-        }
-
         public void Stop()
         {
-            if (!HasServer)
-                return;
-
-            try
+            if (HasServer)
             {
-                _stopFlag = true;
-                _thread.Join();
+                try
+                {
+                    _stopFlag = true;
+                    _thread.Join();
 
-                if (_threadException != null)
-                    ExceptionDispatchInfo.Capture(_threadException).Throw();
+                    if (_threadException != null)
+                        ExceptionDispatchInfo.Capture(_threadException).Throw();
+                }
+                finally
+                {
+                    _server = null;
+                    _thread = null;
+                    _threadException = null;
+                    _stopFlag = false;
+                }
             }
-            finally
-            {
-                _server = null;
-                _thread = null;
-                _threadException = null;
-                _stopFlag = false;
-            }
+        }
+
+        public void Dispose()
+        {
+            Stop();
         }
     }
 }

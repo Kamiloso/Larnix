@@ -6,6 +6,7 @@ using Larnix.Server.Data;
 using Larnix.Worldgen;
 using Larnix.Core.Vectors;
 using System;
+using Larnix.Core;
 
 namespace Larnix.Server.Terrain
 {
@@ -14,8 +15,8 @@ namespace Larnix.Server.Terrain
         private readonly Dictionary<Vec2Int, BlockData2[,]> _chunkCache = new();
         private readonly HashSet<Vec2Int> _referencedChunks = new();
 
-        private Database Database => Ref.Database;
-        private Generator Generator => Ref.Generator;
+        private Database Database => GlobRef.Get<Database>();
+        private Generator Generator => GlobRef.Get<Generator>();
 
         private bool _debugUnlinkDatabase = false;
 

@@ -2,9 +2,8 @@ using System;
 using Larnix.Blocks;
 using Larnix.Blocks.Structs;
 using Larnix.Core.Json;
-using Larnix.Core.Utils;
 using Larnix.Core.Vectors;
-using Larnix.Server.Terrain;
+using Larnix.Core;
 using CmdResult = Larnix.Core.ICmdExecutor.CmdResult;
 
 namespace Larnix.Server.Commands.All
@@ -15,7 +14,7 @@ namespace Larnix.Server.Commands.All
         public override string Pattern => $"{Name} <front|back> <type|type:variant> <x> <y> [json]";
         public override string ShortDescription => "Replaces a block.";
 
-        private IWorldAPI WorldAPI => Ref.IWorldAPI;
+        private IWorldAPI WorldAPI => GlobRef.Get<IWorldAPI>();
 
         private bool _front;
         private BlockID _blockID;

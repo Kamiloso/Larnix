@@ -10,6 +10,7 @@ using Larnix.Socket.Backend;
 using Larnix.Packets;
 using Larnix.Core.Vectors;
 using Larnix.Packets.Structs;
+using Larnix.Core;
 
 namespace Larnix.Server.Terrain
 {
@@ -21,10 +22,10 @@ namespace Larnix.Server.Terrain
         private readonly Queue<BlockUpdateRecord> _blockUpdates = new();
         private readonly Queue<BlockChangeItem> _blockChanges = new();
 
-        private IWorldAPI WorldAPI => Ref.IWorldAPI;
-        private PlayerManager PlayerManager => Ref.PlayerManager;
-        private QuickServer QuickServer => Ref.QuickServer;
-        private Chunks Chunks => Ref.Chunks;
+        private IWorldAPI WorldAPI => GlobRef.Get<IWorldAPI>();
+        private PlayerManager PlayerManager => GlobRef.Get<PlayerManager>();
+        private QuickServer QuickServer => GlobRef.Get<QuickServer>();
+        private Chunks Chunks => GlobRef.Get<Chunks>();
 
         public void AddBlockUpdate(BlockUpdateRecord element)
         {

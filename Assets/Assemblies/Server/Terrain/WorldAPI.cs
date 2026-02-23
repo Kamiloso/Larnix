@@ -4,31 +4,30 @@ using System.Collections;
 using System.Collections.Generic;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
-using ResultType = Larnix.Core.ICmdExecutor.CmdResult;
 using Larnix.Server.Commands;
+using Larnix.Core;
+using BreakMode = Larnix.Blocks.IWorldAPI.BreakMode;
+using ResultType = Larnix.Core.ICmdExecutor.CmdResult;
 
 namespace Larnix.Server.Terrain
 {
     internal class WorldAPI : IWorldAPI
     {
-        private Chunks Chunks => Ref.Chunks;
-        private AtomicChunks AtomicChunks => Ref.AtomicChunks;
-        private CmdManager Commands => Ref.CmdManager;
-        private Server Server => Ref.Server;
+        private Chunks Chunks => GlobRef.Get<Chunks>();
+        private AtomicChunks AtomicChunks => GlobRef.Get<AtomicChunks>();
+        private CmdManager Commands => GlobRef.Get<CmdManager>();
+        private Server Server => GlobRef.Get<Server>();
 
         public long ServerTick()
         {
             return Server.ServerTick;
         }
 
-        public bool IsChunkLoaded(Vec2Int chunk)
+        public bool IsChunkLoaded(Vec2Int chunk, bool atomic = false)
         {
-            return Chunks.IsChunkLoaded(chunk);
-        }
-
-        public bool IsChunkAtomicLoaded(Vec2Int chunk)
-        {
-            return AtomicChunks.IsAtomicLoaded(chunk);
+            return atomic ?
+                AtomicChunks.IsAtomicLoaded(chunk) :
+                Chunks.IsChunkLoaded(chunk);
         }
 
         public Block GetBlock(Vec2Int POS, bool isFront)
@@ -43,7 +42,7 @@ namespace Larnix.Server.Terrain
         }
 
         public Block ReplaceBlock(Vec2Int POS, bool isFront, BlockData1 blockTemplate,
-            IWorldAPI.BreakMode breakMode)
+            BreakMode breakMode = BreakMode.Replace)
         {
             Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
             if (Chunks.TryGetChunk(chunk, out var chunkObject))
@@ -95,7 +94,7 @@ namespace Larnix.Server.Terrain
 
         public void PlaceBlockWithEffects(Vec2Int POS, bool front, BlockData1 item)
         {
-            ReplaceBlock(POS, front, item, IWorldAPI.BreakMode.Effects);
+            ReplaceBlock(POS, front, item, BreakMode.Effects);
         }
 
         public void BreakBlockWithEffects(Vec2Int POS, bool front, BlockData1 tool)
@@ -105,7 +104,7 @@ namespace Larnix.Server.Terrain
 
             // TODO: Drop items code here
 
-            ReplaceBlock(POS, front, new BlockData1(), IWorldAPI.BreakMode.Effects);
+            ReplaceBlock(POS, front, new BlockData1(), BreakMode.Effects);
         }
 
         public (ResultType, string) ExecuteCommand(string command, string sender = null)

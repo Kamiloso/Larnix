@@ -15,7 +15,7 @@ using Larnix.Blocks;
 
 namespace Larnix.Server.Data
 {
-    internal class Database : IUserAPI ,IDisposable
+    internal class Database : IUserAPI , IDisposable
     {
         private readonly SqliteConnection _connection = null;
         private SqliteTransaction _transaction = null;

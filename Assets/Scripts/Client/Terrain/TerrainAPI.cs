@@ -5,13 +5,14 @@ using Larnix.Socket.Packets;
 using Larnix.Blocks.Structs;
 using Larnix.Packets;
 using Larnix.Core.Vectors;
+using Larnix.Core;
 
 namespace Larnix.Client.Terrain
 {
     public static class TerrainAPI
     {
-        private static Client Client => Ref.Client;
-        private static GridManager GridManager => Ref.GridManager;
+        private static Client Client => GlobRef.Get<Client>();
+        private static GridManager GridManager => GlobRef.Get<GridManager>();
 
         public static bool CanBePlaced(Vec2Int POS, BlockData1 item, bool front)
         {

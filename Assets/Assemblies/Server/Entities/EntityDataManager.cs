@@ -5,6 +5,7 @@ using Larnix.Core.Utils;
 using Larnix.Entities.Structs;
 using Larnix.Server.Data;
 using Larnix.Core.Vectors;
+using Larnix.Core;
 using System;
 
 namespace Larnix.Server.Entities
@@ -15,7 +16,7 @@ namespace Larnix.Server.Entities
         private readonly Dictionary<ulong, EntityData> _unloadedEntityData = new();
         private readonly Dictionary<ulong, EntityData> _deletedEntityData = new();
 
-        private Database Database => Ref.Database;
+        private Database Database => GlobRef.Get<Database>();
 
         public EntityData TryFindEntityData(ulong uid)
         {

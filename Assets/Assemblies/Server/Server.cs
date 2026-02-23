@@ -17,6 +17,8 @@ using Larnix.Server.Commands;
 using Version = Larnix.Core.Version;
 using Console = Larnix.Core.Console;
 using Larnix.Blocks;
+using RunSuggestions = Larnix.Server.ServerRunner.RunSuggestions;
+using ServerAnswer = Larnix.Server.ServerRunner.ServerAnswer;
 
 namespace Larnix.Server
 {
@@ -24,6 +26,7 @@ namespace Larnix.Server
     {
         public ServerType Type { get; init; }
         public string WorldPath { get; init; }
+        public String32 HostUser { get; init; }
 
         public ushort Port => _quickServer.Config.Port;
         public string LocalAddress => "localhost:" + Port;
@@ -39,16 +42,16 @@ namespace Larnix.Server
 
         private WorldMeta _mdata;
 
-        private QuickServer QuickServer => Ref.QuickServer;
-        private Locker Locker => Ref.Locker;
-        private Config Config => Ref.Config;
-        private Database Database => Ref.Database;
-        private EntityManager EntityManager => Ref.EntityManager;
-        private PlayerManager PlayerManager => Ref.PlayerManager;
-        private EntityDataManager EntityDataManager => Ref.EntityDataManager;
-        private BlockDataManager BlockDataManager => Ref.BlockDataManager;
-        private UserManager UserManager => Ref.UserManager;
-        private Receiver Receiver => Ref.Receiver;
+        private QuickServer QuickServer => GlobRef.Get<QuickServer>();
+        private Locker Locker => GlobRef.Get<Locker>();
+        private Config Config => GlobRef.Get<Config>();
+        private Database Database => GlobRef.Get<Database>();
+        private EntityManager EntityManager => GlobRef.Get<EntityManager>();
+        private PlayerManager PlayerManager => GlobRef.Get<PlayerManager>();
+        private EntityDataManager EntityDataManager => GlobRef.Get<EntityDataManager>();
+        private BlockDataManager BlockDataManager => GlobRef.Get<BlockDataManager>();
+        private UserManager UserManager => GlobRef.Get<UserManager>();
+        private Receiver Receiver => GlobRef.Get<Receiver>();
 
         private double _lastTickTime = 0;
         private float _totalTimeElapsed = 0f;
@@ -60,8 +63,16 @@ namespace Larnix.Server
 
         private bool _disposed = false;
 
-        public Server(ServerType type, string worldPath, long? seedSuggestion, Action closeServer)
+        public Server(ServerType type, string worldPath, RunSuggestions suggestions,
+            Action closeServer, out ServerAnswer answer)
         {
+            if (GlobRef.Get<Server>() != null)
+            {
+                throw new InvalidOperationException("Cannot create server instance using constructor. " +
+                    "Use ServerRunner class instead.");
+            }
+
+            // --- Constants ---
             Type = type;
             WorldPath = worldPath;
             CloseServer = closeServer;
@@ -74,12 +85,17 @@ namespace Larnix.Server
             }
             GlobRef.Set(locker);
 
-            // --- [ MAIN SINGLETONS ] ---
+            // --- Main singletons ---
             GlobRef.Set(this);
             GlobRef.Set(new PhysicsManager());
+            GlobRef.Set(Config.Obtain(WorldPath));
+            GlobRef.Set(new Database(WorldPath, "database.sqlite"));
+            GlobRef.Set(new Generator(Database.GetSeed(suggestions.Seed)));
+
+            // -- APIs ---
             GlobRef.Set<IWorldAPI>(new WorldAPI());
 
-            // --- [ SCRIPTS ] ---
+            // --- Scripts ---
             _scripts = new IScript[] // in execution order
             {
                 GlobRef.Set(new AtomicChunks()),
@@ -92,11 +108,6 @@ namespace Larnix.Server
                 GlobRef.Set(new CmdManager())
             };
 
-            // --- [ SATELITE CLASSES ] ---
-            GlobRef.Set(Config.Obtain(WorldPath));
-            GlobRef.Set(new Database(WorldPath, "database.sqlite"));
-            GlobRef.Set(new Generator(Database.GetSeed(seedSuggestion)));
-
             // --- Server tick obtain ---
             ServerTick = Database.GetServerTick();
 
@@ -105,62 +116,61 @@ namespace Larnix.Server
             _mdata = new WorldMeta(Version.Current, _mdata.Nickname);
             WorldMeta.SaveToFolder(WorldPath, _mdata);
 
+            // --- Host user ---
+            HostUser = Type == ServerType.Remote ?
+                (String32)Common.LOOPBACK_ONLY_NICKNAME :
+                (String32)_mdata.Nickname;
+
             // --- QuickServer ---
             _quickServer = new QuickServer(
                 new QuickConfig(
-                    port: Type == ServerType.Remote ?
-                        Config.Port : (ushort)0,
-
+                    port: Type == ServerType.Remote ? Config.Port : (ushort)0,
                     maxClients: Config.MaxPlayers,
                     isLoopback: Type == ServerType.Local,
                     dataPath: Path.Combine(WorldPath, "Socket"),
                     userAPI: Database,
                     motd: (String256)Config.Motd,
-
-                    hostUser: Type == ServerType.Remote ?
-                        (String32)Common.LOOPBACK_ONLY_NICKNAME :
-                        (String32)_mdata.Nickname,
+                    hostUser: HostUser,
                     
+                    // socket settings, will be moved in the future
                     maskIPv4: Config.ClientIdentityPrefixSizeIPv4,
                     maskIPv6: Config.ClientIdentityPrefixSizeIPv6,
                     allowRegistration: Config.AllowRegistration
                 )
             );
 
-            // --- [ SERVER SINGLETONS ] ---
+            // --- Server singletons ---
             GlobRef.Set(_quickServer);
             GlobRef.Set(_quickServer.UserManager);
             GlobRef.Set(new Receiver());
             GlobRef.Set(new CmdManager());
 
-            // --- Configure console ---
+            // Configure console
             if (Type == ServerType.Remote)
             {
                 ConfigureConsole();
             }
-            else
-            {
-                Core.Debug.Log($"Port: {Port} | Authcode: {Authcode}");
-            }
+            else Core.Debug.Log($"Port: {Port} | Authcode: {Authcode}");
 
-            // --- Try establish relay ---
-            if (Type == ServerType.Remote)
-            {
-                if (Config.UseRelay)
-                    _ = Task.Run(() => EstablishRelayAsync(Config.RelayAddress));
-            }
+            // Try establish relay
+            Task<string> relayTask = RelayEstablishment(
+                suggestions.RelayAddress
+            );
 
-            // --- Info success ---
+            // Finalize
             Core.Debug.LogSuccess("Server is ready!");
+            answer = new ServerAnswer(LocalAddress, Authcode, relayTask);
         }
 
         private void ConfigureConsole()
         {
-            const string BORDER_STR = "------------------------------------------------------------";
+            // Print border function
+            void PrintBorder() =>
+                Core.Debug.LogRaw("------------------------------------------------------------\n");
 
             // Title set
             Console.SetTitle("Larnix Server " + Version.Current);
-            Core.Debug.LogRaw(BORDER_STR + "\n");
+            PrintBorder();
 
             // Force change default password
             if (_mdata.Nickname != Common.LOOPBACK_ONLY_NICKNAME)
@@ -173,6 +183,7 @@ namespace Larnix.Server
                 {
                     Core.Debug.LogRaw("> ");
                     string password = Console.GetInputSync();
+
                     if (Validation.IsGoodPassword(password))
                     {
                         UserManager.ChangePasswordSync(_mdata.Nickname, password);
@@ -188,36 +199,48 @@ namespace Larnix.Server
                 } while (!changeSuccess);
 
                 Core.Debug.LogRaw("Password changed.\n");
-                Core.Debug.LogRaw(BORDER_STR + "\n");
+                PrintBorder();
             }
 
             // Socket information
             Core.Debug.LogRaw("Socket created on port " + _quickServer.Config.Port + "\n");
             Core.Debug.LogRaw("Authcode: " + _quickServer.Authcode + "\n");
-            Core.Debug.LogRaw(BORDER_STR + "\n");
+            PrintBorder();
 
             // Input thread start
             Console.EnableInputThread();
         }
 
-        public async Task<string> EstablishRelayAsync(string relayAddress)
+        private Task<string> RelayEstablishment(string relaySuggestion)
         {
-            ushort? relayPort = await _quickServer.ConfigureRelayAsync(relayAddress);
-
-            if (relayPort != null)
+            if (Type == ServerType.Remote)
             {
-                var uri = new UriBuilder("udp://" + relayAddress) { Port = relayPort.Value };
-                string address = uri.ToString().Replace("udp://", "").Replace("/", "");
-
-                Core.Debug.LogSuccess("Connected to relay!");
-                Core.Debug.Log("Address: " + address);
-
-                return address;
+                if (Config.UseRelay)
+                    return Task.Run(() => Establish(Config.RelayAddress));
             }
             else
             {
-                Core.Debug.LogWarning("Cannot connect to relay!");
-                return null;
+                if (relaySuggestion != null)
+                    return Task.Run(() => Establish(relaySuggestion));
+            }
+            return null;
+
+            async Task<string> Establish(string relayAddress)
+            {
+                ushort? relayPort = await _quickServer.ConfigureRelayAsync(relayAddress);
+                
+                if (relayPort != null)
+                {
+                    string address = Common.FormatUdpAddress(relayAddress, relayPort.Value);
+                    Core.Debug.LogSuccess("Connected to relay!");
+                    Core.Debug.Log("Address: " + address);
+                    return address;
+                }
+                else
+                {
+                    Core.Debug.LogWarning("Cannot connect to relay!");
+                    return null;
+                }
             }
         }
 

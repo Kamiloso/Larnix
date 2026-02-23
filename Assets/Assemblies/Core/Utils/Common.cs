@@ -58,6 +58,18 @@ namespace Larnix.Core.Utils
             return Regex.Replace(step1, @"(?<=[a-z])(?=[A-Z])", " ");
         }
 
+        public static string FormatUdpAddress(string address, ushort port)
+        {
+            UriBuilder uri = new UriBuilder("udp://" + address)
+            {
+                Port = port
+            };
+
+            return uri.ToString()
+                .Replace("udp://", "")
+                .Replace("/", "");
+        }
+
         public static void DoForSeconds(double seconds, Action<Stopwatch, double> action)
         {
             var timer = Stopwatch.StartNew();

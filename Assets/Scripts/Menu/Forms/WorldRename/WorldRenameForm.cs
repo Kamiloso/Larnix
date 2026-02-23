@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
+using Larnix.Core;
 using Larnix.Menu.Worlds;
 using Larnix.Core.Utils;
 
@@ -14,8 +14,8 @@ namespace Larnix.Menu.Forms
         [SerializeField] TMP_InputField IF_OldName;
         [SerializeField] TMP_InputField IF_NewName;
 
-        private Menu Menu => Ref.Menu;
-        private WorldSelect WorldSelect => Ref.WorldSelect;
+        private Menu Menu => GlobRef.Get<Menu>();
+        private WorldSelect WorldSelect => GlobRef.Get<WorldSelect>();
 
         public override void EnterForm(params string[] args)
         {

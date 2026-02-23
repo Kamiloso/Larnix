@@ -26,9 +26,9 @@ namespace Larnix.Client.Terrain
         [SerializeField] Camera Camera;
         [SerializeField] SpriteRenderer Selector;
 
-        private MainPlayer MainPlayer => Ref.MainPlayer;
-        private Debugger Debugger => Ref.Debugger;
-        private Inventory Inventory => Ref.Inventory;
+        private MainPlayer MainPlayer => GlobRef.Get<MainPlayer>();
+        private Debugger Debugger => GlobRef.Get<Debugger>();
+        private Inventory Inventory => GlobRef.Get<Inventory>();
 
         private bool _isGameFocused = true;
         private Vector2? _oldMousePos = null;

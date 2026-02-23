@@ -4,13 +4,14 @@ using System.IO;
 using TMPro;
 using UnityEngine;
 using Larnix.Menu.Worlds;
+using Larnix.Core;
 
 namespace Larnix.Menu.Forms
 {
     public class WorldDeleteForm : BaseForm
     {
-        private Menu Menu => Ref.Menu;
-        private WorldSelect WorldSelect => Ref.WorldSelect;
+        private Menu Menu => GlobRef.Get<Menu>();
+        private WorldSelect WorldSelect => GlobRef.Get<WorldSelect>();
         [SerializeField] TMP_InputField IF_DeleteName;
 
         public override void EnterForm(params string[] args)

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Larnix.Socket.Backend;
 using Larnix.Worldgen;
+using Larnix.Core;
 using CmdResult = Larnix.Core.ICmdExecutor.CmdResult;
 
 namespace Larnix.Server.Commands.All
@@ -13,8 +14,8 @@ namespace Larnix.Server.Commands.All
         public override string Pattern => $"{Name}";
         public override string ShortDescription => "Displays the server information.";
 
-        private QuickServer QuickServer => Ref.QuickServer;
-        private Generator Generator => Ref.Generator;
+        private QuickServer QuickServer => GlobRef.Get<QuickServer>();
+        private Generator Generator => GlobRef.Get<Generator>();
 
         public override void Inject(string command)
         {

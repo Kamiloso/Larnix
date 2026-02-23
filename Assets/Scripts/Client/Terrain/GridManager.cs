@@ -22,8 +22,8 @@ namespace Larnix.Client.Terrain
         private readonly Dictionary<Vec2Int, StaticCollider[]> _colliderCollections = new();
         private readonly List<BlockLock> _lockedBlocks = new();
 
-        private ParticleManager ParticleManager => Ref.ParticleManager;
-        private PhysicsManager PhysicsManager => Ref.PhysicsManager;
+        private ParticleManager ParticleManager => GlobRef.Get<ParticleManager>();
+        private PhysicsManager PhysicsManager => GlobRef.Get<PhysicsManager>();
 
         private class BlockLock
         {
@@ -36,8 +36,7 @@ namespace Larnix.Client.Terrain
         {
             base.Awake();
 
-            if (!IsMenu)
-                GlobRef.Set(this);
+            GlobRef.Set(this);
         }
 
         protected override void Update()

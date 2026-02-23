@@ -5,6 +5,8 @@ using Larnix.Menu.Worlds;
 using Larnix.Server;
 using Larnix.Core.Utils;
 using ServerType = Larnix.Server.ServerType;
+using ServerAnswer = Larnix.Server.ServerRunner.ServerAnswer;
+using RunSuggestions = Larnix.Server.ServerRunner.RunSuggestions;
 
 namespace Larnix
 {
@@ -22,19 +24,23 @@ namespace Larnix
         public static string Nickname { get; private set; } = "";
         public static string Password { get; private set; } = "";
 
-        public static void StartLocal(string world, string nickname, long? seedSuggestion = null)
+        public static void StartLocal(string world, string nickname, RunSuggestions suggestions = null)
         {
+            if (suggestions == null)
+                suggestions = new RunSuggestions();
+
             ScreenLoad = "GameUI";
             WorldPath = Path.Combine(WorldSelect.SavesPath, world);
             IsMultiplayer = false;
             PlayedAlready = true;
 
             // Load server
-            var tuple = ServerRunner.Instance.Start(ServerType.Local, WorldPath, seedSuggestion);
+            ServerAnswer answer = ServerRunner.Instance.Start(
+                ServerType.Local, WorldPath, suggestions);
 
             // Configure client
-            Address = tuple.address;
-            Authcode = tuple.authcode;
+            Address = answer.Address;
+            Authcode = answer.Authcode;
             Nickname = nickname;
             Password = Common.LOOPBACK_ONLY_PASSWORD;
 
@@ -42,18 +48,18 @@ namespace Larnix
             SceneManager.LoadScene("Client");
         }
 
-        public static void StartHost(string world, string nickname, (string address, string authcode) serverTuple)
+        public static void StartHost(string world, string nickname, ServerAnswer input)
         {
             ScreenLoad = "GameUI";
             WorldPath = Path.Combine(WorldSelect.SavesPath, world);
             IsMultiplayer = false;
             PlayedAlready = true;
 
-            // server is running locally...
+            // server is already running locally...
 
             // Configure client
-            Address = serverTuple.address;
-            Authcode = serverTuple.authcode;
+            Address = input.Address;
+            Authcode = input.Authcode;
             Nickname = nickname;
             Password = Common.LOOPBACK_ONLY_PASSWORD;
 

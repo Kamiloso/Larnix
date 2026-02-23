@@ -9,6 +9,7 @@ using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
 using Larnix.Packets.Structs;
 using Larnix.Blocks.All;
+using Larnix.Core;
 using BlockInits = Larnix.Blocks.Block.BlockInits;
 
 namespace Larnix.Server.Terrain
@@ -23,10 +24,10 @@ namespace Larnix.Server.Terrain
         private readonly Block[,] _blocksBack = ChunkIterator.Array2D<Block>();
         private readonly Dictionary<Vec2Int, StaticCollider[]> _colliderCollections = new();
 
-        private IWorldAPI WorldAPI => Ref.IWorldAPI;
-        private BlockDataManager BlockDataManager => Ref.BlockDataManager;
-        private PhysicsManager PhysicsManager => Ref.PhysicsManager;
-        private BlockSender BlockSender => Ref.BlockSender;
+        private IWorldAPI WorldAPI => GlobRef.Get<IWorldAPI>();
+        private BlockDataManager BlockDataManager => GlobRef.Get<BlockDataManager>();
+        private PhysicsManager PhysicsManager => GlobRef.Get<PhysicsManager>();
+        private BlockSender BlockSender => GlobRef.Get<BlockSender>();
 
         public IEnumerable FrameInvoker => _blockEvents.GetFrameInvoker();
         public readonly BlockData2[,] ActiveChunkReference;

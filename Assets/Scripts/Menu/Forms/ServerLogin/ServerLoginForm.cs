@@ -4,12 +4,13 @@ using TMPro;
 using UnityEngine;
 using Larnix.Menu.Worlds;
 using Larnix.Core.Utils;
+using Larnix.Core;
 
 namespace Larnix.Menu.Forms
 {
     public class ServerLoginForm : BaseForm
     {
-        private Menu Menu => Ref.Menu;
+        private Menu Menu => GlobRef.Get<Menu>();
 
         [SerializeField] TMP_InputField IF_Address;
         [SerializeField] TMP_InputField IF_Nickname;

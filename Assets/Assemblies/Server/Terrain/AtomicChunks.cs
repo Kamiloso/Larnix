@@ -9,6 +9,7 @@ using Larnix.Blocks;
 using System.Collections.ObjectModel;
 using Larnix.Core.DataStructures;
 using Larnix.Server.Data;
+using Larnix.Core;
 
 namespace Larnix.Server.Terrain
 {
@@ -53,9 +54,9 @@ namespace Larnix.Server.Terrain
         public Vec2Int? WishChunk { get; private set; } = null;
         public bool DiscoversChunks { get; set; } = false;
 
-        private Chunks Chunks => Ref.Chunks;
-        private IWorldAPI WorldAPI => Ref.IWorldAPI;
-        private Config Config => Ref.Config;
+        private Chunks Chunks => GlobRef.Get<Chunks>();
+        private IWorldAPI WorldAPI => GlobRef.Get<IWorldAPI>();
+        private Config Config => GlobRef.Get<Config>();
 
         void IScript.PostEarlyFrameUpdate()
         {

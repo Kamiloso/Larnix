@@ -20,12 +20,11 @@ namespace Larnix.Client.Terrain
 
         protected bool IsMenu => this is not GridManager;
         private GridManager NotMenu => this as GridManager;
-        protected MainPlayer MainPlayer => !IsMenu ? Ref.MainPlayer : null;
+        protected MainPlayer MainPlayer => !IsMenu ? GlobRef.Get<MainPlayer>() : null;
 
         protected virtual void Awake()
         {
-            if (IsMenu)
-                GlobRef.Set(this);
+            GlobRef.Set(this);
         }
 
         protected virtual void Update()

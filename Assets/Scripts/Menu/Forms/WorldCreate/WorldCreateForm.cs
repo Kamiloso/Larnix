@@ -16,7 +16,7 @@ namespace Larnix.Menu.Forms
         [SerializeField] TMP_InputField IF_WorldName;
         [SerializeField] TMP_InputField IF_Seed;
 
-        private Menu Menu => Ref.Menu;
+        private Menu Menu => GlobRef.Get<Menu>();
 
         public override void EnterForm(params string[] args)
         {

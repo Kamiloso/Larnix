@@ -17,8 +17,8 @@ namespace Larnix.Client.Entities
         private Dictionary<ulong, EntityProjection> _projections = new();
         private Dictionary<ulong, DelayedEntity> _delayedProjections = new();
 
-        private Client Client => Ref.Client;
-        private MainPlayer MainPlayer => Ref.MainPlayer;
+        private Client Client => GlobRef.Get<Client>();
+        private MainPlayer MainPlayer => GlobRef.Get<MainPlayer>();
 
         private uint? _startFixed = null;
         private uint? _nearbyFrameFixed = null; // can be a bit old, but only up to ~1/4 seconds

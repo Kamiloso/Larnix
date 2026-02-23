@@ -22,12 +22,12 @@ namespace Larnix.Server.Entities
         private readonly Dictionary<string, EntityAbstraction> _playerControllers = new();
         private readonly Dictionary<ulong, EntityAbstraction> _entityControllers = new();
 
-        private Server Server => Ref.Server;
-        private PlayerManager PlayerManager => Ref.PlayerManager;
-        private QuickServer QuickServer => Ref.QuickServer;
-        private EntityDataManager EntityDataManager => Ref.EntityDataManager;
-        private Database Database => Ref.Database;
-        private Chunks Chunks => Ref.Chunks;
+        private Server Server => GlobRef.Get<Server>();
+        private PlayerManager PlayerManager => GlobRef.Get<PlayerManager>();
+        private QuickServer QuickServer => GlobRef.Get<QuickServer>();
+        private EntityDataManager EntityDataManager => GlobRef.Get<EntityDataManager>();
+        private Database Database => GlobRef.Get<Database>();
+        private Chunks Chunks => GlobRef.Get<Chunks>();
 
         private uint _lastFixedFrame = 0;
         private uint _updateCounter = 0; // just to check modulo when sending NearbyEntities packet

@@ -18,7 +18,7 @@ namespace Larnix.Server.Commands
 
     internal class CmdManager : IScript, ICmdExecutor
     {
-        private PlayerManager PlayerManager => Ref.PlayerManager;
+        private PlayerManager PlayerManager => GlobRef.Get<PlayerManager>();
 
         void IScript.PostEarlyFrameUpdate()
         {

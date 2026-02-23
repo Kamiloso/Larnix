@@ -15,7 +15,7 @@ namespace Larnix.Menu.Worlds
         [SerializeField] Button SelectButton;
         [SerializeField] Button PlayButton;
 
-        private ServerSelect ServerSelect => Ref.ServerSelect;
+        private ServerSelect ServerSelect => GlobRef.Get<ServerSelect>();
 
         private UniversalSelect _mySelect;
         private bool _versionChecked = false;

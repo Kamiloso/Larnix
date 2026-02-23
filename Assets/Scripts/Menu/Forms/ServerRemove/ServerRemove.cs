@@ -1,17 +1,19 @@
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using TMPro;
 using UnityEngine;
 using Larnix.Menu.Worlds;
+using Larnix.Core;
 
 namespace Larnix.Menu.Forms
 {
     public class ServerRemoveForm : BaseForm
     {
-        private Menu Menu => Ref.Menu;
-        private WorldSelect WorldSelect => Ref.WorldSelect;
+        private Menu Menu => GlobRef.Get<Menu>();
+        private WorldSelect WorldSelect => GlobRef.Get<WorldSelect>();
         [SerializeField] TMP_InputField IF_RemoveAddress;
+
+        private ServerSelect ServerSelect => GlobRef.Get<ServerSelect>();
 
         public override void EnterForm(params string[] args)
         {
@@ -29,7 +31,7 @@ namespace Larnix.Menu.Forms
 
         protected override void RealSubmit()
         {
-            Ref.ServerSelect.TrueRemoveServer();
+            ServerSelect.TrueRemoveServer();
             Menu.SetScreen("Multiplayer");
         }
 

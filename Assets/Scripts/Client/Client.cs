@@ -24,12 +24,12 @@ namespace Larnix.Client
         private Queue<DelayedPacket> _delayedPackets = new();
         private Receiver _receiver = null;
 
-        private Loading Loading => Ref.Loading;
-        private Inventory Inventory => Ref.Inventory;
-        private TileSelector TileSelector => Ref.TileSelector;
-        private EntityProjections EntityProjections => Ref.EntityProjections;
-        private MainPlayer MainPlayer => Ref.MainPlayer;
-        private Screenshots Screenshots => Ref.Screenshots;
+        private Loading Loading => GlobRef.Get<Loading>();
+        private Inventory Inventory => GlobRef.Get<Inventory>();
+        private TileSelector TileSelector => GlobRef.Get<TileSelector>();
+        private EntityProjections EntityProjections => GlobRef.Get<EntityProjections>();
+        private MainPlayer MainPlayer => GlobRef.Get<MainPlayer>();
+        private Screenshots Screenshots => GlobRef.Get<Screenshots>();
 
         public string Address { get; private set; }
         public string Authcode { get; private set; }

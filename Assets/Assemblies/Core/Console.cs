@@ -98,8 +98,12 @@ namespace Larnix.Core
                 if (_inputThread != null)
                     return;
 
-                _inputThread = new Thread(InputLoop);
-                _inputThread.IsBackground = true;
+                _inputThread = new Thread(InputLoop)
+                {
+                    IsBackground = true,
+                    Name = "Larnix::ConsoleInputThread"
+                };
+                
                 _inputThread.Start();
             }
         }

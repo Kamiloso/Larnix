@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using Larnix.Server.Entities;
 using Larnix.Socket.Backend;
+using Larnix.Core;
 using CmdResult = Larnix.Core.ICmdExecutor.CmdResult;
 
 namespace Larnix.Server.Commands.All
@@ -14,8 +15,8 @@ namespace Larnix.Server.Commands.All
         public override string Pattern => $"{Name}";
         public override string ShortDescription => "Displays a list of all connected players.";
 
-        private QuickServer QuickServer => Ref.QuickServer;
-        private PlayerManager PlayerManager => Ref.PlayerManager;
+        private QuickServer QuickServer => GlobRef.Get<QuickServer>();
+        private PlayerManager PlayerManager => GlobRef.Get<PlayerManager>();
 
         public override void Inject(string command)
         {

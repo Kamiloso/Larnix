@@ -5,6 +5,7 @@ using System.Net;
 using Larnix.Core.Utils;
 using Larnix.Server.Entities;
 using Larnix.Socket.Backend;
+using Larnix.Core;
 using CmdResult = Larnix.Core.ICmdExecutor.CmdResult;
 
 namespace Larnix.Server.Commands.All
@@ -15,8 +16,8 @@ namespace Larnix.Server.Commands.All
         public override string Pattern => $"{Name} <nickname>";
         public override string ShortDescription => "Kicks a player.";
 
-        private QuickServer QuickServer => Ref.QuickServer;
-        private PlayerManager PlayerManager => Ref.PlayerManager;
+        private QuickServer QuickServer => GlobRef.Get<QuickServer>();
+        private PlayerManager PlayerManager => GlobRef.Get<PlayerManager>();
 
         private string _nickname;
 

@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Core.Vectors;
+using Larnix.Core;
 using IHasCollider = Larnix.Entities.All.IHasCollider;
 
 namespace Larnix.Client
@@ -13,7 +14,7 @@ namespace Larnix.Client
         [SerializeField] Camera MainCamera;
         [SerializeField] Transform FollowTransform;
 
-        private Debugger Debugger => Ref.Debugger;
+        private Debugger Debugger => GlobRef.Get<Debugger>();
 
         private int ZoomSteps = DefaultZoomSteps;
 

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
+using Larnix.Core;
 using Larnix.Core.Utils;
 using Larnix.Server.Entities;
 using CmdResult = Larnix.Core.ICmdExecutor.CmdResult;
@@ -14,8 +14,8 @@ namespace Larnix.Server.Commands.All
         public override string Pattern => $"{Name} <nickname>";
         public override string ShortDescription => "Kills a player.";
 
-        private EntityManager EntityManager => Ref.EntityManager;
-        private PlayerManager PlayerManager => Ref.PlayerManager;
+        private EntityManager EntityManager => GlobRef.Get<EntityManager>();
+        private PlayerManager PlayerManager => GlobRef.Get<PlayerManager>();
 
         private string _nickname;
 

@@ -19,11 +19,11 @@ namespace Larnix.Server.Entities
         private readonly Dictionary<string, HashSet<ulong>> _nearbyUIDs = new();
         private readonly Dictionary<string, HashSet<Vec2Int>> _clientChunks = new();
 
-        private Server Server => Ref.Server;
-        private QuickServer QuickServer => Ref.QuickServer;
-        private UserManager UserManager => Ref.UserManager;
-        private EntityManager EntityManager => Ref.EntityManager;
-        private Generator Worldgen => Ref.Generator;
+        private Server Server => GlobRef.Get<Server>();
+        private QuickServer QuickServer => GlobRef.Get<QuickServer>();
+        private UserManager UserManager => GlobRef.Get<UserManager>();
+        private EntityManager EntityManager => GlobRef.Get<EntityManager>();
+        private Generator Worldgen => GlobRef.Get<Generator>();
 
         public enum PlayerState : byte
         {

@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using Larnix.Socket.Backend;
-using Larnix.Worldgen;
+using Larnix.Core;
 using CmdResult = Larnix.Core.ICmdExecutor.CmdResult;
 
 namespace Larnix.Server.Commands.All
@@ -13,7 +11,7 @@ namespace Larnix.Server.Commands.All
         public override string Pattern => $"{Name}";
         public override string ShortDescription => "Turns off the server.";
 
-        private Server Server => Ref.Server;
+        private Server Server => GlobRef.Get<Server>();
 
         public override void Inject(string command)
         {

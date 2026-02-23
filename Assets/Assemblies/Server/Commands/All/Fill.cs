@@ -3,7 +3,7 @@ using Larnix.Blocks;
 using Larnix.Blocks.Structs;
 using Larnix.Core.Json;
 using Larnix.Core.Vectors;
-using Larnix.Server.Terrain;
+using Larnix.Core;
 using CmdResult = Larnix.Core.ICmdExecutor.CmdResult;
 
 namespace Larnix.Server.Commands.All
@@ -12,9 +12,9 @@ namespace Larnix.Server.Commands.All
     {
         public override PrivilegeLevel PrivilegeLevel => PrivilegeLevel.Admin;
         public override string Pattern => $"{Name} <front|back> <type|type:variant> <x1> <y1> <x2> <y2> [json]";
-        public override string ShortDescription => "Fills rectangular area with a block.";
+        public override string ShortDescription => "Fills a rectangular area with a block.";
 
-        private IWorldAPI WorldAPI => Ref.IWorldAPI;
+        private IWorldAPI WorldAPI => GlobRef.Get<IWorldAPI>();
 
         private bool _front;
         private BlockID _blockID;

@@ -2,12 +2,12 @@ using System;
 using Larnix.Packets;
 using Larnix.Core.Utils;
 using Larnix.Core.Vectors;
-using Larnix.Server.Terrain;
 using CmdResult = Larnix.Core.ICmdExecutor.CmdResult;
 using Larnix.Socket.Backend;
 using Larnix.Server.Entities;
 using Larnix.Entities.All;
 using Larnix.Socket.Packets;
+using Larnix.Core;
 
 namespace Larnix.Server.Commands.All
 {
@@ -17,9 +17,9 @@ namespace Larnix.Server.Commands.All
         public override string Pattern => $"{Name} <nickname> <x> <y>";
         public override string ShortDescription => "Teleports a player to a specific position.";
 
-        private QuickServer QuickServer => Ref.QuickServer;
-        private EntityManager EntityManager => Ref.EntityManager;
-        private PlayerManager PlayerManager => Ref.PlayerManager;
+        private QuickServer QuickServer => GlobRef.Get<QuickServer>();
+        private EntityManager EntityManager => GlobRef.Get<EntityManager>();
+        private PlayerManager PlayerManager => GlobRef.Get<PlayerManager>();
 
         private string _nickname;
         private Vec2 _position;

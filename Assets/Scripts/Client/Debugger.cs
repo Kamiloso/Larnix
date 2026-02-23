@@ -13,8 +13,8 @@ namespace Larnix.Client
 {
     public class Debugger : MonoBehaviour
     {
-        private Client Client => Ref.Client;
-        private MainPlayer MainPlayer => Ref.MainPlayer;
+        private Client Client => GlobRef.Get<Client>();
+        private MainPlayer MainPlayer => GlobRef.Get<MainPlayer>();
 
         [SerializeField] public bool ShowDebugInfo;
         [SerializeField] public bool AdvancedDebugKeys;
