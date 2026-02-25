@@ -18,7 +18,7 @@ namespace Larnix.Server.Commands.All
         public override string ShortDescription => "Spawns particles, optionally connected to entity.";
 
         private QuickServer QuickServer => GlobRef.Get<QuickServer>();
-        private PlayerManager PlayerManager => GlobRef.Get<PlayerManager>();
+        private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
 
         private ParticleID _particleID;
         private Vec2 _position;
@@ -66,8 +66,8 @@ namespace Larnix.Server.Commands.All
         {
             Payload packet = new SpawnParticles(_position, _particleID, _uid);
 
-            IEnumerable<string> nearbyPlayers = PlayerManager
-                .AllPlayersInRange(_position, Common.PARTICLE_VIEW_DISTANCE);
+            IEnumerable<string> nearbyPlayers = PlayerActions
+                .AllPlayersInRange(_position, Common.ParticleViewDistance);
             
             foreach (string nickname in nearbyPlayers)
             {

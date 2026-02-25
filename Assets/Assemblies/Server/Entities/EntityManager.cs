@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using Larnix.Entities;
 using System.Linq;
 using Larnix.Socket.Packets;
-using System.Diagnostics;
 using Larnix.Server.Terrain;
 using Larnix.Core.Vectors;
 using System;
@@ -17,19 +16,21 @@ using Larnix.Core;
 
 namespace Larnix.Server.Entities
 {
+    internal enum EntityLoadState { Loading, Active, Unloaded }
     internal class EntityManager : IScript
     {
         private readonly Dictionary<string, EntityAbstraction> _playerControllers = new();
         private readonly Dictionary<ulong, EntityAbstraction> _entityControllers = new();
 
-        private Server Server => GlobRef.Get<Server>();
-        private PlayerManager PlayerManager => GlobRef.Get<PlayerManager>();
+        private Clock Clock => GlobRef.Get<Clock>();
+        private Config Config => GlobRef.Get<Config>();
+        private DataSaver DataSaver => GlobRef.Get<DataSaver>();
+        private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
         private QuickServer QuickServer => GlobRef.Get<QuickServer>();
         private EntityDataManager EntityDataManager => GlobRef.Get<EntityDataManager>();
         private Database Database => GlobRef.Get<Database>();
         private Chunks Chunks => GlobRef.Get<Chunks>();
 
-        private uint _lastFixedFrame = 0;
         private uint _updateCounter = 0; // just to check modulo when sending NearbyEntities packet
 
         void IScript.EarlyFrameUpdate()
@@ -92,28 +93,27 @@ namespace Larnix.Server.Entities
             }
         }
 
-        public void SendEntityBroadcast()
+        void IScript.PostLateFrameUpdate()
         {
-            if (Server.FixedFrame != _lastFixedFrame)
+            if (Clock.FixedFrame % Config.EntityBroadcastPeriodFrames == 0)
             {
-                List<(string Nickname, EntityBroadcast Packet)> broadcastsToSend = new();
+                var broadcastsToSend = new List<(string Nickname, EntityBroadcast Packet)>();
 
-                foreach (string nickname in PlayerManager.AllPlayers())
+                foreach (string nickname in PlayerActions.AllPlayers())
                 {
-                    ulong playerUID = PlayerManager.UidByNickname(nickname);
-                    Vec2 playerPos = PlayerManager.RenderingPosition(nickname);
+                    ulong playerUID = PlayerActions.UidByNickname(nickname);
+                    Vec2 playerPos = PlayerActions.RenderingPosition(nickname);
 
-                    Dictionary<ulong, EntityData> entityList = new();
-                    Dictionary<ulong, uint> playerFixedIndexes = new();
-
-                    HashSet<ulong> entitiesWithInactive = new(); // contains inactive entities too (not inactive players)
+                    var entityList = new Dictionary<ulong, EntityData>();
+                    var playerFixedIndexes = new Dictionary<ulong, uint>();
+                    var entitiesWithInactive = new HashSet<ulong>(); // contains inactive entities too (not inactive players)
 
                     foreach (ulong uid in _entityControllers.Keys)
                     {
                         if (uid == playerUID)
                             continue; // skip self
 
-                        // -- checking entities to add --
+                        // checking entities to add
                         EntityAbstraction entity = _entityControllers[uid];
                         Vec2 entityPos = entity.ActiveData.Position;
 
@@ -125,10 +125,10 @@ namespace Larnix.Server.Entities
                                 entityList.Add(uid, entity.ActiveData);
                                 entitiesWithInactive.Add(uid);
 
-                                // -- adding indexes --
+                                // adding indexes
                                 if (entity.IsPlayer)
                                 {
-                                    PlayerUpdate recentUpdate = PlayerManager.RecentPlayerUpdate(entity.Nickname);
+                                    PlayerUpdate recentUpdate = PlayerActions.RecentPlayerUpdate(entity.Nickname);
                                     uint fixedFrame = recentUpdate.FixedFrame;
 
                                     playerFixedIndexes.Add(uid, fixedFrame);
@@ -144,14 +144,11 @@ namespace Larnix.Server.Entities
                         }
                     }
 
-                    PlayerManager.UpdateNearbyUIDs(
-                        nickname,
-                        entitiesWithInactive,
-                        Server.FixedFrame,
-                        _updateCounter % 6 == 0
-                        );
+                    bool sendAtLeastOne = _updateCounter % 6 == 0;
+                    PlayerActions.UpdateNearbyUIDs(
+                        nickname, entitiesWithInactive, Clock.FixedFrame, sendAtLeastOne);
 
-                    var fragments = EntityBroadcast.CreateList(Server.FixedFrame, entityList, playerFixedIndexes);
+                    var fragments = EntityBroadcast.CreateList(Clock.FixedFrame, entityList, playerFixedIndexes);
                     foreach (var brdcst in fragments)
                     {
                         broadcastsToSend.Add((nickname, brdcst));
@@ -165,7 +162,6 @@ namespace Larnix.Server.Entities
                 }
 
                 _updateCounter++;
-                _lastFixedFrame = Server.FixedFrame;
             }
         }
 
@@ -178,7 +174,7 @@ namespace Larnix.Server.Entities
             Payload packet = new PlayerInitialize(
                 position: controller.ActiveData.Position,
                 myUid: controller.UID,
-                lastFixedFrame: _lastFixedFrame
+                lastFixedFrame: Clock.FixedFrame - 1
             );
             QuickServer.Send(nickname, packet);
         }
@@ -208,7 +204,7 @@ namespace Larnix.Server.Entities
             if (!Chunks.IsLoadedPosition(entityData.Position))
                 return false;
 
-            ulong uid = GetNextUID(); // generate new
+            ulong uid = EntityDataManager.NextUID(); // generate new
 
             EntityAbstraction controller = EntityAbstraction.CreateEntityController(entityData, uid);
             _entityControllers.Add(controller.UID, controller);
@@ -257,24 +253,6 @@ namespace Larnix.Server.Entities
                 _entityControllers.Remove(uid);
             }
             else throw new InvalidOperationException("Entity with ID " + uid + " is not loaded!");
-        }
-
-        // ----- UID Management -----
-
-        private ulong? _nextUID = null;
-        public ulong GetNextUID()
-        {
-            if (_nextUID != null)
-            {
-                ulong uid = _nextUID.Value;
-                _nextUID--;
-                return uid;
-            }
-            else
-            {
-                _nextUID = (ulong)(Database.GetMinUID() - 1);
-                return GetNextUID();
-            }
         }
     }
 }

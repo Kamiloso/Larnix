@@ -1,8 +1,9 @@
 using System;
+using Larnix.Core;
 
 namespace Larnix.Socket.Helpers
 {
-    internal class CycleTimer
+    internal class CycleTimer : ITickable
     {
         private readonly float PERIOD_SECONDS;
         private float _accumulator;

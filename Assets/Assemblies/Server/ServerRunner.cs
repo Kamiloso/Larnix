@@ -17,6 +17,9 @@ namespace Larnix.Server
 
     public sealed class ServerRunner : IDisposable
     {
+        private static float PERIOD => Common.FixedTime;
+        private static long MAX_FRAME_DELAY => 5;
+
         public record ServerAnswer(string Address, string Authcode, Task<string> RelayEstablishment = null);
         public record RunSuggestions(long? Seed = null, string RelayAddress = null);
 
@@ -75,22 +78,26 @@ namespace Larnix.Server
 
         private void ServerLoop()
         {
-            const float PERIOD = Common.FIXED_TIME;
-            const long MAX_FRAME_DELAY = 5;
-
             var sw = Stopwatch.StartNew();
             long frame = 0;
             bool crashed = false;
 
             try
             {
+                double lastTime = sw.ElapsedMilliseconds - PERIOD;
+
                 while (!_stopFlag)
                 {
-                    _server.TickFixed();
+                    double currentTime = sw.Elapsed.TotalSeconds;
+                    double deltaTime = currentTime - lastTime;
+
+                    _server.Tick((float)deltaTime + float.Epsilon);
                     frame++;
 
                     while (sw.Elapsed.TotalSeconds > (frame + MAX_FRAME_DELAY) * PERIOD)
+                    {
                         frame++;
+                    }
 
                     while (sw.Elapsed.TotalSeconds < frame * PERIOD)
                     {
@@ -104,6 +111,8 @@ namespace Larnix.Server
                             Thread.Sleep(0);
                         }
                     }
+
+                    lastTime = currentTime;
                 }
             }
             catch (Exception ex)

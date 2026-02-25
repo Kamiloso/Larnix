@@ -8,6 +8,7 @@ using Larnix.Socket.Channel.Networking;
 using Larnix.Socket.Packets;
 using Larnix.Socket.Security.Keys;
 using Larnix.Core.Utils;
+using Larnix.Socket.Helpers.Limiters;
 
 namespace Larnix.Socket
 {
@@ -29,10 +30,7 @@ namespace Larnix.Socket
         private readonly Dictionary<IPEndPoint, Connection> _connections = new();
         private readonly Dictionary<IPEndPoint, PreLoginBuffer> _preLogins = new();
 
-        private readonly TrafficLimiter<InternetID> _connectionLimiter = new(
-            maxTrafficLocal: 3,
-            maxTrafficGlobal: ulong.MaxValue
-            );
+        private readonly Limiter<InternetID> _connLimiter = new(3);
 
         private bool _disposed = false;
 
@@ -89,11 +87,11 @@ namespace Larnix.Socket
                     return false; // reject, player may connect once again anyway (rewriting this code to accept would be a nightmare)
                 }
 
-                if (!_connectionLimiter.TryIncrease(internetID))
+                if (!_connLimiter.TryAdd(internetID))
                 {
-                    ulong LIMIT = _connectionLimiter.MAX_TRAFFIC_LOCAL;
-                    Core.Debug.LogWarning($"Network {internetID} has reached the limit of {LIMIT} simultaneous connections." +
-                        $"\nCannot accept {nickname} while connecting from {endPoint}");
+                    ulong max = _connLimiter.Max;
+                    Core.Debug.LogWarning($"Network {internetID} has reached the limit of {max} simultaneous connections.\n" +
+                        $"Cannot accept {nickname} while connecting from {endPoint}");
                     
                     return false; // reject, too many connections from internet ID
                 }
@@ -193,7 +191,7 @@ namespace Larnix.Socket
                         Owner: _epToNick[endPoint])
                         );
                     
-                    var nickname = _epToNick[endPoint];
+                    string nickname = _epToNick[endPoint];
                     if (_connections.TryGetValue(endPoint, out var conn))
                     {
                         conn.Dispose();
@@ -204,7 +202,7 @@ namespace Larnix.Socket
                     _connections.Remove(endPoint);
 
                     InternetID internetID = _quickServer.MakeInternetID(endPoint);
-                    _connectionLimiter.Decrease(internetID);
+                    _connLimiter.Remove(internetID);
                 }
             }
             return received;

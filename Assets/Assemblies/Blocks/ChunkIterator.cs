@@ -58,7 +58,7 @@ namespace Larnix.Blocks
 
         private static void IterateRandom(Action<int, int> action)
         {
-            var indexes = new int[CHUNK_SIZE * CHUNK_SIZE];
+            Span<int> indexes = stackalloc int[CHUNK_SIZE * CHUNK_SIZE];
             for (int i = 0; i < indexes.Length; i++)
             {
                 indexes[i] = i;

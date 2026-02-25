@@ -10,6 +10,8 @@ using Larnix.Blocks.Structs;
 using Larnix.Packets.Structs;
 using Larnix.Blocks.All;
 using Larnix.Core;
+using Larnix.Server.Data;
+using Larnix.Server.Transmission;
 using BlockInits = Larnix.Blocks.Block.BlockInits;
 
 namespace Larnix.Server.Terrain
@@ -195,10 +197,16 @@ namespace Larnix.Server.Terrain
             {
                 _disposed = true;
 
-                foreach (var block in _blocksFront) block.Detach();
-                foreach (var block in _blocksBack) block.Detach();
+                foreach (var block in _blocksFront)
+                {
+                    block?.Detach();
+                }
+                foreach (var block in _blocksBack)
+                {
+                    block?.Detach();
+                }
 
-                foreach(var collider in _colliderCollections.Values.SelectMany(x => x))
+                foreach (var collider in _colliderCollections.Values.SelectMany(x => x))
                 {
                     PhysicsManager.RemoveColliderByReference(collider);
                 }

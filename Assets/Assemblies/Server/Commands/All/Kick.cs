@@ -17,7 +17,7 @@ namespace Larnix.Server.Commands.All
         public override string ShortDescription => "Kicks a player.";
 
         private QuickServer QuickServer => GlobRef.Get<QuickServer>();
-        private PlayerManager PlayerManager => GlobRef.Get<PlayerManager>();
+        private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
 
         private string _nickname;
 
@@ -25,12 +25,12 @@ namespace Larnix.Server.Commands.All
         {
             if (TrySplit(command, 2, out string[] parts))
             {
-                _nickname = parts[1];
-
-                if (!Validation.IsGoodNickname(_nickname))
+                if (!Parsing.TryParseNickname(parts[1], out var nickname))
                 {
                     throw FormatException(Validation.WrongNicknameInfo);
                 }
+
+                _nickname = nickname;
             }
             else
             {
@@ -40,7 +40,7 @@ namespace Larnix.Server.Commands.All
 
         public override (CmdResult, string) Execute(string sender, PrivilegeLevel privilege)
         {
-            if (PlayerManager.IsConnected(_nickname))
+            if (PlayerActions.IsConnected(_nickname))
             {
                 QuickServer.FinishConnectionRequest(_nickname);
 

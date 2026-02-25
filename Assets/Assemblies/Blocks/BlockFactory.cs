@@ -4,7 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.Serialization;
-using Larnix.Core;
+using Larnix.Core.Utils;
 using Larnix.Blocks.All;
 using BlockInits = Larnix.Blocks.Block.BlockInits;
 

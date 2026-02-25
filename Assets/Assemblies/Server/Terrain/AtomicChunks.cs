@@ -138,7 +138,7 @@ namespace Larnix.Server.Terrain
 
                     if (tooLarge)
                     {
-                        if (!WARNING_SUPPRESS && WorldAPI.ServerTick() % WARNING_PERIOD == 0 && !_warningEmitted)
+                        if (!WARNING_SUPPRESS && WorldAPI.CurrentFrame() % WARNING_PERIOD == 0 && !_warningEmitted)
                         {
                             _warningEmitted = true;
                             Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, Vec2Int.Zero);

@@ -234,7 +234,7 @@ namespace Larnix.Menu.Worlds
             {
                 string versionDisplay = _serverThinker.serverInfo.GameVersion.ToString();
                 string nicknameText = _serverThinker.serverInfo.HostUser;
-                string hostDisplay = nicknameText != Common.LOOPBACK_ONLY_NICKNAME ?
+                string hostDisplay = nicknameText != Common.ReservedNickname ?
                     $"Host: {nicknameText}" : "Detached Server";
 
                 NameText.text = SelectedWorld ?? "";

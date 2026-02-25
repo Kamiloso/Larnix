@@ -2,15 +2,14 @@ using System.Collections;
 using System.Collections.Generic;
 using Larnix.Blocks.Structs;
 using System.Linq;
-using Larnix.Server.Data;
 using Larnix.Worldgen;
 using Larnix.Core.Vectors;
 using System;
 using Larnix.Core;
 
-namespace Larnix.Server.Terrain
+namespace Larnix.Server.Data
 {
-    internal class BlockDataManager : IScript
+    internal class BlockDataManager
     {
         private readonly Dictionary<Vec2Int, BlockData2[,]> _chunkCache = new();
         private readonly HashSet<Vec2Int> _referencedChunks = new();

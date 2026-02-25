@@ -2,28 +2,45 @@ using System.Collections.Generic;
 using System;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Collections.Concurrent;
 
 namespace Larnix.Core
 {
     public static class Console
     {
-        private static Thread _inputThread = null;
-        private static Queue<string> _cmdBuffer = new();
-        private static object _lock = new();
+        private static Thread _inputThread;
+        private static ConcurrentQueue<string> _cmdQueue = new();
+        private static readonly object _outputLock = new();
+        private static readonly object _inputLock = new();
+
+        public static string Timestamp => DateTime.Now.ToString("[yyyy-MM-dd HH:mm:ss]");
+
+        public static void SetTitle(string title)
+        {
+            lock (_outputLock)
+            {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    System.Console.Title = title;
+                else
+                    System.Console.Write($"\x1b]0;{title}\x07");
+            }
+        }
+
+#region Output
 
         public static void Log(string msg, ConsoleColor color = ConsoleColor.Gray)
         {
-            lock (_lock)
+            lock (_outputLock)
             {
                 System.Console.ForegroundColor = color;
-                System.Console.WriteLine(GetTimestamp() + " " + msg);
+                System.Console.WriteLine(Timestamp + " " + msg);
                 System.Console.ResetColor();
             }
         }
 
         public static void LogRaw(string msg, ConsoleColor color = ConsoleColor.Gray)
         {
-            lock (_lock)
+            lock (_outputLock)
             {
                 System.Console.ForegroundColor = color;
                 System.Console.Write(msg);
@@ -33,89 +50,73 @@ namespace Larnix.Core
 
         public static void LogInfo(string msg)
         {
-            lock (_lock)
+            lock (_outputLock)
             {
-                LogRaw(GetTimestamp() + " ");
+                LogRaw(Timestamp + " ");
                 LogRaw("INFO: " + msg + "\n", ConsoleColor.Blue);
             }
         }
 
         public static void LogWarning(string msg)
         {
-            lock (_lock)
+            lock (_outputLock)
             {
-                LogRaw(GetTimestamp() + " ");
+                LogRaw(Timestamp + " ");
                 LogRaw("WARNING: " + msg + "\n", ConsoleColor.Yellow);
             }
         }
 
         public static void LogError(string msg)
         {
-            lock (_lock)
+            lock (_outputLock)
             {
-                LogRaw(GetTimestamp() + " ");
+                LogRaw(Timestamp + " ");
                 LogRaw("ERROR: " + msg + "\n", ConsoleColor.Red);
             }
         }
 
         public static void LogSuccess(string msg)
         {
-            lock (_lock)
+            lock (_outputLock)
             {
-                LogRaw(GetTimestamp() + " ");
+                LogRaw(Timestamp + " ");
                 LogRaw("SUCCESS: " + msg + "\n", ConsoleColor.Green);
             }
         }
 
         public static void Clear()
         {
-            lock (_lock)
+            lock (_outputLock)
             {
                 System.Console.Clear();
             }
         }
 
-        public static void SetTitle(string title)
+#endregion
+#region Input
+
+        public static string GetInputSync()
         {
-            lock (_lock)
+            while (true)
             {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    System.Console.Title = title;
-                else
-                    System.Console.Write($"\x1b]0;{title}\x07");
+                if (TryPopInput(out string input))
+                    return input;
+
+                Thread.Sleep(10);
             }
         }
 
-        private static string GetTimestamp()
+        public static bool TryPopInput(out string input)
         {
-            return DateTime.Now.ToString("[yyyy-MM-dd HH:mm:ss]");
-        }
+            EnsureInputThread();
 
-        public static void EnableInputThread()
-        {
-            lock (_lock)
+            if (_cmdQueue.TryDequeue(out input))
             {
-                if (_inputThread != null)
-                    return;
-
-                _inputThread = new Thread(InputLoop)
-                {
-                    IsBackground = true,
-                    Name = "Larnix::ConsoleInputThread"
-                };
-                
-                _inputThread.Start();
+                return true;
             }
-        }
 
-        public static string GetCommand() // null --> no command in buffer
-        {
-            lock (_lock)
-            {
-                if(_cmdBuffer.Count > 0)
-                    return _cmdBuffer.Dequeue();
-            }
-            return null;
+            input = default;
+            return false;
         }
 
         private static void InputLoop()
@@ -123,18 +124,35 @@ namespace Larnix.Core
             while (true)
             {
                 string input = System.Console.ReadLine();
-                if (input == null) break;
-
-                lock (_lock)
+                if (input == null)
                 {
-                    _cmdBuffer.Enqueue(input);
+                    Thread.Sleep(500);
+                    continue;
+                }
+
+                _cmdQueue.Enqueue(input);
+            }
+        }
+
+        private static void EnsureInputThread()
+        {
+            lock (_inputLock)
+            {
+                bool isAlive = _inputThread?.IsAlive ?? false;
+                if (!isAlive)
+                {
+                    _inputThread = new Thread(InputLoop)
+                    {
+                        IsBackground = true,
+                        Name = "Larnix::ConsoleInputThread"
+                    };
+                    
+                    _inputThread.Start();
                 }
             }
         }
 
-        public static string GetInputSync()
-        {
-            return System.Console.ReadLine();
-        }
+#endregion
+
     }
 }

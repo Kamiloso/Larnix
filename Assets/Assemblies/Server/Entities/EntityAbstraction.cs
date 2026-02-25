@@ -8,11 +8,11 @@ using Larnix.Core.Vectors;
 using System;
 using Larnix.Core.Utils;
 using Larnix.Core;
+using Larnix.Server.Data;
 using EntityInits = Larnix.Entities.Entity.EntityInits;
 
 namespace Larnix.Server.Entities
 {
-    internal enum EntityLoadState { Loading, Active, Unloaded }
     internal class EntityAbstraction
     {
         public ulong UID { get; init; }
@@ -33,9 +33,9 @@ namespace Larnix.Server.Entities
         private EntityDataManager EntityDataManager => GlobRef.Get<EntityDataManager>();
         private PhysicsManager PhysicsManager => GlobRef.Get<PhysicsManager>();
 
-        public static EntityAbstraction CreatePlayerController(string nickname) =>
-            new EntityAbstraction(nickname);
+        private EntityAbstraction() { }
 
+        public static EntityAbstraction CreatePlayerController(string nickname) => new(nickname);
         private EntityAbstraction(string nickname)
         {
             UID = (ulong)UserManager.GetUserID(nickname);
@@ -44,15 +44,13 @@ namespace Larnix.Server.Entities
                 position: new Vec2(0, 0),
                 rotation: 0.0f
             );
-            ActiveData.Position += Common.UP_EPSILON;
+            ActiveData.Position += Common.UpEpsilon;
             _nickname = nickname;
             
             EntityDataManager.SetEntityData(UID, ActiveData);
         }
 
-        public static EntityAbstraction CreateEntityController(EntityData entityData, ulong uid) =>
-            new EntityAbstraction(entityData, uid);
-
+        public static EntityAbstraction CreateEntityController(EntityData entityData, ulong uid) => new(entityData, uid);
         private EntityAbstraction(EntityData entityData, ulong uid)
         {
             if (entityData.ID == EntityID.Player)
@@ -60,7 +58,7 @@ namespace Larnix.Server.Entities
 
             UID = uid;
             ActiveData = entityData;
-            ActiveData.Position += Common.UP_EPSILON;
+            ActiveData.Position += Common.UpEpsilon;
 
             EntityDataManager.SetEntityData(UID, ActiveData);
         }

@@ -17,28 +17,38 @@ namespace Larnix.Server.Data
 {
     internal class Database : IUserAPI , IDisposable
     {
-        private readonly SqliteConnection _connection = null;
-        private SqliteTransaction _transaction = null;
+        private SqliteConnection Connection { get; init; }
+        private SqliteTransaction Transaction { get; set; }
 
-        private static object _initLock = new();
         private static bool _initialized = false;
+        private static readonly object _initLock = new();
 
         private bool _disposed = false;
 
-        public Database(string path, string filename)
+        public Database(string path)
         {
             lock (_initLock)
             {
-                if(!_initialized)
+                if (!_initialized)
                 {
                     SQLitePCL.Batteries_V2.Init();
                     _initialized = true;
                 }
             }
 
-            FileManager.EnsureDirectory(path);
-            _connection = new SqliteConnection($"Data Source={Path.Combine(path, filename)};Pooling=False");
-            _connection.Open();
+            string normalizedPath = Path.GetFullPath(path);
+            string fullDatabasePath = Path.Combine(normalizedPath, "database.sqlite");
+
+            FileManager.EnsureDirectory(normalizedPath);
+
+            SqliteConnectionStringBuilder csb = new()
+            {
+                DataSource = fullDatabasePath,
+                Pooling = false
+            };
+
+            Connection = new SqliteConnection(csb.ConnectionString);
+            Connection.Open();
 
             using (var cmd = CreateCommand())
             {
@@ -221,7 +231,7 @@ namespace Larnix.Server.Data
 
         public void FlushEntities(Dictionary<ulong, EntityData> entities)
         {
-            if (_transaction == null)
+            if (Transaction == null)
                 throw new InvalidOperationException("Active transaction is needed for this method!");
 
             using (var cmd = CreateCommand())
@@ -260,7 +270,7 @@ namespace Larnix.Server.Data
 
         public bool DeleteEntities(List<ulong> uids)
         {
-            if (_transaction == null)
+            if (Transaction == null)
                 throw new InvalidOperationException("Active transaction is needed for this method!");
 
             if (uids == null || uids.Count == 0)
@@ -372,7 +382,7 @@ namespace Larnix.Server.Data
 
         public bool TryGetChunk(int x, int y, out BlockData2[,] chunk)
         {
-            using(var cmd = CreateCommand())
+            using (var cmd = CreateCommand())
             {
                 cmd.CommandText = "SELECT block_bytes, nbt FROM chunks WHERE chunk_x = $chunk_x AND chunk_y = $chunk_y;";
                 cmd.Parameters.AddWithValue("$chunk_x", x);
@@ -394,38 +404,40 @@ namespace Larnix.Server.Data
 
         private SqliteCommand CreateCommand()
         {
-            var cmd = _connection.CreateCommand();
-            if(_transaction != null)
-                cmd.Transaction = _transaction;
+            var cmd = Connection.CreateCommand();
+            if (Transaction != null)
+            {
+                cmd.Transaction = Transaction;
+            }
             return cmd;
         }
 
         public void BeginTransaction()
         {
-            if (_transaction != null)
+            if (Transaction != null)
                 throw new InvalidOperationException("Transaction already in progress.");
 
-            _transaction = _connection.BeginTransaction();
+            Transaction = Connection.BeginTransaction();
         }
 
         public void CommitTransaction()
         {
-            if (_transaction == null)
+            if (Transaction == null)
                 throw new InvalidOperationException("No active transaction.");
 
-            _transaction.Commit();
-            _transaction.Dispose();
-            _transaction = null;
+            Transaction.Commit();
+            Transaction.Dispose();
+            Transaction = null;
         }
 
         public void RollbackTransaction()
         {
-            if (_transaction == null)
+            if (Transaction == null)
                 throw new InvalidOperationException("No active transaction.");
 
-            _transaction.Rollback();
-            _transaction.Dispose();
-            _transaction = null;
+            Transaction.Rollback();
+            Transaction.Dispose();
+            Transaction = null;
         }
 
         public void Dispose()
@@ -434,11 +446,13 @@ namespace Larnix.Server.Data
             {
                 _disposed = true;
 
-                if (_transaction != null)
+                if (Transaction != null)
+                {
                     RollbackTransaction();
+                }
 
-                _connection?.Close();
-                _connection?.Dispose();
+                Connection?.Close();
+                Connection?.Dispose();
             }
         }
     }

@@ -2,8 +2,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -15,15 +13,13 @@ namespace Larnix.Core.Utils
     public static class Common
     {
         public const ushort LARNIX_PORT = 27682;
-        public const string DEFAULT_RELAY_ADDRESS = "relay.se3.page";
 
-        public const string LOOPBACK_ONLY_NICKNAME = "Player";
-        public const string LOOPBACK_ONLY_PASSWORD = "SGP_PASSWORD\x01";
-
-        public const float FIXED_TIME = 0.02f;
-        public const double PARTICLE_VIEW_DISTANCE = 128.0;
-        
-        public static Vec2 UP_EPSILON => new Vec2(0.00, 0.01);
+        public static string DefaultRelayAddress => "relay.se3.page";
+        public static string ReservedNickname => "Player";
+        public static string ReservedPassword => "SGP_PASSWORD\x01";
+        public static float FixedTime => 0.02f;
+        public static double ParticleViewDistance => 128.0;
+        public static Vec2 UpEpsilon => new Vec2(0.00, 0.01);
 
         private static readonly ThreadLocal<Random> _threadRandom = new(() => new Random());
         public static Random Rand() => _threadRandom.Value;

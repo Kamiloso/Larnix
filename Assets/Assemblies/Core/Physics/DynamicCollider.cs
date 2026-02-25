@@ -126,7 +126,7 @@ namespace Larnix.Core.Physics
 
             // Generate report & update position
 
-            SetWill(Center, Center + _velocity * Common.FIXED_TIME);
+            SetWill(Center, Center + _velocity * Common.FixedTime);
             _report = _physics.MoveCollider(this);
             return RemoveOffset(_report);
         }

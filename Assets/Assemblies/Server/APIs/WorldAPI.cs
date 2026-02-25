@@ -6,21 +6,22 @@ using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
 using Larnix.Server.Commands;
 using Larnix.Core;
+using Larnix.Server.Terrain;
 using BreakMode = Larnix.Blocks.IWorldAPI.BreakMode;
 using ResultType = Larnix.Core.ICmdExecutor.CmdResult;
 
-namespace Larnix.Server.Terrain
+namespace Larnix.Server.APIs
 {
     internal class WorldAPI : IWorldAPI
     {
         private Chunks Chunks => GlobRef.Get<Chunks>();
         private AtomicChunks AtomicChunks => GlobRef.Get<AtomicChunks>();
         private CmdManager Commands => GlobRef.Get<CmdManager>();
-        private Server Server => GlobRef.Get<Server>();
+        private Clock Clock => GlobRef.Get<Clock>();
 
-        public long ServerTick()
+        public long CurrentFrame()
         {
-            return Server.ServerTick;
+            return Clock.FixedFrame;
         }
 
         public bool IsChunkLoaded(Vec2Int chunk, bool atomic = false)

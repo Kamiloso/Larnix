@@ -12,14 +12,21 @@ using Larnix.Core;
 
 namespace Larnix.Server.Entities
 {
-    internal class PlayerManager : IScript
+    internal class PlayerActions : IScript
     {
-        private readonly Dictionary<string, ulong> _playerUIDs = new();
-        private readonly Dictionary<string, PlayerUpdate> _recentPlayerUpdates = new(); // present for alive and dead players
-        private readonly Dictionary<string, HashSet<ulong>> _nearbyUIDs = new();
-        private readonly Dictionary<string, HashSet<Vec2Int>> _clientChunks = new();
+        // internal representation aggregating all per-player state
+        private class ConnectedPlayer
+        {
+            public ulong Uid;
+            public PlayerUpdate RecentUpdate; // null while inactive
+            public HashSet<ulong> NearbyUIDs = new();
+            public HashSet<Vec2Int> ClientChunks = new();
+        }
 
-        private Server Server => GlobRef.Get<Server>();
+        private readonly Dictionary<string, ConnectedPlayer> _players = new();
+
+        private Clock Clock => GlobRef.Get<Clock>();
+        private Config Config => GlobRef.Get<Config>();
         private QuickServer QuickServer => GlobRef.Get<QuickServer>();
         private UserManager UserManager => GlobRef.Get<UserManager>();
         private EntityManager EntityManager => GlobRef.Get<EntityManager>();
@@ -36,9 +43,8 @@ namespace Larnix.Server.Entities
         public void JoinPlayer(string nickname)
         {
             ulong uid = (ulong)UserManager.GetUserID(nickname);
-            _playerUIDs[nickname] = uid;
-            _nearbyUIDs[nickname] = new();
-            _clientChunks[nickname] = new();
+            var cp = new ConnectedPlayer { Uid = uid };
+            _players[nickname] = cp;
 
             CreatePlayerInstance(nickname);
         }
@@ -47,10 +53,10 @@ namespace Larnix.Server.Entities
         {
             EntityManager.CreatePlayerController(nickname);
             
-            // Set to PlayerState.Inactive
-            if(_recentPlayerUpdates.ContainsKey(nickname))
+            // Set to PlayerState.Inactive by clearing any previous update
+            if (_players.TryGetValue(nickname, out var cp))
             {
-                _recentPlayerUpdates.Remove(nickname);
+                cp.RecentUpdate = null;
             }
         }
 
@@ -68,22 +74,25 @@ namespace Larnix.Server.Entities
                     msg.Position, msg.Rotation);
 
                 // Update PlayerUpdate info
-                _recentPlayerUpdates[nickname] = msg;
+                if (_players.TryGetValue(nickname, out var cp))
+                {
+                    cp.RecentUpdate = msg;
+                }
             }
         }
 
         public ulong UidByNickname(string nickname)
         {
-            if (_playerUIDs.TryGetValue(nickname, out ulong uid))
-                return uid;
+            if (_players.TryGetValue(nickname, out var cp))
+                return cp.Uid;
             
             throw new KeyNotFoundException("Player " + nickname + " is not connected!");
         }
 
         public PlayerUpdate RecentPlayerUpdate(string nickname)
         {
-            if (_recentPlayerUpdates.TryGetValue(nickname, out PlayerUpdate lastPacket))
-                return lastPacket;
+            if (_players.TryGetValue(nickname, out var cp))
+                return cp.RecentUpdate;
             
             return null;
         }
@@ -93,18 +102,15 @@ namespace Larnix.Server.Entities
             if(EntityManager.GetPlayerController(nickname) != null)
                 EntityManager.UnloadPlayerController(nickname);
 
-            _playerUIDs.Remove(nickname);
-
-            if(_recentPlayerUpdates.ContainsKey(nickname))
-                _recentPlayerUpdates.Remove(nickname);
-
-            _nearbyUIDs.Remove(nickname);
-            _clientChunks.Remove(nickname);
+            _players.Remove(nickname);
         }
 
         public void UpdateNearbyUIDs(string nickname, HashSet<ulong> newUIDs, uint fixedFrame, bool sendAtLeastOne)
         {
-            HashSet<ulong> oldUIDs = _nearbyUIDs[nickname];
+            if (!_players.TryGetValue(nickname, out var cp))
+                return;
+
+            HashSet<ulong> oldUIDs = cp.NearbyUIDs;
 
             HashSet<ulong> added = new HashSet<ulong>(newUIDs);
             added.ExceptWith(oldUIDs);
@@ -131,52 +137,55 @@ namespace Larnix.Server.Entities
                 }
             }
 
-            _nearbyUIDs[nickname] = newUIDs;
+            cp.NearbyUIDs = newUIDs;
         }
 
-        public void SendFrameInfoBroadcast()
+        void IScript.PostLateFrameUpdate()
         {
-            foreach (string nickname in _playerUIDs.Keys)
+            if (Clock.FixedFrame % Config.EntityBroadcastPeriodFrames == 0)
             {
-                Vec2 renderingPosition = RenderingPosition(nickname);
+                foreach (string nickname in _players.Keys)
+                {
+                    Vec2 renderingPosition = RenderingPosition(nickname);
 
-                Payload packet = new FrameInfo(
-                    Server.ServerTick,
-                    Worldgen.SkyColorAt(renderingPosition),
-                    Worldgen.BiomeAt(renderingPosition),
-                    Weather.Clear, // TODO: implement weather
-                    Server.TPS
-                );
-                QuickServer.Send(nickname, packet, false);
+                    Payload packet = new FrameInfo(
+                        Clock.ServerTick,
+                        Worldgen.SkyColorAt(renderingPosition),
+                        Worldgen.BiomeAt(renderingPosition),
+                        Weather.Clear, // TODO: implement weather
+                        Clock.TPS
+                    );
+                    QuickServer.Send(nickname, packet, false);
+                }
             }
         }
 
         public bool PlayerHasChunk(string nickname, Vec2Int chunk)
         {
-            if (_clientChunks.TryGetValue(nickname, out var chunks))
-                return chunks.Contains(chunk);
+            if (_players.TryGetValue(nickname, out var cp))
+                return cp.ClientChunks.Contains(chunk);
             
             return false;
         }
 
         public void UpdateClientChunks(string nickname, HashSet<Vec2Int> chunks)
         {
-            if (_clientChunks.ContainsKey(nickname))
-                _clientChunks[nickname] = chunks;
+            if (_players.TryGetValue(nickname, out var cp))
+                cp.ClientChunks = chunks;
         }
 
         public HashSet<Vec2Int> LoadedChunksCopy(string nickname)
         {
-            if (!_clientChunks.ContainsKey(nickname))
+            if (!_players.TryGetValue(nickname, out var cp))
                 return new HashSet<Vec2Int>();
 
-            return new HashSet<Vec2Int>(_clientChunks[nickname]);
+            return new HashSet<Vec2Int>(cp.ClientChunks);
         }
 
-        public IEnumerable<string> AllPlayers() => _playerUIDs.Keys;
+        public IEnumerable<string> AllPlayers() => _players.Keys;
         public IEnumerable<string> AllPlayersThatAre(PlayerState state)
         {
-            foreach (string nickname in _playerUIDs.Keys)
+            foreach (string nickname in _players.Keys)
             {
                 if (StateOf(nickname) == state)
                 {
@@ -187,7 +196,7 @@ namespace Larnix.Server.Entities
 
         public IEnumerable<string> AllPlayersInRange(Vec2 position, double range)
         {
-            foreach (string nickname in _playerUIDs.Keys)
+            foreach (string nickname in _players.Keys)
             {
                 Vec2 playerPos = RenderingPosition(nickname);
                 if (Vec2.Distance(playerPos, position) <= range)
@@ -207,7 +216,7 @@ namespace Larnix.Server.Entities
                     return EntityManager.GetPlayerController(nickname).ActiveData.Position;
 
                 case PlayerState.Dead:
-                    return _recentPlayerUpdates[nickname].Position;
+                    return _players[nickname].RecentUpdate.Position;
 
                 default:
                     throw new InvalidOperationException("Player " + nickname + " is not connected!");
@@ -216,10 +225,11 @@ namespace Larnix.Server.Entities
 
         public PlayerState StateOf(string nickname)
         {
-            if (!_playerUIDs.ContainsKey(nickname))
+            if (!_players.ContainsKey(nickname))
                 return PlayerState.None;
 
-            if (!_recentPlayerUpdates.ContainsKey(nickname))
+            var cp = _players[nickname];
+            if (cp.RecentUpdate == null)
                 return PlayerState.Inactive;
 
             if (EntityManager.GetPlayerController(nickname) != null)

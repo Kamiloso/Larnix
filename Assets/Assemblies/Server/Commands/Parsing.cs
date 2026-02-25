@@ -14,6 +14,18 @@ namespace Larnix.Server.Commands
             return front || lower == "back";
         }
 
+        public static bool TryParseNickname(string input, out string nickname)
+        {
+            if (Validation.IsGoodNickname(input))
+            {
+                nickname = input;
+                return true;
+            }
+            
+            nickname = default;
+            return false;
+        }
+
         public static bool TryParseUid(string input, out ulong uid)
         {
             if (ulong.TryParse(input, out ulong u_uid))

@@ -15,7 +15,7 @@ namespace Larnix.Server.Commands.All
         public override string ShortDescription => "Kills a player.";
 
         private EntityManager EntityManager => GlobRef.Get<EntityManager>();
-        private PlayerManager PlayerManager => GlobRef.Get<PlayerManager>();
+        private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
 
         private string _nickname;
 
@@ -23,12 +23,12 @@ namespace Larnix.Server.Commands.All
         {
             if (TrySplit(command, 2, out string[] parts))
             {
-                _nickname = parts[1];
-
-                if (!Validation.IsGoodNickname(_nickname))
+                if (!Parsing.TryParseNickname(parts[1], out var nickname))
                 {
                     throw FormatException(Validation.WrongNicknameInfo);
                 }
+
+                _nickname = nickname;
             }
             else
             {
@@ -38,9 +38,9 @@ namespace Larnix.Server.Commands.All
 
         public override (CmdResult, string) Execute(string sender, PrivilegeLevel privilege)
         {
-            if (PlayerManager.IsAlive(_nickname))
+            if (PlayerActions.IsAlive(_nickname))
             {
-                ulong uid = PlayerManager.UidByNickname(_nickname);
+                ulong uid = PlayerActions.UidByNickname(_nickname);
                 EntityManager.KillEntity(uid);
 
                 return (CmdResult.Success,

@@ -16,7 +16,7 @@ namespace Larnix.Blocks
             Weak = 2, // rearm EventFlag
         }
         
-        public long ServerTick();
+        public long CurrentFrame();
         public bool IsChunkLoaded(Vec2Int chunk, bool atomic = false);
 
         public bool IsBlockLoaded(Vec2Int POS)

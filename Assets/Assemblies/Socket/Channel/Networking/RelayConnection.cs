@@ -110,7 +110,7 @@ namespace Larnix.Socket.Channel.Networking
                 _disposed = true;
 
                 SendInfo(RelayInfo.Stop); // thread safe
-                Udp.Dispose(); // thread safe
+                Udp?.Dispose(); // thread safe
             }
         }
     }

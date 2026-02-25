@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
+using Larnix.Core.Utils;
 
 namespace Larnix.Socket.Security
 {
@@ -15,6 +16,11 @@ namespace Larnix.Socket.Security
         private static string InputHashingString(string str, byte[] salt)
         {
             return str + '\0' + Convert.ToBase64String(salt);
+        }
+
+        private static string MergeSaltAndHash(byte[] salt, byte[] hash)
+        {
+            return $"{Convert.ToBase64String(salt)}:{Convert.ToBase64String(hash)}";
         }
 
         private static byte[] HashString(string str, byte[] salt)
@@ -58,29 +64,34 @@ namespace Larnix.Socket.Security
             return true;
         }
 
-        public static bool InCache(string password, string storedSaltedHash)
+        public static bool InCache(string password, string storedSaltedHash, out bool result)
         {
             if (!SplitSaltedHash(storedSaltedHash, out byte[] salt, out _))
+            {
+                result = default;
                 return false;
+            }
 
             string ihs = InputHashingString(password, salt);
 
             lock (_lock)
             {
-                return _hashingCache.ContainsKey(ihs);
+                if (_hashingCache.TryGetValue(ihs, out var hash))
+                {
+                    result = VerifyPassword(password, storedSaltedHash);
+                    return true;
+                }
             }
+
+            result = default;
+            return false;
         }
 
         public static string HashPassword(string password)
         {
-            byte[] salt = new byte[16];
-            using (var rng = RandomNumberGenerator.Create())
-            {
-                rng.GetBytes(salt);
-            }
-
+            byte[] salt = Common.GetSecureBytes(16);
             byte[] hash = HashString(password, salt);
-            return $"{Convert.ToBase64String(salt)}:{Convert.ToBase64String(hash)}";
+            return MergeSaltAndHash(salt, hash);
         }
 
         public static bool VerifyPassword(string password, string storedSaltedHash)
@@ -92,14 +103,14 @@ namespace Larnix.Socket.Security
             return CryptographicOperations.FixedTimeEquals(storedHash, hash);
         }
 
-        public static Task<string> HashPasswordAsync(string password)
+        public static async Task<string> HashPasswordAsync(string password)
         {
-            return Task.Run(() => HashPassword(password));
+            return await Task.Run(() => HashPassword(password));
         }
 
-        public static Task<bool> VerifyPasswordAsync(string password, string storedSaltedHash)
+        public static async Task<bool> VerifyPasswordAsync(string password, string storedSaltedHash)
         {
-            return Task.Run(() => VerifyPassword(password, storedSaltedHash));
+            return await Task.Run(() => VerifyPassword(password, storedSaltedHash));
         }
     }
 }

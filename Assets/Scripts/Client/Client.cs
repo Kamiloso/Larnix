@@ -117,7 +117,7 @@ namespace Larnix.Client
                     _larnixClient.Send(pack.Packet, pack.Safemode);
                 }
                 
-                _larnixClient.ClientTick(Time.deltaTime);
+                _larnixClient.Tick(Time.deltaTime);
 
                 if (_larnixClient.IsDead())
                 {

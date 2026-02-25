@@ -5,20 +5,21 @@ using System.Linq;
 using Larnix.Server.Entities;
 using Larnix.Core.Utils;
 using Larnix.Core.Vectors;
-using Larnix.Server.Data;
+using Larnix.Server.Transmission;
 using Larnix.Core;
 
 namespace Larnix.Server.Terrain
 {
-    public enum ChunkLoadState { None, Loading, Active }
+    internal enum ChunkLoadState { None, Loading, Active }
     internal class Chunks : IScript
     {
         private Server Server => GlobRef.Get<Server>();
-        private PlayerManager PlayerManager => GlobRef.Get<PlayerManager>();
+        private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
         private EntityManager EntityManager => GlobRef.Get<EntityManager>();
         private BlockSender BlockSender => GlobRef.Get<BlockSender>();
         private AtomicChunks AtomicChunks => GlobRef.Get<AtomicChunks>();
         private Config Config => GlobRef.Get<Config>();
+        private Clock Clock => GlobRef.Get<Clock>();
 
         private readonly Dictionary<Vec2Int, ChunkContainer> _chunks = new();
 
@@ -39,7 +40,7 @@ namespace Larnix.Server.Terrain
             {
                 if (!stimulated.Contains(chunk))
                 {
-                    container.Tick(Server.RealDeltaTime);
+                    container.Tick(Clock.DeltaTime);
 
                     if (container.ShouldUnload(c => _chunks[c]))
                     {
@@ -150,7 +151,7 @@ namespace Larnix.Server.Terrain
             }
 
             // Updating player chunk data
-            if (Server.FixedFrame % Config.ChunkSendingPeriodFrames == 0)
+            if (Clock.FixedFrame % Config.ChunkSendingPeriodFrames == 0)
             {
                 BlockSender.BroadcastChunkChanges();
             }
@@ -206,8 +207,8 @@ namespace Larnix.Server.Terrain
         {
             HashSet<Vec2Int> targetLoads = new();
 
-            IEnumerable<Vec2Int> centers = PlayerManager.AllPlayers()
-                .Select(nickname => PlayerManager.RenderingPosition(nickname))
+            IEnumerable<Vec2Int> centers = PlayerActions.AllPlayers()
+                .Select(nickname => PlayerActions.RenderingPosition(nickname))
                 .Select(pos => BlockUtils.CoordsToChunk(pos));
 
             foreach (Vec2Int center in centers)
@@ -229,8 +230,8 @@ namespace Larnix.Server.Terrain
         {
             bestChunk = default;
 
-            List<Vec2Int> playerChunks = PlayerManager.AllPlayers()
-                .Select(n => BlockUtils.CoordsToChunk(PlayerManager.RenderingPosition(n)))
+            List<Vec2Int> playerChunks = PlayerActions.AllPlayers()
+                .Select(n => BlockUtils.CoordsToChunk(PlayerActions.RenderingPosition(n)))
                 .ToList();
 
             Vec2Int? wishChunk = AtomicChunks.WishChunk;

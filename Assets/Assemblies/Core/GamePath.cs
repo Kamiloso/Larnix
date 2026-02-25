@@ -5,22 +5,25 @@ namespace Larnix.Core
 {
     public static class GamePath
     {
-        private static readonly object _lock = new();
         private static string _persistentDataPath;
+        private static readonly object _lock = new();
 
-        public static string SavesPath => Path.Combine(GetDataPath(), "Saves");
-
-        private static string GetDataPath()
+        public static string SavesPath
         {
-            var path = _persistentDataPath;
-            if (path == null)
-                throw new InvalidOperationException(
-                    "Appdata path not initialized. Call 'Larnix.Core.GamePath.InitAppdata(...)' to be able to access it.");
+            get
+            {
+                string path = _persistentDataPath;
+                if (path == null)
+                {
+                    throw new InvalidOperationException(
+                        "Persistent data path not initialized. Call 'Larnix.Core.GamePath.InitPath(...)' to be able to access it.");
+                }
 
-            return path;
+                return Path.Combine(path, "Saves");
+            }
         }
 
-        public static void InitAppdata(string persistentDataPath)
+        public static void InitPath(string persistentDataPath)
         {
             if (persistentDataPath == null)
                 throw new ArgumentNullException(nameof(persistentDataPath));
@@ -28,7 +31,7 @@ namespace Larnix.Core
             lock (_lock)
             {
                 if (_persistentDataPath != null)
-                    throw new InvalidOperationException("Appdata path already initialized.");
+                    throw new InvalidOperationException("Persistent data path already initialized.");
 
                 _persistentDataPath = persistentDataPath;
             }

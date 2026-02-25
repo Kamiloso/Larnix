@@ -31,7 +31,7 @@ namespace Larnix.Menu.Forms
 
         protected override ErrorCode GetErrorCode()
         {
-            if (IF_Nickname.text == Common.LOOPBACK_ONLY_NICKNAME)
+            if (IF_Nickname.text == Common.ReservedNickname)
                 return ErrorCode.NICKNAME_IS_PLAYER;
 
             if (!Validation.IsGoodNickname(IF_Nickname.text))

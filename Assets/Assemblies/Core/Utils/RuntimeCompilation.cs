@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace Larnix.Core
+namespace Larnix.Core.Utils
 {
     public static class RuntimeCompilation
     {

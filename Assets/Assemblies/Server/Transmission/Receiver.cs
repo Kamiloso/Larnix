@@ -12,7 +12,7 @@ using Larnix.Socket.Packets;
 using Larnix.Blocks;
 using Larnix.Core;
 
-namespace Larnix.Server
+namespace Larnix.Server.Transmission
 {
     internal class Receiver
     {
@@ -22,7 +22,7 @@ namespace Larnix.Server
 
         private IWorldAPI WorldAPI => GlobRef.Get<IWorldAPI>();
         private QuickServer QuickServer => GlobRef.Get<QuickServer>();
-        private PlayerManager PlayerManager => GlobRef.Get<PlayerManager>();
+        private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
         private BlockSender BlockSender => GlobRef.Get<BlockSender>();
 
         public Receiver()
@@ -85,22 +85,22 @@ namespace Larnix.Server
 
         private void _AllowConnection(AllowConnection msg, string owner)
         {
-            PlayerManager.JoinPlayer(owner);
+            PlayerActions.JoinPlayer(owner);
             Core.Debug.Log(owner + " joined the game.");
         }
 
         private void _Stop(Stop msg, string owner)
         {
-            PlayerManager.DisconnectPlayer(owner);
+            PlayerActions.DisconnectPlayer(owner);
             Core.Debug.Log(owner + " disconnected.");
         }
 
         private void _PlayerUpdate(PlayerUpdate msg, string owner)
         {
-            PlayerUpdate lastPacket = PlayerManager.RecentPlayerUpdate(owner);
+            PlayerUpdate lastPacket = PlayerActions.RecentPlayerUpdate(owner);
             if (lastPacket == null || lastPacket.FixedFrame < msg.FixedFrame)
             {
-                PlayerManager.UpdatePlayerDataIfHasController(owner, msg);
+                PlayerActions.UpdatePlayerDataIfHasController(owner, msg);
             }
         }
 
@@ -110,8 +110,8 @@ namespace Larnix.Server
 
             if (code == CodeInfo.Info.RespawnMe)
             {
-                if (PlayerManager.StateOf(owner) == PlayerManager.PlayerState.Dead)
-                    PlayerManager.CreatePlayerInstance(owner);
+                if (PlayerActions.StateOf(owner) == PlayerActions.PlayerState.Dead)
+                    PlayerActions.CreatePlayerInstance(owner);
             }
         }
 
@@ -125,7 +125,7 @@ namespace Larnix.Server
             if (code == 0) // place item
             {
                 bool has_item = true;
-                bool has_chunk = PlayerManager.PlayerHasChunk(owner, chunk);
+                bool has_chunk = PlayerActions.PlayerHasChunk(owner, chunk);
                 bool can_place = WorldAPI.CanPlaceBlock(POS, front, msg.Item);
 
                 bool success = has_item && has_chunk && can_place;
@@ -141,7 +141,7 @@ namespace Larnix.Server
             else if (code == 1) // break using item
             {
                 bool has_tool = true;
-                bool has_chunk = PlayerManager.PlayerHasChunk(owner, chunk);
+                bool has_chunk = PlayerActions.PlayerHasChunk(owner, chunk);
                 bool can_break = WorldAPI.CanBreakBlock(POS, front, msg.Item, msg.Tool);
 
                 bool success = has_tool && has_chunk && can_break;

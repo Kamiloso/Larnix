@@ -18,7 +18,7 @@ namespace Larnix.Menu.Settings
         private Dictionary<string, string> options = null;
         private static Dictionary<string, string> defaultOptions = new()
         {
-            { "$relay-server", Common.DEFAULT_RELAY_ADDRESS },
+            { "$relay-server", Common.DefaultRelayAddress },
             { "$last-nickname-SGP", "" }
         };
 

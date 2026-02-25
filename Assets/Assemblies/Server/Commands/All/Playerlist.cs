@@ -16,7 +16,7 @@ namespace Larnix.Server.Commands.All
         public override string ShortDescription => "Displays a list of all connected players.";
 
         private QuickServer QuickServer => GlobRef.Get<QuickServer>();
-        private PlayerManager PlayerManager => GlobRef.Get<PlayerManager>();
+        private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
 
         public override void Inject(string command)
         {
@@ -38,13 +38,13 @@ namespace Larnix.Server.Commands.All
 
             string StateOf(string nick)
             {
-                return PlayerManager
+                return PlayerActions
                     .StateOf(nick)
                     .ToString()
                     .ToUpperInvariant();
             }
 
-            IEnumerable<string> lines = PlayerManager.AllPlayers()
+            IEnumerable<string> lines = PlayerActions.AllPlayers()
                 .Select(nick => $"{nick} from {EndPointOf(nick)} is {StateOf(nick)}.")
                 .OrderBy(line => line);
 

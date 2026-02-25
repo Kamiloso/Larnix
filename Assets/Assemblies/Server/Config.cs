@@ -3,7 +3,7 @@ using Larnix.Core.Files;
 using Larnix.Core.Utils;
 using SimpleJSON;
 
-namespace Larnix.Server.Data
+namespace Larnix.Server
 {
     internal class Config
     {
@@ -45,10 +45,9 @@ namespace Larnix.Server.Data
         public int ClientIdentityPrefixSizeIPv6 { get; set; } = 56;
         public bool AllowRegistration { get; set; } = true;
         public bool UseRelay { get; set; } = false;
-        public string RelayAddress { get; set; } = Common.DEFAULT_RELAY_ADDRESS;
+        public string RelayAddress { get; set; } = Common.DefaultRelayAddress;
 
         private Config() { }
-
         public static Config Obtain(string path)
         {
             string data = FileManager.Read(path, "config.json");

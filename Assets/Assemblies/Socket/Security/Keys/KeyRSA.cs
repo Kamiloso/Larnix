@@ -109,7 +109,7 @@ namespace Larnix.Socket.Security.Keys
             {
                 _disposed = true;
 
-                _rsa.Dispose();
+                _rsa?.Dispose();
             }
         }
 

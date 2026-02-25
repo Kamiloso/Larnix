@@ -42,7 +42,7 @@ namespace Larnix
             Address = answer.Address;
             Authcode = answer.Authcode;
             Nickname = nickname;
-            Password = Common.LOOPBACK_ONLY_PASSWORD;
+            Password = Common.ReservedPassword;
 
             // Load client
             SceneManager.LoadScene("Client");
@@ -61,7 +61,7 @@ namespace Larnix
             Address = input.Address;
             Authcode = input.Authcode;
             Nickname = nickname;
-            Password = Common.LOOPBACK_ONLY_PASSWORD;
+            Password = Common.ReservedPassword;
 
             // Load client
             SceneManager.LoadScene("Client");

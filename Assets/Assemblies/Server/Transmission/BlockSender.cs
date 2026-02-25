@@ -11,8 +11,9 @@ using Larnix.Packets;
 using Larnix.Core.Vectors;
 using Larnix.Packets.Structs;
 using Larnix.Core;
+using Larnix.Server.Terrain;
 
-namespace Larnix.Server.Terrain
+namespace Larnix.Server.Transmission
 {
     internal record BlockChangeItem(
         string Owner, long Operation, Vec2Int POS, bool Front, bool Success);
@@ -23,7 +24,7 @@ namespace Larnix.Server.Terrain
         private readonly Queue<BlockChangeItem> _blockChanges = new();
 
         private IWorldAPI WorldAPI => GlobRef.Get<IWorldAPI>();
-        private PlayerManager PlayerManager => GlobRef.Get<PlayerManager>();
+        private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
         private QuickServer QuickServer => GlobRef.Get<QuickServer>();
         private Chunks Chunks => GlobRef.Get<Chunks>();
 
@@ -47,7 +48,7 @@ namespace Larnix.Server.Terrain
         {
             Dictionary<string, Queue<BlockUpdateRecord>> IndividualUpdates = new();
 
-            foreach (string nickname in PlayerManager.AllPlayers())
+            foreach (string nickname in PlayerActions.AllPlayers())
             {
                 IndividualUpdates[nickname] = new();
             }
@@ -57,14 +58,14 @@ namespace Larnix.Server.Terrain
                 var element = _blockUpdates.Dequeue();
                 Vec2Int chunk = BlockUtils.CoordsToChunk(element.Position);
 
-                foreach (string nickname in PlayerManager.AllPlayers())
+                foreach (string nickname in PlayerActions.AllPlayers())
                 {
-                    if (PlayerManager.PlayerHasChunk(nickname, chunk))
+                    if (PlayerActions.PlayerHasChunk(nickname, chunk))
                         IndividualUpdates[nickname].Enqueue(element);
                 }
             }
 
-            foreach (string nickname in PlayerManager.AllPlayers())
+            foreach (string nickname in PlayerActions.AllPlayers())
             {
                 Queue<BlockUpdateRecord> changes = IndividualUpdates[nickname];
                 BlockUpdateRecord[] records = changes.ToArray();
@@ -94,8 +95,8 @@ namespace Larnix.Server.Terrain
                 Block blockBack = WorldAPI.GetBlock(POS, false);
 
                 if (
-                    PlayerManager.StateOf(nickname) != Entities.PlayerManager.PlayerState.None &&
-                    PlayerManager.PlayerHasChunk(nickname, chunk) &&
+                    PlayerActions.StateOf(nickname) != Entities.PlayerActions.PlayerState.None &&
+                    PlayerActions.PlayerHasChunk(nickname, chunk) &&
                     blockFront != null && blockBack != null
                     )
                 {
@@ -109,12 +110,12 @@ namespace Larnix.Server.Terrain
 
         public void BroadcastChunkChanges()
         {
-            foreach (string nickname in PlayerManager.AllPlayers())
+            foreach (string nickname in PlayerActions.AllPlayers())
             {
-                Vec2Int chunkpos = BlockUtils.CoordsToChunk(PlayerManager.RenderingPosition(nickname));
-                var player_state = PlayerManager.StateOf(nickname);
+                Vec2Int chunkpos = BlockUtils.CoordsToChunk(PlayerActions.RenderingPosition(nickname));
+                var player_state = PlayerActions.StateOf(nickname);
 
-                HashSet<Vec2Int> chunksMemory = PlayerManager.LoadedChunksCopy(nickname);
+                HashSet<Vec2Int> chunksMemory = PlayerActions.LoadedChunksCopy(nickname);
                 HashSet<Vec2Int> chunksNearby = BlockUtils.GetNearbyChunks(chunkpos, BlockUtils.LOADING_DISTANCE)
                     .Where(c => Chunks.IsChunkLoaded(c))
                     .ToHashSet();
@@ -140,7 +141,7 @@ namespace Larnix.Server.Terrain
                     QuickServer.Send(nickname, packet);
                 }
 
-                PlayerManager.UpdateClientChunks(nickname, chunksNearby);
+                PlayerActions.UpdateClientChunks(nickname, chunksNearby);
             }
         }
     }

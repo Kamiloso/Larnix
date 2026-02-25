@@ -10,10 +10,11 @@ using Larnix.Socket.Channel;
 using Larnix.Socket.Security.Keys;
 using Larnix.Socket.Packets.Control;
 using Larnix.Socket.Channel.Networking;
+using Larnix.Core;
 
 namespace Larnix.Socket.Frontend
 {
-    public class QuickClient : IDisposable
+    public class QuickClient : IDisposable, ITickable
     {
         private readonly UdpClient2 _udpClient;
         private readonly Connection _connection;
@@ -69,7 +70,7 @@ namespace Larnix.Socket.Frontend
             _connection = Connection.CreateClient(_udpClient, _target, keyAES, _rsaKey, synPacket);
         }
 
-        public void ClientTick(float deltaTime)
+        public void Tick(float deltaTime)
         {
             // get packets from UDP client
             while (_udpClient.TryReceive(out var pair))

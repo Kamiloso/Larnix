@@ -10,6 +10,8 @@ namespace Larnix.Server
 {
     internal interface IScript
     {
+        void Start() {}
+        
         void EarlyFrameUpdate() {}
         void PostEarlyFrameUpdate() {}
         void FrameUpdate() {}

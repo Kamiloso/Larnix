@@ -3,9 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.Serialization;
-using Larnix.Core;
-using Larnix.Core.Physics;
-using Larnix.Entities.Structs;
+using Larnix.Core.Utils;
 using Larnix.Entities.All;
 using EntityInits = Larnix.Entities.Entity.EntityInits;
 

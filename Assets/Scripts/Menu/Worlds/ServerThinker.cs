@@ -164,7 +164,7 @@ namespace Larnix.Menu.Worlds
             bool knowsUserData = nickname != "" && password != "";
 
             var downloading = Task.Run(() =>
-                Resolver.DownloadServerInfoAsync(address, authcode, knowsUserData ? nickname : Common.LOOPBACK_ONLY_NICKNAME, true));
+                Resolver.DownloadServerInfoAsync(address, authcode, knowsUserData ? nickname : Common.ReservedNickname, true));
 
             while (!downloading.IsCompleted)
                 yield return null;

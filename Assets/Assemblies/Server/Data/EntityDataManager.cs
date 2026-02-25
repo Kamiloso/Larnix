@@ -3,20 +3,35 @@ using System.Collections.Generic;
 using Larnix.Entities;
 using Larnix.Core.Utils;
 using Larnix.Entities.Structs;
-using Larnix.Server.Data;
 using Larnix.Core.Vectors;
 using Larnix.Core;
 using System;
 
-namespace Larnix.Server.Entities
+namespace Larnix.Server.Data
 {
-    internal class EntityDataManager : IScript
+    internal class EntityDataManager
     {
         private readonly Dictionary<ulong, EntityData> _entityData = new();
         private readonly Dictionary<ulong, EntityData> _unloadedEntityData = new();
         private readonly Dictionary<ulong, EntityData> _deletedEntityData = new();
 
         private Database Database => GlobRef.Get<Database>();
+
+        private ulong? _nextUID = null;
+        public ulong NextUID()
+        {
+            if (_nextUID != null)
+            {
+                ulong uid = _nextUID.Value;
+                _nextUID--;
+                return uid;
+            }
+            else
+            {
+                _nextUID = (ulong)(Database.GetMinUID() - 1);
+                return NextUID();
+            }
+        }
 
         public EntityData TryFindEntityData(ulong uid)
         {

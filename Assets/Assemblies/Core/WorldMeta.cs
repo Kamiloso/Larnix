@@ -6,13 +6,22 @@ using Larnix.Core.Files;
 
 namespace Larnix.Core
 {
-    public struct WorldMeta
+    public readonly struct WorldMeta
     {
+        // historically metadata was "version<newline>nickname".  New files now
+        // use "version:nickname".  Because nicknames cannot contain colons, the new
+        // format is unambiguous and parsing is straightforward.  Legacy files are
+        // still accepted during read.
+        
+        private const char LEGACY_SEP = '\n';
+        private const char NEW_SEP = ':';
+
         public Version Version { get; init; }
         public string Nickname { get; init; }
 
         public static WorldMeta Default => new WorldMeta(
-            Version.Current, Common.LOOPBACK_ONLY_NICKNAME);
+            Version.Current, Common.ReservedNickname
+            );
 
         public WorldMeta(Version version, string nickname)
         {
@@ -22,12 +31,20 @@ namespace Larnix.Core
 
         private static WorldMeta FromText(string text)
         {
-            string[] args = text.Split('\n');
-            
-            return new WorldMeta(
-                version: new Version(uint.Parse(args[0])),
-                nickname: args[1]
+            WorldMeta ParseFormat(string text, char sep)
+            {
+                string[] parts = text.Split(sep);
+                string versionPart = parts.Length > 0 ? parts[0].Trim() : string.Empty;
+                string nickname = parts.Length > 1 ? parts[1].Trim() : string.Empty;
+
+                return new WorldMeta(
+                    version: new Version(uint.Parse(versionPart)),
+                    nickname: nickname
                 );
+            }
+
+            return ParseFormat(text, text.Contains(NEW_SEP) ?
+                NEW_SEP : LEGACY_SEP);
         }
 
         public static void SaveToWorldFolder(string worldName, WorldMeta mdata)
@@ -44,7 +61,7 @@ namespace Larnix.Core
 
         public static void SaveToFolder(string path, WorldMeta mdata)
         {
-            string data = mdata.Version.ID + "\n" + mdata.Nickname;
+            string data = $"{mdata.Version.ID}{NEW_SEP}{mdata.Nickname}";
             FileManager.Write(path, "metadata.txt", data);
         }
 

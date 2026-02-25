@@ -4,7 +4,7 @@ using Larnix.Server.Entities;
 using Larnix.Core;
 using Console = Larnix.Core.Console;
 using CmdResult = Larnix.Core.ICmdExecutor.CmdResult;
-using PlayerState = Larnix.Server.Entities.PlayerManager.PlayerState;
+using PlayerState = Larnix.Server.Entities.PlayerActions.PlayerState;
 using System;
 
 namespace Larnix.Server.Commands
@@ -18,15 +18,12 @@ namespace Larnix.Server.Commands
 
     internal class CmdManager : IScript, ICmdExecutor
     {
-        private PlayerManager PlayerManager => GlobRef.Get<PlayerManager>();
+        private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
 
         void IScript.PostEarlyFrameUpdate()
         {
-            while (true)
+            while (Console.TryPopInput(out string cmd))
             {
-                string cmd = Console.GetCommand();
-                if (cmd == null) break;
-
                 var (type, message) = ExecuteCommand(cmd);
                 switch (type)
                 {
@@ -57,7 +54,7 @@ namespace Larnix.Server.Commands
             }
             else // from player
             {
-                bool player_online = PlayerManager.StateOf(sender) != PlayerState.None;
+                bool player_online = PlayerActions.StateOf(sender) != PlayerState.None;
                 if (player_online)
                 {
                     bool player_admin = /*Config.AdminList.Contains(sender)*/ false;
