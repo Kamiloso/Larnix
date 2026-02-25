@@ -42,7 +42,7 @@ namespace Larnix.Blocks.All
 
         private void Flow()
         {
-            if (WorldAPI.CurrentFrame() % FLOW_PERIOD() != 0)
+            if (WorldAPI.ServerTick % FLOW_PERIOD() != 0)
                 return;
 
             Vec2Int localpos = This.Position;

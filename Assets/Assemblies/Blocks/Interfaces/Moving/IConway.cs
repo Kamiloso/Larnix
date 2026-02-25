@@ -21,7 +21,7 @@ namespace Larnix.Blocks.All
 
         private void ConwayPrepare()
         {
-            if (WorldAPI.CurrentFrame() % CONWAY_PERIOD() != 0)
+            if (WorldAPI.ServerTick % CONWAY_PERIOD() != 0)
                 return;
 
             // clean state
@@ -57,7 +57,7 @@ namespace Larnix.Blocks.All
 
         private void ConwayFinalize()
         {
-            if (WorldAPI.CurrentFrame() % CONWAY_PERIOD() != 0)
+            if (WorldAPI.ServerTick % CONWAY_PERIOD() != 0)
                 return;
 
             for (int dx = -1; dx <= 1; dx++)

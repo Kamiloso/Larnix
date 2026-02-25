@@ -16,9 +16,9 @@ namespace Larnix.Blocks
             Weak = 2, // rearm EventFlag
         }
         
-        public long CurrentFrame();
-        public bool IsChunkLoaded(Vec2Int chunk, bool atomic = false);
+        public long ServerTick { get; }
 
+        public bool IsChunkLoaded(Vec2Int chunk, bool atomic = false);
         public bool IsBlockLoaded(Vec2Int POS)
         {
             Vec2Int chunk = BlockUtils.CoordsToChunk(POS);

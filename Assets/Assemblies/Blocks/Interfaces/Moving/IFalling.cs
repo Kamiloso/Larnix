@@ -14,7 +14,7 @@ namespace Larnix.Blocks.All
 
         private void Fall()
         {
-            if (WorldAPI.CurrentFrame() % FALL_PERIOD() != 0)
+            if (WorldAPI.ServerTick % FALL_PERIOD() != 0)
                 return;
 
             Vec2Int localpos = This.Position;

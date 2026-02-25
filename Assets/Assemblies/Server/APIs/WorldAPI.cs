@@ -19,10 +19,7 @@ namespace Larnix.Server.APIs
         private CmdManager Commands => GlobRef.Get<CmdManager>();
         private Clock Clock => GlobRef.Get<Clock>();
 
-        public long CurrentFrame()
-        {
-            return Clock.FixedFrame;
-        }
+        public long ServerTick => Clock.ServerTick;
 
         public bool IsChunkLoaded(Vec2Int chunk, bool atomic = false)
         {
