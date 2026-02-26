@@ -11,9 +11,10 @@ namespace Larnix.Server.Commands
 {
     internal enum PrivilegeLevel
     {
-        User, // basic user commands
-        Admin, // extended access, executed from chat by admins
-        Console // full access, only from console
+        User = 1, // basic user commands
+        Host = 2, // server management, but no gameplay-affecting commands
+        Admin = 3, // administrative commands, including gameplay-affecting ones
+        Console = 4, // full access, only from console
     }
 
     internal class CmdManager : IScript, ICmdExecutor
@@ -24,6 +25,9 @@ namespace Larnix.Server.Commands
         {
             while (Console.TryPopInput(out string cmd))
             {
+                if (cmd.Trim() == string.Empty)
+                    continue; // ignore empty commands
+
                 var (type, message) = ExecuteCommand(cmd);
                 switch (type)
                 {

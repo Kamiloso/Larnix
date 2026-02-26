@@ -15,6 +15,7 @@ namespace Larnix.Server.Commands.All
         public override string ShortDescription => "Displays the server information.";
 
         private QuickServer QuickServer => GlobRef.Get<QuickServer>();
+        private Server Server => GlobRef.Get<Server>();
         private Generator Generator => GlobRef.Get<Generator>();
 
         public override void Inject(string command)
@@ -29,8 +30,8 @@ namespace Larnix.Server.Commands.All
         {
             IEnumerable<string> lines = new[] {
                 $"Version: {Core.Version.Current}",
-                $"Players: {QuickServer.PlayerCount} / {QuickServer.Config.MaxClients}",
-                $"Port: {QuickServer.Config.Port}",
+                $"Players: {QuickServer.PlayerCount} / {QuickServer.PlayerLimit}",
+                $"Port: {Server.Port}",
                 $"Authcode: {QuickServer.Authcode}",
                 $"Seed: {Generator.Seed}",
             };

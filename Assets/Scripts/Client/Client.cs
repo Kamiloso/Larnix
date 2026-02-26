@@ -22,6 +22,7 @@ namespace Larnix.Client
 
         private QuickClient _larnixClient = null;
         private Queue<DelayedPacket> _delayedPackets = new();
+        private Task<QuickClient> _connectingTask = null;
         private Receiver _receiver = null;
 
         private Loading Loading => GlobRef.Get<Loading>();
@@ -72,15 +73,17 @@ namespace Larnix.Client
             Nickname = WorldLoad.Nickname;
             Password = WorldLoad.Password;
 
-            Task<QuickClient> connecting = Task.Run(() =>
+            _connectingTask = Task.Run(() =>
                 QuickClient.CreateClientAsync(Address, Authcode, Nickname, Password).Result);
 
-            while (!connecting.IsCompleted)
-                yield return null;
-
-            if (connecting.Result != null)
+            while (!_connectingTask.IsCompleted)
             {
-                _larnixClient = connecting.Result;
+                yield return null;
+            }
+
+            if (_connectingTask.Result != null)
+            {
+                _larnixClient = _connectingTask.Result;
                 _receiver = new Receiver(_larnixClient);
                 Core.Debug.Log($"{(IsMultiplayer ? "Remote" : "Local")} world on address {Address}");
             }
@@ -168,6 +171,11 @@ namespace Larnix.Client
 
         private void OnDestroy()
         {
+            if (_connectingTask != null && _larnixClient == null)
+            {
+                _larnixClient = _connectingTask.Result; // wait for finish if still running
+            }
+
             _larnixClient?.Dispose();
             WorldLoad.SetStartingScreen(IsMultiplayer ? "Multiplayer" : "Singleplayer");
             EarlyUpdateInjector.ClearEarlyUpdate();

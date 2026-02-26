@@ -3,21 +3,21 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using Larnix.Core.Utils;
-using Larnix.Server.Entities;
 using Larnix.Socket.Backend;
 using Larnix.Core;
 using CmdResult = Larnix.Core.ICmdExecutor.CmdResult;
+using Larnix.Server.Data;
 
 namespace Larnix.Server.Commands.All
 {
-    internal class Kick : BaseCmd
+    internal class Sethost : BaseCmd
     {
-        public override PrivilegeLevel PrivilegeLevel => PrivilegeLevel.Admin;
+        public override PrivilegeLevel PrivilegeLevel => PrivilegeLevel.Host;
         public override string Pattern => $"{Name} <nickname>";
-        public override string ShortDescription => "Kicks a player.";
+        public override string ShortDescription => "Changes a host user and stops the server.";
 
-        private QuickServer QuickServer => GlobRef.Get<QuickServer>();
-        private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
+        private Server Server => GlobRef.Get<Server>();
+        private DataSaver DataSaver => GlobRef.Get<DataSaver>();
 
         private string _nickname;
 
@@ -40,18 +40,11 @@ namespace Larnix.Server.Commands.All
 
         public override (CmdResult, string) Execute(string sender, PrivilegeLevel privilege)
         {
-            if (PlayerActions.IsConnected(_nickname))
-            {
-                QuickServer.KickRequest(_nickname);
+            DataSaver.HostNickname = (String32)_nickname;
+            Server.CloseServer();
 
-                return (CmdResult.Info,
-                    $"Player {_nickname} is being kicked...");
-            }
-            else
-            {
-                return (CmdResult.Error,
-                    $"Player {_nickname} is not connected.");
-            }
+            return (CmdResult.Info,
+                "Server is shutting down...");
         }
     }
 }

@@ -2,6 +2,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System;
+using Larnix.Core.Utils;
 
 namespace Larnix.Socket
 {
@@ -9,13 +10,20 @@ namespace Larnix.Socket
     {
         private readonly IPAddress Address;
         private readonly int Subnet;
-        private readonly bool IsIPv4;
+        public readonly bool IsIPv4;
+        public readonly bool IsClassE;
+
+        public static InternetID ClassE() => new InternetID(
+            new IPAddress(stackalloc byte[] { 240, 0, 0, 0 }), 32); // any subnet is fine for class E
 
         public InternetID(IPAddress address, int subnet)
         {
             Address = address;
             Subnet = subnet;
             IsIPv4 = address.AddressFamily == AddressFamily.InterNetwork;
+
+            IsClassE = IsIPv4 &&
+                Address.GetAddressBytes()[0] >= 240;
         }
 
         public static bool operator ==(InternetID left, InternetID right)
@@ -33,17 +41,25 @@ namespace Larnix.Socket
 
         public override bool Equals(object obj)
         {
-            if (obj is InternetID other &&
-                IsIPv4 == other.IsIPv4 &&
-                Subnet == other.Subnet) {
-                return MasksCompare(Address, other.Address, Subnet);
-            }
+            if (obj is InternetID other)
+            {
+                if (IsClassE && other.IsClassE)
+                    return true; // class E address
 
+                if (IsIPv4 == other.IsIPv4 &&
+                    Subnet == other.Subnet)
+                {
+                    return MasksCompare(Address, other.Address, Subnet);
+                }
+            }
             return false;
         }
 
         public override int GetHashCode()
         {
+            if (IsClassE)
+                return int.MinValue; // class E address
+
             byte[] bytes = MaskBytes(Address.GetAddressBytes(), Subnet);
 
             unchecked
@@ -59,6 +75,9 @@ namespace Larnix.Socket
 
         public override string ToString()
         {
+            if (IsClassE)
+                return "IPv4_ClassE"; // class E address
+
             byte[] masked = MaskBytes(Address.GetAddressBytes(), Subnet);
             IPAddress network = new IPAddress(masked);
             return $"{network}/{Subnet}";

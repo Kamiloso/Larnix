@@ -14,7 +14,7 @@ namespace Larnix.Server.Entities
 {
     internal class PlayerActions : IScript
     {
-        // internal representation aggregating all per-player state
+        // private representation aggregating all per-player state
         private class ConnectedPlayer
         {
             public ulong Uid;
@@ -28,7 +28,7 @@ namespace Larnix.Server.Entities
         private Clock Clock => GlobRef.Get<Clock>();
         private Config Config => GlobRef.Get<Config>();
         private QuickServer QuickServer => GlobRef.Get<QuickServer>();
-        private UserManager UserManager => GlobRef.Get<UserManager>();
+        private IUserManager UserManager => GlobRef.Get<IUserManager>();
         private EntityManager EntityManager => GlobRef.Get<EntityManager>();
         private Generator Worldgen => GlobRef.Get<Generator>();
 
@@ -42,7 +42,7 @@ namespace Larnix.Server.Entities
 
         public void JoinPlayer(string nickname)
         {
-            ulong uid = (ulong)UserManager.GetUserID(nickname);
+            ulong uid = (ulong)UserManager.GetUID(nickname);
             var cp = new ConnectedPlayer { Uid = uid };
             _players[nickname] = cp;
 
@@ -62,8 +62,8 @@ namespace Larnix.Server.Entities
 
         public void UpdatePlayerDataIfHasController(string nickname, PlayerUpdate msg)
         {
-            EntityAbstraction playerController = EntityManager.GetPlayerController(nickname);
-            if (playerController != null) // Player is either PlayerState.Inactive or PlayerState.Alive
+            // Is player either INACTIVE or ALIVE?
+            if (EntityManager.TryGetPlayerController(nickname, out var playerController))
             {
                 // Activate controller if not active
                 if (!playerController.IsActive)
@@ -99,9 +99,7 @@ namespace Larnix.Server.Entities
 
         public void DisconnectPlayer(string nickname)
         {
-            if(EntityManager.GetPlayerController(nickname) != null)
-                EntityManager.UnloadPlayerController(nickname);
-
+            EntityManager.TryUnloadPlayerController(nickname);
             _players.Remove(nickname);
         }
 
@@ -213,7 +211,8 @@ namespace Larnix.Server.Entities
             {
                 case PlayerState.Inactive:
                 case PlayerState.Alive:
-                    return EntityManager.GetPlayerController(nickname).ActiveData.Position;
+                    EntityManager.TryGetPlayerController(nickname, out var controller);
+                    return controller.ActiveData.Position;
 
                 case PlayerState.Dead:
                     return _players[nickname].RecentUpdate.Position;
@@ -228,11 +227,10 @@ namespace Larnix.Server.Entities
             if (!_players.ContainsKey(nickname))
                 return PlayerState.None;
 
-            var cp = _players[nickname];
-            if (cp.RecentUpdate == null)
+            if (_players[nickname].RecentUpdate == null)
                 return PlayerState.Inactive;
 
-            if (EntityManager.GetPlayerController(nickname) != null)
+            if (EntityManager.TryGetPlayerController(nickname, out _))
                 return PlayerState.Alive;
 
             return PlayerState.Dead;

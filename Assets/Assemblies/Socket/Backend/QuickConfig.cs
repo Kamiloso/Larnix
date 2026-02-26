@@ -1,3 +1,4 @@
+using Larnix.Core.DbStructs;
 using Larnix.Core.Utils;
 
 namespace Larnix.Socket.Backend
@@ -13,10 +14,10 @@ namespace Larnix.Socket.Backend
         public readonly int MaskIPv4;
         public readonly int MaskIPv6;
         public readonly bool AllowRegistration;
-        public readonly IUserAPI UserAPI;
+        public readonly IDbUserAccess UserAccess;
 
         public QuickConfig(ushort port, ushort maxClients, bool isLoopback, string dataPath,
-            String256 motd, String32 hostUser, int maskIPv4, int maskIPv6, bool allowRegistration, IUserAPI userAPI)
+            String256 motd, String32 hostUser, int maskIPv4, int maskIPv6, bool allowRegistration, IDbUserAccess userAccess)
         {
             Port = port;
             MaxClients = maxClients;
@@ -27,7 +28,7 @@ namespace Larnix.Socket.Backend
             MaskIPv4 = maskIPv4;
             MaskIPv6 = maskIPv6;
             AllowRegistration = allowRegistration;
-            UserAPI = userAPI;
+            UserAccess = userAccess;
         }
 
         public QuickConfig WithPort(ushort realPort)
@@ -42,7 +43,7 @@ namespace Larnix.Socket.Backend
                 maskIPv4: MaskIPv4,
                 maskIPv6: MaskIPv6,
                 allowRegistration: AllowRegistration,
-                userAPI: UserAPI
+                userAccess: UserAccess
                 );
         }
     }

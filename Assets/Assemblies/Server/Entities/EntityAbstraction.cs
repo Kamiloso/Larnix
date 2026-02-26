@@ -10,6 +10,7 @@ using Larnix.Core.Utils;
 using Larnix.Core;
 using Larnix.Server.Data;
 using EntityInits = Larnix.Entities.Entity.EntityInits;
+using NUnit.Framework;
 
 namespace Larnix.Server.Entities
 {
@@ -27,9 +28,10 @@ namespace Larnix.Server.Entities
 
         public EntityLoadState LoadState { get; private set; } = EntityLoadState.Loading;
         public bool IsActive => LoadState == EntityLoadState.Active;
+        public bool IsLoading => LoadState == EntityLoadState.Loading;
         public bool IsUnloaded => LoadState == EntityLoadState.Unloaded;
 
-        private UserManager UserManager => GlobRef.Get<UserManager>();
+        private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
         private EntityDataManager EntityDataManager => GlobRef.Get<EntityDataManager>();
         private PhysicsManager PhysicsManager => GlobRef.Get<PhysicsManager>();
 
@@ -38,7 +40,7 @@ namespace Larnix.Server.Entities
         public static EntityAbstraction CreatePlayerController(string nickname) => new(nickname);
         private EntityAbstraction(string nickname)
         {
-            UID = (ulong)UserManager.GetUserID(nickname);
+            UID = PlayerActions.UidByNickname(nickname);
             ActiveData = EntityDataManager.TryFindEntityData(UID) ?? new EntityData(
                 id: EntityID.Player,
                 position: new Vec2(0, 0),
@@ -65,42 +67,39 @@ namespace Larnix.Server.Entities
 
         public void Activate()
         {
-            if (!IsActive)
-            {
-                _controller = EntityFactory.ConstructEntityObject(
-                    new EntityInits(UID, ActiveData, PhysicsManager));
-                LoadState = EntityLoadState.Active;
-            }
-            else throw new InvalidOperationException("Entity abstraction is already active!");
+            if (!IsLoading)
+                throw new InvalidOperationException("Only entities in loading state can be activated!");
+
+            _controller = EntityFactory.ConstructEntityObject(
+                new EntityInits(UID, ActiveData, PhysicsManager));
+            
+            LoadState = EntityLoadState.Active;
         }
 
         public void FrameUpdate()
         {
-            if (IsActive)
-            {
-                _controller.FrameUpdate();
-            }
-            else throw new InvalidOperationException("Entity abstraction is not active!");
+            if (!IsActive)
+                throw new InvalidOperationException("Only active entities can be updated!");
+
+            _controller.FrameUpdate();
         }
 
         public void DeleteEntityInstant()
         {
-            if (IsActive)
+            if (!IsUnloaded)
             {
                 EntityDataManager.DeleteEntityData(UID);
                 LoadState = EntityLoadState.Unloaded;
             }
-            else throw new InvalidOperationException("Entity abstraction is already unloaded!");
         }
 
         public void UnloadEntityInstant()
         {
-            if (IsActive)
+            if (!IsUnloaded)
             {
                 EntityDataManager.UnloadEntityData(UID);
                 LoadState = EntityLoadState.Unloaded;
             }
-            else throw new InvalidOperationException("Trying to unload an already unloaded entity!");
         }
     }
 }

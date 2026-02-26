@@ -16,6 +16,7 @@ using Larnix.Server.Commands;
 using Larnix.Blocks;
 using Larnix.Server.APIs;
 using Larnix.Server.Transmission;
+using Larnix.Server.Data.SQLite;
 using Version = Larnix.Core.Version;
 using Console = Larnix.Core.Console;
 using RunSuggestions = Larnix.Server.ServerRunner.RunSuggestions;
@@ -27,14 +28,15 @@ namespace Larnix.Server
     {
         public ServerType Type { get; init; }
         public string WorldPath { get; init; }
+        public Action CloseServer { get; init; }
 
-        public ushort Port => QuickServer.Config.Port;
+        public ushort Port => QuickServer.Port;
         public string LocalAddress => "localhost:" + Port;
         public string Authcode => QuickServer.Authcode;
+        public string SocketPath => Path.Combine(WorldPath, "Socket");
 
         private readonly Locker _locker;
         private readonly IScript[] _scripts;
-        public readonly Action CloseServer;
 
         private QuickServer QuickServer => GlobRef.Get<QuickServer>();
         private Config Config => GlobRef.Get<Config>();
@@ -69,7 +71,7 @@ namespace Larnix.Server
             GlobRef.Set(new Generator(Database.GetSeed(suggestions.Seed)));
             GlobRef.Set(new Clock(Database.GetServerTick()));
 
-            // -- APIs ---
+            // --- APIs ---
             GlobRef.Set<IWorldAPI>(new WorldAPI());
 
             // --- Scripts ---
@@ -91,8 +93,8 @@ namespace Larnix.Server
                     
                     maxClients: Config.MaxPlayers,
                     isLoopback: Type == ServerType.Local,
-                    dataPath: Path.Combine(WorldPath, "Socket"),
-                    userAPI: Database,
+                    dataPath: SocketPath,
+                    userAccess: Database,
                     motd: (String256)Config.Motd,
 
                     hostUser: Type == ServerType.Remote ?
@@ -105,7 +107,7 @@ namespace Larnix.Server
                     allowRegistration: Config.AllowRegistration
                 )
             ));
-            GlobRef.Set(QuickServer.UserManager);
+            GlobRef.Set(QuickServer.IUserManager);
             GlobRef.Set(new Receiver());
             GlobRef.Set(new CmdManager());
 

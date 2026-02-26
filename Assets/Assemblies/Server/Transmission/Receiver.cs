@@ -2,7 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using Larnix.Packets;
 using Larnix.Server.Entities;
-using Larnix.Server.Terrain;
 using Larnix.Core.Utils;
 using Larnix.Socket.Backend;
 using Larnix.Socket.Packets.Control;
@@ -72,7 +71,7 @@ namespace Larnix.Server.Transmission
                         if (!softLimit) // hard limit - disconnect client
                         {
                             Core.Debug.Log("Rate limit for packet " + typeof(T).Name + " from " + owner + " exceeded.");
-                            QuickServer.FinishConnectionRequest(owner);
+                            QuickServer.KickRequest(owner);
                         }
                     }
                 }
@@ -91,8 +90,11 @@ namespace Larnix.Server.Transmission
 
         private void _Stop(Stop msg, string owner)
         {
-            PlayerActions.DisconnectPlayer(owner);
-            Core.Debug.Log(owner + " disconnected.");
+            if (PlayerActions.IsConnected(owner)) // stop packet may appear alone
+            {
+                PlayerActions.DisconnectPlayer(owner);
+                Core.Debug.Log(owner + " disconnected.");
+            }
         }
 
         private void _PlayerUpdate(PlayerUpdate msg, string owner)

@@ -1,15 +1,16 @@
 using System;
 using Larnix.Core;
 using Larnix.Core.Utils;
+using Larnix.Socket.Backend;
+using Larnix.Server.Data.SQLite;
 using Version = Larnix.Core.Version;
 using Console = Larnix.Core.Console;
-using Larnix.Socket.Backend;
 
 namespace Larnix.Server.Data
 {
     public class DataSaver : IDisposable2, ITickable
     {
-        private string WorldPath { get; init; }
+        private string WorldPath { get; }
 
         private WorldMeta _worldMeta;
         private WorldMeta WorldMeta
@@ -26,7 +27,7 @@ namespace Larnix.Server.Data
         public String32 HostNickname
         {
             get => (String32)WorldMeta.Nickname;
-            private set => WorldMeta = new WorldMeta(WorldMeta.Version, value);
+            set => WorldMeta = new WorldMeta(WorldMeta.Version, value);
         }
 
         private Server Server => GlobRef.Get<Server>();
@@ -35,7 +36,7 @@ namespace Larnix.Server.Data
         private Clock Clock => GlobRef.Get<Clock>();
         private EntityDataManager EntityDataManager => GlobRef.Get<EntityDataManager>();
         private BlockDataManager BlockDataManager => GlobRef.Get<BlockDataManager>();
-        private UserManager UserManager => GlobRef.Get<UserManager>();
+        private IUserManager UserManager => GlobRef.Get<IUserManager>();
 
         private bool _disposed = false;
 
@@ -75,7 +76,7 @@ namespace Larnix.Server.Data
 
                     if (Validation.IsGoodPassword(password))
                     {
-                        UserManager.ChangePasswordSync(HostNickname, password);
+                        UserManager.ChangePasswordOrAddUserSync(HostNickname, password);
                         HostNickname = (String32)Common.ReservedNickname;
                         changeSuccess = true;
                     }

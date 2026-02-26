@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using Larnix.Entities;
 using System.Linq;
 using Larnix.Socket.Packets;
 using Larnix.Server.Terrain;
@@ -24,11 +23,9 @@ namespace Larnix.Server.Entities
 
         private Clock Clock => GlobRef.Get<Clock>();
         private Config Config => GlobRef.Get<Config>();
-        private DataSaver DataSaver => GlobRef.Get<DataSaver>();
         private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
         private QuickServer QuickServer => GlobRef.Get<QuickServer>();
         private EntityDataManager EntityDataManager => GlobRef.Get<EntityDataManager>();
-        private Database Database => GlobRef.Get<Database>();
         private Chunks Chunks => GlobRef.Get<Chunks>();
 
         private uint _updateCounter = 0; // just to check modulo when sending NearbyEntities packet
@@ -42,7 +39,7 @@ namespace Larnix.Server.Entities
             foreach (ulong uid in _entityControllers.Keys.ToList())
             {
                 EntityAbstraction controller = _entityControllers[uid];
-                if (controller.IsActive && !controller.IsPlayer)
+                if (!controller.IsPlayer)
                 {
                     if (Chunks.IsEntityInZone(controller, ChunkLoadState.None))
                         UnloadEntity(uid);
@@ -179,24 +176,21 @@ namespace Larnix.Server.Entities
             QuickServer.Send(nickname, packet);
         }
 
-        public EntityAbstraction GetPlayerController(string nickname)
+        public bool TryGetPlayerController(string nickname, out EntityAbstraction controller)
         {
-            if (_playerControllers.TryGetValue(nickname, out var value))
-                return value;
-            
-            return null;
+            return _playerControllers.TryGetValue(nickname, out controller);
         }
 
-        public void UnloadPlayerController(string nickname)
+        public bool TryUnloadPlayerController(string nickname)
         {
-            if (_playerControllers.TryGetValue(nickname, out var value))
+            bool success;
+            if (success = _playerControllers.TryGetValue(nickname, out var controller))
             {
-                EntityAbstraction controller = value;
                 _playerControllers.Remove(nickname);
                 _entityControllers.Remove(controller.UID);
                 controller.UnloadEntityInstant();
             }
-            else throw new InvalidOperationException($"Controller of player {nickname} is not loaded!");
+            return success;
         }
 
         public bool SummonEntity(EntityData entityData)

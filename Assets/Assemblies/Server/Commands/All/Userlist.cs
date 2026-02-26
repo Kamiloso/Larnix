@@ -9,14 +9,15 @@ using CmdResult = Larnix.Core.ICmdExecutor.CmdResult;
 
 namespace Larnix.Server.Commands.All
 {
-    internal class Playerlist : BaseCmd
+    internal class Userlist : BaseCmd
     {
         public override PrivilegeLevel PrivilegeLevel => PrivilegeLevel.Host;
         public override string Pattern => $"{Name}";
-        public override string ShortDescription => "Displays a list of all connected players.";
+        public override string ShortDescription => "Displays a list of all registered users.";
 
         private QuickServer QuickServer => GlobRef.Get<QuickServer>();
         private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
+        private IUserManager UserManager => GlobRef.Get<IUserManager>();
 
         public override void Inject(string command)
         {
@@ -44,12 +45,24 @@ namespace Larnix.Server.Commands.All
                     .ToUpperInvariant();
             }
 
-            IEnumerable<string> lines = PlayerActions.AllPlayers()
-                .Select(nick => $"{nick} from {EndPointOf(nick)} is {StateOf(nick)}.")
-                .OrderBy(line => line);
+            string NONE = PlayerActions.PlayerState.None
+                .ToString().ToUpperInvariant();
+
+            IEnumerable<string> lines = UserManager.AllUsernames()
+                .OrderBy(nick => StateOf(nick) == NONE ? 1 : 0)
+                .ThenBy(nick => nick)
+                .Select(nick =>
+                {
+                    IPEndPoint endPoint = EndPointOf(nick);
+                    string state = StateOf(nick);
+
+                    return state != NONE ?
+                        $"{nick} from {endPoint} is {state}." :
+                        $"{nick} is OFFLINE.";
+                });
 
             return (CmdResult.Raw,
-                MakeRobustList("PLAYER LIST", lines));
+                MakeRobustList("USER LIST", lines));
         }
     }
 }

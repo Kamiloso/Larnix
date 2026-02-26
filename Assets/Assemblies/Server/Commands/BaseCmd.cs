@@ -4,7 +4,6 @@ using System;
 using System.Text;
 using System.Linq;
 using Larnix.Server.Commands.All;
-using Larnix.Packets;
 
 namespace Larnix.Server.Commands
 {
@@ -18,18 +17,25 @@ namespace Larnix.Server.Commands
 
             lock (_lock)
             {
+                RegisterCommand<Authcoderegen>();
                 RegisterCommand<Clear>();
+                RegisterCommand<Deluser>();
                 RegisterCommand<Fill>();
                 RegisterCommand<Help>();
                 RegisterCommand<Info>();
                 RegisterCommand<Kick>();
                 RegisterCommand<Kill>();
                 RegisterCommand<Particles>();
+                RegisterCommand<Passwd>();
                 RegisterCommand<Playerlist>();
+                RegisterCommand<Register>();
                 RegisterCommand<Replace>();
+                RegisterCommand<Resetlimits>();
+                RegisterCommand<Sethost>();
                 RegisterCommand<Spawn>();
                 RegisterCommand<Stop>();
                 RegisterCommand<Tp>();
+                RegisterCommand<Userlist>();
             }
         }
 
@@ -38,7 +44,7 @@ namespace Larnix.Server.Commands
         public string InvalidCmdFormat => $"Invalid format! Usage: {Pattern}";
         public string Documentation =>
             $"Command: {Name}\n" +
-            $"Privilege: {PrivilegeLevel}\n" +
+            $"Privilege: {PrivilegeLevel} ({(int)PrivilegeLevel})\n" +
             $"Usage: {Pattern}\n" +
             $"\n" +
             $"{LongDescription}";

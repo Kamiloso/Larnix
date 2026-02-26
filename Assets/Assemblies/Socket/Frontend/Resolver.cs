@@ -142,6 +142,7 @@ namespace Larnix.Socket.Frontend
 
                 if (!isRegistration && info.ChallengeID == 0)
                     return (null, ResolverError.LoginNotAllowed);
+                
                 if (isRegistration && info.ChallengeID != 0)
                     return (null, ResolverError.LoginNotAllowed);
 
@@ -154,9 +155,10 @@ namespace Larnix.Socket.Frontend
 
                 if (packet == null) return (null, ResolverError.PromptFailed);
 
+                // ChallengeID may have changed, remove from cache
                 Cacher.RemoveRecord(authcode, nickname);
 
-                return (packet.Code == 1, ResolverError.None);
+                return (packet.Success, ResolverError.None);
             }
             catch
             {

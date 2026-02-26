@@ -5,7 +5,7 @@ using Larnix.Core.Utils;
 
 namespace Larnix.Server.Commands
 {
-    public static class Parsing
+    internal static class Parsing
     {
         public static bool TryParseFront(string input, out bool front)
         {
@@ -23,6 +23,18 @@ namespace Larnix.Server.Commands
             }
             
             nickname = default;
+            return false;
+        }
+
+        public static bool TryParsePassword(string input, out string password)
+        {
+            if (Validation.IsGoodPassword(input))
+            {
+                password = input;
+                return true;
+            }
+            
+            password = default;
             return false;
         }
 

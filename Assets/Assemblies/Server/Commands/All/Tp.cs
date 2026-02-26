@@ -58,7 +58,8 @@ namespace Larnix.Server.Commands.All
                 Payload packet = new Teleport(_realPosition);
                 QuickServer.Send(_nickname, packet);
                 
-                Player controller = (Player)EntityManager.GetPlayerController(_nickname).Controller;
+                EntityManager.TryGetPlayerController(_nickname, out var abstraction);
+                Player controller = (Player)abstraction.Controller;
                 controller.AcceptTeleport(_realPosition);
 
                 return (CmdResult.Success, // should show _position

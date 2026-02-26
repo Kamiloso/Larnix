@@ -8,14 +8,14 @@ using Larnix.Core.Files;
 using Larnix.Core.Utils;
 using Larnix.Core.Vectors;
 using Larnix.Entities.Structs;
-using Larnix.Socket.Backend;
 using Larnix.Core.Json;
 using Larnix.Blocks.Structs;
 using Larnix.Blocks;
+using Larnix.Core.DbStructs;
 
-namespace Larnix.Server.Data
+namespace Larnix.Server.Data.SQLite
 {
-    internal class Database : IUserAPI , IDisposable
+    internal class Database : IDisposable, IDbUserAccess
     {
         private SqliteConnection Connection { get; init; }
         private SqliteTransaction Transaction { get; set; }
@@ -113,11 +113,37 @@ namespace Larnix.Server.Data
             cmd.ExecuteNonQuery();
         }
 
-        public void SaveUserData(UserData userData, bool create)
+        private SqliteCommand CreateCommand()
+        {
+            var cmd = Connection.CreateCommand();
+            if (Transaction != null)
+            {
+                cmd.Transaction = Transaction;
+            }
+            return cmd;
+        }
+
+#region User Data Access
+
+        public void SaveUserData(DbUser userData)
         {
             using (var cmd = CreateCommand())
             {
-                if (create) // create account, auto-generate uid
+                if (userData.HasUID) // account exists -> change data on uid
+                {
+                    cmd.CommandText = @"
+                        UPDATE players
+                        SET nickname = $nickname,
+                            password_hash = $password_hash,
+                            challenge_id = $challenge_id
+                        WHERE uid = $uid;
+                       ";
+                    cmd.Parameters.AddWithValue("$uid", userData.UID);
+                    cmd.Parameters.AddWithValue("$nickname", userData.Username);
+                    cmd.Parameters.AddWithValue("$password_hash", userData.PasswordHash);
+                    cmd.Parameters.AddWithValue("$challenge_id", userData.ChallengeID);
+                }
+                else // no account -> create, auto-generate uid
                 {
                     cmd.CommandText = @"
                         INSERT INTO players (nickname, password_hash, challenge_id)
@@ -127,48 +153,59 @@ namespace Larnix.Server.Data
                     cmd.Parameters.AddWithValue("$password_hash", userData.PasswordHash);
                     cmd.Parameters.AddWithValue("$challenge_id", userData.ChallengeID);
                 }
-                else // change data, insert on uid
-                {
-                    cmd.CommandText = @"
-                        UPDATE players
-                        SET nickname = $nickname,
-                            password_hash = $password_hash,
-                            challenge_id = $challenge_id
-                        WHERE uid = $uid;
-                       ";
-                    cmd.Parameters.AddWithValue("$uid", userData.UserID);
-                    cmd.Parameters.AddWithValue("$nickname", userData.Username);
-                    cmd.Parameters.AddWithValue("$password_hash", userData.PasswordHash);
-                    cmd.Parameters.AddWithValue("$challenge_id", userData.ChallengeID);
-                }
                 cmd.ExecuteNonQuery();
             }
         }
 
-        public UserData? ReadUserData(string nickname)
+        public bool TryGetUserData(string username, out DbUser userData)
         {
             using (var cmd = CreateCommand())
             {
                 cmd.CommandText = "SELECT * FROM players WHERE nickname = $nickname;";
-                cmd.Parameters.AddWithValue("$nickname", nickname);
+                cmd.Parameters.AddWithValue("$nickname", username);
 
                 using (var reader = cmd.ExecuteReader())
                 {
                     if (reader.Read())
                     {
-                        UserData userData = new UserData
-                        {
-                            UserID = (long)reader["uid"],
-                            Username = (string)reader["nickname"],
-                            PasswordHash = (string)reader["password_hash"],
-                            ChallengeID = (long)reader["challenge_id"]
-                        };
-                        return userData;
+                        userData = DbUser.FromRecord(
+                            uid: (long)reader["uid"],
+                            username: (string)reader["nickname"],
+                            passwordHash: (string)reader["password_hash"],
+                            challengeID: (long)reader["challenge_id"]
+                        );
+                        return true;
                     }
                 }
             }
-            return null;
+            userData = default;
+            return false;
         }
+
+        public IEnumerable<string> AllUsernames()
+        {
+            using (var cmd = CreateCommand())
+            {
+                cmd.CommandText = "SELECT nickname FROM players;";
+
+                using (var reader = cmd.ExecuteReader())
+                {
+                    List<string> usernames = new();
+                    while (reader.Read())
+                    {
+                        string read = (string)reader["nickname"];
+                        if (!string.IsNullOrEmpty(read))
+                        {
+                            usernames.Add(read);
+                        }
+                    }
+                    return usernames;
+                }
+            }
+        }
+
+#endregion
+#region Entity Data Access
 
         public long GetMinUID()
         {
@@ -304,68 +341,8 @@ namespace Larnix.Server.Data
             return anyDeleted;
         }
 
-        public long GetSeed(long? suggestion = null)
-        {
-            bool has_seed;
-            long seed;
-
-            using (var cmd = CreateCommand())
-            {
-                cmd.CommandText = "SELECT COUNT(value) FROM seed;";
-                has_seed = (long)cmd.ExecuteScalar() > 0;
-            }
-
-            if(has_seed)
-            {
-                using (var cmd = CreateCommand())
-                {
-                    cmd.CommandText = "SELECT value FROM seed;";
-                    seed = (long)cmd.ExecuteScalar();
-                }
-            }
-            else
-            {
-                if (suggestion == null)
-                {
-                    seed = Common.GetSecureLong();
-                }
-                else
-                {
-                    seed = (long)suggestion;
-                }
-
-                using (var cmd = CreateCommand())
-                {
-                    cmd.CommandText = "INSERT INTO seed (value) VALUES ($seed);";
-                    cmd.Parameters.AddWithValue("$seed", seed);
-                    cmd.ExecuteNonQuery();
-                }
-            }
-
-            return seed;
-        }
-
-        public long GetServerTick()
-        {
-            using (var cmd = CreateCommand())
-            {
-                cmd.CommandText = "SELECT value FROM server_tick WHERE id = 1;";
-                var result = cmd.ExecuteScalar();
-                if (result == null || result == DBNull.Value)
-                    return 0L;
-                return (long)result;
-            }
-        }
-
-        public void SetServerTick(long tick)
-        {
-            using (var cmd = CreateCommand())
-            {
-                cmd.CommandText = "INSERT OR REPLACE INTO server_tick (id, value) VALUES (1, $value);";
-                cmd.Parameters.AddWithValue("$value", tick);
-                cmd.ExecuteNonQuery();
-            }
-        }
+#endregion
+#region Chunk Data Access
 
         public void SetChunk(int x, int y, BlockData2[,] chunk)
         {
@@ -402,15 +379,66 @@ namespace Larnix.Server.Data
             return false;
         }
 
-        private SqliteCommand CreateCommand()
+#endregion
+#region Other Data Access
+
+        public long GetSeed(long? suggestion = null)
         {
-            var cmd = Connection.CreateCommand();
-            if (Transaction != null)
+            bool has_seed;
+            long seed;
+
+            using (var cmd = CreateCommand())
             {
-                cmd.Transaction = Transaction;
+                cmd.CommandText = "SELECT COUNT(value) FROM seed;";
+                has_seed = (long)cmd.ExecuteScalar() > 0;
             }
-            return cmd;
+
+            if (has_seed)
+            {
+                using (var cmd = CreateCommand())
+                {
+                    cmd.CommandText = "SELECT value FROM seed;";
+                    seed = (long)cmd.ExecuteScalar();
+                }
+            }
+            else
+            {
+                seed = suggestion ?? Common.GetSecureLong();
+                
+                using (var cmd = CreateCommand())
+                {
+                    cmd.CommandText = "INSERT INTO seed (value) VALUES ($seed);";
+                    cmd.Parameters.AddWithValue("$seed", seed);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+
+            return seed;
         }
+
+        public long GetServerTick()
+        {
+            using (var cmd = CreateCommand())
+            {
+                cmd.CommandText = "SELECT value FROM server_tick WHERE id = 1;";
+                var result = cmd.ExecuteScalar();
+                if (result == null || result == DBNull.Value)
+                    return 0L;
+                return (long)result;
+            }
+        }
+
+        public void SetServerTick(long tick)
+        {
+            using (var cmd = CreateCommand())
+            {
+                cmd.CommandText = "INSERT OR REPLACE INTO server_tick (id, value) VALUES (1, $value);";
+                cmd.Parameters.AddWithValue("$value", tick);
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+#endregion
 
         public void BeginTransaction()
         {

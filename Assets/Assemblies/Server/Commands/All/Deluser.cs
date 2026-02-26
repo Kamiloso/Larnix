@@ -3,21 +3,19 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using Larnix.Core.Utils;
-using Larnix.Server.Entities;
 using Larnix.Socket.Backend;
 using Larnix.Core;
 using CmdResult = Larnix.Core.ICmdExecutor.CmdResult;
 
 namespace Larnix.Server.Commands.All
 {
-    internal class Kick : BaseCmd
+    internal class Deluser : BaseCmd
     {
-        public override PrivilegeLevel PrivilegeLevel => PrivilegeLevel.Admin;
+        public override PrivilegeLevel PrivilegeLevel => PrivilegeLevel.Host;
         public override string Pattern => $"{Name} <nickname>";
-        public override string ShortDescription => "Kicks a player.";
+        public override string ShortDescription => "Deletes a user.";
 
-        private QuickServer QuickServer => GlobRef.Get<QuickServer>();
-        private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
+        private IUserManager UserManager => GlobRef.Get<IUserManager>();
 
         private string _nickname;
 
@@ -40,18 +38,20 @@ namespace Larnix.Server.Commands.All
 
         public override (CmdResult, string) Execute(string sender, PrivilegeLevel privilege)
         {
-            if (PlayerActions.IsConnected(_nickname))
-            {
-                QuickServer.KickRequest(_nickname);
-
-                return (CmdResult.Info,
-                    $"Player {_nickname} is being kicked...");
-            }
-            else
+            if (UserManager.IsOnline(_nickname))
             {
                 return (CmdResult.Error,
-                    $"Player {_nickname} is not connected.");
+                    $"Cannot delete online user {_nickname}.");
             }
+
+            if (UserManager.TryDeleteUserLink(_nickname))
+            {
+                return (CmdResult.Success,
+                    $"Deleted user {_nickname} successfully.");
+            }
+
+            return (CmdResult.Error,
+                $"Cannot delete user {_nickname}.");
         }
     }
 }

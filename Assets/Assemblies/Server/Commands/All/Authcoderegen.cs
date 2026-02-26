@@ -1,15 +1,19 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using Larnix.Core;
+using Larnix.Core.Files;
+using Larnix.Socket.Backend;
+using Larnix.Socket.Frontend;
 using CmdResult = Larnix.Core.ICmdExecutor.CmdResult;
 
 namespace Larnix.Server.Commands.All
 {
-    internal class Stop : BaseCmd
+    internal class Authcoderegen : BaseCmd
     {
         public override PrivilegeLevel PrivilegeLevel => PrivilegeLevel.Host;
         public override string Pattern => $"{Name}";
-        public override string ShortDescription => "Turns off the server.";
+        public override string ShortDescription => "Regenerates the authcode and stops the server.";
 
         private Server Server => GlobRef.Get<Server>();
 
@@ -23,6 +27,10 @@ namespace Larnix.Server.Commands.All
 
         public override (CmdResult, string) Execute(string sender, PrivilegeLevel privilege)
         {
+            // Warning: This is NOT the atomic operation.
+            FileManager.Delete(Server.SocketPath, QuickServer.SERVER_SECRET_FILENAME);
+            FileManager.Delete(Server.SocketPath, QuickServer.PRIVATE_KEY_FILENAME);
+
             Server.CloseServer();
 
             return (CmdResult.Info,

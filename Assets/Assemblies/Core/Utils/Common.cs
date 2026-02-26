@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -64,6 +65,23 @@ namespace Larnix.Core.Utils
             return uri.ToString()
                 .Replace("udp://", "")
                 .Replace("/", "");
+        }
+
+        public static IPEndPoint RandomClassE()
+        {
+            Random rand = Rand();
+            Span<byte> bytes = stackalloc byte[]
+            {
+                (byte)rand.Next(240, 256),
+                (byte)rand.Next(0, 256),
+                (byte)rand.Next(0, 256),
+                (byte)rand.Next(0, 256),
+            };
+
+            IPAddress address = new IPAddress(bytes);
+            int port = rand.Next(1, 65536);
+
+            return new IPEndPoint(address, port);
         }
 
         public static void DoForSeconds(double seconds, Action<Stopwatch, double> action)

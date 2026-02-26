@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using Larnix.Socket.Backend;
 using Larnix.Socket.Channel;
 using Larnix.Socket.Channel.Networking;
 using Larnix.Socket.Packets;
@@ -10,11 +9,12 @@ using Larnix.Socket.Security.Keys;
 using Larnix.Core.Utils;
 using Larnix.Socket.Helpers.Limiters;
 
-namespace Larnix.Socket
+namespace Larnix.Socket.Backend
 {
-    internal record PacketPair(HeaderSpan Packet, string Owner);
     internal class ConnDict : IDisposable
     {
+        internal record PacketPair(HeaderSpan Packet, string Owner);
+
         // --- Properties ---
         public readonly ushort MAX_PLAYERS;
         public int Count => _connections.Count;
@@ -23,7 +23,7 @@ namespace Larnix.Socket
         public IEnumerable<IPEndPoint> EndPoints => _epToNick.Keys;
 
         private readonly INetworkInteractions _socket;
-        private readonly QuickServer _quickServer;
+        private readonly QuickServer _server;
 
         private readonly Dictionary<string, IPEndPoint> _nickToEp = new();
         private readonly Dictionary<IPEndPoint, string> _epToNick = new();
@@ -51,10 +51,10 @@ namespace Larnix.Socket
         public IPEndPoint EndPointOf(string nickname) => _nickToEp.TryGetValue(nickname, out var endPoint) ? endPoint : null;
 
         // --- Functional ---
-        public ConnDict(INetworkInteractions socket, QuickServer quickServer, ushort maxPlayers)
+        public ConnDict(QuickServer server, INetworkInteractions socket, ushort maxPlayers)
         {
+            _server = server;
             _socket = socket;
-            _quickServer = quickServer;
             MAX_PLAYERS = maxPlayers;
         }
 
@@ -72,7 +72,7 @@ namespace Larnix.Socket
 
         public bool TryPromoteConnection(IPEndPoint endPoint)
         {
-            InternetID internetID = _quickServer.MakeInternetID(endPoint);
+            InternetID internetID = _server.MakeInternetID(endPoint);
 
             if (Count < MAX_PLAYERS && _preLogins.TryGetValue(endPoint, out var preLogin))
             {
@@ -161,6 +161,7 @@ namespace Larnix.Socket
         /// AllowConnection packet always starts the connection.
         /// Stop packet always ends the connection.
         /// Stop packet can only appear once in a returned packet queue.
+        /// Stop packet may appear randomly, alone without AllowConnection. !!!
         /// </summary>
         public Queue<PacketPair> TickAndReceive(float deltaTime)
         {
@@ -186,12 +187,13 @@ namespace Larnix.Socket
                 }
                 else // terminate connection if dead
                 {
+                    string nickname = _epToNick[endPoint];
+
                     received.Enqueue(new PacketPair(
                         Packet: connection.GenerateStop(),
-                        Owner: _epToNick[endPoint])
+                        Owner: nickname)
                         );
                     
-                    string nickname = _epToNick[endPoint];
                     if (_connections.TryGetValue(endPoint, out var conn))
                     {
                         conn.Dispose();
@@ -201,7 +203,7 @@ namespace Larnix.Socket
                     _epToNick.Remove(endPoint);
                     _connections.Remove(endPoint);
 
-                    InternetID internetID = _quickServer.MakeInternetID(endPoint);
+                    InternetID internetID = _server.MakeInternetID(endPoint);
                     _connLimiter.Remove(internetID);
                 }
             }
@@ -232,7 +234,7 @@ namespace Larnix.Socket
 
                 foreach (var conn in _connections.Values)
                 {
-                    conn.Dispose();
+                    conn?.Dispose();
                 }
             }
         }
