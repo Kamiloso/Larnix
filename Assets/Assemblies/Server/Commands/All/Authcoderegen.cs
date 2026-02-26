@@ -27,9 +27,8 @@ namespace Larnix.Server.Commands.All
 
         public override (CmdResult, string) Execute(string sender, PrivilegeLevel privilege)
         {
-            // Warning: This is NOT the atomic operation.
-            FileManager.Delete(Server.SocketPath, QuickServer.SERVER_SECRET_FILENAME);
-            FileManager.Delete(Server.SocketPath, QuickServer.PRIVATE_KEY_FILENAME);
+            FileManager.Delete(Server.SocketPath,
+                QuickServer.PRIVATE_KEY_FILENAME, QuickServer.SERVER_SECRET_FILENAME);
 
             Server.CloseServer();
 

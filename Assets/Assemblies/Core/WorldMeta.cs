@@ -68,6 +68,10 @@ namespace Larnix.Core
         public static WorldMeta ReadFromFolder(string path)
         {
             string contents = FileManager.Read(path, "metadata.txt");
+            if (contents == null)
+            {
+                return Default;
+            }
             
             try
             {

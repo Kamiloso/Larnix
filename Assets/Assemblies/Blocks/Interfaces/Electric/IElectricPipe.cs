@@ -70,17 +70,11 @@ namespace Larnix.Blocks.All
             {
                 Vec2Int POS_other = POS + dir;
                 bool? canPropagate = CanPropagateInto(POS_other);
-                if (canPropagate == false) continue;
 
                 if (canPropagate == true)
                 {
                     IElectricPropagator pipe = (IElectricPropagator)WorldAPI.GetBlock(POS + dir, This.IsFront);
                     pipe.ElectricSignalSend(POS, nextRecursion);
-                }
-
-                if (canPropagate == null)
-                {
-                    Core.Debug.LogWarning($"Tried sending electric signal to unloaded block at {POS_other}!");
                 }
             }
         }

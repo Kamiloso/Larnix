@@ -19,29 +19,24 @@ namespace Larnix.Server.Commands
             {
                 RegisterCommand<Authcoderegen>();
                 RegisterCommand<Clear>();
-                RegisterCommand<Deluser>();
                 RegisterCommand<Fill>();
                 RegisterCommand<Help>();
                 RegisterCommand<Info>();
                 RegisterCommand<Kick>();
                 RegisterCommand<Kill>();
                 RegisterCommand<Particles>();
-                RegisterCommand<Passwd>();
                 RegisterCommand<Playerlist>();
-                RegisterCommand<Register>();
                 RegisterCommand<Replace>();
-                RegisterCommand<Resetlimits>();
-                RegisterCommand<Sethost>();
                 RegisterCommand<Spawn>();
                 RegisterCommand<Stop>();
                 RegisterCommand<Tp>();
-                RegisterCommand<Userlist>();
+                RegisterCommand<User>();
             }
         }
 
         public string Name => GetType().Name.ToLowerInvariant();
         public string ShortDocLine => Pattern + " - " + ShortDescription;
-        public string InvalidCmdFormat => $"Invalid format! Usage: {Pattern}";
+        public string InvalidCmdFormat => $"Invalid format! {Hint}";
         public string Documentation =>
             $"Command: {Name}\n" +
             $"Privilege: {PrivilegeLevel} ({(int)PrivilegeLevel})\n" +
@@ -53,6 +48,7 @@ namespace Larnix.Server.Commands
         public abstract string Pattern { get; }
         public abstract string ShortDescription { get; }
         public virtual string LongDescription => ShortDescription;
+        public virtual string Hint => $"Usage: {Pattern}";
 
         public abstract void Inject(string command);
         public abstract (CmdResult, string) Execute(string sender, PrivilegeLevel privilege);
@@ -87,6 +83,21 @@ namespace Larnix.Server.Commands
 
             parts = default;
             return false;
+        }
+
+        protected static bool TrySplitMin(string command, int minLength, out string[] parts,
+            out int length)
+        {
+            length = 1;
+            while (true)
+            {
+                if (TrySplit(command, length, out parts))
+                {
+                    return length >= minLength;
+                }
+
+                length++;
+            }
         }
 
         protected static string MakeRobustList(string title, IEnumerable<string> lines)

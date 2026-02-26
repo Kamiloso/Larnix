@@ -23,10 +23,15 @@ namespace Larnix.Socket.Backend
         // --- Sync Methods ---
         bool IsOnline(string nickname);
         IEnumerable<string> AllUsernames();
+        bool TryRenameUser(string oldUsername, string newUsername);
         bool TryDeleteUserLink(string username);
         void ResetLimits();
         bool UserExists(string username);
         long GetUID(string username);
+
+        // --- CPU Heavy Operations ---
+        bool TryAddUserSync(string username, string password);
+        bool TryChangePasswordSync(string username, string newHash);
         void ChangePasswordOrAddUserSync(string username, string password);
     }
     
@@ -113,14 +118,6 @@ namespace Larnix.Socket.Backend
             return _userAccess.TryGetUserData(username, out userData);
         }
 
-        public DbUser GetUser(string username)
-        {
-            if (TryGetUser(username, out DbUser userData))
-                return userData;
-            
-            return null;
-        }
-
         public bool UserExists(string username)
         {
             return TryGetUser(username, out _);
@@ -135,28 +132,42 @@ namespace Larnix.Socket.Backend
 
         public long GetUID(string username)
         {
-            return GetUser(username)?.UID ??
-                default; // 0 --> no user
+            // WARNING: Fallback to default
+            return TryGetUser(username, out DbUser userData) ?
+                userData.UID : 0; // 0 --> no user
         }
 
         public string GetPasswordHash(string username)
         {
-            return GetUser(username)?.PasswordHash ??
-                default; // null --> no user
+            // WARNING: Fallback to default
+            return TryGetUser(username, out DbUser userData) ?
+                userData.PasswordHash : null; // null --> no user
         }
 
         public long GetChallengeID(string username)
         {
-            return GetUser(username)?.ChallengeID ??
-                default; // 0 --> no user
+            // WARNING: Fallback to default
+            return TryGetUser(username, out DbUser userData) ?
+                userData.ChallengeID : 0; // 0 --> no user
         }
 
-        // ======== Login & Register ========
-
-        public bool TryIncrementLogin(string username, long currentChallengeID)
+        public bool MatchesOldHash(string username, string oldHash)
         {
-            if (TryGetUser(username, out DbUser userData) &&
-                userData.ChallengeID == currentChallengeID)
+            return TryGetUser(username, out DbUser userData) &&
+                userData.PasswordHash == oldHash;
+        }
+
+        public bool MatchesChallengeID(string username, long challengeID)
+        {
+            return TryGetUser(username, out DbUser userData) &&
+                userData.ChallengeID == challengeID;
+        }
+
+        // ======== User Management ========
+
+        public bool TryIncrementLogin(string username)
+        {
+            if (TryGetUser(username, out DbUser userData))
             {
                 DbUser updatedUser = userData.AfterLogin();
                 _userAccess.SaveUserData(updatedUser);
@@ -176,9 +187,22 @@ namespace Larnix.Socket.Backend
             return false;
         }
 
+        public bool TryRenameUser(string oldUsername, string newUsername)
+        {
+            if (TryGetUser(oldUsername, out DbUser userData) &&
+                !IsOnline(oldUsername) && !UserExists(newUsername))
+            {
+                DbUser user = userData.AfterUsernameChange(newUsername);
+                _userAccess.SaveUserData(user);
+                return true;
+            }
+            return false;
+        }
+
         public bool TryDeleteUserLink(string username)
         {
-            if (TryGetUser(username, out DbUser userData))
+            if (TryGetUser(username, out DbUser userData) &&
+                !IsOnline(username))
             {
                 DbUser user = userData.WithoutUsername();
                 _userAccess.SaveUserData(user);
@@ -187,12 +211,9 @@ namespace Larnix.Socket.Backend
             return false;
         }
 
-        // ======== Password Change ========
-
-        public bool TryChangePasswordHash(string username, string oldHash, string newHash)
+        public bool TryChangePasswordHash(string username, string newHash)
         {
-            if (TryGetUser(username, out DbUser userData) &&
-                (oldHash is null || userData.PasswordHash == oldHash))
+            if (TryGetUser(username, out DbUser userData))
             {
                 DbUser updatedUser = userData.AfterPasswordChange(newHash);
                 _userAccess.SaveUserData(updatedUser);
@@ -201,12 +222,29 @@ namespace Larnix.Socket.Backend
             return false;
         }
 
-        public void ChangePasswordOrAddUserSync(string username, string password)
+        // ======== Heavy Sync Operations ========
+
+        public bool TryAddUserSync(string username, string password)
         {
             string hash = Hasher.HashPassword(password);
-            if (!TryChangePasswordHash(username, null, hash))
+            return TryAddUser(username, hash);
+        }
+
+        public bool TryChangePasswordSync(string username, string newPassword)
+        {
+            string hash = Hasher.HashPassword(newPassword);
+            return TryChangePasswordHash(username, hash);
+        }
+
+        public void ChangePasswordOrAddUserSync(string username, string password)
+        {
+            if (UserExists(username))
             {
-                TryAddUser(username, hash);
+                TryChangePasswordSync(username, password);
+            }
+            else
+            {
+                TryAddUserSync(username, password);
             }
         }
 
@@ -244,10 +282,12 @@ namespace Larnix.Socket.Backend
         public void ChangePasswordAsync(string username, string newPassword, Action<bool> callback)
         {
             IPEndPoint target = Common.RandomClassE();
+            
             string oldHash = GetPasswordHash(username);
+            long oldChallengeID = GetChallengeID(username);
             
             _coroutines.Start(
-                ChangePasswordCoroutine(target, username, oldHash, newPassword),
+                ChangePasswordCoroutine(target, username, oldHash, oldChallengeID, newPassword),
                 (success) =>
                 {
                     callback?.Invoke(success);
@@ -300,9 +340,14 @@ namespace Larnix.Socket.Backend
                         {
                             if (success)
                             {
+                                // hash will be unique per hashing with 16 byte random salt,
+                                // so it can be used to identify passchange session
+                                
                                 string oldHash = GetPasswordHash(nickname);
+                                long oldChallengeID = GetChallengeID(nickname);
+
                                 _coroutines.Start(
-                                    ChangePasswordCoroutine(target, nickname, oldHash, newPassword),
+                                    ChangePasswordCoroutine(target, nickname, oldHash, oldChallengeID, newPassword),
                                     (success) =>
                                     {
                                         Finalize?.Invoke(success);
@@ -379,16 +424,16 @@ namespace Larnix.Socket.Backend
                 {
                     if (acquired)
                     {
-                        string hash = GetPasswordHash(nickname);
+                        string oldHash = GetPasswordHash(nickname);
 
-                        if (Hasher.InCache(password, hash, out bool matches))
+                        if (Hasher.InCache(password, oldHash, out bool matches))
                         {
                             _hashLimiter.Remove(internetID); // there won't be hashing, remove ID
                             holder.Dispose(); // dispose before end of using
                         }
                         else
                         {
-                            Task<bool> verifying = Hasher.VerifyPasswordAsync(password, hash);
+                            Task<bool> verifying = Hasher.VerifyPasswordAsync(password, oldHash);
                             while (!verifying.IsCompleted)
                             {
                                 yield return null;
@@ -399,7 +444,10 @@ namespace Larnix.Socket.Backend
                         
                         if (matches)
                         {
-                            bool success = TryIncrementLogin(nickname, challengeID);
+                            bool success = MatchesOldHash(nickname, oldHash) &&
+                                           MatchesChallengeID(nickname, challengeID) &&
+                                           TryIncrementLogin(nickname);
+
                             yield return new Box<bool>(success);
                         }
                     }
@@ -461,7 +509,7 @@ namespace Larnix.Socket.Backend
         }
 
         private IEnumerator<Box<bool>> ChangePasswordCoroutine(IPEndPoint target, string username,
-            string oldHash, string newPassword)
+            string oldHash, long oldChallengeID, string newPassword)
         {
             InternetID internetID = _server.MakeInternetID(target);
 
@@ -484,8 +532,11 @@ namespace Larnix.Socket.Backend
                     }
                     
                     string hash = hashing.Result;
+                    
+                    bool success = MatchesOldHash(username, oldHash) &&
+                                   MatchesChallengeID(username, oldChallengeID) &&
+                                   TryChangePasswordHash(username, hash);
 
-                    bool success = TryChangePasswordHash(username, oldHash, hash);
                     yield return new Box<bool>(success);
                 }
                 

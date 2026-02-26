@@ -54,10 +54,15 @@ namespace Larnix.Core.DbStructs
                 UID, Username, newPasswordHash, ChallengeID);
         }
 
-        public DbUser WithoutUsername()
+        public DbUser AfterUsernameChange(string newUsername)
         {
             return new DbUser(
-                UID, string.Empty, PasswordHash, ChallengeID);
+                UID, newUsername, PasswordHash, ChallengeID);
+        }
+
+        public DbUser WithoutUsername()
+        {
+            return AfterUsernameChange(string.Empty);
         }
     }
 }

@@ -40,11 +40,7 @@ namespace Larnix.Blocks.All
         private void SendSignal(Vec2Int POS_other, bool translayer = false)
         {
             Block block = WorldAPI.GetBlock(POS_other, This.IsFront ^ translayer);
-            if (block is null)
-            {
-                Core.Debug.LogWarning($"Tried sending electric signal to unloaded block at {POS_other}!");
-                return;
-            }
+            if (block is null) return;
 
             if (block is IElectricPropagator prop)
             {

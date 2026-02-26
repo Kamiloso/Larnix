@@ -27,7 +27,7 @@ namespace Larnix.Server.Data
         public String32 HostNickname
         {
             get => (String32)WorldMeta.Nickname;
-            set => WorldMeta = new WorldMeta(WorldMeta.Version, value);
+            private set => WorldMeta = new WorldMeta(WorldMeta.Version, value);
         }
 
         private Server Server => GlobRef.Get<Server>();
