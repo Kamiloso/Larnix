@@ -16,12 +16,9 @@ namespace Larnix.Socket.Backend
 {
     public interface IUserManager
     {
-        // --- Async Methods ---
-        void RegisterUserAsync(string username, string password, Action<bool> callback);
-        void ChangePasswordAsync(string username, string newPassword, Action<bool> callback);
-
         // --- Sync Methods ---
         bool IsOnline(string nickname);
+        bool IsAutoManagedUser(string username);
         IEnumerable<string> AllUsernames();
         bool TryRenameUser(string oldUsername, string newUsername);
         bool TryDeleteUserLink(string username);
@@ -98,6 +95,14 @@ namespace Larnix.Socket.Backend
         public bool IsOnline(string nickname)
         {
             return _server.ConnDict.IsOnline(nickname);
+        }
+
+        public bool IsAutoManagedUser(string username)
+        {
+            string hostUser = _server.Config.HostUser;
+
+            return username == Common.ReservedNickname ||
+                   username == hostUser;
         }
 
         public void Dispose()
@@ -180,8 +185,8 @@ namespace Larnix.Socket.Backend
         {
             if (!UserExists(username))
             {
-                DbUser user = DbUser.CreateNew(username, passwordHash);
-                _userAccess.SaveUserData(user);
+                DbUser updatedUser = DbUser.CreateNew(username, passwordHash);
+                _userAccess.SaveUserData(updatedUser);
                 return true;
             }
             return false;
@@ -192,8 +197,8 @@ namespace Larnix.Socket.Backend
             if (TryGetUser(oldUsername, out DbUser userData) &&
                 !IsOnline(oldUsername) && !UserExists(newUsername))
             {
-                DbUser user = userData.AfterUsernameChange(newUsername);
-                _userAccess.SaveUserData(user);
+                DbUser updatedUser = userData.AfterUsernameChange(newUsername);
+                _userAccess.SaveUserData(updatedUser);
                 return true;
             }
             return false;
@@ -204,8 +209,8 @@ namespace Larnix.Socket.Backend
             if (TryGetUser(username, out DbUser userData) &&
                 !IsOnline(username))
             {
-                DbUser user = userData.WithoutUsername();
-                _userAccess.SaveUserData(user);
+                DbUser updatedUser = userData.WithoutUsername();
+                _userAccess.SaveUserData(updatedUser);
                 return true;
             }
             return false;
@@ -213,8 +218,7 @@ namespace Larnix.Socket.Backend
 
         public bool TryChangePasswordHash(string username, string newHash)
         {
-            if (TryGetUser(username, out DbUser userData) &&
-                !IsOnline(username))
+            if (TryGetUser(username, out DbUser userData))
             {
                 DbUser updatedUser = userData.AfterPasswordChange(newHash);
                 _userAccess.SaveUserData(updatedUser);
@@ -227,24 +231,12 @@ namespace Larnix.Socket.Backend
 
         public bool TryAddUserSync(string username, string password)
         {
-            if (username == Common.ReservedNickname ||
-                password == Common.ReservedPassword)
-            {
-                return false;
-            }
-
             string hash = Hasher.HashPassword(password);
             return TryAddUser(username, hash);
         }
 
         public bool TryChangePasswordSync(string username, string newPassword)
         {
-            if (username == Common.ReservedNickname ||
-                newPassword == Common.ReservedPassword)
-            {
-                return false;
-            }
-
             string hash = Hasher.HashPassword(newPassword);
             return TryChangePasswordHash(username, hash);
         }
@@ -262,54 +254,15 @@ namespace Larnix.Socket.Backend
         }
 
 #endregion
-#region Async Methods
-
-        private P_LoginTry NewLoginTry(string nickname, string password,
-            bool isRegister = false, string newPassword = null)
-        {
-            return new P_LoginTry(
-                nickname: nickname,
-                password: password,
-                newPassword: newPassword,
-                serverSecret: _server.ServerSecret,
-                challengeID: isRegister ? 0 : GetChallengeID(nickname),
-                timestamp: Timestamp.GetTimestamp(),
-                runID: _server.RunID
-            );
-        }
-
-        public void RegisterUserAsync(string username, string password, Action<bool> callback)
-        {
-            IPEndPoint target = Common.RandomClassE();
-            P_LoginTry logtry = NewLoginTry(username, password, isRegister: true);
-
-            _coroutines.Start(
-                LoginCoroutine(target, logtry),
-                (success) =>
-                {
-                    callback?.Invoke(success);
-                }
-            );
-        }
-
-        public void ChangePasswordAsync(string username, string newPassword, Action<bool> callback)
-        {
-            IPEndPoint target = Common.RandomClassE();
-            string oldHash = GetPasswordHash(username);
-            
-            _coroutines.Start(
-                ChangePasswordCoroutine(target, username, oldHash, newPassword),
-                (success) =>
-                {
-                    callback?.Invoke(success);
-                }
-            );
-        }
-
-#endregion
 #region Coroutines
 
-        public enum LoginMode { Discovery, Establishment, PasswordChange }
+        public enum LoginMode
+        {
+            Discovery, // stateless login or register, no active session
+            Establishment, // trying to establish game connection
+            PasswordChange // login + password change
+        }
+
         public void StartLogin(IPEndPoint target, P_LoginTry logtry, LoginMode mode,
             Action<bool> Finalize = null)
         {
@@ -384,21 +337,16 @@ namespace Larnix.Socket.Backend
             long timestamp = logtry.Timestamp;
             long runID = logtry.RunID;
 
-            bool IsOkTimestamp(long timestamp) => Timestamp.InTimestamp(timestamp);
-            bool IsOkNickname(string nickname) => isLoopback || nickname != Common.ReservedNickname;
-            bool IsOkPassword(string password) => isLoopback || password != Common.ReservedPassword;
-            bool IsOkChallengeID(long challengeID) => challengeID == GetChallengeID(nickname);
-
             if (
                 // Basic checks
-                serverSecret != _server.ServerSecret ||
-                runID != _server.RunID ||
+                !(serverSecret == _server.ServerSecret) ||
+                !(runID == _server.RunID) ||
 
                 // Complex checks
-                !IsOkTimestamp(timestamp) || // login message is outdated
-                !IsOkNickname(nickname) || // loopback-only nickname
-                !IsOkPassword(password) || // loopback-only password
-                !IsOkChallengeID(challengeID)) // wrong challengeID
+                !Timestamp.InTimestamp(timestamp) || // login message is outdated
+                !(isLoopback || nickname != Common.ReservedNickname) || // loopback-only nickname
+                !(isLoopback || password != Common.ReservedPassword) || // loopback-only password
+                !(challengeID == GetChallengeID(nickname))) // wrong challengeID
             {
                 yield return new Box<bool>(false);
             }

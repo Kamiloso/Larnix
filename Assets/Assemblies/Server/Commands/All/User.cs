@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using Larnix.Core;
+using Larnix.Core.Utils;
 using Larnix.Server.Entities;
 using Larnix.Socket.Backend;
 using CmdResult = Larnix.Core.ICmdExecutor.CmdResult;
@@ -23,7 +24,7 @@ namespace Larnix.Server.Commands.All
             "user delete <username> - Deletes a user.\n" +
             "user resetlimits - Resets all hashing and registration user limits.\n" +
             "user list - Lists all registered users.\n" +
-            "user deleteall - Deletes all users.";
+            $"user deleteall - Deletes all users except host and '{Common.ReservedNickname}'.";
 
         private QuickServer QuickServer => GlobRef.Get<QuickServer>();
         private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
@@ -49,28 +50,28 @@ namespace Larnix.Server.Commands.All
             {
                 ["add"] = args =>
                 {
-                    if (!Parsing.TryParseNickname(args[1], out string username)) throw FormatException("Invalid username.");
-                    if (!Parsing.TryParsePassword(args[2], out string password)) throw FormatException("Invalid password.");
+                    if (!Parsing.TryParseNickname(args[1], out string username)) throw FormatException(Validation.WrongNicknameInfo);
+                    if (!Parsing.TryParsePassword(args[2], out string password)) throw FormatException(Validation.WrongPasswordInfo);
                     _username = username;
                     _password = password;
                 },
                 ["rename"] = args =>
                 {
-                    if (!Parsing.TryParseNickname(args[1], out string oldusername)) throw FormatException("Invalid username.");
-                    if (!Parsing.TryParseNickname(args[2], out string newusername)) throw FormatException("Invalid username.");
+                    if (!Parsing.TryParseNickname(args[1], out string oldusername)) throw FormatException(Validation.WrongNicknameInfo);
+                    if (!Parsing.TryParseNickname(args[2], out string newusername)) throw FormatException(Validation.WrongNicknameInfo);
                     _oldusername = oldusername;
                     _newusername = newusername;
                 },
                 ["changepass"] = args =>
                 {
-                    if (!Parsing.TryParseNickname(args[1], out string username)) throw FormatException("Invalid username.");
-                    if (!Parsing.TryParsePassword(args[2], out string password)) throw FormatException("Invalid password.");
+                    if (!Parsing.TryParseNickname(args[1], out string username)) throw FormatException(Validation.WrongNicknameInfo);
+                    if (!Parsing.TryParsePassword(args[2], out string password)) throw FormatException(Validation.WrongPasswordInfo);
                     _username = username;
                     _newpassword = password;
                 },
                 ["delete"] = args =>
                 {
-                    if (!Parsing.TryParseNickname(args[1], out string username)) throw FormatException("Invalid username.");
+                    if (!Parsing.TryParseNickname(args[1], out string username)) throw FormatException(Validation.WrongNicknameInfo);
                     _username = username;
                 },
                 ["resetlimits"] = args => { },
@@ -114,8 +115,16 @@ namespace Larnix.Server.Commands.All
             return (CmdResult.Error, "Invalid subcommand.");
         }
 
+        private (CmdResult, string) MngInfo(string username)
+        {
+            return (CmdResult.Error, $"Nickname '{username}' is reserved by server.");
+        }
+
         private (CmdResult, string) ExecuteAdd()
         {
+            if (UserManager.IsAutoManagedUser(_username)) return MngInfo(_username);
+            // ----------------------------
+
             if (UserManager.TryAddUserSync(_username, _password))
             {
                 return (CmdResult.Success,
@@ -128,6 +137,10 @@ namespace Larnix.Server.Commands.All
 
         private (CmdResult, string) ExecuteRename()
         {
+            if (UserManager.IsAutoManagedUser(_oldusername)) return MngInfo(_oldusername);
+            if (UserManager.IsAutoManagedUser(_newusername)) return MngInfo(_newusername);
+            // ----------------------------
+
             if (UserManager.TryRenameUser(_oldusername, _newusername))
             {
                 return (CmdResult.Success,
@@ -140,6 +153,9 @@ namespace Larnix.Server.Commands.All
 
         private (CmdResult, string) ExecuteChangePass()
         {
+            if (UserManager.IsAutoManagedUser(_username)) return MngInfo(_username);
+            // ----------------------------
+
             if (UserManager.TryChangePasswordSync(_username, _newpassword))
             {
                 return (CmdResult.Success,
@@ -152,6 +168,9 @@ namespace Larnix.Server.Commands.All
 
         private (CmdResult, string) ExecuteDelete()
         {
+            if (UserManager.IsAutoManagedUser(_username)) return MngInfo(_username);
+            // ----------------------------
+
             if (UserManager.TryDeleteUserLink(_username))
             {
                 return (CmdResult.Success,
@@ -208,11 +227,14 @@ namespace Larnix.Server.Commands.All
 
         private (CmdResult, string) ExecuteDeleteAll()
         {
-            string[] allUsers = UserManager.AllUsernames().ToArray();
+            List<string> allUsers = UserManager.AllUsernames()
+                .Where(nick => !UserManager.IsAutoManagedUser(nick))
+                .ToList();
+            
             if (allUsers.Any(nick => UserManager.IsOnline(nick)))
             {
                 return (CmdResult.Error,
-                    "Cannot delete all users while some are still online. Disconnect all users and try again.");
+                    "Cannot delete all users while some are still online.");
             }
 
             List<string> failed = new();

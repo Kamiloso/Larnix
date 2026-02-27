@@ -62,7 +62,8 @@ namespace Larnix.Core.DbStructs
 
         public DbUser WithoutUsername()
         {
-            return AfterUsernameChange(string.Empty);
+            return new DbUser(
+                UID, string.Empty, string.Empty, ChallengeID);
         }
     }
 }
