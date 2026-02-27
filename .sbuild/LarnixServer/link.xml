@@ -14,4 +14,8 @@
   <assembly fullname="Larnix.Packets">
     <type fullname="Larnix.Packets.*" />
   </assembly>
+
+  <assembly fullname="Larnix.Socket">
+    <type fullname="Larnix.Socket.Packets.Control.*" />
+  </assembly>
 </linker>

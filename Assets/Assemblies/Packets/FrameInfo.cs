@@ -19,7 +19,6 @@ namespace Larnix.Packets
         public Weather Weather => Primitives.FromBytes<Weather>(Bytes, 14);
         public float Tps => Primitives.FromBytes<float>(Bytes, 16);
 
-        public FrameInfo() { }
         public FrameInfo(long serverTick, Col32 skyColor, BiomeID biomeID, Weather weather, float tps, byte code = 0)
         {
             InitializePayload(ArrayUtils.MegaConcat(

@@ -72,25 +72,33 @@ namespace Larnix.Socket.Frontend
 
         public void Tick(float deltaTime)
         {
-            // get packets from UDP client
+            // Get packets from UDP client
             while (_udpClient.TryReceive(out var pair))
-                _connection.PushFromWeb(pair.data);
-
-            // process received packets
-            _connection.Tick(deltaTime);
-            Queue<HeaderSpan> received = _connection.Receive();
-
-            while (received.Count > 0)
             {
-                HeaderSpan headerSpan = received.Dequeue();
-                if (Subscriptions.TryGetValue(headerSpan.ID, out var Execute))
+                _connection.PushFromWeb(pair.data, false);
+            }
+
+            // Process received packets
+            _connection.Tick(deltaTime);
+            if (!_connection.IsDead)
+            {
+                while (_connection.TryReceive(out var headerSpan, out bool stopSignal))
                 {
-                    Execute(headerSpan);
+                    CmdID cmdID = headerSpan.ID;
+                    if (Subscriptions.TryGetValue(cmdID, out var Execute))
+                    {
+                        Execute(headerSpan);
+                    }
+
+                    if (stopSignal)
+                    {
+                        break;
+                    }
                 }
             }
         }
 
-        public void Subscribe<T>(Action<T> InterpretPacket) where T : Payload, new()
+        public void Subscribe<T>(Action<T> InterpretPacket) where T : Payload
         {
             CmdID ID = Payload.CmdID<T>();
             Subscriptions[ID] = (HeaderSpan packetBytes) =>

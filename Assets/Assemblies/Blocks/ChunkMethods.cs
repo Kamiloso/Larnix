@@ -226,7 +226,7 @@ namespace Larnix.Blocks
 
         private static void HandleInputErrors(BlockData2[,] chunk)
         {
-            if (chunk == null) throw new ArgumentNullException("Chunk array cannot be null.");
+            if (chunk == null) throw new ArgumentNullException(nameof(chunk));
             if (chunk.GetLength(0) != CHUNK_SIZE || chunk.GetLength(1) != CHUNK_SIZE)
             {
                 throw new ArgumentException($"Blocks array must be {CHUNK_SIZE} x {CHUNK_SIZE}.");

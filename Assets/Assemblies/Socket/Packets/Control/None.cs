@@ -8,8 +8,7 @@ namespace Larnix.Socket.Packets.Control
     {
         private const int SIZE = 0;
 
-        public None() { }
-        public None(byte code)
+        public None(byte code = 0)
         {
             InitializePayload(new byte[0], code);
         }

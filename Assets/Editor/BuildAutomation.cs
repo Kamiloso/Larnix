@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System;
 using System.Diagnostics;
 using UnityEngine;
+using Larnix.Core.Utils;
+using Larnix.Core.Files;
 
 public enum BuildMode { Windows, Linux, MacIntel, MacSilicon }
 
@@ -314,7 +316,13 @@ public class BuildAutomation
     [MenuItem("Automation/Tools/Open Build Folder")]
     public static void OpenBuildFolder()
     {
+        if (!Directory.Exists(BuildRoot))
+        {
+            Directory.CreateDirectory(BuildRoot);
+        }
+
         UnityEditor.EditorUtility.RevealInFinder(BuildRoot + "any-file");
+        UnityEngine.Debug.Log($"Opened folder: \"{BuildRoot}\"");
     }
 
     public static void RemoveBurstDebugDirectories(string rootPath)

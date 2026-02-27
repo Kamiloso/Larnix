@@ -15,7 +15,7 @@ namespace Larnix.Packets.Structs
         public BlockData2 Block { get; private set; }
         public IWorldAPI.BreakMode BreakMode { get; private set; }
 
-        public BlockUpdateRecord() => Block = new();
+        public BlockUpdateRecord() { }
         public BlockUpdateRecord(Vec2Int position, BlockData2 block, IWorldAPI.BreakMode breakMode)
         {
             Position = position;

@@ -8,59 +8,56 @@ using Larnix.Socket.Packets;
 using Larnix.Socket.Security.Keys;
 using Larnix.Core.Utils;
 using Larnix.Socket.Helpers.Limiters;
+using Larnix.Core;
+using Larnix.Socket.Packets.Control;
+using Larnix.Core.DataStructures;
 
 namespace Larnix.Socket.Backend
 {
-    internal class ConnDict : IDisposable
+    internal class ConnDict : ITickable, IDisposable
     {
-        internal record PacketPair(HeaderSpan Packet, string Owner);
+        public record PacketPair(HeaderSpan Packet, string Owner);
 
-        // --- Properties ---
-        public readonly ushort MAX_PLAYERS;
-        public int Count => _connections.Count;
-
-        public IEnumerable<string> Nicknames => _nickToEp.Keys;
-        public IEnumerable<IPEndPoint> EndPoints => _epToNick.Keys;
+        public ushort MaxPlayers { get; }
+        public ushort CurrentPlayers => (ushort)_connections.Count;
 
         private readonly INetworkInteractions _socket;
         private readonly QuickServer _server;
 
-        private readonly Dictionary<string, IPEndPoint> _nickToEp = new();
-        private readonly Dictionary<IPEndPoint, string> _epToNick = new();
+        private readonly BiMap<IPEndPoint, string> _nickAndEp = new();
         private readonly Dictionary<IPEndPoint, Connection> _connections = new();
         private readonly Dictionary<IPEndPoint, PreLoginBuffer> _preLogins = new();
 
         private readonly Limiter<InternetID> _connLimiter = new(3);
+        private readonly PriorityQueue<PacketPair, int> _received = new();
 
         private bool _disposed = false;
 
-        // --- Informative ---
-        public enum ConnState { None, PreLogin, Connected }
-        public ConnState ConnStateOf(IPEndPoint endPoint)
-        {
-            if (_connections.ContainsKey(endPoint))
-                return ConnState.Connected;
-
-            if (_preLogins.ContainsKey(endPoint))
-                return ConnState.PreLogin;
-            
-            return ConnState.None;
-        }
-
-        public string NicknameOf(IPEndPoint endPoint) => _epToNick.TryGetValue(endPoint, out var nickname) ? nickname : null;
-        public IPEndPoint EndPointOf(string nickname) => _nickToEp.TryGetValue(nickname, out var endPoint) ? endPoint : null;
-
-        // --- Functional ---
         public ConnDict(QuickServer server, INetworkInteractions socket, ushort maxPlayers)
         {
             _server = server;
             _socket = socket;
-            MAX_PLAYERS = maxPlayers;
+            MaxPlayers = maxPlayers;
+        }
+
+        public bool TryGetEndPoint(string nickname, out IPEndPoint endPoint)
+        {
+            return _nickAndEp.TryGetKey(nickname, out endPoint);
+        }
+
+        public bool IsOnline(string nickname)
+        {
+            return TryGetEndPoint(nickname, out _);
+        }
+
+        public bool TryGetConnectionObject(IPEndPoint endPoint, out Connection connection)
+        {
+            return _connections.TryGetValue(endPoint, out connection);
         }
 
         public bool TryAddPreLogin(IPEndPoint endPoint, PayloadBox synBox)
         {
-            if (Count < MAX_PLAYERS && !_preLogins.ContainsKey(endPoint))
+            if (CurrentPlayers < MaxPlayers && !_preLogins.ContainsKey(endPoint))
             {
                 PreLoginBuffer preLogin = new PreLoginBuffer(synBox);
                 _preLogins[endPoint] = preLogin;
@@ -72,21 +69,22 @@ namespace Larnix.Socket.Backend
 
         public bool TryPromoteConnection(IPEndPoint endPoint)
         {
-            InternetID internetID = _server.MakeInternetID(endPoint);
-
-            if (Count < MAX_PLAYERS && _preLogins.TryGetValue(endPoint, out var preLogin))
+            if (CurrentPlayers < MaxPlayers && _preLogins.TryGetValue(endPoint, out var preLogin))
             {
-                string nickname = preLogin.AllowConnection.Nickname;
+                AllowConnection allowConnection = preLogin.AllowConnection;
 
-                IPEndPoint alreadyConnectedEp = EndPointOf(nickname);
-                if (alreadyConnectedEp != null)
+                string nickname = allowConnection.Nickname;
+                KeyAES keyAES = new KeyAES(allowConnection.KeyAES);
+
+                if (TryGetEndPoint(nickname, out var alreadyConnectedEp))
                 {
                     Core.Debug.LogWarning($"Player {nickname} tried to connect, but is already connected.");
 
                     KickRequest(alreadyConnectedEp);
-                    return false; // reject, player may connect once again anyway (rewriting this code to accept would be a nightmare)
+                    return false; // reject, player may connect once again
                 }
 
+                InternetID internetID = _server.MakeInternetID(endPoint);
                 if (!_connLimiter.TryAdd(internetID))
                 {
                     ulong max = _connLimiter.Max;
@@ -96,21 +94,18 @@ namespace Larnix.Socket.Backend
                     return false; // reject, too many connections from internet ID
                 }
 
-                // --- ADD CONNECTION ---
+                // ----- Real Promote Connection -----
 
-                var keyAES = new KeyAES(preLogin.AllowConnection.KeyAES);
-                var connection = Connection.CreateServer(_socket, endPoint, keyAES);
+                Connection newConn = Connection.CreateServer(_socket, endPoint, keyAES);
 
                 byte[] bytes;
                 while ((bytes = preLogin.TryReceive(out var isSyn)) != null)
                 {
-                    connection.PushFromWeb(bytes, isSyn);
+                    newConn.PushFromWeb(bytes, isSyn);
                 }
 
-                _epToNick[endPoint] = nickname;
-                _nickToEp[nickname] = endPoint;
-                
-                _connections[endPoint] = connection;
+                _nickAndEp.SetPair(endPoint, nickname);
+                _connections.Add(endPoint, newConn);
                 _preLogins.Remove(endPoint);
 
                 return true;
@@ -118,111 +113,89 @@ namespace Larnix.Socket.Backend
             return false;
         }
 
-        public Connection GetConnectionObject(IPEndPoint endPoint)
+        public void PushFromWeb(IPEndPoint endPoint, byte[] incoming)
         {
-            if (_connections.TryGetValue(endPoint, out var connection))
+            if (_connections.TryGetValue(endPoint, out var conn))
             {
-                return connection;
+                conn.PushFromWeb(incoming, false);
             }
-            return null;
-        }
-
-        public void SendTo(IPEndPoint endPoint, Payload payload, bool safemode = true)
-        {
-            if (_connections.TryGetValue(endPoint, out var connection))
+            else if (_preLogins.TryGetValue(endPoint, out var preLogin))
             {
-                connection.Send(payload, safemode);
+                preLogin.PushFromWeb(incoming);
             }
         }
 
-        public void SendToAll(Payload payload, bool safemode = true)
+        public void Tick(float deltaTime)
         {
-            foreach (var connection in _connections.Values)
-            {
-                connection.Send(payload, safemode);
-            }
-        }
-
-        public void EnqueueReceivedPacket(IPEndPoint endPoint, byte[] incoming)
-        {
-            switch (ConnStateOf(endPoint))
-            {
-                case ConnState.Connected:
-                    _connections[endPoint].PushFromWeb(incoming);
-                    break;
-
-                case ConnState.PreLogin:
-                    _preLogins[endPoint].PushFromWeb(incoming);
-                    break;
-            }
-        }
-
-        /// <summary>
-        /// AllowConnection packet always starts the connection.
-        /// Stop packet always ends the connection.
-        /// Stop packet can only appear once in a returned packet queue.
-        /// Stop packet may appear randomly, alone without AllowConnection. !!!
-        /// </summary>
-        public Queue<PacketPair> TickAndReceive(float deltaTime)
-        {
-            Queue<PacketPair> received = new();
+            if (_received.Count > 0)
+                throw new InvalidOperationException("Not all packets were flushed! Cannot tick.");
 
             List<IPEndPoint> shuffledEndpoints = _connections.Keys
                 .OrderBy(_ => Common.Rand()).ToList();
             
             foreach (IPEndPoint endPoint in shuffledEndpoints)
             {
-                var connection = _connections[endPoint];
+                var conn = _connections[endPoint];
 
-                connection.Tick(deltaTime);
-                if (!connection.IsDead) // receive all
+                conn.Tick(deltaTime);
+                while (conn.TryReceive(out var packet, out bool stopSignal))
                 {
-                    Queue<HeaderSpan> recv = connection.Receive();
-                    string nickname = _epToNick[endPoint];
+                    string nickname = _nickAndEp[endPoint];
 
-                    while (recv.Count > 0)
-                    {
-                        received.Enqueue(new PacketPair(recv.Dequeue(), nickname));
-                    }
-                }
-                else // terminate connection if dead
-                {
-                    string nickname = _epToNick[endPoint];
+                    PacketPair pair = new PacketPair(packet, nickname);
+                    int priority = 0; // default priority
 
-                    received.Enqueue(new PacketPair(
-                        Packet: connection.GenerateStop(),
-                        Owner: nickname)
-                        );
+                    if (packet.ID == Payload.CmdID<AllowConnection>()) priority = -1; // higher
+                    if (packet.ID == Payload.CmdID<Stop>()) priority = -2; // highest
                     
-                    if (_connections.TryGetValue(endPoint, out var conn))
+                    _received.Enqueue(pair, priority);
+
+                    if (stopSignal) // delete connection
                     {
+                        _nickAndEp.RemoveByKey(endPoint);
+                        _connections.Remove(endPoint);
+
+                        InternetID internetID = _server.MakeInternetID(endPoint);
+                        _connLimiter.Remove(internetID);
+
                         conn.Dispose();
+                        break;
                     }
-
-                    _nickToEp.Remove(nickname);
-                    _epToNick.Remove(endPoint);
-                    _connections.Remove(endPoint);
-
-                    InternetID internetID = _server.MakeInternetID(endPoint);
-                    _connLimiter.Remove(internetID);
                 }
             }
-            return received;
+        }
+
+        public bool TryDequeuePacket(out PacketPair packetPair)
+        {
+            return _received.TryDequeue(out packetPair);
+        }
+
+        public void TrySendTo(IPEndPoint endPoint, Payload payload, bool safemode = true)
+        {
+            if (TryGetConnectionObject(endPoint, out var conn))
+            {
+                conn.Send(payload, safemode);
+            }
+        }
+
+        public void SendToAll(Payload payload, bool safemode = true)
+        {
+            foreach (var conn in _connections.Values)
+            {
+                conn.Send(payload, safemode);
+            }
         }
 
         public void DiscardIncoming(IPEndPoint endPoint)
         {
-            if (ConnStateOf(endPoint) == ConnState.PreLogin)
-            {
-                _preLogins.Remove(endPoint);
-            }
+            _preLogins.Remove(endPoint);
         }
 
         public void KickRequest(IPEndPoint endPoint)
         {
-            if (_connections.TryGetValue(endPoint, out var conn))
+            if (TryGetConnectionObject(endPoint, out var conn))
             {
-                conn.Dispose();
+                conn.Close();
             }
         }
 

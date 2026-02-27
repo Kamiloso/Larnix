@@ -17,7 +17,6 @@ namespace Larnix.Packets
             RespawnMe,
         }
 
-        public CodeInfo() { }
         public CodeInfo(Info code)
         {
             InitializePayload(new byte[0], (byte)code);

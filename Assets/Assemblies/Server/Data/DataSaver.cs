@@ -76,7 +76,7 @@ namespace Larnix.Server.Data
 
                     if (Validation.IsGoodPassword(password))
                     {
-                        UserManager.ChangePasswordOrAddUserSync(HostNickname, password);
+                        UserManager.TryChangePasswordOrAddUserSync(HostNickname, password);
                         HostNickname = (String32)Common.ReservedNickname;
                         changeSuccess = true;
                     }
@@ -120,8 +120,6 @@ namespace Larnix.Server.Data
                     throw;
                 }
             }
-
-            Config.Save(WorldPath);
         }
 
         public void Dispose(bool emergency)

@@ -32,7 +32,7 @@ namespace Larnix.Socket.Backend
         // --- CPU Heavy Operations ---
         bool TryAddUserSync(string username, string password);
         bool TryChangePasswordSync(string username, string newHash);
-        void ChangePasswordOrAddUserSync(string username, string password);
+        bool TryChangePasswordOrAddUserSync(string username, string password);
     }
     
     internal class UserManager : IUserManager, ITickable, IDisposable
@@ -97,7 +97,7 @@ namespace Larnix.Socket.Backend
 
         public bool IsOnline(string nickname)
         {
-            return _server.ConnDict.Nicknames.Contains(nickname);
+            return _server.ConnDict.IsOnline(nickname);
         }
 
         public void Dispose()
@@ -213,7 +213,8 @@ namespace Larnix.Socket.Backend
 
         public bool TryChangePasswordHash(string username, string newHash)
         {
-            if (TryGetUser(username, out DbUser userData))
+            if (TryGetUser(username, out DbUser userData) &&
+                !IsOnline(username))
             {
                 DbUser updatedUser = userData.AfterPasswordChange(newHash);
                 _userAccess.SaveUserData(updatedUser);
@@ -226,25 +227,37 @@ namespace Larnix.Socket.Backend
 
         public bool TryAddUserSync(string username, string password)
         {
+            if (username == Common.ReservedNickname ||
+                password == Common.ReservedPassword)
+            {
+                return false;
+            }
+
             string hash = Hasher.HashPassword(password);
             return TryAddUser(username, hash);
         }
 
         public bool TryChangePasswordSync(string username, string newPassword)
         {
+            if (username == Common.ReservedNickname ||
+                newPassword == Common.ReservedPassword)
+            {
+                return false;
+            }
+
             string hash = Hasher.HashPassword(newPassword);
             return TryChangePasswordHash(username, hash);
         }
 
-        public void ChangePasswordOrAddUserSync(string username, string password)
+        public bool TryChangePasswordOrAddUserSync(string username, string password)
         {
             if (UserExists(username))
             {
-                TryChangePasswordSync(username, password);
+                return TryChangePasswordSync(username, password);
             }
             else
             {
-                TryAddUserSync(username, password);
+                return TryAddUserSync(username, password);
             }
         }
 
@@ -282,12 +295,10 @@ namespace Larnix.Socket.Backend
         public void ChangePasswordAsync(string username, string newPassword, Action<bool> callback)
         {
             IPEndPoint target = Common.RandomClassE();
-            
             string oldHash = GetPasswordHash(username);
-            long oldChallengeID = GetChallengeID(username);
             
             _coroutines.Start(
-                ChangePasswordCoroutine(target, username, oldHash, oldChallengeID, newPassword),
+                ChangePasswordCoroutine(target, username, oldHash, newPassword),
                 (success) =>
                 {
                     callback?.Invoke(success);
@@ -298,8 +309,8 @@ namespace Larnix.Socket.Backend
 #endregion
 #region Coroutines
 
-        internal enum LoginMode { Discovery, Establishment, PasswordChange }
-        internal void StartLogin(IPEndPoint target, P_LoginTry logtry, LoginMode mode,
+        public enum LoginMode { Discovery, Establishment, PasswordChange }
+        public void StartLogin(IPEndPoint target, P_LoginTry logtry, LoginMode mode,
             Action<bool> Finalize = null)
         {
             string nickname = logtry.Nickname;
@@ -342,12 +353,10 @@ namespace Larnix.Socket.Backend
                             {
                                 // hash will be unique per hashing with 16 byte random salt,
                                 // so it can be used to identify passchange session
-                                
                                 string oldHash = GetPasswordHash(nickname);
-                                long oldChallengeID = GetChallengeID(nickname);
 
                                 _coroutines.Start(
-                                    ChangePasswordCoroutine(target, nickname, oldHash, oldChallengeID, newPassword),
+                                    ChangePasswordCoroutine(target, nickname, oldHash, newPassword),
                                     (success) =>
                                     {
                                         Finalize?.Invoke(success);
@@ -509,7 +518,7 @@ namespace Larnix.Socket.Backend
         }
 
         private IEnumerator<Box<bool>> ChangePasswordCoroutine(IPEndPoint target, string username,
-            string oldHash, long oldChallengeID, string newPassword)
+            string oldHash, string newPassword)
         {
             InternetID internetID = _server.MakeInternetID(target);
 
@@ -534,7 +543,6 @@ namespace Larnix.Socket.Backend
                     string hash = hashing.Result;
                     
                     bool success = MatchesOldHash(username, oldHash) &&
-                                   MatchesChallengeID(username, oldChallengeID) &&
                                    TryChangePasswordHash(username, hash);
 
                     yield return new Box<bool>(success);

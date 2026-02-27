@@ -2,7 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using Larnix.Core.Physics;
 using Larnix.Core.Vectors;
-using Larnix.Entities.Structs;
 
 namespace Larnix.Entities.All
 {

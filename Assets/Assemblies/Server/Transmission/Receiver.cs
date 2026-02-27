@@ -38,18 +38,8 @@ namespace Larnix.Server.Transmission
             Subscribe<BlockChange>(_BlockChange, maxPerSecond: 500); // TODO: Limit for survival players
         }
 
-        public void Tick(float deltaTime)
-        {
-            _rateLimitTimer += deltaTime;
-            if (_rateLimitTimer >= 1f)
-            {
-                _rateLimitTimer %= 1f;
-                _rateLimits.Clear();
-            }
-        }
-
         private void Subscribe<T>(Action<T, string> callback, int maxPerSecond = 0,
-            bool softLimit = false) where T : Payload, new()
+            bool softLimit = false) where T : Payload
         {
             QuickServer.Subscribe<T>((msg, owner) =>
             {
@@ -82,19 +72,34 @@ namespace Larnix.Server.Transmission
             });
         }
 
+        public void Tick(float deltaTime)
+        {
+            _rateLimitTimer += deltaTime;
+            if (_rateLimitTimer >= 1f)
+            {
+                _rateLimitTimer %= 1f;
+                _rateLimits.Clear();
+            }
+        }
+
         private void _AllowConnection(AllowConnection msg, string owner)
         {
+            // WARNING:
+            // AllowConnection executes in a non-synchronized player context.
+            // No player data methods are reliable here.
+
             PlayerActions.JoinPlayer(owner);
             Core.Debug.Log(owner + " joined the game.");
         }
 
         private void _Stop(Stop msg, string owner)
         {
-            if (PlayerActions.IsConnected(owner)) // stop packet may appear alone
-            {
-                PlayerActions.DisconnectPlayer(owner);
-                Core.Debug.Log(owner + " disconnected.");
-            }
+            // WARNING:
+            // Stop executes in a non-synchronized player context.
+            // No player data methods are reliable here.
+
+            PlayerActions.DisconnectPlayer(owner);
+            Core.Debug.Log(owner + " disconnected.");
         }
 
         private void _PlayerUpdate(PlayerUpdate msg, string owner)

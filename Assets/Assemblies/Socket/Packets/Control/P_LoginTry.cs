@@ -19,7 +19,6 @@ namespace Larnix.Socket.Packets.Control
         public long Timestamp => Primitives.FromBytes<long>(Bytes, 176); // 8B
         public long RunID => Primitives.FromBytes<long>(Bytes, 184); // 8B
 
-        public P_LoginTry() { }
         public P_LoginTry(string nickname, string password, long serverSecret,
             long challengeID, long timestamp, long runID, string newPassword = null, byte code = 0)
         {

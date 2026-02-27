@@ -11,7 +11,6 @@ namespace Larnix.Socket.Packets.Control
         private const int SIZE = 512;
         public String512 Message => Primitives.FromBytes<String512>(Bytes, 0);
 
-        public DebugMessage() { }
         public DebugMessage(string message, byte code = 0)
         {
             InitializePayload(ArrayUtils.MegaConcat(

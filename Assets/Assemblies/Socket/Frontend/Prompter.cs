@@ -22,7 +22,7 @@ namespace Larnix.Socket.Frontend
             _udpClient = udpClient;
         }
 
-        public static async Task<TAnswer> PromptAsync<TAnswer>(string address, Payload prompt, int timeoutMiliseconds = 3000, KeyRSA publicKey = null) where TAnswer : Payload, new()
+        public static async Task<TAnswer> PromptAsync<TAnswer>(string address, Payload prompt, int timeoutMiliseconds = 3000, KeyRSA publicKey = null) where TAnswer : Payload
         {
             IPEndPoint target = await Resolver.ResolveStringAsync(address);
             if (target == null) return null;
@@ -40,7 +40,7 @@ namespace Larnix.Socket.Frontend
             return await prompter.SendAndWaitAsync<TAnswer>(prompt, publicKey, timeoutMiliseconds);
         }
 
-        private async Task<TAnswer> SendAndWaitAsync<TAnswer>(Payload prompt, KeyRSA publicKey, int timeoutMiliseconds) where TAnswer : Payload, new()
+        private async Task<TAnswer> SendAndWaitAsync<TAnswer>(Payload prompt, KeyRSA publicKey, int timeoutMiliseconds) where TAnswer : Payload
         {
             int promptID = (int)Common.GetSecureLong();
 

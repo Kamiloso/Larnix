@@ -17,7 +17,6 @@ namespace Larnix.Packets
         public Vec2Int Chunkpos => Structures.FromBytes<Vec2Int>(Bytes, 0); // Vec2Int.SIZE
         public BlockData2[,] Blocks => Bytes.Length != MIN_SIZE ? ChunkMethods.DeserializeChunk(Bytes, Vec2Int.SIZE) : null; // 0B - 1280B
 
-        public ChunkInfo() { }
         public ChunkInfo(Vec2Int chunkpos, BlockData2[,] blocks, byte code = 0)
         {
             InitializePayload(ArrayUtils.MegaConcat(

@@ -8,7 +8,7 @@ namespace Larnix.Core
 {
     public struct Version : IBinary<Version>
     {
-        public static readonly Version Current = new Version("0.0.39.1");
+        public static readonly Version Current = new Version("0.0.40.0");
 
         public const int SIZE = sizeof(uint);
         public uint ID { get; private set; }
@@ -25,7 +25,10 @@ namespace Larnix.Core
         {
             try
             {
-                List<byte> segments = str.Split('.').Select(s => byte.Parse(s)).ToList();
+                List<byte> segments = str
+                    .Split('.')
+                    .Select(s => byte.Parse(s))
+                    .ToList();
 
                 if (segments.Count > 4)
                     throw new Exception();

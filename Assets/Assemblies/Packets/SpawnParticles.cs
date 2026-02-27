@@ -17,7 +17,6 @@ namespace Larnix.Packets
         public ulong EntityUid => Primitives.FromBytes<ulong>(Bytes, Vec2.SIZE + sizeof(ParticleID)); // ulong size
         public bool IsEntityParticle => EntityUid != 0;
 
-        public SpawnParticles() { }
         public SpawnParticles(Vec2 position, ParticleID particleID, ulong entityUid = 0, byte code = 0)
         {
             InitializePayload(ArrayUtils.MegaConcat(

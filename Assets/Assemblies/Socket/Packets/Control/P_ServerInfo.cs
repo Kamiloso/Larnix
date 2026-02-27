@@ -11,7 +11,6 @@ namespace Larnix.Socket.Packets.Control
         private const int SIZE = 32;
         public String32 Nickname => Primitives.FromBytes<String32>(Bytes, 0);
 
-        public P_ServerInfo() { }
         public P_ServerInfo(string message, byte code = 0)
         {
             InitializePayload(ArrayUtils.MegaConcat(

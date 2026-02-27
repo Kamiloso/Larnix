@@ -7,13 +7,11 @@ using System.Threading.Tasks;
 using System;
 using Larnix.Core.Utils;
 using Larnix.Socket.Security.Keys;
-using Larnix.Socket.Channel;
 using Larnix.Socket.Packets.Control;
 using Larnix.Socket.Channel.Networking;
 using Larnix.Socket.Helpers;
 using Larnix.Socket.Helpers.Limiters;
 using Larnix.Core;
-using PacketPair = Larnix.Socket.Backend.ConnDict.PacketPair;
 using LoginMode = Larnix.Socket.Backend.UserManager.LoginMode;
 
 namespace Larnix.Socket.Backend
@@ -26,8 +24,8 @@ namespace Larnix.Socket.Backend
         // --- Public Properties ---
         public ushort Port => Config.Port;
         public string Authcode { get; }
-        public ushort PlayerCount => (ushort)ConnDict.Count;
-        public ushort PlayerLimit => Config.MaxClients;
+        public ushort PlayerCount => ConnDict.CurrentPlayers;
+        public ushort PlayerLimit => ConnDict.MaxPlayers;
         public IUserManager IUserManager => UserManager;
 
         // --- Internal Properties ---
@@ -106,16 +104,16 @@ namespace Larnix.Socket.Backend
             }
 
             // Tick & Receive from connections
-            Queue<PacketPair> packets = ConnDict.TickAndReceive(deltaTime);
-            while (packets.Count > 0)
+            ConnDict.Tick(deltaTime);
+            while (ConnDict.TryDequeuePacket(out var pair))
             {
-                var element = packets.Dequeue();
-                var packet = element.Packet;
-                string owner = element.Owner;
+                HeaderSpan headerSpan = pair.Packet;
+                string owner = pair.Owner;
 
-                if (Subscriptions.TryGetValue(packet.ID, out var Execute))
+                CmdID cmdID = headerSpan.ID;
+                if (Subscriptions.TryGetValue(cmdID, out var Execute))
                 {
-                    Execute(packet, owner);
+                    Execute(headerSpan, owner);
                 }
             }
 
@@ -174,7 +172,7 @@ namespace Larnix.Socket.Backend
                     else
                     {
                         // Established connection packet
-                        ConnDict.EnqueueReceivedPacket(target, bytes);
+                        ConnDict.PushFromWeb(target, bytes);
                     }
                 }
             }
@@ -234,9 +232,8 @@ namespace Larnix.Socket.Backend
         /// AllowConnection packet always starts the connection.
         /// Stop packet always ends the connection.
         /// Stop packet can only appear once in a returned packet queue.
-        /// Stop packet may appear randomly, alone without AllowConnection. !!!
         /// </summary>
-        public void Subscribe<T>(Action<T, string> InterpretPacket) where T : Payload, new()
+        public void Subscribe<T>(Action<T, string> InterpretPacket) where T : Payload
         {
             CmdID ID = Payload.CmdID<T>();
             Subscriptions[ID] = (HeaderSpan headerSpan, string owner) =>
@@ -250,26 +247,19 @@ namespace Larnix.Socket.Backend
 
         public bool IsActiveConnection(string nickname)
         {
-            return TryGetClientEndPoint(nickname, out _);
+            return ConnDict.IsOnline(nickname);
         }
 
         public bool TryGetClientEndPoint(string nickname, out IPEndPoint endPoint)
         {
-            IPEndPoint endPoint1 = ConnDict.EndPointOf(nickname);
-            if (endPoint1 != null)
-            {
-                endPoint = endPoint1;
-                return true;
-            }
-            endPoint = null;
-            return false;
+            return ConnDict.TryGetEndPoint(nickname, out endPoint);
         }
 
         public void Send(string nickname, Payload packet, bool safemode = true)
         {
             if (TryGetClientEndPoint(nickname, out IPEndPoint endPoint))
             {
-                ConnDict.SendTo(endPoint, packet, safemode);
+                ConnDict.TrySendTo(endPoint, packet, safemode);
             }
         }
 
@@ -280,10 +270,10 @@ namespace Larnix.Socket.Backend
 
         public float GetPing(string nickname)
         {
-            if (TryGetClientEndPoint(nickname, out IPEndPoint endPoint))
+            if (TryGetClientEndPoint(nickname, out IPEndPoint endPoint) &&
+                ConnDict.TryGetConnectionObject(endPoint, out var connection))
             {
-                Connection conn = ConnDict.GetConnectionObject(endPoint);
-                return conn.AvgRTT;
+                return connection.AvgRTT;
             }
             return 0f;
         }

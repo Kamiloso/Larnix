@@ -23,7 +23,6 @@ namespace Larnix.Socket.Packets.Control
         public String32 HostUser => Primitives.FromBytes<String32>(Bytes, 552);
         public bool MayRegister => (Code & (1 << 0)) != 0;
 
-        public A_ServerInfo() { }
         public A_ServerInfo(byte[] publicKey, ushort currentPlayers, ushort maxPlayers, Version gameVersion, long challengeID, long timestamp, long runID,
             string motd, string hostUser, bool mayRegister)
         {

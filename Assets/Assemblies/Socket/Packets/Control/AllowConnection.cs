@@ -18,7 +18,6 @@ namespace Larnix.Socket.Packets.Control
         internal long Timestamp => Primitives.FromBytes<long>(Bytes, 144); // 8B
         internal long RunID => Primitives.FromBytes<long>(Bytes, 152); // 8B
 
-        public AllowConnection() { }
         internal AllowConnection(string nickname, string password, byte[] keyAES, long serverSecret, long challengeID, long timestamp, long runID, byte code = 0)
         {
             InitializePayload(ArrayUtils.MegaConcat(

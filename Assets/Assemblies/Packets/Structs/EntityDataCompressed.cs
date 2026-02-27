@@ -8,12 +8,15 @@ namespace Larnix.Packets
 {
     public class EntityDataCompressed : IBinary<EntityDataCompressed>
     {
-        public const int SIZE = sizeof(EntityID) + CompressionUtils.COMPRESSED_DOUBLE_SIZE + CompressionUtils.COMPRESSED_DOUBLE_SIZE + sizeof(byte);
+        public const int SIZE = sizeof(EntityID) + 2 * CompressionUtils.COMPRESSED_DOUBLE_SIZE + sizeof(byte);
 
         public EntityData Contents { get; private set; }
 
-        public EntityDataCompressed() => Contents = new();
-        public EntityDataCompressed(EntityData contents) => Contents = contents ?? new();
+        public EntityDataCompressed() { }
+        public EntityDataCompressed(EntityData contents)
+        {
+            Contents = contents ?? new();
+        }
 
         public byte[] Serialize()
         {

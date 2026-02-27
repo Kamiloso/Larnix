@@ -12,10 +12,10 @@ namespace Larnix.Socket.Channel.Networking
     {
         public const ushort RELAY_PORT = 27681;
 
-        private readonly UdpClient2 Udp;
-        private readonly IPEndPoint EndPoint;
-
         public ushort RemotePort { get; private set; } // relay port to connect to
+        
+        private readonly UdpClient2 _udp;
+        private readonly IPEndPoint _endPoint;
 
         private bool _disposed;
 
@@ -28,8 +28,8 @@ namespace Larnix.Socket.Channel.Networking
 
         private RelayConnection(IPEndPoint endPoint, UdpClient2 udpClient)
         {
-            EndPoint = endPoint;
-            Udp = udpClient;
+            _endPoint = endPoint;
+            _udp = udpClient;
         }
 
         public static async Task<RelayConnection> EstablishRelayAsync(string address)
@@ -80,12 +80,12 @@ namespace Larnix.Socket.Channel.Networking
         public void Send(IPEndPoint remoteEP, byte[] bytes)
         {
             bytes = new DataBox(remoteEP, bytes).SerializeV4();
-            Udp.Send(EndPoint, bytes);
+            _udp.Send(_endPoint, bytes);
         }
 
         public bool TryReceive(out DataBox result)
         {
-            if (Udp.TryReceive(out DataBox wrapItem))
+            if (_udp.TryReceive(out DataBox wrapItem))
             {
                 if (DataBox.TryDeserializeV4(wrapItem.data, out DataBox realItem))
                 {
@@ -100,7 +100,7 @@ namespace Larnix.Socket.Channel.Networking
 
         private void SendInfo(RelayInfo info)
         {
-            Udp.Send(EndPoint, new byte[] { (byte)info });
+            _udp.Send(_endPoint, new byte[] { (byte)info });
         }
 
         public void Dispose()
@@ -110,7 +110,7 @@ namespace Larnix.Socket.Channel.Networking
                 _disposed = true;
 
                 SendInfo(RelayInfo.Stop); // thread safe
-                Udp?.Dispose(); // thread safe
+                _udp?.Dispose(); // thread safe
             }
         }
     }

@@ -19,7 +19,6 @@ namespace Larnix.Packets
         public bool Front => (Bytes[Vec2Int.SIZE + BlockData2.SIZE + sizeof(long)] & 0b1) != 0; // flag
 
 
-        public BlockChange() { }
         public BlockChange(Vec2Int blockPosition, BlockData1 item, BlockData1 tool, long operation, bool front, byte code = 0)
         {
             if (item == null) throw new ArgumentNullException(nameof(item));
