@@ -8,6 +8,7 @@ using UnityEngine.Profiling;
 using Larnix.Core.Vectors;
 using Larnix.Worldgen.Biomes;
 using Larnix.Core;
+using Larnix.Core.Utils;
 
 namespace Larnix.Client
 {
@@ -112,7 +113,7 @@ namespace Larnix.Client
                 $"Y: {playerPos.y}\n" +
                 $"Biome: {_currentBiome}\n" +
                 $"World Age: {TextAge(_serverTick)}\n" +
-                $"TPS: {(_lastTPS ?? _tps):F1}\n";
+                $"TPS: {_lastTPS ?? _tps:F1} / {Common.TargetTPS:F1}\n";
 
             DebugF3.text = ShowDebugInfo && MainPlayer.IsAlive ? debugText : "";
         }

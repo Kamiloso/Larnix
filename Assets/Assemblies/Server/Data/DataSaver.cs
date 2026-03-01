@@ -2,6 +2,7 @@ using System;
 using Larnix.Core;
 using Larnix.Core.Utils;
 using Larnix.Socket.Backend;
+using Larnix.Server.Configuration;
 using Larnix.Server.Data.SQLite;
 using Version = Larnix.Core.Version;
 using Console = Larnix.Core.Console;
@@ -32,7 +33,7 @@ namespace Larnix.Server.Data
 
         private Server Server => GlobRef.Get<Server>();
         private Database Database => GlobRef.Get<Database>();
-        private Config Config => GlobRef.Get<Config>();
+        private ServerConfig ServerConfig => GlobRef.Get<ServerConfig>();
         private Clock Clock => GlobRef.Get<Clock>();
         private EntityDataManager EntityDataManager => GlobRef.Get<EntityDataManager>();
         private BlockDataManager BlockDataManager => GlobRef.Get<BlockDataManager>();
@@ -44,7 +45,7 @@ namespace Larnix.Server.Data
         {
             WorldPath = worldPath;
 
-            GlobRef.Set(Config.Obtain(WorldPath));
+            GlobRef.Set(Config.FromDirectory<ServerConfig>(WorldPath));
             GlobRef.Set(new Database(WorldPath));
             
             GlobRef.Set(new BlockDataManager());
@@ -95,7 +96,7 @@ namespace Larnix.Server.Data
 
         public void Tick(float deltaTime)
         {
-            if (Clock.FixedFrame % Config.DataSavingPeriodFrames == 0)
+            if (Clock.FixedFrame % ServerConfig.PeriodicTasks_DataSavingPeriodFrames == 0)
             {
                 SaveAll();
             }

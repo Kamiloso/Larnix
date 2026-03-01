@@ -46,6 +46,12 @@ namespace Larnix.Server.Commands.All
             string subcommand = string.Join(' ', parts[1..]);
             _subname = subname;
 
+            _username = null;
+            _password = null;
+            _oldusername = null;
+            _newusername = null;
+            _newpassword = null;
+
             var commands = new Dictionary<string, Action<string[]>>
             {
                 ["add"] = args =>
@@ -109,22 +115,22 @@ namespace Larnix.Server.Commands.All
                 ["deleteall"] = ExecuteDeleteAll
             };
 
-            if (executes.TryGetValue(_subname, out var execute))
-                return execute();
-            
-            return (CmdResult.Error, "Invalid subcommand.");
-        }
+            if (!executes.TryGetValue(_subname, out var execute))
+            {
+                return (CmdResult.Error, "Invalid subcommand.");
+            }
 
-        private (CmdResult, string) MngInfo(string username)
-        {
-            return (CmdResult.Error, $"Nickname '{username}' is reserved by server.");
+            foreach (string nick in new[] { _username, _oldusername, _newusername })
+            {
+                if (nick != null && UserManager.IsAutoManagedUser(nick))
+                    return (CmdResult.Error, $"Nickname '{nick}' is reserved by server.");
+            }
+            
+            return execute();
         }
 
         private (CmdResult, string) ExecuteAdd()
         {
-            if (UserManager.IsAutoManagedUser(_username)) return MngInfo(_username);
-            // ----------------------------
-
             if (UserManager.TryAddUserSync(_username, _password))
             {
                 return (CmdResult.Success,
@@ -137,10 +143,6 @@ namespace Larnix.Server.Commands.All
 
         private (CmdResult, string) ExecuteRename()
         {
-            if (UserManager.IsAutoManagedUser(_oldusername)) return MngInfo(_oldusername);
-            if (UserManager.IsAutoManagedUser(_newusername)) return MngInfo(_newusername);
-            // ----------------------------
-
             if (UserManager.TryRenameUser(_oldusername, _newusername))
             {
                 return (CmdResult.Success,
@@ -153,9 +155,6 @@ namespace Larnix.Server.Commands.All
 
         private (CmdResult, string) ExecuteChangePass()
         {
-            if (UserManager.IsAutoManagedUser(_username)) return MngInfo(_username);
-            // ----------------------------
-
             if (UserManager.TryChangePasswordSync(_username, _newpassword))
             {
                 return (CmdResult.Success,
@@ -168,9 +167,6 @@ namespace Larnix.Server.Commands.All
 
         private (CmdResult, string) ExecuteDelete()
         {
-            if (UserManager.IsAutoManagedUser(_username)) return MngInfo(_username);
-            // ----------------------------
-
             if (UserManager.TryDeleteUserLink(_username))
             {
                 return (CmdResult.Success,
@@ -255,7 +251,7 @@ namespace Larnix.Server.Commands.All
             {
                 string listedFailed = string.Join(", ", failed.Select(nick => $"'{nick}'"));
                 return (CmdResult.Error,
-                    $"Failed to delete following users: {listedFailed}.");
+                    $"Failed to delete the following users: {listedFailed}.");
             }
         }
     }

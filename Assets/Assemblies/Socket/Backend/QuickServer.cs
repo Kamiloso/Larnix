@@ -13,6 +13,7 @@ using Larnix.Socket.Helpers;
 using Larnix.Socket.Helpers.Limiters;
 using Larnix.Core;
 using LoginMode = Larnix.Socket.Backend.UserManager.LoginMode;
+using Larnix.Core.DbStructs;
 
 namespace Larnix.Socket.Backend
 {
@@ -22,8 +23,8 @@ namespace Larnix.Socket.Backend
         public const string SERVER_SECRET_FILENAME = "server_secret.txt";
 
         // --- Public Properties ---
-        public ushort Port => Config.Port;
         public string Authcode { get; }
+        public ushort Port => _udpSocket.Port;
         public ushort PlayerCount => ConnDict.CurrentPlayers;
         public ushort PlayerLimit => ConnDict.MaxPlayers;
         public IUserManager IUserManager => UserManager;
@@ -31,7 +32,7 @@ namespace Larnix.Socket.Backend
         // --- Internal Properties ---
         internal long ServerSecret { get; }
         internal long RunID { get; }
-        internal QuickConfig Config { get; }
+        internal IQuickConfig Config { get; }
         internal UserManager UserManager { get; }
         internal ConnDict ConnDict { get; }
 
@@ -45,18 +46,19 @@ namespace Larnix.Socket.Backend
         private readonly Dictionary<CmdID, Action<HeaderSpan, string>> Subscriptions = new();
         private bool _disposed;
 
-        public QuickServer(QuickConfig serverConfig)
+        public QuickServer(ushort port, IDbUserAccess userAccess, IQuickConfig config)
         {
+            Config = config;
+
             // Nested classes
-            _keyRSA = new KeyRSA(serverConfig.DataPath, PRIVATE_KEY_FILENAME); // 1
-            _udpSocket = new TripleSocket(serverConfig.Port, serverConfig.IsLoopback); // 2
-            ConnDict = new ConnDict(this, _udpSocket, serverConfig.MaxClients); // 3
-            Config = serverConfig.WithPort(_udpSocket.Port);
-            UserManager = new UserManager(this); // 4
+            _keyRSA = new KeyRSA(config.DataPath, PRIVATE_KEY_FILENAME); // 1
+            _udpSocket = new TripleSocket(port, config.IsLoopback); // 2
+            ConnDict = new ConnDict(this, _udpSocket); // 3
+            UserManager = new UserManager(this, userAccess); // 4
             _heavyPacketLimiter = new TrafficLimiter<InternetID>(5, 50); // per second
 
             // Constants
-            ServerSecret = Security.Authcode.ObtainSecret(serverConfig.DataPath, SERVER_SECRET_FILENAME);
+            ServerSecret = Security.Authcode.ObtainSecret(config.DataPath, SERVER_SECRET_FILENAME);
             Authcode = Security.Authcode.ProduceAuthCodeRSA(_keyRSA.ExportPublicKey(), ServerSecret);
             RunID = Common.GetSecureLong();
 
@@ -123,6 +125,11 @@ namespace Larnix.Socket.Backend
 
         private void InterpretBytes(IPEndPoint target, byte[] bytes)
         {
+            if (Config.IsBanned(target.Address))
+            {
+                return; // ignore banned IPs
+            }
+            
             InternetID internetID = MakeInternetID(target);
             if (internetID.IsClassE)
             {

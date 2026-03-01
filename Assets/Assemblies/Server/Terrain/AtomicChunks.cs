@@ -1,14 +1,12 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using Larnix.Core.Utils;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.All;
 using Larnix.Blocks;
 using System.Collections.ObjectModel;
 using Larnix.Core.DataStructures;
-using Larnix.Server.Data;
+using Larnix.Server.Configuration;
 using Larnix.Core;
 
 namespace Larnix.Server.Terrain
@@ -19,9 +17,9 @@ namespace Larnix.Server.Terrain
         private static readonly Vec2Int WARN_CHUNK = new Vec2Int(int.MinValue, int.MinValue);
 
         // Config values
-        private int MAX_ATOMIC_AREA => Config.MaxElectricContraptionChunks;
+        private int MAX_ATOMIC_AREA => ServerConfig.Electricity_MaxContraptionChunks;
         private int WARNING_PERIOD => 750; // 15 seconds at 50 TPS
-        private bool WARNING_SUPPRESS => Config.ElectricContraptionSizeWarningSuppress;
+        private bool WARNING_SUPPRESS => ServerConfig.Electricity_SizeWarningSuppress;
 
         const int MIN = 0;
         const int MAX = CHUNK_SIZE - 1;
@@ -56,7 +54,7 @@ namespace Larnix.Server.Terrain
 
         private Chunks Chunks => GlobRef.Get<Chunks>();
         private IWorldAPI WorldAPI => GlobRef.Get<IWorldAPI>();
-        private Config Config => GlobRef.Get<Config>();
+        private ServerConfig ServerConfig => GlobRef.Get<ServerConfig>();
 
         void IScript.PostEarlyFrameUpdate()
         {

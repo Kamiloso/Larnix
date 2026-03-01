@@ -10,12 +10,12 @@ using Larnix.Server.Terrain;
 using System.Threading.Tasks;
 using Larnix.Core.Files;
 using Larnix.Socket.Backend;
-using Larnix.Core.Utils;
 using Larnix.Worldgen;
 using Larnix.Server.Commands;
 using Larnix.Blocks;
 using Larnix.Server.APIs;
 using Larnix.Server.Transmission;
+using Larnix.Server.Configuration;
 using Larnix.Server.Data.SQLite;
 using Version = Larnix.Core.Version;
 using Console = Larnix.Core.Console;
@@ -39,7 +39,8 @@ namespace Larnix.Server
         private readonly IScript[] _scripts;
 
         private QuickServer QuickServer => GlobRef.Get<QuickServer>();
-        private Config Config => GlobRef.Get<Config>();
+        private ServerConfig ServerConfig => GlobRef.Get<ServerConfig>();
+        private QuickSettings QuickSettings => GlobRef.Get<QuickSettings>();
         private Database Database => GlobRef.Get<Database>();
         private Receiver Receiver => GlobRef.Get<Receiver>();
         private Clock Clock => GlobRef.Get<Clock>();
@@ -48,9 +49,6 @@ namespace Larnix.Server
         private bool _startExecuted = false;
         private bool _disposed = false;
 
-        private static void PrintBorder() =>
-            Core.Debug.LogRaw("------------------------------------------------------------\n");
-        
         internal Server(ServerType type, string worldPath, RunSuggestions suggestions,
             Action closeServer, out ServerAnswer answer)
         {   
@@ -59,10 +57,14 @@ namespace Larnix.Server
             CloseServer = closeServer;
 
             if (Type == ServerType.Remote)
+            {
                 Core.Debug.LogRaw("Starting the server...\n");
+            }
 
-            _locker = Locker.LockOrException(WorldPath, "world_locker.lock",
-                () => new IOException($"Trying to access world at {WorldPath} that is already open."));
+            IOException MakeLockException() =>
+                new IOException($"Trying to access world at {WorldPath} that is already open.");
+            
+            _locker = Locker.LockOrException(WorldPath, "world_locker.lock", MakeLockException);
 
             // --- Main singletons ---
             GlobRef.Set(this);
@@ -70,8 +72,6 @@ namespace Larnix.Server
             GlobRef.Set(new DataSaver(WorldPath));
             GlobRef.Set(new Generator(Database.GetSeed(suggestions.Seed)));
             GlobRef.Set(new Clock(Database.GetServerTick()));
-
-            // --- APIs ---
             GlobRef.Set<IWorldAPI>(new WorldAPI());
 
             // --- Scripts ---
@@ -86,32 +86,29 @@ namespace Larnix.Server
             };
 
             // --- QuickServer ---
+            GlobRef.Set(new QuickSettings());
             GlobRef.Set(new QuickServer(
-                new QuickConfig(
-                    port: Type == ServerType.Remote ?
-                        Config.Port : (ushort)0,
-                    
-                    maxClients: Config.MaxPlayers,
-                    isLoopback: Type == ServerType.Local,
-                    dataPath: SocketPath,
-                    userAccess: Database,
-                    motd: (String256)Config.Motd,
-
-                    hostUser: Type == ServerType.Remote ?
-                        (String32)Common.ReservedNickname :
-                        DataSaver.HostNickname,
-                    
-                    // socket settings, will be moved in the future
-                    maskIPv4: Config.ClientIdentityPrefixSizeIPv4,
-                    maskIPv6: Config.ClientIdentityPrefixSizeIPv6,
-                    allowRegistration: Config.AllowRegistration
-                )
+                port: Type == ServerType.Remote ?
+                    ServerConfig.Port : (ushort)0,
+                userAccess: Database,
+                config: QuickSettings
             ));
             GlobRef.Set(QuickServer.IUserManager);
             GlobRef.Set(new Receiver());
             GlobRef.Set(new CmdManager());
 
-            // --- Configure console ---
+            // --- Finalize ---
+            ConfigureConsole();
+            TryEstablishRelay(suggestions.RelayAddress, out var relayTask);
+            answer = new ServerAnswer(LocalAddress, Authcode, relayTask);
+
+            Core.Debug.LogSuccess("Server is ready!");
+        }
+
+        private void ConfigureConsole()
+        {
+            void PrintBorder() => Core.Debug.LogRaw($"{new string('-', 60)}\n");
+
             if (Type == ServerType.Remote)
             {
                 Console.SetTitle("Larnix Server " + Version.Current);
@@ -132,25 +129,20 @@ namespace Larnix.Server
             {
                 Core.Debug.Log($"Port: {Port} | Authcode: {Authcode}");
             }
-
-            // --- Try establish relay ---
-            TryEstablishRelay(suggestions.RelayAddress, out var relayTask);
-            answer = new ServerAnswer(LocalAddress, Authcode, relayTask);
-
-            // --- Finalize ---
-            Core.Debug.LogSuccess("Server is ready!");
         }
 
         private bool TryEstablishRelay(string relaySuggestion, out Task<string> relayTask)
         {
-            // should be accessed from the main thread
+            // BEGIN: should be accessed from the main thread
             QuickServer quickServer = QuickServer;
+            string remoteRelayAddress = ServerConfig.Network_RelayAddress;
+            // END
 
             if (Type == ServerType.Remote)
             {
-                if (Config.UseRelay)
+                if (ServerConfig.Network_UseRelay)
                 {
-                    relayTask = Task.Run(() => quickServer.EstablishRelayAsync(Config.RelayAddress));
+                    relayTask = Task.Run(() => quickServer.EstablishRelayAsync(remoteRelayAddress));
                     return true;
                 }
             }

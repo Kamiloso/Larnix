@@ -6,6 +6,9 @@ using Console = Larnix.Core.Console;
 using CmdResult = Larnix.Core.ICmdExecutor.CmdResult;
 using PlayerState = Larnix.Server.Entities.PlayerActions.PlayerState;
 using System;
+using Larnix.Server.Configuration;
+using Larnix.Server.Data;
+using Larnix.Socket.Backend;
 
 namespace Larnix.Server.Commands
 {
@@ -19,6 +22,9 @@ namespace Larnix.Server.Commands
 
     internal class CmdManager : IScript, ICmdExecutor
     {
+        private QuickServer QuickServer => GlobRef.Get<QuickServer>();
+        private ServerConfig ServerConfig => GlobRef.Get<ServerConfig>();
+        private DataSaver DataSaver => GlobRef.Get<DataSaver>();
         private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
 
         void IScript.PostEarlyFrameUpdate()
@@ -61,9 +67,14 @@ namespace Larnix.Server.Commands
                 bool player_online = PlayerActions.StateOf(sender) != PlayerState.None;
                 if (player_online)
                 {
-                    bool player_admin = /*Config.AdminList.Contains(sender)*/ false;
-                    (type, message) = InnerExecuteCmd(command, sender, player_admin ?
-                        PrivilegeLevel.Admin : PrivilegeLevel.User);
+                    bool player_host = DataSaver.HostNickname == sender;
+                    bool player_admin = ServerConfig.Administration_Admins.Contains(sender);
+
+                    PrivilegeLevel privileges = PrivilegeLevel.User;
+                    if (player_host) privileges = PrivilegeLevel.Host;
+                    if (player_admin) privileges = PrivilegeLevel.Admin;
+
+                    (type, message) = InnerExecuteCmd(command, sender, privileges);
 
                     if (type != CmdResult.Ignore)
                     {

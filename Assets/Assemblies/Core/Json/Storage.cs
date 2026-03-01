@@ -1,4 +1,5 @@
 using System;
+using Larnix.Core.Utils;
 using SimpleJSON;
 
 namespace Larnix.Core.Json
@@ -64,16 +65,8 @@ namespace Larnix.Core.Json
 
         public static Storage FromString(string json)
         {
-            try
-            {
-                return new Storage(
-                    JSON.Parse(json).AsObject
-                    );
-            }
-            catch
-            {
-                return new Storage();
-            }
+            JSONObject jsonObject = json.AsJsonObject();
+            return new Storage(jsonObject);
         }
     }
 }

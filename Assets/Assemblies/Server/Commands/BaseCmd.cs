@@ -17,7 +17,9 @@ namespace Larnix.Server.Commands
 
             lock (_lock)
             {
+                RegisterCommand<Admin>();
                 RegisterCommand<Authcoderegen>();
+                RegisterCommand<Ban>();
                 RegisterCommand<Clear>();
                 RegisterCommand<Fill>();
                 RegisterCommand<Help>();
@@ -102,6 +104,11 @@ namespace Larnix.Server.Commands
 
         protected static string MakeRobustList(string title, IEnumerable<string> lines)
         {
+            return MakeRobustList(title, "", lines, "");
+        }
+
+        protected static string MakeRobustList(string title, string prefix, IEnumerable<string> lines, string suffix)
+        {
             StringBuilder sb = new();
             sb.AppendLine();
             sb.AppendLine($" | ------ {title} ------");
@@ -109,7 +116,7 @@ namespace Larnix.Server.Commands
             
             foreach (string line in lines)
             {
-                sb.AppendLine(" | " + line);
+                sb.AppendLine(" | " + prefix + line + suffix);
             }
 
             sb.AppendLine();

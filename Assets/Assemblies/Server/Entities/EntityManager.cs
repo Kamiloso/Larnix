@@ -9,6 +9,7 @@ using Larnix.Core.Utils;
 using Larnix.Entities.Structs;
 using Larnix.Socket.Backend;
 using Larnix.Server.Data;
+using Larnix.Server.Configuration;
 using Larnix.Packets;
 using Larnix.Core.Json;
 using Larnix.Core;
@@ -22,7 +23,7 @@ namespace Larnix.Server.Entities
         private readonly Dictionary<ulong, EntityAbstraction> _entityControllers = new();
 
         private Clock Clock => GlobRef.Get<Clock>();
-        private Config Config => GlobRef.Get<Config>();
+        private ServerConfig ServerConfig => GlobRef.Get<ServerConfig>();
         private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
         private QuickServer QuickServer => GlobRef.Get<QuickServer>();
         private EntityDataManager EntityDataManager => GlobRef.Get<EntityDataManager>();
@@ -92,7 +93,7 @@ namespace Larnix.Server.Entities
 
         void IScript.PostLateFrameUpdate()
         {
-            if (Clock.FixedFrame % Config.EntityBroadcastPeriodFrames == 0)
+            if (Clock.FixedFrame % ServerConfig.PeriodicTasks_EntityBroadcastPeriodFrames == 0)
             {
                 var broadcastsToSend = new List<(string Nickname, EntityBroadcast Packet)>();
 

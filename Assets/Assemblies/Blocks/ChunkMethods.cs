@@ -18,17 +18,7 @@ namespace Larnix.Blocks
         {
             HandleInputErrors(chunk);
 
-            JSONObject root;
-            
-            try
-            {
-                root = !string.IsNullOrEmpty(chunkJson) ?
-                    (JSON.Parse(chunkJson).AsObject ?? new()) : new();
-            }
-            catch
-            {
-                root = new();
-            }
+            JSONObject root = chunkJson?.AsJsonObject() ?? new();
              
             for (int x = 0; x < CHUNK_SIZE; x++)
                 for (int y = 0; y < CHUNK_SIZE; y++)

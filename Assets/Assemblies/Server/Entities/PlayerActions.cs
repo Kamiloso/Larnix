@@ -6,6 +6,7 @@ using Larnix.Socket.Packets;
 using Larnix.Core.Vectors;
 using Larnix.Socket.Backend;
 using Larnix.Packets;
+using Larnix.Server.Configuration;
 using System;
 using Larnix.Worldgen;
 using Larnix.Core;
@@ -26,7 +27,7 @@ namespace Larnix.Server.Entities
         private readonly Dictionary<string, ConnectedPlayer> _players = new();
 
         private Clock Clock => GlobRef.Get<Clock>();
-        private Config Config => GlobRef.Get<Config>();
+        private ServerConfig ServerConfig => GlobRef.Get<ServerConfig>();
         private QuickServer QuickServer => GlobRef.Get<QuickServer>();
         private IUserManager UserManager => GlobRef.Get<IUserManager>();
         private EntityManager EntityManager => GlobRef.Get<EntityManager>();
@@ -140,7 +141,7 @@ namespace Larnix.Server.Entities
 
         void IScript.PostLateFrameUpdate()
         {
-            if (Clock.FixedFrame % Config.EntityBroadcastPeriodFrames == 0)
+            if (Clock.FixedFrame % ServerConfig.PeriodicTasks_EntityBroadcastPeriodFrames == 0)
             {
                 foreach (string nickname in _players.Keys)
                 {

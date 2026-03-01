@@ -76,7 +76,7 @@ namespace Larnix.Socket
         public override string ToString()
         {
             if (IsClassE)
-                return "IPv4_ClassE"; // class E address
+                return "IPv4:ClassE"; // class E address
 
             byte[] masked = MaskBytes(Address.GetAddressBytes(), Subnet);
             IPAddress network = new IPAddress(masked);

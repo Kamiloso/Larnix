@@ -8,7 +8,6 @@ using Larnix.Socket.Packets.Control;
 using Larnix.Socket.Security;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 
@@ -47,10 +46,10 @@ namespace Larnix.Socket.Backend
 
         private bool _disposed = false;
 
-        public UserManager(QuickServer server)
+        public UserManager(QuickServer server, IDbUserAccess userAccess)
         {
             _server = server;
-            _userAccess = server.Config.UserAccess;
+            _userAccess = userAccess;
             _coroutines = new CoroutineRunner();
 
             InternetID classE = InternetID.ClassE();
@@ -172,7 +171,8 @@ namespace Larnix.Socket.Backend
 
         public bool TryIncrementLogin(string username)
         {
-            if (TryGetUser(username, out DbUser userData))
+            if (TryGetUser(username, out DbUser userData) &&
+                !_server.Config.IsBanned(username))
             {
                 DbUser updatedUser = userData.AfterLogin();
                 _userAccess.SaveUserData(updatedUser);
@@ -183,7 +183,8 @@ namespace Larnix.Socket.Backend
 
         public bool TryAddUser(string username, string passwordHash)
         {
-            if (!UserExists(username))
+            if (!UserExists(username) &&
+                !_server.Config.IsBanned(username))
             {
                 DbUser updatedUser = DbUser.CreateNew(username, passwordHash);
                 _userAccess.SaveUserData(updatedUser);

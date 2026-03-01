@@ -18,4 +18,8 @@
   <assembly fullname="Larnix.Socket">
     <type fullname="Larnix.Socket.Packets.Control.*" />
   </assembly>
+
+  <assembly fullname="Larnix.Server">
+    <type fullname="Larnix.Server.Configuration.*" />
+  </assembly>
 </linker>

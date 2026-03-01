@@ -6,6 +6,7 @@ using Larnix.Server.Entities;
 using Larnix.Core.Utils;
 using Larnix.Core.Vectors;
 using Larnix.Server.Transmission;
+using Larnix.Server.Configuration;
 using Larnix.Core;
 
 namespace Larnix.Server.Terrain
@@ -13,12 +14,11 @@ namespace Larnix.Server.Terrain
     internal enum ChunkLoadState { None, Loading, Active }
     internal class Chunks : IScript
     {
-        private Server Server => GlobRef.Get<Server>();
         private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
         private EntityManager EntityManager => GlobRef.Get<EntityManager>();
         private BlockSender BlockSender => GlobRef.Get<BlockSender>();
         private AtomicChunks AtomicChunks => GlobRef.Get<AtomicChunks>();
-        private Config Config => GlobRef.Get<Config>();
+        private ServerConfig ServerConfig => GlobRef.Get<ServerConfig>();
         private Clock Clock => GlobRef.Get<Clock>();
 
         private readonly Dictionary<Vec2Int, ChunkContainer> _chunks = new();
@@ -151,7 +151,7 @@ namespace Larnix.Server.Terrain
             }
 
             // Updating player chunk data
-            if (Clock.FixedFrame % Config.ChunkSendingPeriodFrames == 0)
+            if (Clock.FixedFrame % ServerConfig.PeriodicTasks_ChunkSendingPeriodFrames == 0)
             {
                 BlockSender.BroadcastChunkChanges();
             }

@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
+using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -18,7 +19,8 @@ namespace Larnix.Core.Utils
         public static string DefaultRelayAddress => "relay.se3.page";
         public static string ReservedNickname => "Player";
         public static string ReservedPassword => "SGP_PASSWORD\x01";
-        public static float FixedTime => 0.02f;
+        public static int TargetTPS => 50;
+        public static float FixedTime => 1f / TargetTPS;
         public static double ParticleViewDistance => 128.0;
         public static Vec2 UpEpsilon => new Vec2(0.00, 0.01);
 
@@ -82,6 +84,55 @@ namespace Larnix.Core.Utils
             int port = rand.Next(1, 65536);
 
             return new IPEndPoint(address, port);
+        }
+
+        public static bool IsInNetworkString(IPAddress address, string networkString)
+        {
+            int index = networkString.IndexOf('/');
+
+            if (index == -1) // single IP
+            {
+                return IPAddress.TryParse(networkString, out IPAddress singleIP) &&
+                    singleIP.Equals(address);
+            }
+
+            ReadOnlySpan<char> ipSpan = networkString.AsSpan(0, index);
+            ReadOnlySpan<char> prefixSpan = networkString.AsSpan(index + 1);
+
+            if (IPAddress.TryParse(ipSpan, out IPAddress networkIp) &&
+                address.AddressFamily == networkIp.AddressFamily &&
+                int.TryParse(prefixSpan, out int prefixLength))
+            {
+                int maxPrefix = networkIp.AddressFamily == AddressFamily.InterNetworkV6 ? 128 : 32;
+                if (prefixLength >= 0 && prefixLength <= maxPrefix)
+                {
+                    int fullBytes = prefixLength / 8;
+                    int remainingBits = prefixLength % 8;
+
+                    Span<byte> networkBytes = stackalloc byte[16];
+                    Span<byte> addressBytes = stackalloc byte[16];
+
+                    networkIp.TryWriteBytes(networkBytes, out _);
+                    address.TryWriteBytes(addressBytes, out _);
+
+                    for (int i = 0; i < fullBytes; i++)
+                    {
+                        if (networkBytes[i] != addressBytes[i])
+                            return false;
+                    }
+
+                    if (remainingBits > 0)
+                    {
+                        int mask = (0xFF << (8 - remainingBits)) & 0xFF;
+                        if ((networkBytes[fullBytes] & mask) != (addressBytes[fullBytes] & mask))
+                            return false;
+                    }
+
+                    return true;
+                }
+            }
+            
+            return false;
         }
 
         public static void DoForSeconds(double seconds, Action<Stopwatch, double> action)

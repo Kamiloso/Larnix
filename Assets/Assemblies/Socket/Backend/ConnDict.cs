@@ -18,7 +18,7 @@ namespace Larnix.Socket.Backend
     {
         public record PacketPair(HeaderSpan Packet, string Owner);
 
-        public ushort MaxPlayers { get; }
+        public ushort MaxPlayers => _server.Config.MaxClients;
         public ushort CurrentPlayers => (ushort)_connections.Count;
 
         private readonly INetworkInteractions _socket;
@@ -33,11 +33,10 @@ namespace Larnix.Socket.Backend
 
         private bool _disposed = false;
 
-        public ConnDict(QuickServer server, INetworkInteractions socket, ushort maxPlayers)
+        public ConnDict(QuickServer server, INetworkInteractions socket)
         {
             _server = server;
             _socket = socket;
-            MaxPlayers = maxPlayers;
         }
 
         public bool TryGetEndPoint(string nickname, out IPEndPoint endPoint)
