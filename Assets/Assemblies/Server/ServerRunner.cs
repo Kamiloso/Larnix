@@ -20,8 +20,16 @@ namespace Larnix.Server
         private static float PERIOD => Common.FixedTime;
         private static long MAX_FRAME_DELAY => 5;
 
-        public record ServerAnswer(string Address, string Authcode, Task<string> RelayEstablishment = null);
-        public record RunSuggestions(long? Seed = null, string RelayAddress = null);
+        public record ServerAnswer(
+            string Address,
+            string Authcode,
+            Task<string> RelayEstablishment = null
+        );
+
+        public record RunSuggestions(
+            long? Seed = null,
+            string RelayAddress = null
+        );
 
         public bool HasServer => _server != null;
         public bool IsRunning => HasServer && _thread.IsAlive;
@@ -30,11 +38,10 @@ namespace Larnix.Server
         private Thread _thread;
         private Exception _threadException;
 
-        public void StopSignal() => _stopFlag = true;
         private volatile bool _stopFlag;
 
         public ServerRunner() { } // can be instantiated and managed
-        public static ServerRunner Instance { get; } = new(); // singleton for old code compatibility
+        public static ServerRunner Instance { get; } = new(); // legacy singleton
 
         public ServerAnswer Start(ServerType type, string worldPath, RunSuggestions suggestions)
         {
@@ -47,8 +54,10 @@ namespace Larnix.Server
 
             try
             {
-                _server = new Server(type, worldPath, suggestions, StopSignal,
-                    out answer);
+                void StopSignal() => _stopFlag = true;
+
+                _server = new Server(
+                    type, worldPath, suggestions, StopSignal, out answer);
             }
             finally
             {
@@ -84,7 +93,7 @@ namespace Larnix.Server
 
             try
             {
-                double lastTime = sw.ElapsedMilliseconds - PERIOD;
+                double lastTime = sw.Elapsed.TotalSeconds - PERIOD;
 
                 while (!_stopFlag)
                 {

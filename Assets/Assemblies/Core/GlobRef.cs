@@ -24,6 +24,12 @@ namespace Larnix.Core
             return newKey;
         }
 
+        public static T New<T>() where T : class, new()
+        {
+            var instance = new T();
+            return Set(instance);
+        }
+
         public static T Set<T>(T instance) where T : class
         {
             var key = GetKey();

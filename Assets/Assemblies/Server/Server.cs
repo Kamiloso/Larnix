@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using System;
 using Larnix.Server.Data;
 using Larnix.Core;
@@ -35,9 +33,6 @@ namespace Larnix.Server
         public string Authcode => QuickServer.Authcode;
         public string SocketPath => Path.Combine(WorldPath, "Socket");
 
-        private readonly Locker _locker;
-        private readonly IScript[] _scripts;
-
         private QuickServer QuickServer => GlobRef.Get<QuickServer>();
         private ServerConfig ServerConfig => GlobRef.Get<ServerConfig>();
         private QuickSettings QuickSettings => GlobRef.Get<QuickSettings>();
@@ -45,8 +40,9 @@ namespace Larnix.Server
         private Receiver Receiver => GlobRef.Get<Receiver>();
         private Clock Clock => GlobRef.Get<Clock>();
         private DataSaver DataSaver => GlobRef.Get<DataSaver>();
+        private Scripts Scripts => GlobRef.Get<Scripts>();
 
-        private bool _startExecuted = false;
+        private readonly Locker _locker;
         private bool _disposed = false;
 
         internal Server(ServerType type, string worldPath, RunSuggestions suggestions,
@@ -68,25 +64,25 @@ namespace Larnix.Server
 
             // --- Main singletons ---
             GlobRef.Set(this);
-            GlobRef.Set(new PhysicsManager());
+            GlobRef.New<PhysicsManager>();
             GlobRef.Set(new DataSaver(WorldPath));
             GlobRef.Set(new Generator(Database.GetSeed(suggestions.Seed)));
             GlobRef.Set(new Clock(Database.GetServerTick()));
             GlobRef.Set<IWorldAPI>(new WorldAPI());
 
             // --- Scripts ---
-            _scripts = new IScript[] // in execution order
-            {
-                GlobRef.Set(new AtomicChunks()),
-                GlobRef.Set(new Chunks()), // 1st
-                GlobRef.Set(new EntityManager()), // 2nd
-                GlobRef.Set(new PlayerActions()),
-                GlobRef.Set(new BlockSender()),
-                GlobRef.Set(new CmdManager())
-            };
+            GlobRef.Set(new Scripts(
+                // In execution order:
+                GlobRef.New<AtomicChunks>(),
+                GlobRef.New<Chunks>(), // 1st
+                GlobRef.New<EntityManager>(), // 2nd
+                GlobRef.New<PlayerActions>(),
+                GlobRef.New<BlockSender>(),
+                GlobRef.New<CmdManager>()
+            ));
 
             // --- QuickServer ---
-            GlobRef.Set(new QuickSettings());
+            GlobRef.New<QuickSettings>();
             GlobRef.Set(new QuickServer(
                 port: Type == ServerType.Remote ?
                     ServerConfig.Port : (ushort)0,
@@ -94,14 +90,15 @@ namespace Larnix.Server
                 config: QuickSettings
             ));
             GlobRef.Set(QuickServer.IUserManager);
-            GlobRef.Set(new Receiver());
-            GlobRef.Set(new CmdManager());
+            GlobRef.New<Receiver>();
+            GlobRef.New<CmdManager>();
 
-            // --- Finalize ---
+            // --- Configure ---
             ConfigureConsole();
             TryEstablishRelay(suggestions.RelayAddress, out var relayTask);
-            answer = new ServerAnswer(LocalAddress, Authcode, relayTask);
 
+            // --- Finalize ---
+            answer = new ServerAnswer(LocalAddress, Authcode, relayTask);
             Core.Debug.LogSuccess("Server is ready!");
         }
 
@@ -133,16 +130,17 @@ namespace Larnix.Server
 
         private bool TryEstablishRelay(string relaySuggestion, out Task<string> relayTask)
         {
-            // BEGIN: should be accessed from the main thread
-            QuickServer quickServer = QuickServer;
-            string remoteRelayAddress = ServerConfig.Network_RelayAddress;
-            // END
+            // === Global properties should be accessed from the main thread!
+            /**/ QuickServer quickServer = QuickServer;
+            /**/ string remoteRelayAddress = ServerConfig.Network_RelayAddress;
+            // ======== //
 
             if (Type == ServerType.Remote)
             {
                 if (ServerConfig.Network_UseRelay)
                 {
-                    relayTask = Task.Run(() => quickServer.EstablishRelayAsync(remoteRelayAddress));
+                    relayTask = Task.Run(
+                        () => quickServer.EstablishRelayAsync(remoteRelayAddress));
                     return true;
                 }
             }
@@ -150,7 +148,8 @@ namespace Larnix.Server
             {
                 if (relaySuggestion != null)
                 {
-                    relayTask = Task.Run(() => quickServer.EstablishRelayAsync(relaySuggestion));
+                    relayTask = Task.Run(
+                        () => quickServer.EstablishRelayAsync(relaySuggestion));
                     return true;
                 }
             }
@@ -168,23 +167,7 @@ namespace Larnix.Server
             QuickServer.Tick(Clock.DeltaTime); // refresh & process packets
 
             // Process server logic
-            for (int i = 0; i <= 5; i++)
-            {
-                foreach (IScript singleton in _scripts)
-                {
-                    if (i == 0 && !_startExecuted)
-                    {
-                        singleton.Start();
-                    }
-
-                    if (i == 1) singleton.EarlyFrameUpdate();
-                    if (i == 2) singleton.PostEarlyFrameUpdate();
-                    if (i == 3) singleton.FrameUpdate();
-                    if (i == 4) singleton.LateFrameUpdate();
-                    if (i == 5) singleton.PostLateFrameUpdate();
-                }
-            }
-            _startExecuted = true;
+            Scripts.Tick(Clock.DeltaTime);
 
             // Tick data saving
             DataSaver.Tick(Clock.DeltaTime);

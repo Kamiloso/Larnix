@@ -47,9 +47,9 @@ namespace Larnix.Server.Data
 
             GlobRef.Set(Config.FromDirectory<ServerConfig>(WorldPath));
             GlobRef.Set(new Database(WorldPath));
-            
-            GlobRef.Set(new BlockDataManager());
-            GlobRef.Set(new EntityDataManager());
+
+            GlobRef.New<BlockDataManager>();
+            GlobRef.New<EntityDataManager>();
             
             var meta = WorldMeta.ReadFromFolder(WorldPath);
             WorldMeta = new WorldMeta(Version.Current, meta.Nickname);
