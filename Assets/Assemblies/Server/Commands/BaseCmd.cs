@@ -9,6 +9,22 @@ namespace Larnix.Server.Commands
 {
     internal abstract class BaseCmd
     {
+        public string Name => GetType().Name.ToLowerInvariant();
+        public string ShortDocLine => Pattern + " - " + ShortDescription;
+        public string InvalidCmdFormat => $"Invalid format! {Hint}";
+        public string Documentation =>
+            $"Command: {Name}\n" +
+            $"Privilege: {PrivilegeLevel} ({(int)PrivilegeLevel})\n" +
+            $"Usage: {Pattern}\n" +
+            $"\n" +
+            $"{LongDescription}";
+
+        public abstract PrivilegeLevel PrivilegeLevel { get; }
+        public abstract string Pattern { get; }
+        public abstract string ShortDescription { get; }
+        public virtual string LongDescription => ShortDescription;
+        public virtual string Hint => $"Usage: {Pattern}";
+
         protected BaseCmd() { }
         static BaseCmd()
         {
@@ -36,26 +52,12 @@ namespace Larnix.Server.Commands
             }
         }
 
-        public string Name => GetType().Name.ToLowerInvariant();
-        public string ShortDocLine => Pattern + " - " + ShortDescription;
-        public string InvalidCmdFormat => $"Invalid format! {Hint}";
-        public string Documentation =>
-            $"Command: {Name}\n" +
-            $"Privilege: {PrivilegeLevel} ({(int)PrivilegeLevel})\n" +
-            $"Usage: {Pattern}\n" +
-            $"\n" +
-            $"{LongDescription}";
-
-        public abstract PrivilegeLevel PrivilegeLevel { get; }
-        public abstract string Pattern { get; }
-        public abstract string ShortDescription { get; }
-        public virtual string LongDescription => ShortDescription;
-        public virtual string Hint => $"Usage: {Pattern}";
-
         public abstract void Inject(string command);
         public abstract (CmdResult, string) Execute(string sender, PrivilegeLevel privilege);
 
         public override string ToString() => "LarnixCommand::" + Name;
+
+#region Helper methods
 
         protected static bool TrySplit(string command, int expectedLength, out string[] parts,
             bool lastJoin = false)
@@ -128,18 +130,19 @@ namespace Larnix.Server.Commands
             return new FormatException(errorInfo);
         }
 
+#endregion
 #region Static factory
 
-        private static readonly Dictionary<string, BaseCmd> _cmdObjs = new();
+        private static readonly Dictionary<string, Type> _cmdTypes = new();
         private static readonly object _lock = new();
 
         public static bool TryCreateCommandObject(string cmd, out BaseCmd cmdObj)
         {
             lock (_lock)
             {
-                if (_cmdObjs.TryGetValue(cmd, out cmdObj))
+                if (_cmdTypes.TryGetValue(cmd, out Type cmdType))
                 {
-                    cmdObj = (BaseCmd)cmdObj.MemberwiseClone();
+                    cmdObj = (BaseCmd)Activator.CreateInstance(cmdType);
                     return true;
                 }
                 
@@ -153,8 +156,9 @@ namespace Larnix.Server.Commands
             lock (_lock)
             {
                 List<string> lines = new();
-                foreach (var cmdObj in _cmdObjs.Values.OrderBy(c => c.Name))
+                foreach (var cmdType in _cmdTypes.Values.OrderBy(c => c.Name))
                 {
+                    BaseCmd cmdObj = (BaseCmd)Activator.CreateInstance(cmdType);
                     if (cmdObj.PrivilegeLevel <= privilege)
                     {
                         lines.Add(cmdObj.ShortDocLine);
@@ -169,8 +173,9 @@ namespace Larnix.Server.Commands
         {
             lock (_lock)
             {
-                if (_cmdObjs.TryGetValue(cmd, out var cmdObj))
+                if (_cmdTypes.TryGetValue(cmd, out Type cmdType))
                 {
+                    BaseCmd cmdObj = (BaseCmd)Activator.CreateInstance(cmdType);
                     if (cmdObj.PrivilegeLevel <= privilege)
                     {
                         documentation = cmdObj.Documentation;
@@ -189,8 +194,7 @@ namespace Larnix.Server.Commands
             {
                 string cmd = typeof(T).Name.ToLower();
 
-                T original = new T();
-                if (!_cmdObjs.TryAdd(cmd, original))
+                if (!_cmdTypes.TryAdd(cmd, typeof(T)))
                 {
                     throw new InvalidOperationException($"Command {cmd} is already registered.");
                 }
