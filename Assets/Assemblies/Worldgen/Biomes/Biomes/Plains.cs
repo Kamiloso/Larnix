@@ -1,13 +1,20 @@
-using Larnix.Worldgen;
 using Larnix.Blocks;
-using System.Collections;
 using System.Collections.Generic;
 using Larnix.Blocks.Structs;
+using Larnix.Worldgen.Biomes.Interfaces;
+using Larnix.Worldgen.Ores;
+using System;
 
 namespace Larnix.Worldgen.Biomes.All
 {
-    public sealed class Plains : Biome
+    public sealed class Plains : Biome, IHasOre
     {
+        Dictionary<OreID, BlockData1> IHasOre.ORES() => new() {
+            { OreID.BiomeTestOre, new(BlockID.Glass,0) },
+            { OreID.TestOre, null}
+        };
+        Type IHasOre.BIOME() => typeof(Plains);
+
         private Plains() {}
 
         public override BlockData2 TranslateProtoBlock(ProtoBlock protoBlock)

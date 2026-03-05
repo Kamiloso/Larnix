@@ -18,7 +18,7 @@ namespace Larnix.Server.Data
         private Database Database => GlobRef.Get<Database>();
         private Generator Generator => GlobRef.Get<Generator>();
 
-        private bool _debugUnlinkDatabase = false;
+        private bool _debugUnlinkDatabase = true;
 
         /// <summary>
         /// Modify this reference during FixedUpdate time and it will automatically update in this script.

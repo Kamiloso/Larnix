@@ -9,7 +9,10 @@ using Larnix.Core.Vectors;
 using Larnix.Worldgen.Noise;
 using Random = System.Random;
 using Larnix.Blocks;
+using NUnit.Framework;
 using Larnix.Worldgen.Biomes;
+using Larnix.Worldgen.Ores;
+using Larnix.Worldgen.Biomes.Interfaces;
 
 namespace Larnix.Worldgen
 {
@@ -21,6 +24,7 @@ namespace Larnix.Worldgen
         // Variables
         private readonly Seed _seed;
         private readonly Dictionary<BiomeID, Biome> _biomes;
+        private readonly Dictionary<OreID, Ore> _ores;
         public long Seed => _seed.Value;
 
         // Raw noise
@@ -35,10 +39,12 @@ namespace Larnix.Worldgen
 
         // Constants
         const int WATER_LEVEL = -1;
+        const int SOIL_LAYER_SIZE = 3;
 
         public Generator(long seed)
         {
             _biomes = BiomeFactory.GetBiomes();
+            _ores = OreFactory.GetOres(seed);
             _seed = new Seed(seed);
 
             // ------ BASE NOISES ------
@@ -109,25 +115,49 @@ namespace Larnix.Worldgen
 
         public BiomeID BiomeAt(Vec2 position)
         {
-            return BiomeID.Empty;
+            const string PHRASE = "block_hash";
+            BiomeID biomeID;
+            double temperature = NoiseTemperature.GetValue(position.x, position.y);
+
+            Vec2Int IntPos = new Vec2Int((int)position.x, (int)position.y);
+
+            if (temperature < -0.22)
+                biomeID = BiomeID.Arctic;
+
+            else if (temperature < -0.21)
+            {
+                double gradient = (temperature - (-0.22)) / 0.01;
+                biomeID = ValueFromGradient(BiomeID.Arctic, BiomeID.Plains, gradient, _seed.BlockHash(IntPos, PHRASE));
+            }
+            else if (temperature < 0.21)
+                biomeID = BiomeID.Plains;
+
+            else if (temperature < 0.22)
+            {
+                double gradient = (temperature - 0.21) / 0.01;
+                biomeID = ValueFromGradient(BiomeID.Plains, BiomeID.Desert, gradient, _seed.BlockHash(IntPos, PHRASE));
+            }
+            else
+                biomeID = BiomeID.Desert;
+
+            return biomeID;
         }
 
         public BlockData2[,] GenerateChunk(Vec2Int chunk)
         {
             ProtoBlock[,] protoBlocks = ChunkIterator.Array2D<ProtoBlock>();
 
-            Build_BaseTerrain(protoBlocks, chunk);
-            Build_Caves(protoBlocks, chunk);
+            BuildBaseTerrain(protoBlocks, chunk);
+            BuildCaves(protoBlocks, chunk);
 
             BlockData2[,] blocks = ConvertToBlockArray(protoBlocks, chunk);
 
-            //Add_Ores();
-            //Add_Vegetation();
+            AddOreClusters(protoBlocks, blocks, chunk);
 
             return blocks.DeepCopyChunk();
         }
 
-        private void Build_BaseTerrain(ProtoBlock[,] protoBlocks, Vec2Int chunk)
+        private void BuildBaseTerrain(ProtoBlock[,] protoBlocks, Vec2Int chunk)
         {
             ChunkIterator.Iterate((x, y) =>
             {
@@ -135,35 +165,6 @@ namespace Larnix.Worldgen
 
                 Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, pos);
 
-                const int SOIL_LAYER_SIZE = 3;
-
-                int surface_level = (int)Math.Floor(ProviderSurface.GetValue(POS.x));
-                int stone_level = surface_level - SOIL_LAYER_SIZE;
-
-                if (POS.y > surface_level) // air
-                {
-                    bool is_lake = POS.y <= WATER_LEVEL;
-                    protoBlocks[x, y] = is_lake ? ProtoBlock.Liquid : ProtoBlock.Air;
-                }
-                else if (POS.y > stone_level) // dirt
-                {
-                    bool is_top = POS.y + 1 > surface_level;
-                    protoBlocks[x, y] = is_top ? ProtoBlock.SoilSurface : ProtoBlock.Soil;
-                }
-                else // underground
-                {
-                    protoBlocks[x, y] = ProtoBlock.Stone;
-                }
-            });
-
-            ChunkIterator.Iterate((x, y) =>
-            {
-                var pos = new Vec2Int(x, y);
-
-                Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, pos);
-
-                const int SOIL_LAYER_SIZE = 3;
-
                 int surface_level = (int)Math.Floor(ProviderSurface.GetValue(POS.x));
                 int stone_level = surface_level - SOIL_LAYER_SIZE;
 
@@ -184,7 +185,7 @@ namespace Larnix.Worldgen
             });
         }
 
-        private void Build_Caves(ProtoBlock[,] protoBlocks, Vec2Int chunk)
+        private void BuildCaves(ProtoBlock[,] protoBlocks, Vec2Int chunk)
         {
             ChunkIterator.Iterate((x, y) =>
             {
@@ -198,12 +199,45 @@ namespace Larnix.Worldgen
                 if (cave_value > -CAVE_NOISE_WIDTH && cave_value < CAVE_NOISE_WIDTH) // cave
                 {
                     ProtoBlock protoBlock = protoBlocks[x, y];
-                    switch(protoBlock)
+                    protoBlock = protoBlock switch
                     {
-                        case ProtoBlock.Stone: protoBlock = ProtoBlock.Cave; break;
-                        default: protoBlock = ProtoBlock.Air; break;
-                    }
+                        ProtoBlock.Stone => ProtoBlock.Cave,
+                        _ => ProtoBlock.Air,
+                    };
                     protoBlocks[x, y] = protoBlock;
+                }
+            });
+        }
+
+        private void AddOreClusters(ProtoBlock[,] protoBlocks, BlockData2[,] blocks, Vec2Int chunk)
+        {
+            Vec2Int chunkStart = BlockUtils.GlobalBlockCoords(chunk, new Vec2Int(CHUNK_SIZE, CHUNK_SIZE));
+            Vec2Int chunkEnd = BlockUtils.GlobalBlockCoords(chunk, new Vec2Int(0, 0));
+
+            ChunkIterator.Iterate((x, y) =>
+            {
+                var pos = new Vec2Int(x, y);
+
+                Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, pos);
+
+                BiomeID biomeID = BiomeAt(POS.ToVec2());
+
+                ProtoBlock protoBlock = protoBlocks[x, y];
+                Biome biome = _biomes[biomeID];
+
+                var biomeWithOre = biome as IHasOre;
+
+                if (biomeWithOre != null)
+                {
+                    foreach (var oreID in biomeWithOre.ORES().Keys)
+                    {
+                        Ore ore = _ores[oreID];
+
+                        if (ore.DepthMax > chunkStart.y || ore.DepthMin < chunkEnd.y) continue;
+                        BlockData1 block = biomeWithOre.STATIC_GetOreBlock(oreID, ore.OreBlockId);
+
+                        ore.GenerateOre(protoBlock, ref blocks[x, y], POS, block);
+                    }
                 }
             });
         }
@@ -216,32 +250,9 @@ namespace Larnix.Worldgen
             {
                 var pos = new Vec2Int(x, y);
                 
-                const string PHRASE = "block_hash";
                 Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, pos);
 
-                BiomeID biomeID = BiomeID.Empty;
-                double temperature = NoiseTemperature.GetValue(POS.x, POS.y);
-
-                if (temperature < -0.22)
-                    biomeID = BiomeID.Arctic;
-
-                else if (temperature < -0.21 )
-                {
-                    double gradient = (temperature - (-0.22)) / 0.01;
-                    biomeID = ValueFromGradient(BiomeID.Arctic, BiomeID.Plains, gradient, _seed.BlockHash(POS, PHRASE));
-                }
-
-                else if (temperature < 0.21)
-                    biomeID = BiomeID.Plains;
-
-                else if (temperature < 0.22)
-                {
-                    double gradient = (temperature - 0.21) / 0.01;
-                    biomeID = ValueFromGradient(BiomeID.Plains, BiomeID.Desert, gradient, _seed.BlockHash(POS, PHRASE));
-                }
-
-                else
-                    biomeID = BiomeID.Desert;
+                BiomeID biomeID = BiomeAt(POS.ToVec2());
 
                 Biome biome = _biomes[biomeID];
                 blocks[x, y] = biome.TranslateProtoBlock(protoBlocks[x, y]);
