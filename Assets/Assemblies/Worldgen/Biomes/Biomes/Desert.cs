@@ -1,14 +1,21 @@
-using Larnix.Worldgen;
 using Larnix.Blocks;
-using System.Collections;
 using System.Collections.Generic;
 using Larnix.Blocks.Structs;
+using Larnix.Worldgen.Biomes.Interfaces;
+using Larnix.Worldgen.Ores;
+using System;
 
-namespace Larnix.Worldgen.Biomes
+namespace Larnix.Worldgen.Biomes.All
 {
-    public sealed class Plains : Biome
+    public sealed class Desert : Biome, IHasOre
     {
-        private Plains() {}
+        Dictionary<OreID, BlockData1> IHasOre.ORES() => new() {
+            { OreID.TestOre, new(BlockID.Log,0)},
+            { OreID.BiomeTestOre, new(BlockID.Planks,0) }
+        };
+        Type IHasOre.BIOME() => typeof(Desert);
+
+        private Desert() {}
 
         public override BlockData2 TranslateProtoBlock(ProtoBlock protoBlock)
         {
@@ -19,33 +26,25 @@ namespace Larnix.Worldgen.Biomes
 
                 case ProtoBlock.Stone:
                     return new BlockData2(
-                        new(BlockID.Stone, 0),
-                        new(BlockID.Stone, 0)
+                        new(BlockID.Sandstone, 0),
+                        new(BlockID.Sandstone, 0)
                     );
 
                 case ProtoBlock.Soil:
-                    return new BlockData2(
-                        new(BlockID.Soil, 0),
-                        new()
-                    );
-
                 case ProtoBlock.SoilSurface:
                     return new BlockData2(
-                        new(BlockID.Soil, 1), // grass
+                        new(BlockID.Sand, 0),
                         new()
                     );
 
                 case ProtoBlock.Cave:
                     return new BlockData2(
                         new(),
-                        new(BlockID.Stone, 0)
+                        new(BlockID.Sandstone, 0)
                     );
 
                 case ProtoBlock.Liquid:
-                    return new BlockData2(
-                        new(BlockID.Water, 0),
-                        new()
-                    );
+                    return new BlockData2();
 
                 default:
                     return new BlockData2();

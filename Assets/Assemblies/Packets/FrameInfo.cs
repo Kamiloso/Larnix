@@ -4,7 +4,7 @@ using Larnix.Core.Vectors;
 using Larnix.Core.Binary;
 using Larnix.Core.Utils;
 using Larnix.Socket.Packets;
-using Larnix.Worldgen;
+using Larnix.Worldgen.Biomes;
 using Larnix.Core;
 
 namespace Larnix.Packets

@@ -6,7 +6,7 @@ using System.Reflection;
 using System.Linq;
 using Larnix.Blocks.Structs;
 
-namespace Larnix.Worldgen
+namespace Larnix.Worldgen.Biomes
 {
     public abstract class Biome
     {

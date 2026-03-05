@@ -3,12 +3,21 @@ using Larnix.Blocks;
 using System.Collections;
 using System.Collections.Generic;
 using Larnix.Blocks.Structs;
+using Larnix.Worldgen.Biomes.Interfaces;
+using Larnix.Worldgen.Ores;
+using System;
 
-namespace Larnix.Worldgen.Biomes
+namespace Larnix.Worldgen.Biomes.All
 {
-    public sealed class Arctic : Biome
+    public sealed class Arctic : Biome, IHasOre
     {
         private Arctic() {}
+
+        Type IHasOre.BIOME() => typeof(Arctic);
+
+        Dictionary<OreID, BlockData1> IHasOre.ORES() => new() {
+            { OreID.TestOre, null}
+        };
 
         public override BlockData2 TranslateProtoBlock(ProtoBlock protoBlock)
         {

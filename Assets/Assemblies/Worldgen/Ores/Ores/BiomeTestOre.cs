@@ -4,7 +4,7 @@ using Larnix.Blocks;
 using Larnix.Blocks.Structs;
 using Larnix.Worldgen.Noise;
 
-namespace Larnix.Worldgen.Ores
+namespace Larnix.Worldgen.Ores.All
 {
     public sealed class BiomeTestOre : Ore
     {
@@ -15,11 +15,6 @@ namespace Larnix.Worldgen.Ores
             DepthMin = -15;
             DepthMax = int.MinValue;
             OreClusterSizeCutoff = 0.7;
-            VariantBased = false;
-            BlockByBiome = new Dictionary<BiomeID, BlockData1> {
-                { BiomeID.Plains, new(BlockID.Glass,0)},
-                { BiomeID.Desert, new(BlockID.Planks,0)}
-            };
             
             OreProvider = ValueProvider.CreatePerlin(
                 new Perlin(seed: (int)baseSeed.Hash("biome_test_ore"))

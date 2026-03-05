@@ -7,7 +7,7 @@ using System.Linq;
 using UnityEngine.Profiling;
 using Larnix.Core.Vectors;
 using Larnix.Core;
-using Larnix.Worldgen;
+using Larnix.Worldgen.Biomes;
 
 namespace Larnix.Client
 {

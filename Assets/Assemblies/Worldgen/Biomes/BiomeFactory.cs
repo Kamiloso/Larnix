@@ -1,11 +1,9 @@
-using Larnix.Blocks;
-using System.Collections;
 using System.Collections.Generic;
 using System;
 using System.Reflection;
 using System.Linq;
 
-namespace Larnix.Worldgen
+namespace Larnix.Worldgen.Biomes
 {
     public class BiomeFactory
     {

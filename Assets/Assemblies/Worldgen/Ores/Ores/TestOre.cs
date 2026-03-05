@@ -2,7 +2,7 @@
 using Larnix.Blocks;
 using Larnix.Worldgen.Noise;
 
-namespace Larnix.Worldgen.Ores
+namespace Larnix.Worldgen.Ores.All
 {
     public sealed class TestOre : Ore
     {
@@ -11,7 +11,7 @@ namespace Larnix.Worldgen.Ores
             Seed baseSeed = new Seed(BaseSeed);
 
             DepthMin = -10;
-            DepthMax = -20;
+            DepthMax = -100;
             OreClusterSizeCutoff = 0.5;
             OreBlockId = BlockID.Plastic;
             OreProvider = ValueProvider.CreatePerlin(

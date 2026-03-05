@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 
-namespace Larnix.Worldgen
+namespace Larnix.Worldgen.Ores
 {
     public enum OreID : ushort
     {
