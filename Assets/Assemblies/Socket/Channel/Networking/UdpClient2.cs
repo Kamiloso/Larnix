@@ -10,10 +10,10 @@ namespace Larnix.Socket.Channel.Networking
 {
     internal class UdpClient2 : INetworkInteractions, IDisposable
     {
-        public readonly ushort Port;
-        public readonly bool IsListener;
-        public readonly bool IsLoopback;
-        public readonly bool IsIPv6;
+        public ushort Port { get; }
+        public bool IsListener { get; }
+        public bool IsLoopback { get; }
+        public bool IsIPv6 { get; }
 
         private readonly UdpClient _udpClient;
         private readonly IPEndPoint _destination;

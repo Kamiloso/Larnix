@@ -1,33 +1,19 @@
 using Larnix.Blocks.Structs;
 
-namespace Larnix.Blocks
+namespace Larnix.Blocks.All
 {
     public interface ILamp : IElectricDevice
     {
-        byte LAMP_LIT_BYTE() => 0b0001;
+        byte LAMP_LIT_BIT() => 0b0001;
 
-        void IElectricDevice.StartDevice()
+        void IElectricDevice.DeviceTick(bool active, bool wentOn, bool wentOff, byte srcByte)
         {
-            ;
-        }
-
-        void IElectricDevice.FrameDevice()
-        {
-            ;
-        }
-
-        void IElectricDevice.FinalizeFrameDevice(bool isPowered)
-        {
-            bool isLit = (This.BlockData.Variant & LAMP_LIT_BYTE()) != 0;
-
-            if (isPowered != isLit)
+            bool isLit = (This.BlockData.Variant & LAMP_LIT_BIT()) != 0;
+            
+            if (active != isLit)
             {
-                BlockData1 blockTemplate = new(
-                    id: This.BlockData.ID,
-                    variant: (byte)(This.BlockData.Variant ^ LAMP_LIT_BYTE()),
-                    data: This.BlockData.Data
-                );
-                WorldAPI.ReplaceBlock(This.Position, This.IsFront, blockTemplate, IWorldAPI.BreakMode.Weak);
+                byte newVariant = (byte)(This.BlockData.Variant ^ LAMP_LIT_BIT());
+                SelfChangeVariant(newVariant);
             }
         }
     }

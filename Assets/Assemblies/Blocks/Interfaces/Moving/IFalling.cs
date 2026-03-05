@@ -1,19 +1,20 @@
 using Larnix.Core.Vectors;
 
-namespace Larnix.Blocks
+namespace Larnix.Blocks.All
 {
     public interface IFalling : IMovingBehaviour
     {
         void Init()
         {
-            This.FrameEventSequential += (sender, args) => Fall();
+            This.Subscribe(BlockOrder.Sequential,
+                () => Fall());
         }
 
         int FALL_PERIOD();
 
         private void Fall()
         {
-            if (WorldAPI.FramesSinceServerStart() % FALL_PERIOD() != 0)
+            if (WorldAPI.ServerTick % FALL_PERIOD() != 0)
                 return;
 
             Vec2Int localpos = This.Position;

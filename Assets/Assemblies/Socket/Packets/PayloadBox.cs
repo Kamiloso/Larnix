@@ -4,6 +4,7 @@ using System;
 using Larnix.Core;
 using Larnix.Core.Utils;
 using Larnix.Core.Binary;
+using Larnix.Socket.Security.Keys;
 
 namespace Larnix.Socket.Packets
 {

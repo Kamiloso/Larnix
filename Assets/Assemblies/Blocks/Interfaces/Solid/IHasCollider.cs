@@ -4,12 +4,12 @@ using Larnix.Blocks.Structs;
 using Larnix.Core.Physics;
 using Larnix.Core.Vectors;
 
-namespace Larnix.Blocks
+namespace Larnix.Blocks.All
 {
     public record Collider(Vec2 Offset, Vec2 Size);
     public interface IHasCollider : IBlockInterface
     {
-        IEnumerable<Collider> STATIC_GetAllColliders(BlockID ID, byte variant);
+        Collider[] STATIC_GetAllColliders(BlockID ID, byte variant);
 
         public static StaticCollider MakeStaticCollider(Collider collider, Vec2Int POS)
         {

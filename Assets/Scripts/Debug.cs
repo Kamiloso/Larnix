@@ -3,21 +3,58 @@ using System.Collections.Concurrent;
 using System;
 using UnityEngine;
 using System.Threading;
-using System.Diagnostics;
-using System.Text;
-using System.IO;
-using Console = Larnix.Core.Console;
 using Larnix.Patches;
+using Console = Larnix.Core.Console;
+using LogType = Larnix.Core.Debug.LogType;
 
 namespace Larnix
 {
     public class Debug : MonoBehaviour, IGlobalUnitySingleton
     {
-        private static readonly ConcurrentQueue<Action> actionQueue = new();
-        private static object _locker = new();
-        private static Thread MainThread = null;
+        private readonly struct LogEntry
+        {
+            public string Message { get; init;}
+            public LogType Type { get; init; }
 
-        private enum LogType { Log, Success, Warning, Error, Raw }
+            public LogEntry(string message, LogType type)
+            {
+                Message = message;
+                Type = type;
+            }
+        }
+
+        private static readonly ConcurrentQueue<LogEntry> _actionQueue = new();
+        private static Thread UnityThread;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void Init()
+        {
+            UnityThread = Thread.CurrentThread;
+
+            Core.Debug.RedirectLogs(_LogOrEnqueue);
+            Core.GamePath.InitPath(Application.persistentDataPath);
+        }
+
+        private void Update()
+        {
+            // Display logs from the main thread
+            while (_actionQueue.TryDequeue(out var logEntry))
+            {
+                _Log(logEntry.Message, logEntry.Type);
+            }
+        }
+
+        private static void _LogOrEnqueue(string msg, LogType logType)
+        {
+            if (Thread.CurrentThread == UnityThread)
+            {
+                _Log(msg, logType);
+            }
+            else
+            {
+                _actionQueue.Enqueue(new LogEntry(msg, logType));
+            }
+        }
 
         private static void _Log(string msg, LogType logType)
         {
@@ -26,10 +63,11 @@ namespace Larnix
                 switch (logType)
                 {
                     case LogType.Log: UnityEngine.Debug.Log(msg); break;
-                    case LogType.Success: UnityEngine.Debug.Log(msg); break;
-                    case LogType.Raw: UnityEngine.Debug.Log(msg); break;
+                    case LogType.Info: UnityEngine.Debug.Log(msg); break;
                     case LogType.Warning: UnityEngine.Debug.LogWarning(msg); break;
                     case LogType.Error: UnityEngine.Debug.LogError(msg); break;
+                    case LogType.Success: UnityEngine.Debug.Log(msg); break;
+                    case LogType.Raw: UnityEngine.Debug.Log(msg); break;
                 }
             }
             else
@@ -37,96 +75,11 @@ namespace Larnix
                 switch (logType)
                 {
                     case LogType.Log: Console.Log(msg); break;
-                    case LogType.Success: Console.LogSuccess(msg); break;
-                    case LogType.Raw: Console.LogRaw(msg); break;
+                    case LogType.Info: Console.LogInfo(msg); break;
                     case LogType.Warning: Console.LogWarning(msg); break;
                     case LogType.Error: Console.LogError(msg); break;
-                }
-            }
-        }
-
-        private static void _LogOrEnqueue(string msg, LogType logType)
-        {
-            if (logType == LogType.Warning || logType == LogType.Error)
-                msg += "\n" + GetFormattedStackTrace(2);
-
-            if (Thread.CurrentThread == MainThread)
-            {
-                // From main thread - stack trace official
-                _Log(msg, logType);
-            }
-            else
-            {
-                // From weird thread - stack trace custom
-                actionQueue.Enqueue(() => _Log(msg, logType));
-            }
-        }
-
-        public static string GetFormattedStackTrace(int skipFrames = 0)
-        {
-            var trace = new StackTrace(skipFrames + 1, true);
-            var frames = trace.GetFrames();
-            if (frames == null || frames.Length == 0)
-                return "<no stack trace>";
-
-            var sb = new StringBuilder();
-            int index = 0;
-            foreach (var frame in frames)
-            {
-                var method = frame.GetMethod();
-                if (method == null) continue;
-
-                var declaringType = method.DeclaringType;
-                string typeName = declaringType != null ? declaringType.FullName : "<global>";
-                string methodName = method.Name;
-
-                var fileName = frame.GetFileName();
-                int line = frame.GetFileLineNumber();
-
-                // header
-                sb.Append("[").Append(index++).Append("] ")
-                  .Append(typeName).Append('.').Append(methodName);
-
-                // file + line
-                if (!string.IsNullOrEmpty(fileName))
-                {
-                    sb.Append(" at ")
-                      .Append(Path.GetFileName(fileName))
-                      .Append(':').Append(line > 0 ? line : 0)
-                      .AppendLine();
-                }
-                else
-                {
-                    sb.Append("    at <no file info>").AppendLine();
-                }
-            }
-
-            return sb.ToString();
-        }
-
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-        private static void Init()
-        {
-            MainThread = Thread.CurrentThread;
-
-            Core.Debug.RedirectLogs(
-                log: msg => _LogOrEnqueue(msg, LogType.Log),
-                logWarning: msg => _LogOrEnqueue(msg, LogType.Warning),
-                logError: msg => _LogOrEnqueue(msg, LogType.Error),
-                logSuccess: msg => _LogOrEnqueue(msg, LogType.Success),
-                logRaw: msg => _LogOrEnqueue(msg, LogType.Raw)
-                );
-            Core.GamePath.InitAppdata(Application.persistentDataPath);
-        }
-
-        private void Update()
-        {
-            lock (_locker)
-            {
-                // flush logs
-                while (actionQueue.TryDequeue(out var action))
-                {
-                    action();
+                    case LogType.Success: Console.LogSuccess(msg); break;
+                    case LogType.Raw: Console.LogRaw(msg); break;
                 }
             }
         }

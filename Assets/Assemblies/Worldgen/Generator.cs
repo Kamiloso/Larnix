@@ -110,7 +110,7 @@ namespace Larnix.Worldgen
 
         public Col32 SkyColorAt(Vec2 position)
         {
-            return new Col32(105, 165, 255, 0);
+            return new Col32(197, 235, 255, 0);
         }
 
         public BiomeID BiomeAt(Vec2 position)
@@ -145,7 +145,7 @@ namespace Larnix.Worldgen
 
         public BlockData2[,] GenerateChunk(Vec2Int chunk)
         {
-            ProtoBlock[,] protoBlocks = new ProtoBlock[CHUNK_SIZE, CHUNK_SIZE];
+            ProtoBlock[,] protoBlocks = ChunkIterator.Array2D<ProtoBlock>();
 
             BuildBaseTerrain(protoBlocks, chunk);
             BuildCaves(protoBlocks, chunk);
@@ -159,10 +159,9 @@ namespace Larnix.Worldgen
 
         private void BuildBaseTerrain(ProtoBlock[,] protoBlocks, Vec2Int chunk)
         {
-            foreach (Vec2Int pos in ChunkIterator.IterateXY())
+            ChunkIterator.Iterate((x, y) =>
             {
-                int x = pos.x;
-                int y = pos.y;
+                var pos = new Vec2Int(x, y);
 
                 Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, pos);
 
@@ -190,8 +189,7 @@ namespace Larnix.Worldgen
         {
             foreach (Vec2Int pos in ChunkIterator.IterateXY())
             {
-                int x = pos.x;
-                int y = pos.y;
+                var pos = new Vec2Int(x, y);
 
                 Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, pos);
 
@@ -218,8 +216,7 @@ namespace Larnix.Worldgen
 
             foreach (Vec2Int pos in ChunkIterator.IterateXY())
             {
-                int x = pos.x;
-                int y = pos.y;
+                var pos = new Vec2Int(x, y);
 
                 Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, pos);
 
@@ -242,17 +239,16 @@ namespace Larnix.Worldgen
                         ore.GenerateOre(protoBlock, ref blocks[x, y], POS, block);
                     }
                 }
-            }
+            });
         }
 
         private BlockData2[,] ConvertToBlockArray(ProtoBlock[,] protoBlocks, Vec2Int chunk)
         {
-            BlockData2[,] blocks = new BlockData2[CHUNK_SIZE, CHUNK_SIZE];
+            BlockData2[,] blocks = ChunkIterator.Array2D<BlockData2>();
 
-            foreach (Vec2Int pos in ChunkIterator.IterateXY())
+            ChunkIterator.Iterate((x, y) =>
             {
-                int x = pos.x;
-                int y = pos.y;
+                var pos = new Vec2Int(x, y);
                 
                 Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, pos);
 
@@ -260,7 +256,7 @@ namespace Larnix.Worldgen
 
                 Biome biome = _biomes[biomeID];
                 blocks[x, y] = biome.TranslateProtoBlock(protoBlocks[x, y]);
-            }
+            });
 
             return blocks;
         }

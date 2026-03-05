@@ -4,17 +4,14 @@ using System;
 using Larnix.Blocks.Structs;
 using Larnix.Core.Vectors;
 
-namespace Larnix.Blocks
+namespace Larnix.Blocks.All
 {
     public interface IElectricPipe : IPipe, IElectricPropagator
     {
-        private static Vec2Int[] CARDINAL_DIRECTIONS = new[] {
-            Vec2Int.Up, Vec2Int.Right, Vec2Int.Down, Vec2Int.Left
-            };
-
         new void Init()
         {
-            This.FrameEventElectricFinalize += (sender, args) => RethinkLitState();
+            This.Subscribe(BlockOrder.ElectricFinalize,
+                () => RethinkLitState());
         }
 
         BlockID ID_UNLIT();
@@ -23,7 +20,7 @@ namespace Larnix.Blocks
         bool IS_LIT() => This.BlockData.ID == ID_LIT();
 
         double IPipe.WIDTH() => 6.0 / 16.0;
-        IEnumerable<Type> IPipe.CONNECT_TO_TYPES() => new Type[] {
+        Type[] IPipe.CONNECT_TO_TYPES() => new Type[] {
             typeof(IElectricPipe),
             typeof(IElectricSource),
             typeof(IElectricDevice),
@@ -44,20 +41,26 @@ namespace Larnix.Blocks
 
         void RethinkLitState()
         {
-            bool shouldBeLit = Data["electric_propagator.recursion"].Int > 0;
+            // 0 - completely unlit
+            // 1 - cannot propagate
+            
+            bool shouldBeLit = Data["electric_propagator.recursion"].Int > 1;
             if (shouldBeLit != IS_LIT())
             {
-                BlockData1 blockTemplate = new(
-                    id: shouldBeLit ? ID_LIT() : ID_UNLIT(),
-                    variant: This.BlockData.Variant,
-                    data: This.BlockData.Data
-                );
-                WorldAPI.ReplaceBlock(This.Position, This.IsFront, blockTemplate, IWorldAPI.BreakMode.Weak);
+                BlockID newID = shouldBeLit ? ID_LIT() : ID_UNLIT();
+                BlockData1 blockTemplate = new BlockData1(
+                    newID, This.BlockData.Variant, Data);
+
+                WorldAPI.ReplaceBlock(This.Position, This.IsFront, blockTemplate,
+                    IWorldAPI.BreakMode.Weak);
             }
         }
 
-        void IElectricPropagator.ElectricPropagate(Vec2Int POS_src, int recursion)
+        void IElectricPropagator.OnElectricSignal(Vec2Int POS_src, int recursion)
         {
+            int oldRecursion = Data["electric_propagator.recursion"].Int;
+            if (oldRecursion >= recursion) return;
+
             Data["electric_propagator.recursion"].Int = recursion;
 
             Vec2Int POS = This.Position;
@@ -66,47 +69,23 @@ namespace Larnix.Blocks
             foreach (Vec2Int dir in CARDINAL_DIRECTIONS)
             {
                 Vec2Int POS_other = POS + dir;
-                if (POS_other == POS_src) continue;
-
-                bool? canPropagate = CanPropagateInto(POS_other, out int pipeRecursion);
-                if (canPropagate == false) continue;
+                bool? canPropagate = CanPropagateInto(POS_other);
 
                 if (canPropagate == true)
                 {
-                    if (nextRecursion > pipeRecursion)
-                    {
-                        IElectricPropagator pipe = (IElectricPropagator)WorldAPI.GetBlock(POS + dir, This.IsFront);
-                        pipe.ElectricPropagate(POS, nextRecursion);
-                    }
-                }
-
-                if (canPropagate == null)
-                {
-                    // TODO: fix later, should load chunks or something
-                    Core.Debug.LogWarning("Electric propagation reached unloaded block!");
-                    //ElectricPropagate(recursion);
+                    IElectricPropagator pipe = (IElectricPropagator)WorldAPI.GetBlock(POS + dir, This.IsFront);
+                    pipe.ElectricSignalSend(POS, nextRecursion);
                 }
             }
         }
 
-        private bool? CanPropagateInto(Vec2Int POS_other, out int recursion)
+        private bool? CanPropagateInto(Vec2Int POS_other)
         {
-            recursion = default;
-
-            BlockServer block = WorldAPI.GetBlock(POS_other, This.IsFront);
+            Block block = WorldAPI.GetBlock(POS_other, This.IsFront);
             if (block == null) return null;
 
-            if (block is IElectricPipe pipe)
+            if (block is IElectricPropagator pipe)
             {
-                if (ELECTRIC_PIPE_ID() != pipe.ELECTRIC_PIPE_ID())
-                    return false;
-                
-                recursion = pipe.Data["electric_propagator.recursion"].Int;
-                return true;
-            }
-            if (block is IElectricDevice device)
-            {
-                recursion = device.Data["electric_propagator.recursion"].Int;
                 return true;
             }
             return false;

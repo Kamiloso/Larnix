@@ -4,102 +4,102 @@ using Larnix.Entities;
 using Larnix.Entities.Structs;
 using Larnix.Socket.Backend;
 using Larnix.Core.Physics;
-using Larnix.Core.References;
 using Larnix.Core.Vectors;
 using System;
 using Larnix.Core.Utils;
+using Larnix.Core;
+using Larnix.Server.Data;
+using EntityInits = Larnix.Entities.Entity.EntityInits;
+using NUnit.Framework;
 
 namespace Larnix.Server.Entities
 {
-    internal class EntityAbstraction : RefObject<Server>
+    internal class EntityAbstraction
     {
-        private UserManager UserManager => Ref<UserManager>();
-        private EntityDataManager EntityDataManager => Ref<EntityDataManager>();
-        private EntityManager EntityManager => Ref<EntityManager>();
-        private PhysicsManager PhysicsManager => Ref<PhysicsManager>();
+        public ulong UID { get; init; }
+        public EntityData ActiveData { get; init; }
+        public bool IsPlayer => ActiveData.ID == EntityID.Player;
 
-        private EntityServer _controller;
-        private ulong _storedUID;
-        private EntityData _storedEntityData;
+        private readonly string _nickname;
+        public string Nickname => IsPlayer ? _nickname : throw new InvalidOperationException("Only player entities have nicknames!");
 
-        public bool IsActive => _controller != null;
-        public ulong uID => IsActive ? _controller.uID : _storedUID;
-        public EntityData EntityData => IsActive ? _controller.EntityData : _storedEntityData;
+        private Entity _controller;
+        public Entity Controller => _controller;
 
-        public static EntityAbstraction CreatePlayerController(RefObject<Server> reff, string nickname) =>
-            new EntityAbstraction(reff, nickname);
-            
-        public static EntityAbstraction CreateEntityController(RefObject<Server> reff, EntityData entityData, ulong? uid = null) =>
-            new EntityAbstraction(reff, entityData, uid);
+        public EntityLoadState LoadState { get; private set; } = EntityLoadState.Loading;
+        public bool IsActive => LoadState == EntityLoadState.Active;
+        public bool IsLoading => LoadState == EntityLoadState.Loading;
+        public bool IsUnloaded => LoadState == EntityLoadState.Unloaded;
 
-        private EntityAbstraction(RefObject<Server> reff, string nickname) : base(reff)
+        private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
+        private EntityDataManager EntityDataManager => GlobRef.Get<EntityDataManager>();
+        private PhysicsManager PhysicsManager => GlobRef.Get<PhysicsManager>();
+
+        private EntityAbstraction() { }
+
+        public static EntityAbstraction CreatePlayerController(string nickname) => new(nickname);
+        private EntityAbstraction(string nickname)
         {
-            ulong uid = (ulong)UserManager.GetUserID(nickname);
-            EntityData entityData = EntityDataManager.TryFindEntityData(uid);
-
-            if (entityData == null)
-            {
-                entityData = new EntityData(
-                    id: EntityID.Player,
-                    position: new Vec2(0, 0),
-                    rotation: 0.0f
-                );
-            }
-
-            entityData.Position += Common.UP_EPSILON;
-
-            Initialize(uid, entityData);
+            UID = PlayerActions.UidByNickname(nickname);
+            ActiveData = EntityDataManager.TryFindEntityData(UID) ?? new EntityData(
+                id: EntityID.Player,
+                position: new Vec2(0, 0),
+                rotation: 0.0f
+            );
+            ActiveData.Position += Common.UpEpsilon;
+            _nickname = nickname;
+            
+            EntityDataManager.SetEntityData(UID, ActiveData);
         }
 
-        private EntityAbstraction(RefObject<Server> reff, EntityData entityData, ulong? uid = null) : base(reff)
+        public static EntityAbstraction CreateEntityController(EntityData entityData, ulong uid) => new(entityData, uid);
+        private EntityAbstraction(EntityData entityData, ulong uid)
         {
             if (entityData.ID == EntityID.Player)
                 throw new ArgumentException("Cannot create player instance as a generic entity!");
 
-            entityData.Position += Common.UP_EPSILON;
+            UID = uid;
+            ActiveData = entityData;
+            ActiveData.Position += Common.UpEpsilon;
 
-            ulong uid2 = uid ?? EntityManager.GetNextUID();
-            Initialize(uid2, entityData);
-        }
-
-        private void Initialize(ulong uid, EntityData entityData)
-        {
-            _storedUID = uid;
-            _storedEntityData = entityData;
-
-            // flushing data to EntityDataManager
-            EntityDataManager.SetEntityData(_storedUID, _storedEntityData);
+            EntityDataManager.SetEntityData(UID, ActiveData);
         }
 
         public void Activate()
         {
-            if (IsActive)
-                throw new InvalidOperationException("Entity abstraction is already active!");
+            if (!IsLoading)
+                throw new InvalidOperationException("Only entities in loading state can be activated!");
 
-            _controller = EntityFactory.ConstructEntityObject(_storedUID, _storedEntityData, PhysicsManager);
+            _controller = EntityFactory.ConstructEntityObject(
+                new EntityInits(UID, ActiveData, PhysicsManager));
+            
+            LoadState = EntityLoadState.Active;
         }
 
-        public EntityServer GetRealController()
+        public void FrameUpdate()
         {
-            return _controller;
+            if (!IsActive)
+                throw new InvalidOperationException("Only active entities can be updated!");
+
+            _controller.FrameUpdate();
         }
 
         public void DeleteEntityInstant()
         {
-            EntityDataManager.DeleteEntityData(uID);
+            if (!IsUnloaded)
+            {
+                EntityDataManager.DeleteEntityData(UID);
+                LoadState = EntityLoadState.Unloaded;
+            }
         }
 
         public void UnloadEntityInstant()
         {
-            EntityDataManager.UnloadEntityData(uID);
-        }
-
-        public void FromFrameUpdate()
-        {
-            if (!IsActive)
-                throw new InvalidOperationException("Cannot execute FromFrameUpdate() on inactive entity abstraction!");
-
-            _controller.FromFrameUpdate();
+            if (!IsUnloaded)
+            {
+                EntityDataManager.UnloadEntityData(UID);
+                LoadState = EntityLoadState.Unloaded;
+            }
         }
     }
 }

@@ -6,11 +6,11 @@ using System.Linq;
 using Larnix.Socket.Packets.Control;
 using Larnix.Core.Utils;
 using Larnix.Core.Binary;
+using System.Runtime.Serialization;
 
 namespace Larnix.Socket.Packets
 {
-    public enum CmdID : ushort { None = 0 }
-
+    public enum CmdID : ushort { None = 0 } // Use Payload.CmdID<T>() to get enum value
     public abstract class Payload
     {
         public const int BASE_HEADER_SIZE = 2 + 1 + 4;
@@ -22,19 +22,20 @@ namespace Larnix.Socket.Packets
         protected virtual bool WarningSuppress => false;
         protected abstract bool IsValid();
 
-        internal static bool TryConstructPayload<T>(HeaderSpan headerSpan, out T output) where T : Payload, new()
+        internal static bool TryConstructPayload<T>(HeaderSpan headerSpan, out T output) where T : Payload
         {
             return TryConstructPayload(headerSpan.AllBytes, out output);
         }
 
-        internal static bool TryConstructPayload<T>(byte[] rawBytes, out T output) where T : Payload, new()
+        internal static bool TryConstructPayload<T>(byte[] rawBytes, out T output) where T : Payload
         {
             if (rawBytes.Length >= BASE_HEADER_SIZE)
             {
                 CmdID id = Primitives.FromBytes<CmdID>(rawBytes, 0);
                 if (id == CmdID<T>())
                 {
-                    T payload = new T();
+                    // no constructor is needed
+                    T payload = (T)FormatterServices.GetUninitializedObject(typeof(T));
 
                     payload.ID = payload.GetMyCmdID();
                     payload.Code = Primitives.FromBytes<byte>(rawBytes, 2);
@@ -147,7 +148,7 @@ namespace Larnix.Socket.Packets
             foreach (Type type in allTypes)
             {
                 if (cmdID == 0)
-                    throw new OverflowException("Too many classes deriving from QuickNet.Payload! " +
+                    throw new OverflowException("Too many classes deriving from Payload! " +
                         "How is this possible that you caused a ushort overflow?!");
 
                 // Checking because it may already have default values set
@@ -181,7 +182,7 @@ namespace Larnix.Socket.Packets
             }
         }
 
-        public static CmdID CmdID<T>() where T : Payload, new()
+        public static CmdID CmdID<T>() where T : Payload
         {
             return CmdIDByType(typeof(T));
         }

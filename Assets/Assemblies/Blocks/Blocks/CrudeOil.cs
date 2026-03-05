@@ -4,12 +4,10 @@ using System.Collections.Generic;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
 
-namespace Larnix.Blocks
+namespace Larnix.Blocks.All
 {
-    public sealed class CrudeOil : BlockServer, ILiquid
+    public sealed class CrudeOil : Block, ILiquid
     {
-        public CrudeOil(Vec2Int POS, BlockData1 block, bool isFront) : base(POS, block, isFront) { }
-
         public int FLOW_PERIOD() => 40;
         public int LIQUID_DENSITY() => 800;
         public bool LIQUID_IS_REPLACEABLE() => false;

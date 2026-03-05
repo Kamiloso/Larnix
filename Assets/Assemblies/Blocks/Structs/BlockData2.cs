@@ -61,6 +61,22 @@ namespace Larnix.Blocks.Structs
             return true;
         }
 
+        public BlockData2 BinaryCopy() => ((IBinary<BlockData2>)this).BinaryCopy();
+        BlockData2 IBinary<BlockData2>.BinaryCopy()
+        {
+            return new BlockData2
+            {
+                Front = Front.BinaryCopy(),
+                Back = Back.BinaryCopy(),
+            };
+        }
+
+        public bool BinaryEquals(BlockData2 other) => ((IBinary<BlockData2>)this).BinaryEquals(other);
+        bool IBinary<BlockData2>.BinaryEquals(BlockData2 other)
+        {
+            return Front.BinaryEquals(other.Front) && Back.BinaryEquals(other.Back);
+        }
+
         public BlockData2 DeepCopy()
         {
             return new BlockData2

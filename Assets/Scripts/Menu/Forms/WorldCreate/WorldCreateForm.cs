@@ -16,7 +16,7 @@ namespace Larnix.Menu.Forms
         [SerializeField] TMP_InputField IF_WorldName;
         [SerializeField] TMP_InputField IF_Seed;
 
-        private Menu Menu => Ref.Menu;
+        private Menu Menu => GlobRef.Get<Menu>();
 
         public override void EnterForm(params string[] args)
         {
@@ -31,13 +31,13 @@ namespace Larnix.Menu.Forms
 
         protected override ErrorCode GetErrorCode()
         {
-            if (IF_Nickname.text == "Player")
+            if (IF_Nickname.text == Common.ReservedNickname)
                 return ErrorCode.NICKNAME_IS_PLAYER;
 
             if (!Validation.IsGoodNickname(IF_Nickname.text))
                 return ErrorCode.NICKNAME_FORMAT;
 
-            if (!Common.IsValidWorldName(IF_WorldName.text))
+            if (!Validation.IsValidWorldName(IF_WorldName.text))
                 return ErrorCode.WORLD_NAME_FORMAT;
 
             string path = Path.Combine(WorldSelect.SavesPath, IF_WorldName.text);
@@ -66,7 +66,7 @@ namespace Larnix.Menu.Forms
                 seedSuggestion = Common.GetSeedFromString(seedStr);
             }
 
-            WorldMeta.SaveData(worldName, new WorldMeta(Version.Current, nickname));
+            WorldMeta.SaveToWorldFolder(worldName, new WorldMeta(Version.Current, nickname));
             WorldSelect.PlayWorldByName(worldName, seedSuggestion);
         }
     }

@@ -1,21 +1,23 @@
 using Larnix.Core;
 using Larnix.Core.Vectors;
 
-namespace Larnix.Blocks
+namespace Larnix.Blocks.All
 {
-    public interface IElectricSource : IBlockInterface
+    public interface IElectricSource : ISecureAtomic
     {
         void Init()
         {
-            This.FrameEventElectricPropagation += (sender, args) => StartPropagation();
+            This.Subscribe(BlockOrder.ElectricPropagation,
+                () => StartPropagation());
         }
 
-        int STATIC_RecursionLimit(byte variant);
         byte ElectricEmissionMask(); // up right down left
+        bool ElectricTranslayerEmission() => false;
 
         private void StartPropagation()
         {
             byte mask = ElectricEmissionMask();
+            bool translayer = ElectricTranslayerEmission();
 
             bool up = (mask & 0b0001) != 0;
             if (up) SendSignal(This.Position + Vec2Int.Up);
@@ -28,26 +30,26 @@ namespace Larnix.Blocks
 
             bool left = (mask & 0b1000) != 0;
             if (left) SendSignal(This.Position + Vec2Int.Left);
+
+            if (translayer)
+            {
+                SendSignal(This.Position, true);
+            }
         }
 
-        private void SendSignal(Vec2Int POS_other)
+        private void SendSignal(Vec2Int POS_other, bool translayer = false)
         {
-            BlockServer block = WorldAPI.GetBlock(POS_other, This.IsFront);
-            if (block is null)
-            {
-                Core.Debug.LogWarning("TODO: Fix electric signal sending to non-loaded blocks.");
-                // SendSignal(POS_other)
-                return;
-            }
+            Block block = WorldAPI.GetBlock(POS_other, This.IsFront ^ translayer);
+            if (block is null) return;
 
-            if (block is IElectricPropagator pipe)
+            if (block is IElectricPropagator prop)
             {
-                int recursion = STATIC_RecursionLimit(This.BlockData.Variant);
-                int pipeRecursion = pipe.Data["electric_propagator.recursion"].Int;
+                int recursion = IElectricPropagator.RECURSION_LIMIT;
+                int propRecursion = prop.Data["electric_propagator.recursion"].Int;
 
-                if (recursion > pipeRecursion)
+                if (recursion > propRecursion)
                 {
-                    pipe.ElectricPropagate(This.Position, recursion);
+                    prop.ElectricSignalSend(This.Position, recursion);
                 }
             }
         }

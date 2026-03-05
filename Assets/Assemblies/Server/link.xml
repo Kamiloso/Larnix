@@ -1,0 +1,5 @@
+<linker>
+	<assembly fullname="Larnix.Server">
+		<namespace fullname="Larnix.Server.Configuration" preserve="all"/>
+	</assembly>
+</linker>

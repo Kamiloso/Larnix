@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Larnix.Core.Vectors;
 
-namespace Larnix.Entities
+namespace Larnix.Entities.All
 {
     public interface IHasCollider : IEntityInterface
     {

@@ -4,21 +4,24 @@ using System.Linq;
 using Larnix.Blocks.Structs;
 using Larnix.Core.Vectors;
 
-namespace Larnix.Blocks
+namespace Larnix.Blocks.All
 {
     public interface IConway : IMovingBehaviour
     {
         void Init()
         {
-            This.PreFrameEvent += (sender, args) => ConwayPrepare();
-            This.FrameEventConway += (sender, args) => ConwayFinalize();
+            This.Subscribe(BlockOrder.PreFrame,
+                () => ConwayPrepare());
+
+            This.Subscribe(BlockOrder.Conway,
+                () => ConwayFinalize());
         }
 
         int CONWAY_PERIOD();
 
         private void ConwayPrepare()
         {
-            if (WorldAPI.FramesSinceServerStart() % CONWAY_PERIOD() != 0)
+            if (WorldAPI.ServerTick % CONWAY_PERIOD() != 0)
                 return;
 
             // clean state
@@ -37,7 +40,7 @@ namespace Larnix.Blocks
             bool isAlive = IsAliveAt(POS, isFront) == true;
             Vec2Int delta = POS - This.Position;
 
-            List<BlockServer> blocksAround = WorldAPI.GetBlocksAround(POS, isFront);
+            List<Block> blocksAround = WorldAPI.GetBlocksAround(POS, isFront);
             int aliveNeighbors = blocksAround.Count(block => IsAliveAt(block.Position, block.IsFront) == true);
 
             if (!isAlive)
@@ -54,7 +57,7 @@ namespace Larnix.Blocks
 
         private void ConwayFinalize()
         {
-            if (WorldAPI.FramesSinceServerStart() % CONWAY_PERIOD() != 0)
+            if (WorldAPI.ServerTick % CONWAY_PERIOD() != 0)
                 return;
 
             for (int dx = -1; dx <= 1; dx++)
@@ -83,14 +86,14 @@ namespace Larnix.Blocks
     
                 case "DEATH":
                     if (IsAliveAt(POS, isFront) == true)
-                        WorldAPI.ReplaceBlock(POS, isFront, new BlockData1());
+                        WorldAPI.ReplaceBlock(POS, isFront, BlockData1.Air);
                     break;
             }
         }
 
         private bool? IsAliveAt(Vec2Int POS, bool isFront)
         {
-            BlockServer block = WorldAPI.GetBlock(POS, isFront);
+            Block block = WorldAPI.GetBlock(POS, isFront);
             if (block == null) return null;
 
             return block.GetType() == This.GetType();

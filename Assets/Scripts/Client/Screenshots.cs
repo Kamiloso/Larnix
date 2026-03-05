@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
+using Larnix.Core;
 
 namespace Larnix.Client
 {
@@ -13,7 +14,7 @@ namespace Larnix.Client
 
         private void Awake()
         {
-            Ref.Screenshots = this;
+            GlobRef.Set(this);
         }
 
         private void Start()

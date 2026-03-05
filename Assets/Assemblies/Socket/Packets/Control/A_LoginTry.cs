@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using Larnix.Socket.Packets;
+using System;
 
 namespace Larnix.Socket.Packets.Control
 {
@@ -13,7 +14,8 @@ namespace Larnix.Socket.Packets.Control
         public A_LoginTry() { }
         public A_LoginTry(bool success)
         {
-            InitializePayload(new byte[0], (byte)(success ? 1 : 0));
+            InitializePayload(Array.Empty<byte>(),
+                code: (byte)(success ? 1 : 0));
         }
 
         protected override bool IsValid()

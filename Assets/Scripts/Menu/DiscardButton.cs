@@ -2,13 +2,13 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using Larnix.Menu;
+using Larnix.Core;
 
 namespace Larnix.Menu
 {
     public class DiscardButton : MonoBehaviour
     {
-        private Menu Menu => Ref.Menu;
+        private Menu Menu => GlobRef.Get<Menu>();
         private Button _button;
 
         private void Start()

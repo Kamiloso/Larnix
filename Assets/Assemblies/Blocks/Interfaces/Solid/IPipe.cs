@@ -5,16 +5,17 @@ using System.Linq;
 using System;
 using Larnix.Blocks.Structs;
 
-namespace Larnix.Blocks
+namespace Larnix.Blocks.All
 {
     public interface IPipe : IHasCollider, IPlaceable, IBreakable, IFragile
     {
         void Init()
         {
-            This.PreFrameEventSelfMutations += (sender, args) => MutateNearbyPipes();
+            This.Subscribe(BlockOrder.PreFrameSelfMutations,
+                 () => MutateNearbyPipes());
         }
 
-        IEnumerable<Collider> IHasCollider.STATIC_GetAllColliders(BlockID ID, byte variant)
+        Collider[] IHasCollider.STATIC_GetAllColliders(BlockID ID, byte variant)
         {
             double W = WIDTH();
             List<Collider> colliders = new()
@@ -53,40 +54,44 @@ namespace Larnix.Blocks
                 )
             );
 
-            return colliders;
-        }
-
-        bool IBreakable.STATIC_IsBreakableItemMatch(BlockData1 block, BlockData1 item)
-        {
-            return block.ID == item.ID;
+            return colliders.ToArray();
         }
 
         double WIDTH();
-        IEnumerable<Type> CONNECT_TO_TYPES();
+        Type[] CONNECT_TO_TYPES();
 
         private void MutateNearbyPipes()
         {
-            Vec2Int POS = This.Position;
             byte nearby = (byte)(
-                (ConnectableTo(POS + Vec2Int.Up) == true ? 1 : 0) << 0 |
-                (ConnectableTo(POS + Vec2Int.Right) == true ? 1 : 0) << 1 |
-                (ConnectableTo(POS + Vec2Int.Down) == true ? 1 : 0) << 2 |
-                (ConnectableTo(POS + Vec2Int.Left) == true ? 1 : 0) << 3
+                PartialConnectionBit(Vec2Int.Up, 0) |
+                PartialConnectionBit(Vec2Int.Right, 1) |
+                PartialConnectionBit(Vec2Int.Down, 2) |
+                PartialConnectionBit(Vec2Int.Left, 3)
             );
 
             if (This.BlockData.Variant != nearby)
             {
-                WorldAPI.SetBlockVariant(
-                    This.Position,
-                    This.IsFront,
-                    nearby
-                    );
+                SelfChangeVariant(nearby);
             }
+        }
+
+        private int PartialConnectionBit(Vec2Int direction, int offset)
+        {
+            Vec2Int POS = This.Position + direction;
+            byte variant = This.BlockData.Variant;
+
+            bool? connectable = ConnectableTo(POS);
+            return connectable switch
+            {
+                true => 1 << offset,
+                false => 0,
+                null => variant & (1 << offset)
+            };
         }
 
         private bool? ConnectableTo(Vec2Int POS_other)
         {
-            BlockServer block = WorldAPI.GetBlock(POS_other, This.IsFront);
+            Block block = WorldAPI.GetBlock(POS_other, This.IsFront);
             if (block == null) return null;
 
             foreach (Type type in CONNECT_TO_TYPES())

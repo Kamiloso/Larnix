@@ -19,7 +19,6 @@ namespace Larnix.Packets
         public bool Front => (Bytes[Vec2Int.SIZE + sizeof(long) + BlockData2.SIZE] & 0b01) != 0; // flag
         public bool Success => (Bytes[Vec2Int.SIZE + sizeof(long) + BlockData2.SIZE] & 0b10) != 0; // flag
 
-        public RetBlockChange() { }
         public RetBlockChange(Vec2Int blockPosition, long operation, BlockData2 currentBlock, bool front, bool success, byte code = 0)
         {
             InitializePayload(ArrayUtils.MegaConcat(

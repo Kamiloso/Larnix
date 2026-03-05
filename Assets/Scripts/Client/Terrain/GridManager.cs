@@ -11,6 +11,7 @@ using Larnix.Blocks.Structs;
 using Larnix.Core;
 using Larnix.Client.Particles;
 using Random = System.Random;
+using IHasCollider = Larnix.Blocks.All.IHasCollider;
 
 namespace Larnix.Client.Terrain
 {
@@ -18,11 +19,11 @@ namespace Larnix.Client.Terrain
     {
         private const double LOCK_TIMEOUT = 5.0; // seconds
 
-        private readonly Dictionary<Vec2Int, IEnumerable<StaticCollider>> _colliderCollections = new();
+        private readonly Dictionary<Vec2Int, StaticCollider[]> _colliderCollections = new();
         private readonly List<BlockLock> _lockedBlocks = new();
 
-        private ParticleManager ParticleManager => Ref.ParticleManager;
-        private PhysicsManager PhysicsManager => Ref.PhysicsManager;
+        private ParticleManager ParticleManager => GlobRef.Get<ParticleManager>();
+        private PhysicsManager PhysicsManager => GlobRef.Get<PhysicsManager>();
 
         private class BlockLock
         {
@@ -35,8 +36,7 @@ namespace Larnix.Client.Terrain
         {
             base.Awake();
 
-            if (!IsMenu)
-                Ref.GridManager = this;
+            GlobRef.Set(this);
         }
 
         protected override void Update()
@@ -141,14 +141,13 @@ namespace Larnix.Client.Terrain
             if (!_allChunks.TryGetValue(chunk, out BlockData2[,] chunkBlocks))
                 chunkBlocks = null;
 
-            foreach (Vec2Int pos in ChunkIterator.IterateXY())
+            ChunkIterator.Iterate((x, y) =>
             {
-                int x = pos.x;
-                int y = pos.y;
+                var pos = new Vec2Int(x, y);
 
                 Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, pos);
                 UpdateBlockCollider(POS, chunkBlocks != null ? chunkBlocks[x, y] : null);
-            }
+            });
 
             PhysicsManager.SetChunkActive(chunk, chunkBlocks != null);
         }
@@ -171,10 +170,10 @@ namespace Larnix.Client.Terrain
                 IHasCollider iface = BlockFactory.GetSlaveInstance<IHasCollider>(block.Front.ID);
                 if (iface != null)
                 {
-                    IEnumerable<StaticCollider> staticColliders = iface
+                    StaticCollider[] staticColliders = iface
                         .STATIC_GetAllColliders(block.Front.ID, block.Front.Variant)
                         .Select(col => IHasCollider.MakeStaticCollider(col, POS))
-                        .ToList();
+                        .ToArray();
 
                     _colliderCollections.Add(POS, staticColliders);
                     foreach (var collider in staticColliders)

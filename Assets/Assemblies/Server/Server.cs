@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using System;
 using Larnix.Server.Data;
 using Larnix.Core;
@@ -8,270 +6,171 @@ using Larnix.Core.Physics;
 using Larnix.Server.Entities;
 using Larnix.Server.Terrain;
 using System.Threading.Tasks;
-using System.Diagnostics;
 using Larnix.Core.Files;
 using Larnix.Socket.Backend;
-using Larnix.Core.Utils;
 using Larnix.Worldgen;
-using Larnix.Core.References;
+using Larnix.Server.Commands;
+using Larnix.Blocks;
+using Larnix.Server.APIs;
+using Larnix.Server.Transmission;
+using Larnix.Server.Configuration;
+using Larnix.Server.Data.SQLite;
 using Version = Larnix.Core.Version;
 using Console = Larnix.Core.Console;
-using Object = System.Object;
+using RunSuggestions = Larnix.Server.ServerRunner.RunSuggestions;
+using ServerAnswer = Larnix.Server.ServerRunner.ServerAnswer;
 
 namespace Larnix.Server
 {
-    internal class Server : RefRoot
+    internal class Server : IDisposable2, ITickable
     {
         public ServerType Type { get; init; }
         public string WorldPath { get; init; }
-        public string LocalAddress { get; init; }
-        public string Authcode { get; init; }
+        public Action CloseServer { get; init; }
 
-        public long ServerTick { get; private set; } = 0;
-        public uint FixedFrame { get; private set; } = 0;
+        public ushort Port => QuickServer.Port;
+        public string LocalAddress => "localhost:" + Port;
+        public string Authcode => QuickServer.Authcode;
+        public string SocketPath => Path.Combine(WorldPath, "Socket");
 
-        private WorldMeta _mdata;
-        private readonly Stopwatch _stopwatch = Stopwatch.StartNew();
-        private double _lastTickTime = 0;
+        private QuickServer QuickServer => GlobRef.Get<QuickServer>();
+        private ServerConfig ServerConfig => GlobRef.Get<ServerConfig>();
+        private QuickSettings QuickSettings => GlobRef.Get<QuickSettings>();
+        private Database Database => GlobRef.Get<Database>();
+        private Receiver Receiver => GlobRef.Get<Receiver>();
+        private Clock Clock => GlobRef.Get<Clock>();
+        private DataSaver DataSaver => GlobRef.Get<DataSaver>();
+        private Scripts Scripts => GlobRef.Get<Scripts>();
 
-        private readonly QuickServer _quickServer;
-
-        private Config Config => Ref<Config>();
-        private Database Database => Ref<Database>();
-        private EntityManager EntityManager => Ref<EntityManager>();
-        private PlayerManager PlayerManager => Ref<PlayerManager>();
-        private EntityDataManager EntityDataManager => Ref<EntityDataManager>();
-        private BlockDataManager BlockDataManager => Ref<BlockDataManager>();
-        private UserManager UserManager => Ref<UserManager>();
-        private Receiver Receiver => Ref<Receiver>();
-
-        public readonly Action CloseServer;
+        private readonly Locker _locker;
         private bool _disposed = false;
 
-        public Server(ServerType type, string worldPath, long? seedSuggestion, Action closeServer)
-        {
+        internal Server(ServerType type, string worldPath, RunSuggestions suggestions,
+            Action closeServer, out ServerAnswer answer)
+        {   
             Type = type;
             WorldPath = worldPath;
             CloseServer = closeServer;
 
-            // Self
-            AddRef(this);
-
-            // Other
-            AddRef(new PhysicsManager());
-
-            // Scripts
-            AddRef(new ChunkLoading(this)); // must be 1st (execution order)
-            AddRef(new EntityManager(this)); // must be 2nd (execution order)
-            AddRef(new WorldAPI(this));
-            AddRef(new EntityDataManager(this));
-            AddRef(new PlayerManager(this));
-            AddRef(new BlockDataManager(this));
-            AddRef(new BlockSender(this));
-            AddRef(new Commands(this));
-
-            // Try to lock world
-            Locker locker = Locker.TryLock(WorldPath, "world_locker.lock");
-            if (locker != null)
+            if (Type == ServerType.Remote)
             {
-                // Establish locker
-                AddRef(locker);
-
-                // Satelite classes
-                AddRef(Config.Obtain(WorldPath));
-                AddRef(new Database(WorldPath, "database.sqlite"));
-                AddRef(new Generator(Database.GetSeed(seedSuggestion)));
-
-                // Server tick obtain
-                ServerTick = Database.GetServerTick();
-
-                // World metadata
-                _mdata = WorldMeta.ReadData(WorldPath, true);
-                _mdata = new WorldMeta(Version.Current, _mdata.nickname);
-                WorldMeta.SaveData(WorldPath, _mdata, true);
-
-                // QuickServer
-                _quickServer = new QuickServer(new QuickConfig(
-                    port: Type == ServerType.Remote ? Config.Port : (ushort)0,
-                    maxClients: Config.MaxPlayers,
-                    isLoopback: Type == ServerType.Local,
-                    dataPath: Path.Combine(WorldPath, "Socket"),
-                    userAPI: Database,
-                    motd: Config.Motd,
-                    hostUser: Type == ServerType.Remote ? "Player" : _mdata.nickname, // server owner ("Player" => detached)
-                    maskIPv4: Config.ClientIdentityPrefixSizeIPv4,
-                    maskIPv6: Config.ClientIdentityPrefixSizeIPv6
-                    ));
-                AddRef(_quickServer);
-
-                // Around-server managers
-                AddRef(_quickServer.UserManager);
-                AddRef(new Receiver(this));
-                AddRef(new Commands(this));
-
-                // Configure data for client
-                LocalAddress = "localhost:" + _quickServer.Config.Port;
-                Authcode = _quickServer.Authcode;
-
-                // Configure console
-                if (Type == ServerType.Remote)
-                {
-                    ConfigureConsole();
-                }
-                else
-                {
-                    Core.Debug.Log("Port: " + _quickServer.Config.Port + " | Authcode: " + _quickServer.Authcode);
-                }
-
-                // Try establish relay
-                if (Type == ServerType.Remote)
-                {
-                    if (Config.UseRelay)
-                        _ = Task.Run(() => EstablishRelayAsync(Config.RelayAddress));
-                }
-
-                // Info success
-                Core.Debug.LogSuccess("Server is ready!");
+                Core.Debug.LogRaw("Starting the server...\n");
             }
-            else throw new Exception("Trying to access world that is already open.");
+
+            IOException MakeLockException() =>
+                new IOException($"Trying to access world at {WorldPath} that is already open.");
+            
+            _locker = Locker.LockOrException(WorldPath, "world_locker.lock", MakeLockException);
+
+            // --- Main singletons ---
+            GlobRef.Set(this);
+            GlobRef.New<PhysicsManager>();
+            GlobRef.Set(new DataSaver(WorldPath));
+            GlobRef.Set(new Generator(Database.GetSeed(suggestions.Seed)));
+            GlobRef.Set(new Clock(Database.GetServerTick()));
+            GlobRef.Set<IWorldAPI>(new WorldAPI());
+
+            // --- Scripts ---
+            GlobRef.Set(new Scripts(
+                // In execution order:
+                GlobRef.New<AtomicChunks>(),
+                GlobRef.New<Chunks>(), // 1st
+                GlobRef.New<EntityManager>(), // 2nd
+                GlobRef.New<PlayerActions>(),
+                GlobRef.New<BlockSender>(),
+                GlobRef.New<CmdManager>()
+            ));
+
+            // --- QuickServer ---
+            GlobRef.New<QuickSettings>();
+            GlobRef.Set(new QuickServer(
+                port: Type == ServerType.Remote ?
+                    ServerConfig.Port : (ushort)0,
+                userAccess: Database,
+                config: QuickSettings
+            ));
+            GlobRef.Set(QuickServer.IUserManager);
+            GlobRef.New<Receiver>();
+            GlobRef.New<CmdManager>();
+
+            // --- Configure ---
+            ConfigureConsole();
+            TryEstablishRelay(suggestions.RelayAddress, out var relayTask);
+
+            // --- Finalize ---
+            answer = new ServerAnswer(LocalAddress, Authcode, relayTask);
+            Core.Debug.LogSuccess("Server is ready!");
         }
 
         private void ConfigureConsole()
         {
-            // Title set
-            Console.SetTitle("Larnix Server " + Version.Current);
-            Core.Debug.LogRaw(new string('-', 60) + "\n");
+            void PrintBorder() => Core.Debug.LogRaw($"{new string('-', 60)}\n");
 
-            // Force change default password
-            if (_mdata.nickname != "Player")
+            if (Type == ServerType.Remote)
             {
-                Core.Debug.LogRaw("This world was previously in use by " + _mdata.nickname + ".\n");
-                Core.Debug.LogRaw("Choose a password for this player to start the server.\n");
+                Console.SetTitle("Larnix Server " + Version.Current);
+                PrintBorder();
 
-                bool changeSuccess = false;
-                do
+                Core.Debug.LogRaw($"Socket created on port: {Port}\n");
+                Core.Debug.LogRaw($"Authcode: {Authcode}\n");
+                PrintBorder();
+
+                // --- Check if the world is detached ---
+                if (Type == ServerType.Remote)
                 {
-                    Core.Debug.LogRaw("> ");
-                    string password = Console.GetInputSync();
-                    if (Validation.IsGoodPassword(password))
-                    {
-                        UserManager.ChangePasswordSync(_mdata.nickname, password);
-                        _mdata = new WorldMeta(Version.Current, "Player");
-                        WorldMeta.SaveData(WorldPath, _mdata, true);
-                        changeSuccess = true;
-                    }
-                    else
-                    {
-                        Core.Debug.LogRaw("Password should be 7-32 characters and not end with NULL (0x00).\n");
-                    }
-                    
-                } while (!changeSuccess);
-
-                Core.Debug.LogRaw("Password changed.\n");
-                Core.Debug.LogRaw(new string('-', 60) + "\n");
-            }
-
-            // Socket information
-            Core.Debug.LogRaw("Socket created on port " + _quickServer.Config.Port + "\n");
-            Core.Debug.LogRaw("Authcode: " + _quickServer.Authcode + "\n");
-            Core.Debug.LogRaw(new string('-', 60) + "\n");
-
-            // Input thread start
-            Console.EnableInputThread();
-        }
-
-        public async Task<string> EstablishRelayAsync(string relayAddress)
-        {
-            ushort? relayPort = await _quickServer.ConfigureRelayAsync(relayAddress);
-
-            if (relayPort != null)
-            {
-                var uri = new UriBuilder("udp://" + relayAddress) { Port = relayPort.Value };
-                string address = uri.ToString().Replace("udp://", "").Replace("/", "");
-
-                Core.Debug.LogSuccess("Connected to relay!");
-                Core.Debug.Log("Address: " + address);
-
-                return address;
+                    if (DataSaver.EnsureDetachedServer())
+                        PrintBorder();
+                }
             }
             else
             {
-                Core.Debug.LogWarning("Cannot connect to relay!");
-                return null;
+                Core.Debug.Log($"Port: {Port} | Authcode: {Authcode}");
             }
         }
 
-        private float GetTimeElapsed()
+        private bool TryEstablishRelay(string relaySuggestion, out Task<string> relayTask)
         {
-            double currentTime = _stopwatch.Elapsed.TotalSeconds;
-            double elapsedTime = currentTime - _lastTickTime;
-            _lastTickTime = currentTime;
+            // === Global properties should be accessed from the main thread!
+            /**/ QuickServer quickServer = QuickServer;
+            /**/ string remoteRelayAddress = ServerConfig.Network_RelayAddress;
+            // ======== //
 
-            return (float)elapsedTime;
+            if (Type == ServerType.Remote)
+            {
+                if (ServerConfig.Network_UseRelay)
+                {
+                    relayTask = Task.Run(
+                        () => quickServer.EstablishRelayAsync(remoteRelayAddress));
+                    return true;
+                }
+            }
+            else
+            {
+                if (relaySuggestion != null)
+                {
+                    relayTask = Task.Run(
+                        () => quickServer.EstablishRelayAsync(relaySuggestion));
+                    return true;
+                }
+            }
+
+            relayTask = null;
+            return false;
         }
 
-        public void TickFixed()
+        public void Tick(float deltaTime)
         {
-            ServerTick++;
-            FixedFrame++;
-
-            // Tick technical singletons
-
-            float realTimeElapsed = GetTimeElapsed();
-            Receiver.Tick(realTimeElapsed); // for limits
-            _quickServer.ServerTick(realTimeElapsed); // refresh & process packets
+            Clock.Tick(deltaTime);
+            
+            // Server ticks
+            Receiver.Tick(Clock.DeltaTime); // for limits
+            QuickServer.Tick(Clock.DeltaTime); // refresh & process packets
 
             // Process server logic
+            Scripts.Tick(Clock.DeltaTime);
 
-            for (int i = 1; i <= 5; i++)
-            {
-                foreach (Object obj in TakeRefSnapshot())
-                {
-                    if (obj is Singleton singleton)
-                    {
-                        if (i == 1) singleton.EarlyFrameUpdate();
-                        if (i == 2) singleton.PostEarlyFrameUpdate();
-                        if (i == 3) singleton.FrameUpdate();
-                        if (i == 4) singleton.LateFrameUpdate();
-                        if (i == 5) singleton.PostLateFrameUpdate();
-                    }
-                }
-            }
-
-            // Cyclic actions
-
-            if (FixedFrame % Config.EntityBroadcastPeriodFrames == 0)
-            {
-                EntityManager.SendEntityBroadcast();
-                PlayerManager.SendFrameInfoBroadcast();
-            }
-
-            if (FixedFrame % Config.DataSavingPeriodFrames == 0)
-            {
-                SaveAllNow();
-            }
-        }
-
-        private void SaveAllNow()
-        {
-            if (Database != null)
-            {
-                Database.BeginTransaction();
-                try
-                {
-                    EntityDataManager.FlushIntoDatabase();
-                    BlockDataManager.FlushIntoDatabase();
-                    Database.SetServerTick(ServerTick);
-                    Database.CommitTransaction();
-                }
-                catch
-                {
-                    Database.RollbackTransaction();
-                    throw;
-                }
-            }
-
-            Config.Save(WorldPath);
+            // Tick data saving
+            DataSaver.Tick(Clock.DeltaTime);
         }
 
         public void Dispose(bool emergency)
@@ -279,21 +178,15 @@ namespace Larnix.Server
             if (!_disposed)
             {
                 _disposed = true;
-                if (!emergency) SaveAllNow();
 
-                LinkedList<Object> snapshot = TakeRefSnapshot();
-                while (snapshot.Count > 0)
-                {
-                    Object obj = snapshot.Last.Value;
-                    if (obj is IDisposable disposable)
-                    {
-                        disposable.Dispose();
-                    }
+                QuickServer?.Dispose();
+                DataSaver?.Dispose(emergency);
+                
+                _locker?.Dispose();
 
-                    snapshot.RemoveLast();
-                }
-
-                Core.Debug.Log("Server closed");
+                Core.Debug.Log(emergency ?
+                    "Server has crashed!" :
+                    "Server has been closed.");
             }
         }
     }

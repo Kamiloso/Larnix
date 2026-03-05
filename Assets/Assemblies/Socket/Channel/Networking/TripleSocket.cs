@@ -12,18 +12,18 @@ namespace Larnix.Socket.Channel.Networking
     internal class TripleSocket : INetworkInteractions, IDisposable
     {
         public const ushort PREF_DYNAMIC_PORT = 50_000;
-
-        public readonly ushort Port;
-        private UdpClient2 UdpClient4;
-        private UdpClient2 UdpClient6;
-
-        private HashSet<IPEndPoint> RelayEndPoints = new();
         private const int EP_CACHE_CAPACITY = 1 << 16; // over 65k
 
-        private volatile RelayConnection RelayUdpClient;
+        public ushort Port { get; }
+        private UdpClient2 _udp4;
+        private UdpClient2 _udp6;
+
+        private readonly HashSet<IPEndPoint> _relayEndPoints = new();
+
+        private volatile RelayConnection _relayUdpClient;
         private volatile int _relayEnabled = 0;
         
-        private object _lock = new();
+        private readonly object _lock = new();
         private volatile bool _disposed;
 
         public TripleSocket(ushort port, bool isLoopback)
@@ -59,14 +59,14 @@ namespace Larnix.Socket.Channel.Networking
                 }
             }
 
-            Port = UdpClient4.Port; // V6 is the same
+            Port = _udp4.Port; // V6 is the same
         }
 
         private bool ConfigureSocket(ushort port, bool isLoopback)
         {
             try
             {
-                UdpClient4 = new UdpClient2(
+                _udp4 = new UdpClient2(
                     port: port,
                     isListener: true,
                     isLoopback: isLoopback,
@@ -74,9 +74,9 @@ namespace Larnix.Socket.Channel.Networking
                     recvBufferSize: 1024 * 1024
                     );
 
-                port = UdpClient4.Port;
+                port = _udp4.Port;
 
-                UdpClient6 = new UdpClient2(
+                _udp6 = new UdpClient2(
                     port: port,
                     isListener: true,
                     isLoopback: isLoopback,
@@ -110,8 +110,8 @@ namespace Larnix.Socket.Channel.Networking
                     }
                     else
                     {
-                        RelayUdpClient = relayCon;
-                        return RelayUdpClient?.RemotePort; // null or port
+                        _relayUdpClient = relayCon;
+                        return _relayUdpClient?.RemotePort; // null or port
                     }
                 }
             }
@@ -121,29 +121,29 @@ namespace Larnix.Socket.Channel.Networking
 
         public void KeepAlive()
         {
-            RelayUdpClient?.KeepAlive();
+            _relayUdpClient?.KeepAlive();
         }
 
         public bool TryReceive(out DataBox result)
         {
-            if (UdpClient4.TryReceive(out var _resultV4))
+            if (_udp4.TryReceive(out var _resultV4))
             {
                 result = _resultV4;
-                RelayEndPoints.Remove(_resultV4.target);
+                _relayEndPoints.Remove(_resultV4.target);
                 return true;
             }
 
-            if (UdpClient6.TryReceive(out var _resultV6))
+            if (_udp6.TryReceive(out var _resultV6))
             {
                 result = _resultV6;
                 return true;
             }
 
-            if (RelayUdpClient?.TryReceive(out var _resultR) == true)
+            if (_relayUdpClient?.TryReceive(out var _resultR) == true)
             {
                 result = _resultR;
-                if (RelayEndPoints.Count < EP_CACHE_CAPACITY)
-                    RelayEndPoints.Add(_resultR.target);
+                if (_relayEndPoints.Count < EP_CACHE_CAPACITY)
+                    _relayEndPoints.Add(_resultR.target);
                 return true;
             }
 
@@ -156,14 +156,14 @@ namespace Larnix.Socket.Channel.Networking
             bool isIPv4Client = remoteEP.AddressFamily == AddressFamily.InterNetwork;
             if (isIPv4Client)
             {
-                if (RelayEndPoints.Contains(remoteEP))
-                    RelayUdpClient?.Send(remoteEP, bytes); // relay IPv4 send
+                if (_relayEndPoints.Contains(remoteEP))
+                    _relayUdpClient?.Send(remoteEP, bytes); // relay IPv4 send
                 else
-                    UdpClient4.Send(remoteEP, bytes); // direct IPv4 send
+                    _udp4.Send(remoteEP, bytes); // direct IPv4 send
             }
             else
             {
-                UdpClient6.Send(remoteEP, bytes); // IPv6 send
+                _udp6.Send(remoteEP, bytes); // IPv6 send
             }
         }
 
@@ -175,9 +175,9 @@ namespace Larnix.Socket.Channel.Networking
                 {
                     _disposed = true;
 
-                    UdpClient4?.Dispose();
-                    UdpClient6?.Dispose();
-                    RelayUdpClient?.Dispose();
+                    _udp4?.Dispose();
+                    _udp6?.Dispose();
+                    _relayUdpClient?.Dispose();
                 }
             }
         }

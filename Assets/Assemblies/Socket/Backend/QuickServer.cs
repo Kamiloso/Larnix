@@ -7,100 +7,94 @@ using System.Threading.Tasks;
 using System;
 using Larnix.Core.Utils;
 using Larnix.Socket.Security.Keys;
-using Larnix.Socket.Channel;
-using Larnix.Socket.Security;
 using Larnix.Socket.Packets.Control;
 using Larnix.Socket.Channel.Networking;
 using Larnix.Socket.Helpers;
+using Larnix.Socket.Helpers.Limiters;
+using Larnix.Core;
+using LoginMode = Larnix.Socket.Backend.UserManager.LoginMode;
+using Larnix.Core.DbStructs;
 
 namespace Larnix.Socket.Backend
 {
-    public class QuickServer : IDisposable
+    public class QuickServer : ITickable, IDisposable
     {
-        // --- Server properties ---
-        public string Authcode { get; init; }
-        internal long Secret { get; init; }
-        internal long RunID { get; init; }
-        public ushort PlayerCount => (ushort)_connDict.Count;
+        public const string PRIVATE_KEY_FILENAME = "private_key.pem";
+        public const string SERVER_SECRET_FILENAME = "server_secret.txt";
 
-        // --- Public classes ---
-        public QuickConfig Config => _config;
-        public UserManager UserManager => _userManager;
+        // --- Public Properties ---
+        public string Authcode { get; }
+        public ushort Port => _udpSocket.Port;
+        public ushort PlayerCount => ConnDict.CurrentPlayers;
+        public ushort PlayerLimit => ConnDict.MaxPlayers;
+        public IUserManager IUserManager => UserManager;
+
+        // --- Internal Properties ---
+        internal long ServerSecret { get; }
+        internal long RunID { get; }
+        internal IQuickConfig Config { get; }
+        internal UserManager UserManager { get; }
+        internal ConnDict ConnDict { get; }
 
         // --- Private classes ---
         private readonly KeyRSA _keyRSA;
         private readonly TripleSocket _udpSocket;
-        private readonly ConnDict _connDict;
-        private readonly CoroutineRunner _coroutineRunner;
-        private readonly QuickConfig _config;
-        private readonly UserManager _userManager;
-
-        // --- Limiters ---
         private readonly TrafficLimiter<InternetID> _heavyPacketLimiter;
-        private readonly ConcurrentLimiter<InternetID> _hashLimiter;
-
-        // --- Timers ---
-        private readonly CycleTimer _packetLimiterReset;
-        private readonly CycleTimer _hashCountClean;
-        private readonly CycleTimer _relayKeepAlive;
+        private readonly CycleTimer[] _cycleTimers;
 
         // --- Other ---
-        private enum LoginMode { Discovery, Establishment, PasswordChange }
         private readonly Dictionary<CmdID, Action<HeaderSpan, string>> Subscriptions = new();
         private bool _disposed;
 
-        public QuickServer(QuickConfig serverConfig)
+        public QuickServer(ushort port, IDbUserAccess userAccess, IQuickConfig config)
         {
-            // classes
-            _keyRSA = new KeyRSA(serverConfig.DataPath, "private_key.pem"); // 1
-            _udpSocket = new TripleSocket(serverConfig.Port, serverConfig.IsLoopback); // 2
-            _connDict = new ConnDict(_udpSocket, serverConfig.MaxClients); // 3
-            _coroutineRunner = new CoroutineRunner(); // 4
+            Config = config;
 
-            // public API
-            _userManager = new UserManager(serverConfig.UserAPI);
-            _config = serverConfig.WithPort(_udpSocket.Port);
+            // Nested classes
+            _keyRSA = new KeyRSA(config.DataPath, PRIVATE_KEY_FILENAME); // 1
+            _udpSocket = new TripleSocket(port, config.IsLoopback); // 2
+            ConnDict = new ConnDict(this, _udpSocket); // 3
+            UserManager = new UserManager(this, userAccess); // 4
+            _heavyPacketLimiter = new TrafficLimiter<InternetID>(5, 50); // per second
 
-            Secret = Security.Authcode.ObtainSecret(serverConfig.DataPath, "server_secret.txt");
-            Authcode = Security.Authcode.ProduceAuthCodeRSA(_keyRSA.ExportPublicKey(), Secret);
+            // Constants
+            ServerSecret = Security.Authcode.ObtainSecret(config.DataPath, SERVER_SECRET_FILENAME);
+            Authcode = Security.Authcode.ProduceAuthCodeRSA(_keyRSA.ExportPublicKey(), ServerSecret);
             RunID = Common.GetSecureLong();
 
-            // limiters
-            _heavyPacketLimiter = new TrafficLimiter<InternetID>(
-                maxTrafficLocal: 5, // MAX_HEAVY_PACKETS_PER_INTERNET_ID_PER_SECOND
-                maxTrafficGlobal: 50 // MAX_HEAVY_PACKETS_GLOBAL_PER_SECOND
-            );
-            _hashLimiter = new ConcurrentLimiter<InternetID>(
-                maxConcurrentLocal: 6, // MAX_HASHINGS_PER_INTERNET_ID_PER_MINUTE
-                maxConcurrentGlobal: 6 // MAX_PARALLEL_HASHINGS_CONCURRENTLY
-            );
-
-            // cyclic objects
-            _packetLimiterReset = new CycleTimer(1f, () =>
+            // Cycle timers
+            _cycleTimers = new[]
             {
-                _heavyPacketLimiter.Reset();
-            });
-            _hashCountClean = new CycleTimer(60f, () =>
-            {
-                _hashLimiter.ResetLocal();
-            });
-            _relayKeepAlive = new CycleTimer(5f, () =>
-            {
-                _udpSocket?.KeepAlive();
-            });
+                new CycleTimer(1f, () => _heavyPacketLimiter.Reset()), // 1 second
+                new CycleTimer(5f, () => _udpSocket.KeepAlive()), // 5 seconds
+            };
         }
 
-        public async Task<ushort?> ConfigureRelayAsync(string relayAddress)
+        public async Task<string> EstablishRelayAsync(string relayAddress)
         {
-            return await _udpSocket.StartRelayAsync(relayAddress);
+            ushort? relayPort = await _udpSocket.StartRelayAsync(relayAddress);
+                
+            if (relayPort != null)
+            {
+                string address = Common.FormatUdpAddress(relayAddress, relayPort.Value);
+                Core.Debug.LogSuccess("Connected to relay!");
+                Core.Debug.Log("Address: " + address);
+                return address;
+            }
+            else
+            {
+                Core.Debug.LogWarning("Cannot connect to relay!");
+                return null;
+            }
         }
 
-        public void ServerTick(float deltaTime)
+        public void Tick(float deltaTime)
         {
-            // AckTimers tick
-            _packetLimiterReset.Tick(deltaTime);
-            _relayKeepAlive.Tick(deltaTime);
-            _hashCountClean.Tick(deltaTime);
+            // Tick cycle timers
+            foreach (var timer in _cycleTimers)
+            {
+                timer.Tick(deltaTime);
+            }
 
             // Interpret bytes from socket
             while (_udpSocket.TryReceive(out var item))
@@ -112,39 +106,48 @@ namespace Larnix.Socket.Backend
             }
 
             // Tick & Receive from connections
-            Queue<PacketPair> packets = _connDict.TickAndReceive(deltaTime);
-            while (packets.Count > 0)
+            ConnDict.Tick(deltaTime);
+            while (ConnDict.TryDequeuePacket(out var pair))
             {
-                var element = packets.Dequeue();
-                var packet = element.Packet;
-                string owner = element.Owner;
+                HeaderSpan headerSpan = pair.Packet;
+                string owner = pair.Owner;
 
-                if (Subscriptions.TryGetValue(packet.ID, out var Execute))
+                CmdID cmdID = headerSpan.ID;
+                if (Subscriptions.TryGetValue(cmdID, out var Execute))
                 {
-                    Execute(packet, owner);
+                    Execute(headerSpan, owner);
                 }
             }
 
-            // Tick coroutines
-            _coroutineRunner.Tick();
+            // Tick user manager (coroutines inside)
+            UserManager.Tick(deltaTime);
         }
 
         private void InterpretBytes(IPEndPoint target, byte[] bytes)
         {
+            if (Config.IsBanned(target.Address))
+            {
+                return; // ignore banned IPs
+            }
+            
+            InternetID internetID = MakeInternetID(target);
+            if (internetID.IsClassE)
+            {
+                return; // class E is used internally
+            }
+
             if (PayloadBox.TryDeserializeHeader(bytes, out var header))
             {
-                InternetID internetID = MakeInternetID(target);
-
-                // heavy packet limiter
+                // Heavy packet limiter
                 if (header.HasFlag(PacketFlag.SYN) ||
                     header.HasFlag(PacketFlag.RSA) ||
                     header.HasFlag(PacketFlag.NCN))
                 {
-                    if (!_heavyPacketLimiter.TryIncrease(internetID))
+                    if (!_heavyPacketLimiter.TryAdd(internetID))
                         return; // drop heavy packet
                 }
 
-                // decrypt RSA
+                // Decrypt RSA
                 if (header.HasFlag(PacketFlag.RSA))
                 {
                     if (!PayloadBox.TryDeserialize(bytes, _keyRSA, out var decrypted))
@@ -156,7 +159,7 @@ namespace Larnix.Socket.Backend
 
                 if (header.HasFlag(PacketFlag.NCN))
                 {
-                    // non-connection packet - NCN
+                    // Non-connection packet - NCN
                     if (PayloadBox.TryDeserialize(bytes, KeyEmpty.GetInstance(), out var box))
                         ProcessNCN(target, box.SeqNum, new HeaderSpan(box.Bytes));
                 }
@@ -164,19 +167,19 @@ namespace Larnix.Socket.Backend
                 {
                     if (header.HasFlag(PacketFlag.SYN))
                     {
-                        // start new connection
+                        // Start new connection
                         if (PayloadBox.TryDeserialize(bytes, KeyEmpty.GetInstance(), out var synBox) &&
                             Payload.TryConstructPayload<AllowConnection>(synBox.Bytes, out var allowcon) &&
-                            _connDict.TryAddPreLogin(target, synBox))
+                            ConnDict.TryAddPreLogin(target, synBox))
                         {
                             P_LoginTry logtry = allowcon.ToLoginTry();
-                            StartLogin(target, logtry, LoginMode.Establishment);
+                            UserManager.StartLogin(target, logtry, LoginMode.Establishment);
                         }
                     }
                     else
                     {
-                        // established connection packet
-                        _connDict.EnqueueReceivedPacket(target, bytes);
+                        // Established connection packet
+                        ConnDict.PushFromWeb(target, bytes);
                     }
                 }
             }
@@ -184,7 +187,7 @@ namespace Larnix.Socket.Backend
 
         private void ProcessNCN(IPEndPoint target, int ncnID, HeaderSpan headerSpan)
         {
-            Action<Payload> SendNCN = (Payload packet) =>
+            void SendNCN(Payload packet)
             {
                 PayloadBox safeAnswer = new PayloadBox(
                     seqNum: ncnID,
@@ -200,28 +203,44 @@ namespace Larnix.Socket.Backend
 
             if (Payload.TryConstructPayload<P_ServerInfo>(headerSpan, out var infoask))
             {
-                string checkNickname = infoask.Nickname;
-                A_ServerInfo srvInfo = MakeServerInfo(checkNickname);
+                string nickname = infoask.Nickname;
+                
+                A_ServerInfo srvInfo = new A_ServerInfo(
+                    publicKey: _keyRSA.ExportPublicKey(),
+                    currentPlayers: PlayerCount,
+                    maxPlayers: PlayerLimit,
+                    gameVersion: Core.Version.Current,
+                    challengeID: UserManager.GetChallengeID(nickname),
+                    timestamp: Timestamp.GetTimestamp(),
+                    runID: RunID,
+                    motd: Config.Motd,
+                    hostUser: Config.HostUser,
+                    mayRegister: Config.AllowRegistration
+                    );
 
                 SendNCN(srvInfo);
             }
-            
+
             else if (Payload.TryConstructPayload<P_LoginTry>(headerSpan, out var logtry))
             {
                 string nickname = logtry.Nickname;
-                string password = logtry.Password;
-                string newPassword = logtry.NewPassword;
 
-                Action<bool> SendAnswer = success =>
+                var loginMode = logtry.IsPasswordChange() ?
+                    LoginMode.PasswordChange : LoginMode.Discovery;
+                
+                UserManager.StartLogin(target, logtry, loginMode, success =>
+                {
                     SendNCN(new A_LoginTry(success));
-
-                StartLogin(target, logtry, password == newPassword ?
-                    LoginMode.Discovery : LoginMode.PasswordChange,
-                    SendAnswer);
+                });
             }
         }
 
-        public void Subscribe<T>(Action<T, string> InterpretPacket) where T : Payload, new()
+        /// <summary>
+        /// AllowConnection packet always starts the connection.
+        /// Stop packet always ends the connection.
+        /// Stop packet can only appear once in a returned packet queue.
+        /// </summary>
+        public void Subscribe<T>(Action<T, string> InterpretPacket) where T : Payload
         {
             CmdID ID = Payload.CmdID<T>();
             Subscriptions[ID] = (HeaderSpan headerSpan, string owner) =>
@@ -235,249 +254,51 @@ namespace Larnix.Socket.Backend
 
         public bool IsActiveConnection(string nickname)
         {
-            return TryGetClientEndPoint(nickname, out _);
+            return ConnDict.IsOnline(nickname);
         }
 
         public bool TryGetClientEndPoint(string nickname, out IPEndPoint endPoint)
         {
-            IPEndPoint endPoint1 = _connDict.EndPointOf(nickname);
-            if (endPoint1 != null)
-            {
-                endPoint = endPoint1;
-                return true;
-            }
-            endPoint = null;
-            return false;
+            return ConnDict.TryGetEndPoint(nickname, out endPoint);
         }
 
         public void Send(string nickname, Payload packet, bool safemode = true)
         {
             if (TryGetClientEndPoint(nickname, out IPEndPoint endPoint))
             {
-                _connDict.SendTo(endPoint, packet, safemode);
+                ConnDict.TrySendTo(endPoint, packet, safemode);
             }
         }
 
         public void Broadcast(Payload packet, bool safemode = true)
         {
-            _connDict.SendToAll(packet, safemode);
+            ConnDict.SendToAll(packet, safemode);
         }
 
         public float GetPing(string nickname)
         {
-            if (TryGetClientEndPoint(nickname, out IPEndPoint endPoint))
+            if (TryGetClientEndPoint(nickname, out IPEndPoint endPoint) &&
+                ConnDict.TryGetConnectionObject(endPoint, out var connection))
             {
-                Connection conn = _connDict.GetConnectionObject(endPoint);
-                return conn.AvgRTT;
+                return connection.AvgRTT;
             }
             return 0f;
         }
 
-        public void FinishConnectionRequest(string nickname)
+        public void KickRequest(string nickname)
         {
             if (TryGetClientEndPoint(nickname, out IPEndPoint endPoint))
             {
-                _connDict.KickRequest(endPoint);
+                ConnDict.KickRequest(endPoint);
             }
         }
 
-        private void StartLogin(IPEndPoint target, P_LoginTry logtry, LoginMode mode, object ad1 = null)
-        {
-            string nickname = logtry.Nickname;
-
-            if (mode == LoginMode.Establishment)
-            {
-                _coroutineRunner.Start(
-                    LoginCoroutine(target, logtry,
-                    ExecuteSuccess: () =>
-                    {
-                        if (_connDict.TryPromoteConnection(target))
-                            _userManager.IncrementChallengeID(nickname);
-                        else
-                            _connDict.DiscardIncoming(target);
-                    },
-                    ExecuteFailed: () =>
-                    {
-                        _connDict.DiscardIncoming(target);
-                    }
-                    ));
-            }
-
-            else if (mode == LoginMode.Discovery)
-            {
-                if (ad1 is not Action<bool> SendAnswer)
-                    throw new ArgumentException("For Discovery mode, ad1 must be of type Action<bool>.");
-
-                _coroutineRunner.Start(
-                    LoginCoroutine(target, logtry,
-                    ExecuteSuccess: () =>
-                    {
-                        _userManager.IncrementChallengeID(nickname);
-                        SendAnswer(true);
-                    },
-                    ExecuteFailed: () =>
-                    {
-                        SendAnswer(false);
-                    }
-                    ));
-            }
-
-            else if (mode == LoginMode.PasswordChange)
-            {
-                if (ad1 is not Action<bool> SendAnswer)
-                    throw new ArgumentException("For PasswordChange mode, ad1 must be of type Action<bool>.");
-
-                string newPassword = logtry.NewPassword;
-
-                _coroutineRunner.Start(
-                    LoginCoroutine(target, logtry,
-                    ExecuteSuccess: () =>
-                    {
-                        _userManager.IncrementChallengeID(nickname);
-
-                        _coroutineRunner.Start(
-                            ChangePasswordCoroutine(target, nickname, newPassword,
-                            ExecuteSuccess: () =>
-                            {
-                                SendAnswer(true);
-                            },
-                            ExecuteFailed: () =>
-                            {
-                                SendAnswer(false);
-                            }
-                            ));
-                    },
-                    ExecuteFailed: () =>
-                    {
-                        SendAnswer(false);
-                    }
-                    ));
-            }
-        }
-
-        private IEnumerator LoginCoroutine(IPEndPoint target, P_LoginTry logtry,
-            Action ExecuteSuccess, Action ExecuteFailed)
-        {
-            string nickname = logtry.Nickname;
-            string password = logtry.Password;
-            long serverSecret = logtry.ServerSecret;
-            long challengeID = logtry.ChallengeID;
-            long timestamp = logtry.Timestamp;
-            long runID = logtry.RunID;
-
-            long timeNow = Timestamp.GetTimestamp();
-            bool isLoopback = IPAddress.IsLoopback(target.Address);
-
-            InternetID internetID = MakeInternetID(target);
-
-            if (
-                serverSecret != Secret || // wrong server secret
-                runID != RunID || // wrong runID
-                !Timestamp.InTimestamp(timestamp) || // login message is outdated
-                (!isLoopback && nickname == Common.LOOPBACK_ONLY_NICKNAME) || // loopback-only nickname
-                (!isLoopback && password == Common.LOOPBACK_ONLY_PASSWORD) || // loopback-only password
-                challengeID != _userManager.GetChallengeID(nickname)) // wrong challengeID
-            {
-                ExecuteFailed(); // invalid login data
-                yield break;
-            }
-
-            if (_userManager.UserExists(nickname))
-            {
-                string hashedPassword = _userManager.GetPasswordHash(nickname);
-
-                bool limiterDone = false;
-                if (Hasher.InCache(password, hashedPassword) || (limiterDone = _hashLimiter.TryIncrease(internetID)))
-                {
-                    Task<bool> verifyTask = Hasher.VerifyPasswordAsync(password, hashedPassword);
-                    while (!verifyTask.IsCompleted) yield return null;
-                    if (limiterDone) _hashLimiter.DecreaseGlobal();
-
-                    if (verifyTask.Result)
-                    {
-                        ExecuteSuccess(); // correct password
-                        yield break;
-                    }
-                    else
-                    {
-                        ExecuteFailed(); // wrong password
-                        yield break;
-                    }
-                }
-                else
-                {
-                    ExecuteFailed(); // too many hash attempts
-                    yield break;
-                }
-            }
-            else
-            {
-                if (_hashLimiter.TryIncrease(internetID))
-                {
-                    Task<string> hashing = Hasher.HashPasswordAsync(password);
-                    while (!hashing.IsCompleted) yield return null;
-                    _hashLimiter.DecreaseGlobal();
-
-                    string hashedPassword = hashing.Result;
-                    _userManager.AddUser(nickname, hashedPassword);
-                    Core.Debug.Log($"{nickname} created an account from {target}");
-
-                    ExecuteSuccess(); // new user created
-                    yield break;
-                }
-                else
-                {
-                    ExecuteFailed(); // too many hash attempts
-                    yield break;
-                }
-            }
-        }
-
-        private IEnumerator ChangePasswordCoroutine(IPEndPoint target, string username, string newPassword,
-            Action ExecuteSuccess, Action ExecuteFailed)
-        {
-            InternetID internetID = MakeInternetID(target);
-
-            if (_hashLimiter.TryIncrease(internetID))
-            {
-                Task<string> hashing = Hasher.HashPasswordAsync(newPassword);
-                while (!hashing.IsCompleted) yield return null;
-                _hashLimiter.DecreaseGlobal();
-
-                string hash = hashing.Result;
-                _userManager.SetPasswordHash(username, hash);
-
-                ExecuteSuccess(); // password changed
-                yield break;
-            }
-            else
-            {
-                ExecuteFailed(); // too many hash attempts
-                yield break;
-            }
-        }
-
-        private A_ServerInfo MakeServerInfo(string nickname)
-        {
-            return new A_ServerInfo(
-                publicKey: _keyRSA.ExportPublicKey(),
-                currentPlayers: PlayerCount,
-                maxPlayers: _config.MaxClients,
-                gameVersion: Core.Version.Current,
-                challengeID: _userManager.GetChallengeID(nickname),
-                timestamp: Timestamp.GetTimestamp(),
-                runID: RunID,
-                motd: _config.Motd,
-                hostUser: _config.HostUser
-                );
-        }
-
-        private InternetID MakeInternetID(IPEndPoint endPoint)
+        internal InternetID MakeInternetID(IPEndPoint endPoint)
         {
             return new InternetID(
                 endPoint.Address,
                 endPoint.AddressFamily == AddressFamily.InterNetwork ?
-                    _config.MaskIPv4 : _config.MaskIPv6
+                    Config.MaskIPv4 : Config.MaskIPv6
                 );
         }
 
@@ -487,10 +308,10 @@ namespace Larnix.Socket.Backend
             {
                 _disposed = true;
 
-                _coroutineRunner.Dispose(); // 4
-                _connDict.Dispose(); // 3
-                _udpSocket.Dispose(); // 2
-                _keyRSA.Dispose(); // 1
+                UserManager?.Dispose(); // 4
+                ConnDict?.Dispose(); // 3
+                _udpSocket?.Dispose(); // 2
+                _keyRSA?.Dispose(); // 1
             }
         }
     }

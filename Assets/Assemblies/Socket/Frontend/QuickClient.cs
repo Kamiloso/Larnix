@@ -10,10 +10,11 @@ using Larnix.Socket.Channel;
 using Larnix.Socket.Security.Keys;
 using Larnix.Socket.Packets.Control;
 using Larnix.Socket.Channel.Networking;
+using Larnix.Core;
 
 namespace Larnix.Socket.Frontend
 {
-    public class QuickClient : IDisposable
+    public class QuickClient : IDisposable, ITickable
     {
         private readonly UdpClient2 _udpClient;
         private readonly Connection _connection;
@@ -69,27 +70,35 @@ namespace Larnix.Socket.Frontend
             _connection = Connection.CreateClient(_udpClient, _target, keyAES, _rsaKey, synPacket);
         }
 
-        public void ClientTick(float deltaTime)
+        public void Tick(float deltaTime)
         {
-            // get packets from UDP client
+            // Get packets from UDP client
             while (_udpClient.TryReceive(out var pair))
-                _connection.PushFromWeb(pair.data);
-
-            // process received packets
-            _connection.Tick(deltaTime);
-            Queue<HeaderSpan> received = _connection.Receive();
-
-            while (received.Count > 0)
             {
-                HeaderSpan headerSpan = received.Dequeue();
-                if (Subscriptions.TryGetValue(headerSpan.ID, out var Execute))
+                _connection.PushFromWeb(pair.data, false);
+            }
+
+            // Process received packets
+            _connection.Tick(deltaTime);
+            if (!_connection.IsDead)
+            {
+                while (_connection.TryReceive(out var headerSpan, out bool stopSignal))
                 {
-                    Execute(headerSpan);
+                    CmdID cmdID = headerSpan.ID;
+                    if (Subscriptions.TryGetValue(cmdID, out var Execute))
+                    {
+                        Execute(headerSpan);
+                    }
+
+                    if (stopSignal)
+                    {
+                        break;
+                    }
                 }
             }
         }
 
-        public void Subscribe<T>(Action<T> InterpretPacket) where T : Payload, new()
+        public void Subscribe<T>(Action<T> InterpretPacket) where T : Payload
         {
             CmdID ID = Payload.CmdID<T>();
             Subscriptions[ID] = (HeaderSpan packetBytes) =>

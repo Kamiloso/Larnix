@@ -17,7 +17,7 @@
 
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.2" />
 	
-	<TrimmerRootDescriptor Include="link.xml" />
+    <TrimmerRootDescriptor Include="link.xml" />
   </ItemGroup>
 
 </Project>

@@ -11,7 +11,8 @@ using Larnix.Core.Utils;
 using Larnix.Packets;
 using Larnix.Client.Terrain;
 using System;
-using IHasCollider = Larnix.Entities.IHasCollider;
+using Larnix.Entities.All;
+using Larnix.Core;
 
 namespace Larnix.Client
 {
@@ -33,11 +34,11 @@ namespace Larnix.Client
         private readonly PhysicsProperties PhysicsProperties = EntityFactory.GetSlaveInstance<IPhysicsProperties>(EntityID.Player).PHYSICS_PROPERTIES();
 
         // Singletons
-        private Client Client => Ref.Client;
-        private GridManager GridManager => Ref.GridManager;
-        private TileSelector TileSelector => Ref.TileSelector;
-        private PhysicsManager PhysicsManager => Ref.PhysicsManager;
-        private Debugger Debugger => Ref.Debugger;
+        private Client Client => GlobRef.Get<Client>();
+        private GridManager GridManager => GlobRef.Get<GridManager>();
+        private TileSelector TileSelector => GlobRef.Get<TileSelector>();
+        private PhysicsManager PhysicsManager => GlobRef.Get<PhysicsManager>();
+        private Debugger Debugger => GlobRef.Get<Debugger>();
 
         // Player / Entity data
         public bool IsAlive => transform.parent.gameObject.activeSelf;
@@ -50,7 +51,7 @@ namespace Larnix.Client
 
         private void Awake()
         {
-            Ref.MainPlayer = this;
+            GlobRef.Set(this);
             transform.parent.gameObject.SetActive(false);
         }
 

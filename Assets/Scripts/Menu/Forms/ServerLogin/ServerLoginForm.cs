@@ -4,12 +4,13 @@ using TMPro;
 using UnityEngine;
 using Larnix.Menu.Worlds;
 using Larnix.Core.Utils;
+using Larnix.Core;
 
 namespace Larnix.Menu.Forms
 {
     public class ServerLoginForm : BaseForm
     {
-        private Menu Menu => Ref.Menu;
+        private Menu Menu => GlobRef.Get<Menu>();
 
         [SerializeField] TMP_InputField IF_Address;
         [SerializeField] TMP_InputField IF_Nickname;
@@ -42,7 +43,7 @@ namespace Larnix.Menu.Forms
             if (!Validation.IsGoodNickname(nickname))
                 return ErrorCode.NICKNAME_FORMAT;
 
-            if (nickname == "Player")
+            if (nickname == Common.ReservedNickname)
                 return ErrorCode.NICKNAME_IS_PLAYER;
 
             if (!Validation.IsGoodPassword(password))

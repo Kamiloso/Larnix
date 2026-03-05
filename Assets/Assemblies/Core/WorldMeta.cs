@@ -6,48 +6,81 @@ using Larnix.Core.Files;
 
 namespace Larnix.Core
 {
-    public struct WorldMeta
+    public readonly struct WorldMeta
     {
-        public Version version;
-        public string nickname;
+        // historically metadata was "version<newline>nickname".  New files now
+        // use "version:nickname".  Because nicknames cannot contain colons, the new
+        // format is unambiguous and parsing is straightforward.  Legacy files are
+        // still accepted during read.
+        
+        private const char LEGACY_SEP = '\n';
+        private const char NEW_SEP = ':';
+
+        public Version Version { get; init; }
+        public string Nickname { get; init; }
+
+        public static WorldMeta Default => new WorldMeta(
+            Version.Current, Common.ReservedNickname
+            );
 
         public WorldMeta(Version version, string nickname)
         {
-            this.version = version;
-            this.nickname = nickname;
+            Version = version;
+            Nickname = nickname;
         }
 
-        public WorldMeta(string text)
+        private static WorldMeta FromText(string text)
         {
-            string[] arg = text.Split('\n');
-            version = new Version(uint.Parse(arg[0]));
-            nickname = arg[1];
+            WorldMeta ParseFormat(string text, char sep)
+            {
+                string[] parts = text.Split(sep);
+                string versionPart = parts.Length > 0 ? parts[0].Trim() : string.Empty;
+                string nickname = parts.Length > 1 ? parts[1].Trim() : string.Empty;
+
+                return new WorldMeta(
+                    version: new Version(uint.Parse(versionPart)),
+                    nickname: nickname
+                );
+            }
+
+            return ParseFormat(text, text.Contains(NEW_SEP) ?
+                NEW_SEP : LEGACY_SEP);
         }
 
-        public string GetString()
+        public static void SaveToWorldFolder(string worldName, WorldMeta mdata)
         {
-            return version.ID + "\n" + nickname;
+            string path = Path.Combine(GamePath.SavesPath, worldName);
+            SaveToFolder(path, mdata);
         }
 
-        public static void SaveData(string worldName, WorldMeta mdata, bool fullPath = false)
+        public static WorldMeta ReadFromWorldFolder(string worldName)
         {
-            string path = fullPath ? worldName : Path.Combine(GamePath.SavesPath, worldName);
-            FileManager.Write(path, "metadata.txt", mdata.GetString());
+            string path = Path.Combine(GamePath.SavesPath, worldName);
+            return ReadFromFolder(path);
         }
 
-        public static WorldMeta ReadData(string worldName, bool fullPath = false)
+        public static void SaveToFolder(string path, WorldMeta mdata)
         {
-            string path = fullPath ? worldName : Path.Combine(GamePath.SavesPath, worldName);
+            string data = $"{mdata.Version.ID}{NEW_SEP}{mdata.Nickname}";
+            FileManager.Write(path, "metadata.txt", data);
+        }
+
+        public static WorldMeta ReadFromFolder(string path)
+        {
             string contents = FileManager.Read(path, "metadata.txt");
-
+            if (contents == null)
+            {
+                return Default;
+            }
+            
             try
             {
-                return new WorldMeta(contents);
+                return FromText(contents);
             }
             catch
             {
-                WorldMeta mdata = new WorldMeta(Version.Current, "Player");
-                SaveData(path, mdata, fullPath);
+                WorldMeta mdata = Default;
+                SaveToFolder(path, mdata);
                 return mdata;
             }
         }

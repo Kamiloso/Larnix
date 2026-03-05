@@ -5,6 +5,7 @@ using UnityEngine;
 using Larnix.Menu.Worlds;
 using Larnix.Forms;
 using Larnix.Core.Utils;
+using Larnix.Core;
 
 namespace Larnix.Menu.Forms
 {
@@ -15,7 +16,7 @@ namespace Larnix.Menu.Forms
         [SerializeField] TMP_InputField IF_Password;
         [SerializeField] TMP_InputField IF_Confirm;
 
-        private Menu Menu => Ref.Menu;
+        private Menu Menu => GlobRef.Get<Menu>();
 
         private ServerThinker _thinker;
         private InputSwapper _swapper;
@@ -55,7 +56,7 @@ namespace Larnix.Menu.Forms
             if (!Validation.IsGoodNickname(nickname))
                 return ErrorCode.NICKNAME_FORMAT;
 
-            if (nickname == "Player")
+            if (nickname == Common.ReservedNickname)
                 return ErrorCode.NICKNAME_IS_PLAYER;
 
             if (!Validation.IsGoodPassword(password))

@@ -1,34 +1,34 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 
 namespace Larnix.Core
 {
     public static class Debug
     {
-        private static object _lock = new();
+        public enum LogType { Log, Info, Warning, Error, Success, Raw }
 
-        public static Action<string> Log { get; private set; } = msg => Console.Log(msg);
-        public static Action<string> LogWarning { get; private set; } = msg => Console.LogWarning(msg);
-        public static Action<string> LogError { get; private set; } = msg => Console.LogError(msg);
-        public static Action<string> LogSuccess { get; private set; } = msg => Console.LogSuccess(msg);
-        public static Action<string> LogRaw { get; private set; } = msg => Console.LogRaw(msg);
-
-        public static void RedirectLogs(
-            Action<string> log,
-            Action<string> logWarning,
-            Action<string> logError,
-            Action<string> logSuccess,
-            Action<string> logRaw)
+        private static volatile Action<string, LogType> _Log = (msg, type) =>
         {
-            lock (_lock)
+            switch (type)
             {
-                Log = log ?? throw new ArgumentNullException(nameof(log));
-                LogWarning = logWarning ?? throw new ArgumentNullException(nameof(logWarning));
-                LogError = logError ?? throw new ArgumentNullException(nameof(logError));
-                LogSuccess = logSuccess ?? throw new ArgumentNullException(nameof(logSuccess));
-                LogRaw = logRaw ?? throw new ArgumentNullException(nameof(logRaw));
+                case LogType.Log: Console.Log(msg); break;
+                case LogType.Info: Console.LogInfo(msg); break;
+                case LogType.Warning: Console.LogWarning(msg); break;
+                case LogType.Error: Console.LogError(msg); break;
+                case LogType.Success: Console.LogSuccess(msg); break;
+                case LogType.Raw: Console.LogRaw(msg); break;
             }
+        };
+
+        public static void Log(object message) => _Log(message?.ToString() ?? "null", LogType.Log);
+        public static void LogInfo(object message) => _Log(message?.ToString() ?? "null", LogType.Info);
+        public static void LogWarning(object message) => _Log(message?.ToString() ?? "null", LogType.Warning);
+        public static void LogError(object message) => _Log(message?.ToString() ?? "null", LogType.Error);
+        public static void LogSuccess(object message) => _Log(message?.ToString() ?? "null", LogType.Success);
+        public static void LogRaw(object message) => _Log(message?.ToString() ?? "null", LogType.Raw);
+
+        public static void RedirectLogs(Action<string, LogType> printLog)
+        {
+            _Log = printLog ?? throw new ArgumentNullException(nameof(printLog));
         }
     }
 }

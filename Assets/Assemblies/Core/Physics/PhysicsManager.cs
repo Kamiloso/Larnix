@@ -9,36 +9,40 @@ namespace Larnix.Core.Physics
     {
         private const int CHUNK_SIZE = BlockUtils.CHUNK_SIZE;
 
-        private readonly SpatialDictionary<StaticCollider> StaticColliders = new(3f);
-        private readonly HashSet<Vec2Int> ActiveChunks = new();
+        private readonly SpatialDictionary<StaticCollider> _staticColliders = new(3f);
+        private readonly HashSet<Vec2Int> _activeChunks = new();
+
+        private long _colliderCount = 0;
 
         public void SetChunkActive(Vec2Int chunk, bool active)
         {
-            if(active) ActiveChunks.Add(chunk);
-            else ActiveChunks.Remove(chunk);
+            if(active) _activeChunks.Add(chunk);
+            else _activeChunks.Remove(chunk);
         }
 
         public void AddCollider(StaticCollider collider)
         {
-            StaticColliders.Add(collider.Center, collider);
+            _staticColliders.Add(collider.Center, collider);
+            _colliderCount++;
         }
 
         public void RemoveColliderByReference(StaticCollider collider)
         {
-            StaticColliders.RemoveByReference(collider.Center, collider);
+            _staticColliders.RemoveByReference(collider.Center, collider);
+            _colliderCount--;
         }
 
         public OutputData MoveCollider(DynamicCollider dynCollider)
         {
             OutputData totalReport = new OutputData { Position = dynCollider.Center };
-            var list = StaticColliders.Get3x3SectorList(dynCollider.Center);
+            var list = _staticColliders.Get3x3SectorList(dynCollider.Center);
 
             Vec2Int middleChunk = BlockUtils.CoordsToBlock(dynCollider.Center, CHUNK_SIZE);
             for (int dx = -1; dx <= 1 ; dx++)
                 for (int dy = -1; dy <= 1; dy++)
                 {
                     Vec2Int chunk = middleChunk + new Vec2Int(dx, dy);
-                    if(!ActiveChunks.Contains(chunk))
+                    if(!_activeChunks.Contains(chunk))
                     {
                         list.Add(new StaticCollider(
                             BlockUtils.ChunkCenter(chunk),

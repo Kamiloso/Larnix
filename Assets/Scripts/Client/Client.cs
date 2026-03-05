@@ -12,6 +12,7 @@ using Larnix.Packets;
 using Larnix.Client.UI;
 using Larnix.Client.Terrain;
 using Larnix.Client.Entities;
+using Larnix.Core;
 
 namespace Larnix.Client
 {
@@ -21,14 +22,15 @@ namespace Larnix.Client
 
         private QuickClient _larnixClient = null;
         private Queue<DelayedPacket> _delayedPackets = new();
+        private Task<QuickClient> _connectingTask = null;
         private Receiver _receiver = null;
 
-        private Loading Loading => Ref.Loading;
-        private Inventory Inventory => Ref.Inventory;
-        private TileSelector TileSelector => Ref.TileSelector;
-        private EntityProjections EntityProjections => Ref.EntityProjections;
-        private MainPlayer MainPlayer => Ref.MainPlayer;
-        private Screenshots Screenshots => Ref.Screenshots;
+        private Loading Loading => GlobRef.Get<Loading>();
+        private Inventory Inventory => GlobRef.Get<Inventory>();
+        private TileSelector TileSelector => GlobRef.Get<TileSelector>();
+        private EntityProjections EntityProjections => GlobRef.Get<EntityProjections>();
+        private MainPlayer MainPlayer => GlobRef.Get<MainPlayer>();
+        private Screenshots Screenshots => GlobRef.Get<Screenshots>();
 
         public string Address { get; private set; }
         public string Authcode { get; private set; }
@@ -50,8 +52,8 @@ namespace Larnix.Client
 
             EarlyUpdateInjector.InjectEarlyUpdate(this.EarlyUpdate);
 
-            Ref.Client = this;
-            Ref.PhysicsManager = new PhysicsManager();
+            GlobRef.Set(this);
+            GlobRef.Set(new PhysicsManager());
 
             WorldPath = WorldLoad.WorldPath;
             IsMultiplayer = WorldLoad.IsMultiplayer;
@@ -71,15 +73,17 @@ namespace Larnix.Client
             Nickname = WorldLoad.Nickname;
             Password = WorldLoad.Password;
 
-            Task<QuickClient> connecting = Task.Run(() =>
+            _connectingTask = Task.Run(() =>
                 QuickClient.CreateClientAsync(Address, Authcode, Nickname, Password).Result);
 
-            while (!connecting.IsCompleted)
-                yield return null;
-
-            if (connecting.Result != null)
+            while (!_connectingTask.IsCompleted)
             {
-                _larnixClient = connecting.Result;
+                yield return null;
+            }
+
+            if (_connectingTask.Result != null)
+            {
+                _larnixClient = _connectingTask.Result;
                 _receiver = new Receiver(_larnixClient);
                 Core.Debug.Log($"{(IsMultiplayer ? "Remote" : "Local")} world on address {Address}");
             }
@@ -116,7 +120,7 @@ namespace Larnix.Client
                     _larnixClient.Send(pack.Packet, pack.Safemode);
                 }
                 
-                _larnixClient.ClientTick(Time.deltaTime);
+                _larnixClient.Tick(Time.deltaTime);
 
                 if (_larnixClient.IsDead())
                 {
@@ -167,6 +171,11 @@ namespace Larnix.Client
 
         private void OnDestroy()
         {
+            if (_connectingTask != null && _larnixClient == null)
+            {
+                _larnixClient = _connectingTask.Result; // wait for finish if still running
+            }
+
             _larnixClient?.Dispose();
             WorldLoad.SetStartingScreen(IsMultiplayer ? "Multiplayer" : "Singleplayer");
             EarlyUpdateInjector.ClearEarlyUpdate();

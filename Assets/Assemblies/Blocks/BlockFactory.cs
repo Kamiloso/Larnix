@@ -4,9 +4,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.Serialization;
-using Larnix.Core.Vectors;
-using Larnix.Core;
-using Larnix.Blocks.Structs;
+using Larnix.Core.Utils;
+using Larnix.Blocks.All;
+using BlockInits = Larnix.Blocks.Block.BlockInits;
 
 namespace Larnix.Blocks
 {
@@ -15,29 +15,35 @@ namespace Larnix.Blocks
         private static Dictionary<BlockID, BlockInfo> BlockCache = new();
         private static object _locker = new();
 
-        private static readonly string Namespace = typeof(BlockServer).Namespace;
-        private static readonly string AsmName = typeof(BlockServer).Assembly.GetName().Name;
+        private static readonly string Namespace = typeof(Air).Namespace;
+        private static readonly string AsmName = typeof(Air).Assembly.GetName().Name;
 
         private class BlockInfo
         {
             public string Name;
             public Type Type;
-            public Func<Vec2Int, BlockData1, bool, BlockServer> Constructor;
-            public List<Action<BlockServer>> Inits = new();
+            public Func<BlockInits, Block> Constructor;
+            public List<Action<Block>> Inits = new();
 
-            public BlockServer SlaveInstance { get; init; }
+            public Block SlaveInstance { get; init; }
 
             public BlockInfo(BlockID ID)
             {
                 Name = ID.ToString();
                 Type = Type.GetType(Namespace + "." + Name + ", " + AsmName);
 
-                var ctorInfo = Type?.GetConstructor(new Type[] { typeof(Vec2Int), typeof(BlockData1), typeof(bool) });
+                var ctorInfo = Type?.GetConstructor(Array.Empty<Type>());
                 var ctor = Type != null ? RuntimeCompilation.CompileConstructor(ctorInfo) : null;
-                if (ctor != null && typeof(BlockServer).IsAssignableFrom(Type))
+
+                if (ctor != null && typeof(Block).IsAssignableFrom(Type))
                 {
-                    Constructor = (a, b, c) => (BlockServer)ctor(new object[] { a, b, c });
-                    SlaveInstance = (BlockServer)FormatterServices.GetUninitializedObject(Type);
+                    Constructor = inits =>
+                    {
+                        var obj = (Block)ctor(Array.Empty<object>());
+                        obj.Construct(inits);
+                        return obj;
+                    };
+                    SlaveInstance = (Block)FormatterServices.GetUninitializedObject(Type);
 
                     var ifaces = Type?.GetInterfaces() ?? Array.Empty<Type>();
                     foreach (var iface in ifaces)
@@ -55,11 +61,15 @@ namespace Larnix.Blocks
                 }
                 else
                 {
-                    Core.Debug.LogWarning($"Class {Namespace}.{Name} must exist and have a constructor " +
-                        $"with arguments: (Vec2Int, BlockData1, bool). Loading base class instead...");
+                    Core.Debug.LogWarning($"Class {Namespace}.{Name} must exist. Loading base class instead...");
 
-                    Constructor = (a, b, c) => new BlockServer(a, b, c);
-                    SlaveInstance = (BlockServer)FormatterServices.GetUninitializedObject(typeof(BlockServer));
+                    Constructor = inits =>
+                    {
+                        var obj = new Block();
+                        obj.Construct(inits);
+                        return obj;
+                    };
+                    SlaveInstance = (Block)FormatterServices.GetUninitializedObject(typeof(Block));
                 }
             }
         }
@@ -81,15 +91,17 @@ namespace Larnix.Blocks
             }
         }
 
-        public static BlockServer ConstructBlockObject(Vec2Int POS, BlockData1 block, bool isFront, IWorldAPI worldAPI)
+        public static Block ConstructBlockObject(BlockInits blockInits)
         {
-            BlockInfo info = GetBlockInfo(block.ID);
-            BlockServer blockserv = info.Constructor(POS, block, isFront);
-            blockserv.InitializeWorldAPI(worldAPI);
+            BlockID id = blockInits.BlockData.ID;
+            BlockInfo info = GetBlockInfo(id);
+            Block blockserv = info.Constructor(blockInits);
+
             foreach (var init in info.Inits)
             {
                 init(blockserv);
             }
+
             return blockserv;
         }
 

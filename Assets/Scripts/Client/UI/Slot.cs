@@ -6,6 +6,8 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using Larnix.Blocks.Structs;
+using Larnix.Blocks.All;
+using Larnix.Core;
 
 namespace Larnix.Client.UI
 {
@@ -19,7 +21,7 @@ namespace Larnix.Client.UI
         [SerializeField] GameObject Selected;
         [SerializeField] Color TitleColor;
 
-        private Inventory Inventory => Ref.Inventory;
+        private Inventory Inventory => GlobRef.Get<Inventory>();
 
         private float _textDisplayTime = 0f;
         private int _slotID = -1;

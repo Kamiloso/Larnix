@@ -4,14 +4,16 @@ using System.Collections.Generic;
 using Larnix.Core.Vectors;
 using Larnix.Core.Utils;
 
-namespace Larnix.Blocks
+namespace Larnix.Blocks.All
 {
     public interface IHasGrowingFlora : IBlockInterface
     {
         void Init()
         {
-            This.FrameEventRandom += (sender, args) => FloraDry();
-            This.FrameEventRandom += (sender, args) => FloraGrowth();
+            This.Subscribe(BlockOrder.Random, () => {
+                FloraDry();
+                FloraGrowth();
+            });
         }
 
         double DRY_CHANCE();
@@ -25,7 +27,7 @@ namespace Larnix.Blocks
                 {
                     bool? suppressed = IsSuppressed();
                     if (suppressed == true)
-                        WorldAPI.SetBlockVariant(This.Position, This.IsFront, 0);
+                        WorldAPI.MutateBlockVariant(This.Position, This.IsFront, 0);
                 }
             }
         }
@@ -39,9 +41,9 @@ namespace Larnix.Blocks
                     bool? self_suppressed = IsSuppressed();
                     if (self_suppressed == false)
                     {
-                        List<BlockServer> candidates = new();
+                        List<Block> candidates = new();
 
-                        foreach (BlockServer neighbour in WorldAPI.GetBlocksAround(This.Position, This.IsFront))
+                        foreach (Block neighbour in WorldAPI.GetBlocksAround(This.Position, This.IsFront))
                         {
                             IHasGrowingFlora other = neighbour as IHasGrowingFlora;
                             if (other != null && This.BlockData.ID == neighbour.BlockData.ID && neighbour.BlockData.Variant == 0)
@@ -57,7 +59,7 @@ namespace Larnix.Blocks
                         if(candidates.Count > 0)
                         {
                             int rand = Common.Rand().Next(0, candidates.Count);
-                            WorldAPI.SetBlockVariant(candidates[rand].Position, This.IsFront, This.BlockData.Variant);
+                            WorldAPI.MutateBlockVariant(candidates[rand].Position, This.IsFront, This.BlockData.Variant);
                         }
                     }
                 }
@@ -66,14 +68,14 @@ namespace Larnix.Blocks
 
         private bool? IsSuppressed()
         {
-            Vec2Int localpos = This.Position;
-            Vec2Int remotpos = This.Position + new Vec2Int(0, 1);
+            Vec2Int POS = This.Position;
+            Vec2Int POS_other = POS + new Vec2Int(0, 1);
 
-            BlockServer blockserv = WorldAPI.GetBlock(remotpos, This.IsFront);
-            if (blockserv == null)
+            Block block = WorldAPI.GetBlock(POS_other, This.IsFront);
+            if (block == null)
                 return null;
 
-            return blockserv is ISolid || blockserv is ILiquid;
+            return block is ISolid || block is ILiquid;
         }
     }
 }

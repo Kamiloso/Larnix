@@ -4,13 +4,14 @@ using Larnix.Blocks.Structs;
 using Larnix.Core;
 using Larnix.Core.Json;
 
-namespace Larnix.Blocks
+namespace Larnix.Blocks.All
 {
     public interface ITechExecute : IBlockInterface
     {
         void Init()
         {
-            This.FrameEventSequentialLate += (sender, args) => ExecuteCommand();
+            This.Subscribe(BlockOrder.TechCmdExecute,
+                () => ExecuteCommand());
         }
 
         private void ExecuteCommand()

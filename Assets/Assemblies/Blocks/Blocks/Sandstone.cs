@@ -4,12 +4,10 @@ using System.Collections.Generic;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
 
-namespace Larnix.Blocks
+namespace Larnix.Blocks.All
 {
-    public sealed class Sandstone : BlockServer, ISolid
+    public sealed class Sandstone : Block, ISolid
     {
-        public Sandstone(Vec2Int POS, BlockData1 block, bool isFront) : base(POS, block, isFront) { }
-
         public bool ALLOW_PLACE_BACK() => true;
 
         public ITool.Type MATERIAL_TYPE() => ITool.Type.Normal;

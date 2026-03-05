@@ -5,6 +5,8 @@ using UnityEngine.Tilemaps;
 using Larnix.Blocks.Structs;
 using Larnix.Core.Vectors;
 using Larnix.Blocks;
+using Larnix.Blocks.All;
+using Larnix.Core;
 
 namespace Larnix.Client.Terrain
 {
@@ -32,14 +34,16 @@ namespace Larnix.Client.Terrain
 
         public static Tile GetBorderTile(Vec2Int POS, bool isMenu)
         {
-            BasicGridManager CurrentGrid = isMenu ? Ref.BasicGridManager : Ref.GridManager;
-            BlockData1 block = CurrentGrid.BlockDataAtPOS(POS)?.Front;
+            BasicGridManager grid = isMenu ?
+                GlobRef.Get<BasicGridManager>() : GlobRef.Get<GridManager>();
+            
+            BlockData1 block = grid.BlockDataAtPOS(POS)?.Front;
 
             IHasConture iface;
             if (block != null && (iface = BlockFactory.GetSlaveInstance<IHasConture>(block.ID)) != null)
             {
                 byte alphaByte = iface.STATIC_GetAlphaByte(block.Variant);
-                byte borderByte = CurrentGrid.CalculateBorderByte(POS);
+                byte borderByte = grid.CalculateBorderByte(POS);
 
                 if (alphaByte != 0)
                 {
@@ -53,7 +57,7 @@ namespace Larnix.Client.Terrain
                 }
             }
 
-            return GetTile(new BlockData1(), true);
+            return GetTile(BlockData1.Air, true);
         }
 
         public static Sprite GetBorderSprite(Vec2Int POS, bool isMenu) =>

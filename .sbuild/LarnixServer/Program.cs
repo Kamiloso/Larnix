@@ -1,5 +1,6 @@
 ﻿using System;
 using Larnix.Server;
+using RunSuggestions = Larnix.Server.ServerRunner.RunSuggestions;
 
 namespace Larnix.Headless;
 
@@ -9,8 +10,8 @@ internal static class Program
 
     static void Main(string[] args)
     {
-        ServerRunner runner = new ServerRunner();
-        runner.Start(ServerType.Remote, worldPath: WorldDir, null);
+        ServerRunner runner = ServerRunner.Instance;
+        runner.Start(ServerType.Remote, WorldDir, new RunSuggestions());
 
         while (runner.IsRunning)
         {

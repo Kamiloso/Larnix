@@ -20,7 +20,6 @@ namespace Larnix.Packets
         public ulong[] AddEntities => Primitives.ArrayFromBytes<ulong>(Bytes, AddLength, HEADER_SIZE); // n * ENTRY_SIZE
         public ulong[] RemoveEntities => Primitives.ArrayFromBytes<ulong>(Bytes, RemoveLength, HEADER_SIZE + AddLength * ENTRY_SIZE); // n * ENTRY_SIZE
 
-        public NearbyEntities() { }
         private NearbyEntities(uint fixedFrame, ulong[] addEntities, ulong[] removeEntities, byte code = 0)
         {
             addEntities = addEntities ?? Array.Empty<ulong>();

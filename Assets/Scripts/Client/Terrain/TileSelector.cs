@@ -11,6 +11,8 @@ using Larnix.Core.Utils;
 using Larnix.Blocks.Structs;
 using Larnix.Client.Relativity;
 using Larnix.Client.UI;
+using Larnix.Blocks.All;
+using Larnix.Core;
 
 namespace Larnix.Client.Terrain
 {
@@ -24,9 +26,9 @@ namespace Larnix.Client.Terrain
         [SerializeField] Camera Camera;
         [SerializeField] SpriteRenderer Selector;
 
-        private MainPlayer MainPlayer => Ref.MainPlayer;
-        private Debugger Debugger => Ref.Debugger;
-        private Inventory Inventory => Ref.Inventory;
+        private MainPlayer MainPlayer => GlobRef.Get<MainPlayer>();
+        private Debugger Debugger => GlobRef.Get<Debugger>();
+        private Inventory Inventory => GlobRef.Get<Inventory>();
 
         private bool _isGameFocused = true;
         private Vector2? _oldMousePos = null;
@@ -35,7 +37,7 @@ namespace Larnix.Client.Terrain
 
         private void Awake()
         {
-            Ref.TileSelector = this;
+            GlobRef.Set(this);
         }
 
         private void OnApplicationFocus(bool hasFocus)

@@ -4,13 +4,14 @@ using Larnix.Core.Vectors;
 using Larnix.Core.Utils;
 using Larnix.Blocks.Structs;
 
-namespace Larnix.Blocks
+namespace Larnix.Blocks.All
 {
     public interface ILiquid : IMovingBehaviour, IPlaceable, IReplaceable, IBlockingFront
     {
         void Init()
         {
-            This.FrameEventRandom += (sender, args) => Flow();
+            This.Subscribe(BlockOrder.Random,
+                 () => Flow());
         }
 
         bool IReplaceable.STATIC_IsReplaceable(BlockData1 thisBlock, BlockData1 otherBlock, bool isFront)
@@ -41,7 +42,7 @@ namespace Larnix.Blocks
 
         private void Flow()
         {
-            if (WorldAPI.FramesSinceServerStart() % FLOW_PERIOD() != 0)
+            if (WorldAPI.ServerTick % FLOW_PERIOD() != 0)
                 return;
 
             Vec2Int localpos = This.Position;
@@ -73,7 +74,7 @@ namespace Larnix.Blocks
                 byte byted_left = (byte)(byted_none | MEMORY_LEFT());
                 byte byted_right = (byte)(byted_none | MEMORY_RIGHT());
 
-                if(mem_direction == 0)
+                if (mem_direction == 0)
                 {
                     if (can_left && can_right)
                         mem_direction = Common.Rand().Next() % 2 == 0 ? -1 : 1;
@@ -87,7 +88,7 @@ namespace Larnix.Blocks
 
                 // actual move
 
-                if(mem_direction == -1)
+                if (mem_direction == -1)
                 {
                     if (can_left)
                     {
@@ -97,11 +98,11 @@ namespace Larnix.Blocks
                     }
                     else
                     {
-                        WorldAPI.SetBlockVariant(localpos, This.IsFront, byted_none);
+                        WorldAPI.MutateBlockVariant(localpos, This.IsFront, byted_none);
                     }
                 }
 
-                if(mem_direction == 1)
+                if (mem_direction == 1)
                 {
                     if (can_right)
                     {
@@ -111,7 +112,7 @@ namespace Larnix.Blocks
                     }
                     else
                     {
-                        WorldAPI.SetBlockVariant(localpos, This.IsFront, byted_none);
+                        WorldAPI.MutateBlockVariant(localpos, This.IsFront, byted_none);
                     }
                 }
             }

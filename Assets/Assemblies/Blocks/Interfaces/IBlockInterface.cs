@@ -3,14 +3,20 @@ using System.Collections;
 using System.Collections.Generic;
 using Larnix.Core.Utils;
 using Larnix.Core.Json;
+using Larnix.Blocks.Structs;
 
-namespace Larnix.Blocks
+namespace Larnix.Blocks.All
 {
     public interface IBlockInterface
     {
-        BlockServer This => (BlockServer)this;
+        Block This => (Block)this;
         IWorldAPI WorldAPI => This.WorldAPI;
         Storage Data => This.BlockData.Data;
+
+        void SelfChangeVariant(byte variant)
+        {
+            WorldAPI.MutateBlockVariant(This.Position, This.IsFront, variant);
+        }
 
         string STATIC_GetBlockName(byte variant)
         {

@@ -15,7 +15,6 @@ namespace Larnix.Packets
         public ulong MyUid => Primitives.FromBytes<ulong>(Bytes, Vec2.SIZE); // sizeof(ulong)
         public uint LastFixedFrame => Primitives.FromBytes<uint>(Bytes, Vec2.SIZE + sizeof(ulong)); // sizeof(uint)
 
-        public PlayerInitialize() { }
         public PlayerInitialize(Vec2 position, ulong myUid, uint lastFixedFrame, byte code = 0)
         {
             InitializePayload(ArrayUtils.MegaConcat(

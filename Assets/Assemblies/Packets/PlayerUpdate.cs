@@ -16,7 +16,6 @@ namespace Larnix.Packets
         public float Rotation => Primitives.FromBytes<float>(Bytes, Vec2.SIZE); // sizeof(float)
         public uint FixedFrame => Primitives.FromBytes<uint>(Bytes, Vec2.SIZE + sizeof(float)); // sizeof(uint)
 
-        public PlayerUpdate() { }
         public PlayerUpdate(Vec2 position, float rotation, uint fixedFrame, byte code = 0)
         {
             InitializePayload(ArrayUtils.MegaConcat(

@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Larnix.Core;
 using Larnix.Core.Utils;
 
 namespace Larnix.Server
@@ -14,8 +15,22 @@ namespace Larnix.Server
         Remote, // multiplayer console server
     }
 
-    public sealed class ServerRunner
+    public sealed class ServerRunner : IDisposable
     {
+        private static float PERIOD => Common.FixedTime;
+        private static long MAX_FRAME_DELAY => 5;
+
+        public record ServerAnswer(
+            string Address,
+            string Authcode,
+            Task<string> RelayEstablishment = null
+        );
+
+        public record RunSuggestions(
+            long? Seed = null,
+            string RelayAddress = null
+        );
+
         public bool HasServer => _server != null;
         public bool IsRunning => HasServer && _thread.IsAlive;
 
@@ -25,64 +40,88 @@ namespace Larnix.Server
 
         private volatile bool _stopFlag;
 
-        private static ServerRunner _badSingleton;
-        public static ServerRunner Instance
-        {
-            get
-            {
-                if (_badSingleton == null)
-                    _badSingleton = new ServerRunner();
+        public ServerRunner() { } // can be instantiated and managed
+        public static ServerRunner Instance { get; } = new(); // legacy singleton
 
-                return _badSingleton;
-            }
-        }
-
-        public (string address, string authcode) Start(
-            ServerType type,
-            string worldPath,
-            long? seedSuggestion)
+        public ServerAnswer Start(ServerType type, string worldPath, RunSuggestions suggestions)
         {
             Stop();
 
-            _server = new Server(
-                type,
-                worldPath,
-                seedSuggestion,
-                () => _stopFlag = true);
+            long clientKey = GlobRef.GetKey(); // remember client scope
+            long serverKey = GlobRef.NewScope(); // create server scope
 
-            var result = (_server.LocalAddress, _server.Authcode);
+            ServerAnswer answer;
 
-            _thread = new Thread(ServerLoop)
+            try
+            {
+                void StopSignal() => _stopFlag = true;
+
+                _server = new Server(
+                    type, worldPath, suggestions, StopSignal, out answer);
+            }
+            finally
+            {
+                GlobRef.SetKey(clientKey); // restore client scope
+            }
+
+            _thread = new Thread(() =>
+            {
+                GlobRef.SetKey(serverKey); // activate server scope
+                try
+                {
+                    ServerLoop();
+                }
+                finally
+                {
+                    GlobRef.Clear(); // clear server scope
+                }
+            })
             {
                 IsBackground = true,
-                Name = "Larnix.ServerThread"
+                Name = "Larnix::ServerThread"
             };
 
             _thread.Start();
-            return result;
+            return answer;
         }
 
         private void ServerLoop()
         {
-            const float PERIOD = Common.FIXED_TIME;
-            const long MAX_FRAME_DELAY = 5;
-
             var sw = Stopwatch.StartNew();
             long frame = 0;
             bool crashed = false;
 
             try
             {
+                double lastTime = sw.Elapsed.TotalSeconds - PERIOD;
+
                 while (!_stopFlag)
                 {
-                    _server.TickFixed();
+                    double currentTime = sw.Elapsed.TotalSeconds;
+                    double deltaTime = currentTime - lastTime;
+
+                    _server.Tick((float)deltaTime + float.Epsilon);
                     frame++;
 
                     while (sw.Elapsed.TotalSeconds > (frame + MAX_FRAME_DELAY) * PERIOD)
+                    {
                         frame++;
+                    }
 
                     while (sw.Elapsed.TotalSeconds < frame * PERIOD)
-                        Thread.Sleep(1);
+                    {
+                        double sleepTime = frame * PERIOD - sw.Elapsed.TotalSeconds;
+                        if (sleepTime > 0.015)
+                        {
+                            Thread.Sleep(1);
+                        }
+                        else
+                        {
+                            Thread.Sleep(0);
+                        }
+                    }
+
+                    lastTime = currentTime;
                 }
             }
             catch (Exception ex)
@@ -97,32 +136,31 @@ namespace Larnix.Server
             }
         }
 
-        public async Task<string> ConnectToRelayAsync(string address)
-        {
-            var server = _server;
-            return await server?.EstablishRelayAsync(address);
-        }
-
         public void Stop()
         {
-            if (!HasServer)
-                return;
-
-            try
+            if (HasServer)
             {
-                _stopFlag = true;
-                _thread.Join();
+                try
+                {
+                    _stopFlag = true;
+                    _thread.Join();
 
-                if (_threadException != null)
-                    ExceptionDispatchInfo.Capture(_threadException).Throw();
+                    if (_threadException != null)
+                        ExceptionDispatchInfo.Capture(_threadException).Throw();
+                }
+                finally
+                {
+                    _server = null;
+                    _thread = null;
+                    _threadException = null;
+                    _stopFlag = false;
+                }
             }
-            finally
-            {
-                _server = null;
-                _thread = null;
-                _threadException = null;
-                _stopFlag = false;
-            }
+        }
+
+        public void Dispose()
+        {
+            Stop();
         }
     }
 }

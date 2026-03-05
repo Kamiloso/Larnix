@@ -2,26 +2,35 @@ using Larnix.Blocks;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
 
-namespace Larnix.Blocks
+namespace Larnix.Blocks.All
 {
     public interface IMovingBehaviour : IBlockInterface
     {
         public bool CanMove(Vec2Int POS_source, Vec2Int POS_destin, bool isFront)
         {
-            BlockServer block1 = WorldAPI.GetBlock(POS_source, isFront);
-            BlockServer block2 = WorldAPI.GetBlock(POS_destin, isFront);
+            Block block1 = WorldAPI.GetBlock(POS_source, isFront);
+            Block block2 = WorldAPI.GetBlock(POS_destin, isFront);
 
             int weight1 = (block1 as ILiquid)?.LIQUID_DENSITY() ?? (block1 is Air || block1 is IFragile ? int.MinValue : int.MaxValue);
             int weight2 = (block2 as ILiquid)?.LIQUID_DENSITY() ?? (block2 is Air || block2 is IFragile ? int.MinValue : int.MaxValue);
 
-            return weight1 > weight2;
+            if (weight1 > weight2)
+                return true; // heavier block -> lighter block
+
+            if (weight1 == weight2)
+            {
+                if (block1 is ILiquid && block2 is ILiquid && block1.GetType() != block2.GetType())
+                    return true; // different liquids flow into each other
+            }
+
+            return false;
         }
 
         public void Move(Vec2Int POS_source, Vec2Int POS_destin, bool isFront,
             byte? sourceNewVariant = null, bool clone = false)
         {
-            BlockServer block1 = WorldAPI.GetBlock(POS_source, isFront);
-            BlockServer block2 = WorldAPI.GetBlock(POS_destin, isFront);
+            Block block1 = WorldAPI.GetBlock(POS_source, isFront);
+            Block block2 = WorldAPI.GetBlock(POS_destin, isFront);
 
             BlockData1 data1 = block1.BlockData;
             BlockData1 data2 = block2.BlockData;

@@ -7,6 +7,7 @@ using UnityEngine;
 using System.Linq;
 using Larnix.Blocks.Structs;
 using Larnix.Blocks;
+using Larnix.Blocks.All;
 
 namespace Larnix.Client.Particles
 {
@@ -14,7 +15,7 @@ namespace Larnix.Client.Particles
     {
         [SerializeField] int MaxParticles = 1024;
 
-        private EntityProjections EntityProjections => Ref.EntityProjections;
+        private EntityProjections EntityProjections => GlobRef.Get<EntityProjections>();
         private HashSet<GameObject> ActiveParticles = new();
 
         private BlockData1 _optionBlock = new();
@@ -22,7 +23,7 @@ namespace Larnix.Client.Particles
 
         private void Awake()
         {
-            Ref.ParticleManager = this;
+            GlobRef.Set(this);
         }
 
         private void Update()

@@ -45,7 +45,7 @@ namespace Larnix.Core.Utils
         const int STR_SIZE = BYTE_SIZE / 2;
         fixed byte buffer[BYTE_SIZE];
 
-        public static implicit operator String32(string value)
+        public static explicit operator String32(string value)
         {
             byte[] bytes = StringUtils.StringToFixedBinary(value, STR_SIZE);
             String32 result = default;
@@ -65,7 +65,7 @@ namespace Larnix.Core.Utils
         const int STR_SIZE = BYTE_SIZE / 2;
         fixed byte buffer[BYTE_SIZE];
 
-        public static implicit operator String64(string value)
+        public static explicit operator String64(string value)
         {
             byte[] bytes = StringUtils.StringToFixedBinary(value, STR_SIZE);
             String64 result = default;
@@ -85,7 +85,7 @@ namespace Larnix.Core.Utils
         const int STR_SIZE = BYTE_SIZE / 2;
         fixed byte buffer[BYTE_SIZE];
 
-        public static implicit operator String128(string value)
+        public static explicit operator String128(string value)
         {
             byte[] bytes = StringUtils.StringToFixedBinary(value, STR_SIZE);
             String128 result = default;
@@ -105,7 +105,7 @@ namespace Larnix.Core.Utils
         const int STR_SIZE = BYTE_SIZE / 2;
         fixed byte buffer[BYTE_SIZE];
 
-        public static implicit operator String256(string value)
+        public static explicit operator String256(string value)
         {
             byte[] bytes = StringUtils.StringToFixedBinary(value, STR_SIZE);
             String256 result = default;
@@ -125,7 +125,7 @@ namespace Larnix.Core.Utils
         const int STR_SIZE = BYTE_SIZE / 2;
         fixed byte buffer[BYTE_SIZE];
 
-        public static implicit operator String512(string value)
+        public static explicit operator String512(string value)
         {
             byte[] bytes = StringUtils.StringToFixedBinary(value, STR_SIZE);
             String512 result = default;
@@ -145,7 +145,7 @@ namespace Larnix.Core.Utils
         const int STR_SIZE = BYTE_SIZE / 2;
         fixed byte buffer[BYTE_SIZE];
 
-        public static implicit operator String1024(string value)
+        public static explicit operator String1024(string value)
         {
             byte[] bytes = StringUtils.StringToFixedBinary(value, STR_SIZE);
             String1024 result = default;

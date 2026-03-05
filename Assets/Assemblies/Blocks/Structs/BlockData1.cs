@@ -11,15 +11,19 @@ namespace Larnix.Blocks.Structs
     public class BlockData1 : IBinary<BlockData1>
     {
         public const int SIZE = sizeof(BlockID) + sizeof(byte);
+        public const byte MAX_VARIANT = 0b00001111; // 15
 
         public BlockID ID { get; private set; }
         private byte _variant;
         public byte Variant
         {
             get => _variant;
-            private set => _variant = (byte)(value & 0b00001111);
+            private set => _variant = (byte)(value & MAX_VARIANT);
         }
         public Storage Data { get; private set; }
+        
+        // USE CAREFULLY! Breaks immutability, but may increase performance.
+        public void __MutateVariant__(byte variant) => Variant = variant;
 
         public static BlockData1 Air => new(BlockID.Air, 0);
         public static BlockData1 UltimateTool => new(BlockID.UltimateTool, 0);
@@ -54,6 +58,22 @@ namespace Larnix.Blocks.Structs
             return true;
         }
 
+        public BlockData1 BinaryCopy() => ((IBinary<BlockData1>)this).BinaryCopy();
+        BlockData1 IBinary<BlockData1>.BinaryCopy()
+        {
+            return new BlockData1
+            {
+                ID = ID,
+                Variant = Variant,
+            };
+        }
+
+        public bool BinaryEquals(BlockData1 other) => ((IBinary<BlockData1>)this).BinaryEquals(other);
+        bool IBinary<BlockData1>.BinaryEquals(BlockData1 other)
+        {
+            return ID == other.ID && Variant == other.Variant;
+        }
+
         public BlockData1 DeepCopy()
         {
             return new BlockData1
@@ -62,6 +82,14 @@ namespace Larnix.Blocks.Structs
                 Variant = Variant,
                 Data = Data.DeepCopy(),
             };
+        }
+
+        public override string ToString() => ToString(":");
+        public string ToString(string separator)
+        {
+            return Variant > 0 ?
+                $"{ID}{separator}{Variant}" :
+                $"{ID}";
         }
     }
 }

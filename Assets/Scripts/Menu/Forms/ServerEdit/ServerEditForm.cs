@@ -5,13 +5,14 @@ using UnityEngine;
 using Larnix.Menu.Worlds;
 using System;
 using Larnix.Socket.Security;
+using Larnix.Core;
 
 namespace Larnix.Menu.Forms
 {
     public class ServerEditForm : BaseForm
     {
-        private Menu Menu => Ref.Menu;
-        private ServerSelect ServerSelect => Ref.ServerSelect;
+        private Menu Menu => GlobRef.Get<Menu>();
+        private ServerSelect ServerSelect => GlobRef.Get<ServerSelect>();
 
         [SerializeField] TextMeshProUGUI Title;
         [SerializeField] TMP_InputField IF_Address;

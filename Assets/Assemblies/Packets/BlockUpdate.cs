@@ -15,7 +15,6 @@ namespace Larnix.Packets
 
         public BlockUpdateRecord[] BlockUpdates => GetRecords(); // n * ENTRY_SIZE
 
-        public BlockUpdate() { }
         private BlockUpdate(BlockUpdateRecord[] records, byte code = 0)
         {
             if (records == null)

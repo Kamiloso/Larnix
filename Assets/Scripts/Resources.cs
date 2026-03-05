@@ -10,17 +10,17 @@ namespace Larnix
 {
     public static class Prefabs
     {
-        private static readonly Dictionary<string, GameObject> PrefabCache = new();
-        private static readonly Dictionary<string, GameObject> PrefabChildCache = new();
+        private static readonly Dictionary<string, GameObject> _prefabCache = new();
+        private static readonly Dictionary<string, GameObject> _prefabChildCache = new();
 
         public static GameObject GetPrefab(string root, string path)
         {
             string fullPath = root + "/" + path;
 
-            if (!PrefabCache.TryGetValue(fullPath, out GameObject prefab))
+            if (!_prefabCache.TryGetValue(fullPath, out GameObject prefab))
             {
                 prefab = UnityEngine.Resources.Load<GameObject>(fullPath);
-                PrefabCache[fullPath] = prefab;
+                _prefabCache[fullPath] = prefab;
             }
 
             return prefab;
@@ -42,10 +42,10 @@ namespace Larnix
 
         private static GameObject GetPrefabChild(string path)
         {
-            if (!PrefabChildCache.TryGetValue(path, out GameObject prefab))
+            if (!_prefabChildCache.TryGetValue(path, out GameObject prefab))
             {
                 prefab = UnityEngine.Resources.Load<GameObject>(path);
-                PrefabChildCache[path] = prefab;
+                _prefabChildCache[path] = prefab;
             }
 
             if (prefab == null)

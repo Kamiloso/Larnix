@@ -4,7 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Blocks.Structs;
-using Larnix.Client.Terrain;
+using Larnix.Core;
 
 namespace Larnix.Client.UI
 {
@@ -18,13 +18,13 @@ namespace Larnix.Client.UI
         [SerializeField] BlockID[] BlocksInSlots;
         [SerializeField] byte[] VariantsInSlots;
 
-        private Debugger Debugger => Ref.Debugger;
+        private Debugger Debugger => GlobRef.Get<Debugger>();
 
         public int SelectedSlot { get; private set; } = 0;
 
         private void Awake()
         {
-            Ref.Inventory = this;
+            GlobRef.Set(this);
         }
 
         public void Update1()

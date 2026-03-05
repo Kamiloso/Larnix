@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 
-namespace Larnix.Blocks
+namespace Larnix.Blocks.All
 {
     public interface IHasConture : IBlockInterface
     {   
@@ -13,7 +13,9 @@ namespace Larnix.Blocks
     {
         Disabled = 0,
         Invisible = 1,
+        LightSemiTransparent = 64,
         SemiTransparent = 128,
+        DarkSemiTransparent = 192,
         Opaque = 255
     }
 }
