@@ -182,12 +182,12 @@ namespace Larnix.Worldgen
                 {
                     protoBlocks[x, y] = ProtoBlock.Stone;
                 }
-            }
+            });
         }
 
         private void BuildCaves(ProtoBlock[,] protoBlocks, Vec2Int chunk)
         {
-            foreach (Vec2Int pos in ChunkIterator.IterateXY())
+            ChunkIterator.Iterate((x, y) =>
             {
                 var pos = new Vec2Int(x, y);
 
@@ -206,7 +206,7 @@ namespace Larnix.Worldgen
                     };
                     protoBlocks[x, y] = protoBlock;
                 }
-            }
+            });
         }
 
         private void AddOreClusters(ProtoBlock[,] protoBlocks, BlockData2[,] blocks, Vec2Int chunk)
@@ -214,7 +214,7 @@ namespace Larnix.Worldgen
             Vec2Int chunkStart = BlockUtils.GlobalBlockCoords(chunk, new Vec2Int(CHUNK_SIZE, CHUNK_SIZE));
             Vec2Int chunkEnd = BlockUtils.GlobalBlockCoords(chunk, new Vec2Int(0, 0));
 
-            foreach (Vec2Int pos in ChunkIterator.IterateXY())
+            ChunkIterator.Iterate((x, y) =>
             {
                 var pos = new Vec2Int(x, y);
 
