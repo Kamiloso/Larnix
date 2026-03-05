@@ -65,6 +65,7 @@ namespace Larnix.Server
             // --- Main singletons ---
             GlobRef.Set(this);
             GlobRef.New<PhysicsManager>();
+            GlobRef.New<Chat>();
             GlobRef.Set(new DataSaver(WorldPath));
             GlobRef.Set(new Generator(Database.GetSeed(suggestions.Seed)));
             GlobRef.Set(new Clock(Database.GetServerTick()));

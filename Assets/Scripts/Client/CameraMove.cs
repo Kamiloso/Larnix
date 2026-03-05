@@ -1,7 +1,6 @@
 using Larnix.Client.Entities;
 using Larnix.Entities;
-using System.Collections;
-using System.Collections.Generic;
+using Larnix.Scoping;
 using UnityEngine;
 using Larnix.Core.Vectors;
 using Larnix.Core;
@@ -16,30 +15,24 @@ namespace Larnix.Client
 
         private Debugger Debugger => GlobRef.Get<Debugger>();
 
-        private int ZoomSteps = DefaultZoomSteps;
+        private int ZoomSteps = DEFAULT_STEPS;
 
-        private const int DefaultZoomSteps = 0;
-        private const int ZoomMinSteps = -5;
-        private const int ZoomMaxSteps = 5;
+        private const int DEFAULT_STEPS = 0;
+        private const int MIN_STEPS = -5;
+        private const int MAX_STEPS = 5;
 
-        private const float ZoomBase = 8.0f;
-        private const float ZoomStep = 0.5f;
-        private const float ZoomBase_SPECT = 18.0f;
-        private const float ZoomStep_SPECT = 1.5f;
+        private const float ZOOM_BASE = 8.0f;
+        private const float STEP_SIZE = 0.5f;
+
+        private const float ZOOM_BASE_SPECT = 18.0f;
+        private const float STEP_SIZE_SPECT = 1.5f;
 
         private void LateUpdate()
         {
             // Ctrl + Scroll reaction
-            if (Input.GetKey(KeyCode.LeftControl))
-            {
-                float scroll = Input.GetAxis("Mouse ScrollWheel");
-
-                if (scroll > 0f && ZoomSteps > ZoomMinSteps)
-                    ZoomSteps--;
-
-                if (scroll < 0f && ZoomSteps < ZoomMaxSteps)
-                    ZoomSteps++;
-            }
+            float scroll = MyInput.GetScrollCtrl();
+            if (scroll > 0f && ZoomSteps > MIN_STEPS) ZoomSteps--;
+            if (scroll < 0f && ZoomSteps < MAX_STEPS) ZoomSteps++;
 
             // Camera position
             Vec2 offset = EntityFactory.GetSlaveInstance<IHasCollider>(EntityID.Player).COLLIDER_OFFSET();
@@ -51,8 +44,8 @@ namespace Larnix.Client
 
             // Camera zoom
             float zoomValue = !Debugger.SpectatorMode ?
-                (ZoomBase + ZoomSteps * ZoomStep) :
-                (ZoomBase_SPECT + ZoomSteps * ZoomStep_SPECT);
+                (ZOOM_BASE + ZoomSteps * STEP_SIZE) :
+                (ZOOM_BASE_SPECT + ZoomSteps * STEP_SIZE_SPECT);
             MainCamera.orthographicSize = zoomValue;
         }
     }

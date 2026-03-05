@@ -4,7 +4,7 @@ namespace Larnix.Core
 {
     public static class Debug
     {
-        public enum LogType { Log, Info, Warning, Error, Success, Raw }
+        public enum LogType : byte { Log, Info, Warning, Error, Success, Raw }
 
         private static volatile Action<string, LogType> _Log = (msg, type) =>
         {

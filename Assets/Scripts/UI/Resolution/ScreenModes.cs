@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Larnix.Scoping;
 using UnityEngine;
 
 namespace Larnix.UI.Resolution
@@ -19,8 +20,10 @@ namespace Larnix.UI.Resolution
 
         private void Update()
         {
-            if (Input.GetKeyDown(KeyCode.F11))
+            if (MyInput.GetKeyDown(KeyCode.F11, ScopeID.All))
+            {
                 SetFullScreen(!Screen.fullScreen);
+            }
         }
 
         private void SetFullScreen(bool full)

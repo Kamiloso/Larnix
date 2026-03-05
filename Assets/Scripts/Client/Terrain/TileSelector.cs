@@ -1,6 +1,5 @@
 using Larnix.Blocks;
-using Larnix.Client;
-using System.Collections;
+using Larnix.Scoping;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
@@ -90,13 +89,13 @@ namespace Larnix.Client.Terrain
 
         private void DoActionOn(Vec2Int pointed_block, bool pointsRight)
         {
-            bool hold_0 = Input.GetMouseButton(0);
-            bool hold_1 = Input.GetMouseButton(1);
-            bool hold_2 = Input.GetMouseButton(2);
-            bool shift = Input.GetKey(KeyCode.LeftShift);
+            bool hold_0 = MyInput.GetMouseButton(0);
+            bool hold_1 = MyInput.GetMouseButton(1);
+            bool hold_2 = MyInput.GetMouseButton(2);
+            bool shift = MyInput.GetKey(KeyCode.LeftShift);
 
-            BlockData1 item = Inventory.GetHoldingItem();
-            bool is_tool = BlockFactory.HasInterface<ITool>(item.ID);
+            BlockData1 holdBlock = Inventory.GetHoldingBlock();
+            bool is_tool = BlockFactory.HasInterface<ITool>(holdBlock.ID);
 
             Action HideSelector = () =>
             {
@@ -104,11 +103,11 @@ namespace Larnix.Client.Terrain
                 Selector.sprite = tile.sprite;
             };
 
-            Tile tile = Tiles.GetTile(item, !shift);
+            Tile tile = Tiles.GetTile(holdBlock, !shift);
 
             if (is_tool)
             {
-                bool can_be_broken = TerrainAPI.CanBeBroken(pointed_block, item, !shift);
+                bool can_be_broken = TerrainAPI.CanBeBroken(pointed_block, holdBlock, !shift);
 
                 Selector.sprite = tile.sprite;
                 Selector.color = new Color(1, 1, 1);
@@ -118,7 +117,7 @@ namespace Larnix.Client.Terrain
 
                 if (hold_0 && can_be_broken)
                 {
-                    TerrainAPI.BreakBlock(pointed_block, item, !shift);
+                    TerrainAPI.BreakBlock(pointed_block, holdBlock, !shift);
                 }
             }
             else
@@ -126,7 +125,7 @@ namespace Larnix.Client.Terrain
                 Color transpColor = new Color(1, 1, 1, TRANSPARENCY);
                 Color darkerColor = new Color(0, 0, 0, TRANSPARENCY);
 
-                if (TerrainAPI.CanBePlaced(pointed_block, item, !shift))
+                if (TerrainAPI.CanBePlaced(pointed_block, holdBlock, !shift))
                 {
                     Selector.sprite = tile.sprite;
 
@@ -143,7 +142,7 @@ namespace Larnix.Client.Terrain
 
                     if (hold_0)
                     {
-                        TerrainAPI.PlaceBlock(pointed_block, item, !shift);
+                        TerrainAPI.PlaceBlock(pointed_block, holdBlock, !shift);
                     }
                 }
                 else HideSelector();

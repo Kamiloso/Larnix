@@ -22,7 +22,6 @@ namespace Larnix.Server.Commands
 
     internal class CmdManager : IScript, ICmdExecutor
     {
-        private QuickServer QuickServer => GlobRef.Get<QuickServer>();
         private ServerConfig ServerConfig => GlobRef.Get<ServerConfig>();
         private DataSaver DataSaver => GlobRef.Get<DataSaver>();
         private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
@@ -43,7 +42,6 @@ namespace Larnix.Server.Commands
                     case CmdResult.Success: Console.LogSuccess(message); break;
                     case CmdResult.Warning: Console.LogWarning(message); break;
                     case CmdResult.Error: Console.LogError(message); break;
-                    case CmdResult.Ignore: break;
                 }
             }
         }
@@ -64,8 +62,7 @@ namespace Larnix.Server.Commands
             }
             else // from player
             {
-                bool player_online = PlayerActions.StateOf(sender) != PlayerState.None;
-                if (player_online)
+                if (PlayerActions.IsConnected(sender))
                 {
                     bool player_host = DataSaver.HostNickname == sender;
                     bool player_admin = ServerConfig.Administration_Admins.Contains(sender);
@@ -75,11 +72,6 @@ namespace Larnix.Server.Commands
                     if (player_admin) privileges = PrivilegeLevel.Admin;
 
                     (type, message) = InnerExecuteCmd(command, sender, privileges);
-
-                    if (type != CmdResult.Ignore)
-                    {
-                        //QuickServer.Send(sender, new ChatMessage(type, (String512)message));
-                    }
                 }
             }
 
@@ -107,7 +99,7 @@ namespace Larnix.Server.Commands
                 }
 
                 return (CmdResult.Error,
-                    "You don't have permission to execute this command. Your permission level: " + privilege);
+                    "You don't have permission to execute this command. Your permission level: " + privilege + $" ({(int)privilege})");
             }
 
             return (CmdResult.Error,

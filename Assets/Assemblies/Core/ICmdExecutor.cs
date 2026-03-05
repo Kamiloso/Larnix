@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using LogType = Larnix.Core.Debug.LogType;
 
 namespace Larnix.Core
 {
@@ -26,6 +27,19 @@ namespace Larnix.Core
             {
                 command = command.Replace(key, parameters[key]);
             }
+        }
+
+        public static LogType ConvertToLogType(CmdResult result)
+        {
+            return result switch
+            {
+                CmdResult.Log => LogType.Log,
+                CmdResult.Info => LogType.Info,
+                CmdResult.Success => LogType.Success,
+                CmdResult.Warning => LogType.Warning,
+                CmdResult.Error => LogType.Error,
+                _ => LogType.Raw
+            };
         }
     }
 }

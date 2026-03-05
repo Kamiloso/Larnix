@@ -11,10 +11,10 @@ namespace Larnix.Socket.Packets.Control
         private const int SIZE = 512;
         public String512 Message => Primitives.FromBytes<String512>(Bytes, 0);
 
-        public DebugMessage(string message, byte code = 0)
+        public DebugMessage(in String512 message, byte code = 0)
         {
             InitializePayload(ArrayUtils.MegaConcat(
-                Primitives.GetBytes((String512)message)
+                Primitives.GetBytes(message)
                 ), code);
         }
 

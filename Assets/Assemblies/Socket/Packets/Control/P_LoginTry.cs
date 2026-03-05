@@ -19,13 +19,13 @@ namespace Larnix.Socket.Packets.Control
         public long Timestamp => Primitives.FromBytes<long>(Bytes, 176); // 8B
         public long RunID => Primitives.FromBytes<long>(Bytes, 184); // 8B
 
-        public P_LoginTry(string nickname, string password, long serverSecret,
-            long challengeID, long timestamp, long runID, string newPassword = null, byte code = 0)
+        public P_LoginTry(in String32 nickname, in String64 password, long serverSecret,
+            long challengeID, long timestamp, long runID, in String64? newPassword = null, byte code = 0)
         {
             InitializePayload(ArrayUtils.MegaConcat(
-                Primitives.GetBytes((String32)nickname),
-                Primitives.GetBytes((String64)password),
-                Primitives.GetBytes((String64)(newPassword ?? password)),
+                Primitives.GetBytes(nickname),
+                Primitives.GetBytes(password),
+                Primitives.GetBytes(newPassword ?? password),
                 Primitives.GetBytes(serverSecret),
                 Primitives.GetBytes(challengeID),
                 Primitives.GetBytes(timestamp),

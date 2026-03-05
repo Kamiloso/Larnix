@@ -5,6 +5,7 @@ using Larnix.Menu.Worlds;
 using TMPro;
 using Larnix.Server;
 using Larnix.Core;
+using Larnix.Scoping;
 using Ver = Larnix.Core.Version;
 
 namespace Larnix.Menu
@@ -23,6 +24,7 @@ namespace Larnix.Menu
         {
             Application.runInBackground = true;
             GlobRef.Set(this);
+            Scopes.Reset();
 
             Core.Debug.Log("Menu loaded");
         }
@@ -41,7 +43,7 @@ namespace Larnix.Menu
 
         private void Update()
         {
-            if (Input.GetKeyDown(KeyCode.Escape))
+            if (MyInput.GetKeyDown(KeyCode.Escape))
             {
                 GoBack();
             }

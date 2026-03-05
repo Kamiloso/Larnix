@@ -18,11 +18,11 @@ namespace Larnix.Socket.Packets.Control
         internal long Timestamp => Primitives.FromBytes<long>(Bytes, 144); // 8B
         internal long RunID => Primitives.FromBytes<long>(Bytes, 152); // 8B
 
-        internal AllowConnection(string nickname, string password, byte[] keyAES, long serverSecret, long challengeID, long timestamp, long runID, byte code = 0)
+        internal AllowConnection(in String32 nickname, in String64 password, byte[] keyAES, long serverSecret, long challengeID, long timestamp, long runID, byte code = 0)
         {
             InitializePayload(ArrayUtils.MegaConcat(
-                Primitives.GetBytes((String32)nickname),
-                Primitives.GetBytes((String64)password),
+                Primitives.GetBytes(nickname),
+                Primitives.GetBytes(password),
                 keyAES?.Length == 32 ? keyAES : throw new ArgumentException("KeyAES must have length of exactly 32 bytes."),
                 Primitives.GetBytes(serverSecret),
                 Primitives.GetBytes(challengeID),

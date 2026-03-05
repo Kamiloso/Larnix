@@ -1,14 +1,35 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 using Larnix.Core.Binary;
 
 namespace Larnix.Core.Utils
 {
-    internal static class StringUtils
+    public static class StringUtils
     {
+        public static T[] SplitString<T>(string str, Func<string, T> constructor) where T : IStringStruct, new()
+        {
+            str = str.TrimEnd('\0');
+
+            int binSize = new T().BinarySize;
+            int strSize = binSize / 2;
+            
+            int count = str.Length / strSize;
+            if (str.Length % strSize != 0 || count == 0)
+            {
+                count++;
+            }
+
+            T[] result = new T[count];
+            for (int i = 0; i < count; i++)
+            {
+                int maxRem = str.Length - i * strSize;
+                string substr = str.Substring(i * strSize, Math.Min(maxRem, strSize));
+                result[i] = (T)(IStringStruct)constructor(substr);
+            }
+            return result;
+        }
+
         internal static byte[] StringToFixedBinary(string str, int stringSize)
         {
             int bytesSize = sizeof(char) * stringSize;
@@ -41,9 +62,12 @@ namespace Larnix.Core.Utils
     public unsafe struct String32 : IStringStruct
     {
         public int BinarySize => BYTE_SIZE;
-        const int BYTE_SIZE = 32;
-        const int STR_SIZE = BYTE_SIZE / 2;
+        public const int BYTE_SIZE = 32;
+        public const int STR_SIZE = BYTE_SIZE / 2;
         fixed byte buffer[BYTE_SIZE];
+
+        public String32(string value) => this = (String32)value;
+        public override string ToString() => (string)this;
 
         public static explicit operator String32(string value)
         {
@@ -61,9 +85,12 @@ namespace Larnix.Core.Utils
     public unsafe struct String64 : IStringStruct
     {
         public int BinarySize => BYTE_SIZE;
-        const int BYTE_SIZE = 64;
-        const int STR_SIZE = BYTE_SIZE / 2;
+        public const int BYTE_SIZE = 64;
+        public const int STR_SIZE = BYTE_SIZE / 2;
         fixed byte buffer[BYTE_SIZE];
+
+        public String64(string value) => this = (String64)value;
+        public override string ToString() => (string)this;
 
         public static explicit operator String64(string value)
         {
@@ -81,9 +108,12 @@ namespace Larnix.Core.Utils
     public unsafe struct String128 : IStringStruct
     {
         public int BinarySize => BYTE_SIZE;
-        const int BYTE_SIZE = 128;
-        const int STR_SIZE = BYTE_SIZE / 2;
+        public const int BYTE_SIZE = 128;
+        public const int STR_SIZE = BYTE_SIZE / 2;
         fixed byte buffer[BYTE_SIZE];
+
+        public String128(string value) => this = (String128)value;
+        public override string ToString() => (string)this;
 
         public static explicit operator String128(string value)
         {
@@ -101,9 +131,12 @@ namespace Larnix.Core.Utils
     public unsafe struct String256 : IStringStruct
     {
         public int BinarySize => BYTE_SIZE;
-        const int BYTE_SIZE = 256;
-        const int STR_SIZE = BYTE_SIZE / 2;
+        public const int BYTE_SIZE = 256;
+        public const int STR_SIZE = BYTE_SIZE / 2;
         fixed byte buffer[BYTE_SIZE];
+
+        public String256(string value) => this = (String256)value;
+        public override string ToString() => (string)this;
 
         public static explicit operator String256(string value)
         {
@@ -121,9 +154,12 @@ namespace Larnix.Core.Utils
     public unsafe struct String512 : IStringStruct
     {
         public int BinarySize => BYTE_SIZE;
-        const int BYTE_SIZE = 512;
-        const int STR_SIZE = BYTE_SIZE / 2;
+        public const int BYTE_SIZE = 512;
+        public const int STR_SIZE = BYTE_SIZE / 2;
         fixed byte buffer[BYTE_SIZE];
+
+        public String512(string value) => this = (String512)value;
+        public override string ToString() => (string)this;
 
         public static explicit operator String512(string value)
         {
@@ -141,9 +177,12 @@ namespace Larnix.Core.Utils
     public unsafe struct String1024 : IStringStruct
     {
         public int BinarySize => BYTE_SIZE;
-        const int BYTE_SIZE = 1024;
-        const int STR_SIZE = BYTE_SIZE / 2;
+        public const int BYTE_SIZE = 1024;
+        public const int STR_SIZE = BYTE_SIZE / 2;
         fixed byte buffer[BYTE_SIZE];
+
+        public String1024(string value) => this = (String1024)value;
+        public override string ToString() => (string)this;
 
         public static explicit operator String1024(string value)
         {

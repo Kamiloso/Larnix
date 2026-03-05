@@ -12,6 +12,7 @@ using Larnix.Packets;
 using Larnix.Client.Terrain;
 using System;
 using Larnix.Entities.All;
+using Larnix.Scoping;
 using Larnix.Core;
 
 namespace Larnix.Client
@@ -39,6 +40,14 @@ namespace Larnix.Client
         private TileSelector TileSelector => GlobRef.Get<TileSelector>();
         private PhysicsManager PhysicsManager => GlobRef.Get<PhysicsManager>();
         private Debugger Debugger => GlobRef.Get<Debugger>();
+
+        // Input
+        private bool InputUp => MyInput.GetKey(KeyCode.UpArrow) || MyInput.GetKey(KeyCode.W);
+        private bool InputLeft => MyInput.GetKey(KeyCode.LeftArrow) || MyInput.GetKey(KeyCode.A);
+        private bool InputDown => MyInput.GetKey(KeyCode.DownArrow) || MyInput.GetKey(KeyCode.S);
+        private bool InputRight => MyInput.GetKey(KeyCode.RightArrow) || MyInput.GetKey(KeyCode.D);
+        private bool InputJump => InputUp || MyInput.GetKey(KeyCode.Space);
+        private bool InputCrouch => MyInput.GetKey(KeyCode.LeftShift);
 
         // Player / Entity data
         public bool IsAlive => transform.parent.gameObject.activeSelf;
@@ -74,9 +83,9 @@ namespace Larnix.Client
                 {
                     odata = _dynamicCollider.PhysicsUpdate(new InputData
                     {
-                        Left = Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A),
-                        Right = Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D),
-                        Jump = Input.GetKey(KeyCode.Space) || Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W),
+                        Left = InputLeft,
+                        Right = InputRight,
+                        Jump = InputJump,
                     });
                 }
             }
@@ -85,18 +94,13 @@ namespace Larnix.Client
                 const float WILL_SIZE = 45f;
                 const float STRONG_WILL_SIZE = 90f;
 
-                bool left = Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A);
-                bool right = Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D);
-                bool up = Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W);
-                bool down = Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.S);
-
-                bool turbo = Input.GetKey(KeyCode.Space);
+                bool turbo = MyInput.GetKey(KeyCode.Space);
 
                 Vec2 will = (turbo ? STRONG_WILL_SIZE : WILL_SIZE) * Time.fixedDeltaTime * (
-                    (right ? 1 : 0) * new Vec2(1, 0) +
-                    (left ? 1 : 0) * new Vec2(-1, 0) +
-                    (up ? 1 : 0) * new Vec2(0, 1) +
-                    (down ? 1 : 0) * new Vec2(0, -1)
+                    (InputRight ? 1 : 0) * new Vec2(1, 0) +
+                    (InputLeft ? 1 : 0) * new Vec2(-1, 0) +
+                    (InputUp ? 1 : 0) * new Vec2(0, 1) +
+                    (InputDown ? 1 : 0) * new Vec2(0, -1)
                 );
 
                 odata = _dynamicCollider.NoPhysicsUpdate(Position + will);

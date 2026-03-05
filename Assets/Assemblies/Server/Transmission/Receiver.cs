@@ -10,6 +10,10 @@ using System;
 using Larnix.Socket.Packets;
 using Larnix.Blocks;
 using Larnix.Core;
+using Larnix.Server.Commands;
+using LogType = Larnix.Core.Debug.LogType;
+using CmdResult = Larnix.Core.ICmdExecutor.CmdResult;
+using ChatCode = Larnix.Packets.ChatMessage.ChatCode;
 
 namespace Larnix.Server.Transmission
 {
@@ -23,6 +27,7 @@ namespace Larnix.Server.Transmission
         private QuickServer QuickServer => GlobRef.Get<QuickServer>();
         private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
         private BlockSender BlockSender => GlobRef.Get<BlockSender>();
+        private CmdManager CmdManager => GlobRef.Get<CmdManager>();
 
         public Receiver()
         {
@@ -36,6 +41,7 @@ namespace Larnix.Server.Transmission
             Subscribe<PlayerUpdate>(_PlayerUpdate, maxPerSecond: 100, softLimit: true);
             Subscribe<CodeInfo>(_CodeInfo, maxPerSecond: 10);
             Subscribe<BlockChange>(_BlockChange, maxPerSecond: 500); // TODO: Limit for survival players
+            Subscribe<ChatMessage>(_ChatMessage, maxPerSecond: 10, softLimit: true);
         }
 
         private void Subscribe<T>(Action<T, string> callback, int maxPerSecond = 0,
@@ -159,6 +165,53 @@ namespace Larnix.Server.Transmission
                 }
 
                 BlockSender.AddRetBlockChange(new BlockChangeItem(owner, msg.Operation, POS, front, success));
+            }
+        }
+
+        private void _ChatMessage(ChatMessage msg, string owner)
+        {
+            string message = msg.Message;
+
+            if (message.StartsWith("/")) // Command Execution
+            {
+                string command = message[1..];
+                var (result, answer) = CmdManager.ExecuteCommand(command, owner);
+
+                if (result != CmdResult.Ignore)
+                {
+                    LogType logType = ICmdExecutor.ConvertToLogType(result);
+
+                    String512[] answerParts = StringUtils.SplitString(answer, str => (String512)str);
+                    for (int i = 0; i < answerParts.Length; i++)
+                    {
+                        bool isLast = i == answerParts.Length - 1;
+                        ChatCode msgCode = isLast ?
+                            (result == CmdResult.Clear ? ChatCode.ClearChat : ChatCode.Default) :
+                            ChatCode.Incomplete;
+
+                        QuickServer.Send(owner, new ChatMessage(
+                            logType: logType,
+                            sender: (String64)"<Server>",
+                            message: answerParts[i],
+                            msgCode: msgCode
+                        ));
+                    }
+                }
+            }
+            else // Chat Message
+            {
+                ChatMessage packet = new ChatMessage(
+                    logType: LogType.Log,
+                    sender: (String64)$"[{owner}]",
+                    message: (String512)message
+                );
+
+                if (packet.TryGetMsgText(out string msgText))
+                {
+                    Core.Console.Log(msgText); // log to console
+                }
+
+                QuickServer.Broadcast(packet);
             }
         }
     }

@@ -12,6 +12,7 @@ using Larnix.Packets;
 using Larnix.Client.UI;
 using Larnix.Client.Terrain;
 using Larnix.Client.Entities;
+using Larnix.Scoping;
 using Larnix.Core;
 
 namespace Larnix.Client
@@ -50,13 +51,15 @@ namespace Larnix.Client
                 return;
             }
 
-            EarlyUpdateInjector.InjectEarlyUpdate(this.EarlyUpdate);
+            EarlyUpdateInjector.InjectEarlyUpdate(EarlyUpdate, order: 0);
 
             GlobRef.Set(this);
             GlobRef.Set(new PhysicsManager());
 
             WorldPath = WorldLoad.WorldPath;
             IsMultiplayer = WorldLoad.IsMultiplayer;
+
+            Scopes.Reset();
 
             StartCoroutine(CreateClient());
         }
@@ -136,7 +139,7 @@ namespace Larnix.Client
         private void Update()
         {
             // debug input
-            if (Input.GetKeyDown(KeyCode.R)) // temporary respawn using R
+            if (MyInput.GetKeyDown(KeyCode.R)) // temporary respawn using R
             {
                 if (!MainPlayer.gameObject.activeInHierarchy)
                 {
@@ -150,13 +153,16 @@ namespace Larnix.Client
             Inventory.Update1();
             TileSelector.Update2();
 
-            if (Input.GetKeyDown(KeyCode.Escape))
+            if (MyInput.GetKeyDown(KeyCode.Escape))
             {
                 BackToMenu();
             }
         }
 
-        public float GetPing() => _larnixClient?.GetPing() ?? 0f;
+        public float GetPing()
+        {
+            return _larnixClient?.GetPing() ?? 0f;
+        }
 
         public void BackToMenu()
         {
@@ -178,7 +184,7 @@ namespace Larnix.Client
 
             _larnixClient?.Dispose();
             WorldLoad.SetStartingScreen(IsMultiplayer ? "Multiplayer" : "Singleplayer");
-            EarlyUpdateInjector.ClearEarlyUpdate();
+            EarlyUpdateInjector.UninjectEarlyUpdate(EarlyUpdate);
 
             ServerRunner.Instance.Stop(); // if any
         }

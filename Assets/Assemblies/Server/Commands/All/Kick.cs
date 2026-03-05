@@ -12,7 +12,7 @@ namespace Larnix.Server.Commands.All
 {
     internal class Kick : BaseCmd
     {
-        public override PrivilegeLevel PrivilegeLevel => PrivilegeLevel.Admin;
+        public override PrivilegeLevel PrivilegeLevel => PrivilegeLevel.Host;
         public override string Pattern => $"{Name} <nickname>";
         public override string ShortDescription => "Kicks a player.";
 

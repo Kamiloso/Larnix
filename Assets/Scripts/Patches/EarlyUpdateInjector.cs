@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 using UnityEngine.LowLevel;
 using UnityEngine.PlayerLoop;
 using static UnityEngine.PlayerLoop.Update;
@@ -15,27 +14,40 @@ namespace Larnix.Patches
     public static class EarlyUpdateInjector
     {
         // Registered actions
-        private static readonly List<Action> earlyUpdateActions = new List<Action>();
-        private static bool initialized = false;
+        private static readonly List<Action> _earlyUpdateActions = new();
+        private static readonly Dictionary<Action, int> _actionOrders = new();
+        private static bool _initialized = false;
 
         /// <summary>
         /// Injects an Action to be called early before all Update() methods.
         /// </summary>
-        public static void InjectEarlyUpdate(Action action)
+        public static void InjectEarlyUpdate(Action action, int order)
         {
             if (action == null)
                 return;
+            
             Initialize();
-            if (!earlyUpdateActions.Contains(action))
-                earlyUpdateActions.Add(action);
+
+            if (!_earlyUpdateActions.Contains(action))
+            {
+                _earlyUpdateActions.Add(action);
+                _actionOrders[action] = order;
+            }
+
+            // Sort actions by order
+            _earlyUpdateActions.Sort((a, b) => _actionOrders[a].CompareTo(_actionOrders[b]));
         }
 
         /// <summary>
-        /// Clears all registered early update actions.
+        /// Uninjects an Action from being called early before all Update() methods.
         /// </summary>
-        public static void ClearEarlyUpdate()
+        public static void UninjectEarlyUpdate(Action action)
         {
-            earlyUpdateActions.Clear();
+            if (action == null)
+                return;
+
+            _earlyUpdateActions.Remove(action);
+            _actionOrders.Remove(action);
         }
 
         /// <summary>
@@ -43,27 +55,22 @@ namespace Larnix.Patches
         /// </summary>
         private static void Initialize()
         {
-            if (initialized)
+            if (_initialized)
                 return;
 
-            // Get current loop
             var playerLoop = PlayerLoop.GetCurrentPlayerLoop();
 
-            // Insert our system into the Update phase
             for (int i = 0; i < playerLoop.subSystemList.Length; i++)
             {
                 if (playerLoop.subSystemList[i].type == typeof(Update))
                 {
                     var updateSystem = playerLoop.subSystemList[i];
-                    // Prepare new subSystemList with space for our system
                     var subs = new List<PlayerLoopSystem>(updateSystem.subSystemList ?? new PlayerLoopSystem[0]);
 
-                    // Find index of ScriptRunBehaviourUpdate
                     int insertIndex = subs.FindIndex(s => s.type == typeof(ScriptRunBehaviourUpdate));
                     if (insertIndex < 0)
                         insertIndex = 0;
 
-                    // Insert our callback system before ScriptRunBehaviourUpdate
                     subs.Insert(insertIndex, CreateEarlyUpdateSystem());
 
                     updateSystem.subSystemList = subs.ToArray();
@@ -74,7 +81,7 @@ namespace Larnix.Patches
 
             // Apply modified loop
             PlayerLoop.SetPlayerLoop(playerLoop);
-            initialized = true;
+            _initialized = true;
         }
 
         /// <summary>
@@ -94,9 +101,9 @@ namespace Larnix.Patches
         /// </summary>
         private static void ExecuteEarlyUpdates()
         {
-            for (int i = 0; i < earlyUpdateActions.Count; i++)
+            for (int i = 0; i < _earlyUpdateActions.Count; i++)
             {
-                earlyUpdateActions[i]?.Invoke();
+                _earlyUpdateActions[i]?.Invoke();
             }
         }
     }

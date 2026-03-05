@@ -11,6 +11,7 @@ using Larnix.Client.Particles;
 using Larnix.Core;
 using Larnix.Blocks;
 using Larnix.Background;
+using Larnix.Client.Chat;
 
 namespace Larnix.Client
 {
@@ -21,6 +22,7 @@ namespace Larnix.Client
         private GridManager GridManager => GlobRef.Get<GridManager>();
         private EntityProjections EntityProjections => GlobRef.Get<EntityProjections>();
         private ParticleManager ParticleManager => GlobRef.Get<ParticleManager>();
+        private ChatManager ChatManager => GlobRef.Get<ChatManager>();
         private Sky Sky => GlobRef.Get<Sky>();
         private Debugger Debugger => GlobRef.Get<Debugger>();
 
@@ -36,6 +38,7 @@ namespace Larnix.Client
             client.Subscribe<Teleport>(_Teleport);
             client.Subscribe<SpawnParticles>(_SpawnParticles);
             client.Subscribe<FrameInfo>(_FrameInfo);
+            client.Subscribe<ChatMessage>(_ChatMessage);
         }
 
         private void _PlayerInitialize(PlayerInitialize msg)
@@ -143,6 +146,11 @@ namespace Larnix.Client
                     tps: msg.Tps
                 );
             }
+        }
+
+        private void _ChatMessage(ChatMessage msg)
+        {
+            ChatManager.AddMessage(msg);
         }
     }
 }

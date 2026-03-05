@@ -9,6 +9,7 @@ using Larnix.Core.Vectors;
 using Larnix.Worldgen.Biomes;
 using Larnix.Core;
 using Larnix.Core.Utils;
+using Larnix.Scoping;
 
 namespace Larnix.Client
 {
@@ -48,12 +49,12 @@ namespace Larnix.Client
 
         private void Update()
         {
-            if(Input.GetKeyDown(KeyCode.F3))
+            if (MyInput.GetKeyDown(KeyCode.F3, ScopeID.All))
                 ShowDebugInfo = !ShowDebugInfo;
 
-            if(AdvancedDebugKeys)
+            if (AdvancedDebugKeys)
             {
-                if(Input.GetKeyDown(KeyCode.N))
+                if(MyInput.GetKeyDown(KeyCode.N))
                     SpectatorMode = !SpectatorMode;
             }
         }

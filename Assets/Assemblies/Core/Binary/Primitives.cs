@@ -8,7 +8,7 @@ namespace Larnix.Core.Binary
     {
         private const bool LITTLE_ENDIAN = true;
 
-        public static byte[] GetBytes<T>(T value) where T : unmanaged
+        public static byte[] GetBytes<T>(in T value) where T : unmanaged
         {
             if (!IsSupportedType<T>())
                 throw new NotSupportedException(typeof(T).Name);

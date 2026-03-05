@@ -1,7 +1,6 @@
 using Larnix.Blocks;
 using System;
-using System.Collections;
-using System.Collections.Generic;
+using Larnix.Scoping;
 using UnityEngine;
 using Larnix.Blocks.Structs;
 using Larnix.Core;
@@ -20,6 +19,7 @@ namespace Larnix.Client.UI
 
         private Debugger Debugger => GlobRef.Get<Debugger>();
 
+        private int SlotCount => MaxSlot - MinSlot + 1;
         public int SelectedSlot { get; private set; } = 0;
 
         private void Awake()
@@ -29,31 +29,28 @@ namespace Larnix.Client.UI
 
         public void Update1()
         {
-            if (!Input.GetKey(KeyCode.LeftControl))
-            {
-                float scroll = Input.GetAxis("Mouse ScrollWheel");
-                SelectedSlot -= System.Math.Sign(scroll);
-            }
+            float scroll = MyInput.GetScrollNormal();
+            SelectedSlot -= Math.Sign(scroll);
 
             for (int slot = MinSelectable; slot <= MaxSelectable; slot++)
             {
-                if (slot < MinSlot || slot > MaxSlot) continue;
+                if (slot < MinSlot || slot > MaxSlot)
+                    continue;
 
-                KeyCode slotKey = slot != 9 ? (KeyCode)((int)KeyCode.Alpha1 + slot) : KeyCode.Alpha0;
-                if(Input.GetKeyDown(slotKey))
+                KeyCode slotKey = slot != 9 ?
+                    (KeyCode)((int)KeyCode.Alpha1 + slot) : KeyCode.Alpha0;
+                
+                if (MyInput.GetKeyDown(slotKey))
                     SelectedSlot = slot;
             }
 
-            if (SelectedSlot < MinSelectable)
-                SelectedSlot = MaxSelectable;
-
-            if (SelectedSlot > MaxSelectable)
-                SelectedSlot = MinSelectable;
+            while (SelectedSlot < MinSelectable) SelectedSlot += SlotCount;
+            while (SelectedSlot > MaxSelectable) SelectedSlot -= SlotCount;
 
             if (Debugger.ClientBlockSwap)
             {
-                int deltaBlock = (Input.GetKeyDown(KeyCode.P) ? 1 : 0) - (Input.GetKeyDown(KeyCode.O) ? 1 : 0);
-                int deltaVariant = (Input.GetKeyDown(KeyCode.L) ? 1 : 0) - (Input.GetKeyDown(KeyCode.K) ? 1 : 0);
+                int deltaBlock = (MyInput.GetKeyDown(KeyCode.P) ? 1 : 0) - (MyInput.GetKeyDown(KeyCode.O) ? 1 : 0);
+                int deltaVariant = (MyInput.GetKeyDown(KeyCode.L) ? 1 : 0) - (MyInput.GetKeyDown(KeyCode.K) ? 1 : 0);
 
                 BlocksInSlots[SelectedSlot] = (BlockID)((int)BlocksInSlots[SelectedSlot] + deltaBlock);
                 VariantsInSlots[SelectedSlot] += (byte)deltaVariant;
@@ -61,10 +58,10 @@ namespace Larnix.Client.UI
             }
         }
 
-        public BlockData1 GetHoldingItem()
+        public BlockData1 GetHoldingBlock()
         {
             Item item = GetItemInSlot(SelectedSlot);
-            return item.Count != 0 ? item.Block : new BlockData1();
+            return item.Count != 0 ? item.Block : BlockData1.Air;
         }
 
         public Item GetItemInSlot(int slotID)
@@ -77,7 +74,7 @@ namespace Larnix.Client.UI
                 blockID = BlocksInSlots[slotID];
                 variant = VariantsInSlots[slotID];
             }
-            catch(IndexOutOfRangeException)
+            catch (IndexOutOfRangeException)
             {
                 blockID = BlockID.Air;
                 variant = 0;

@@ -11,6 +11,7 @@ using Larnix.Socket.Security.Keys;
 using Larnix.Socket.Packets.Control;
 using Larnix.Socket.Channel.Networking;
 using Larnix.Core;
+using Larnix.Core.Utils;
 
 namespace Larnix.Socket.Frontend
 {
@@ -66,7 +67,7 @@ namespace Larnix.Socket.Frontend
             KeyAES keyAES = new(); // auto-generate
             byte[] aesBytes = keyAES.ExportKey();
 
-            Payload synPacket = new AllowConnection(nickname, password, aesBytes, serverSecret, challengeID, timestamp, runID);
+            Payload synPacket = new AllowConnection((String32)nickname, (String64)password, aesBytes, serverSecret, challengeID, timestamp, runID);
             _connection = Connection.CreateClient(_udpClient, _target, keyAES, _rsaKey, synPacket);
         }
 

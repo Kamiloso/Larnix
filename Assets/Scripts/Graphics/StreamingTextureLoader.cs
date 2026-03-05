@@ -6,7 +6,7 @@ using System.IO;
 using UnityEngine;
 using Larnix.Patches;
 
-namespace Larnix
+namespace Larnix.Graphics
 {
     public class StreamingTextureLoader : MonoBehaviour, IGlobalUnitySingleton
     {
