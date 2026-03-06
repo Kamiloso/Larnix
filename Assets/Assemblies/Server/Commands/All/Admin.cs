@@ -9,7 +9,7 @@ namespace Larnix.Server.Commands.All
 {
     internal class Admin : BaseCmd
     {
-        public override PrivilegeLevel PrivilegeLevel => PrivilegeLevel.Console;
+        public override PrivilegeLevel PrivilegeLevel => PrivilegeLevel.Admin;
         public override string Pattern => $"{Name} <params...>";
         public override string Hint => $"Type 'help {Name}' for more information.";
         public override string ShortDescription => "Manages administrative privileges.";

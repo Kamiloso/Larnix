@@ -1,15 +1,16 @@
-using Larnix.Blocks;
-using System.Collections;
-using System.Collections.Generic;
-using System;
-using System.Reflection;
-using System.Linq;
 using Larnix.Blocks.Structs;
 
 namespace Larnix.Worldgen.Biomes
 {
     public abstract class Biome
     {
+        public Seed Seed { get; private init; }
+
+        protected Biome(Seed seed)
+        {
+            Seed = seed;
+        }
+
         public abstract BlockData2 TranslateProtoBlock(ProtoBlock protoBlock);
     }
 }

@@ -9,7 +9,7 @@ namespace Larnix.Blocks
 {
     public interface IWorldAPI : ICmdExecutor
     {
-        public enum BreakMode : byte // must be byte for serialization
+        public enum BreakMode : byte
         {
             Replace = 0,
             Effects = 1, // drops particles

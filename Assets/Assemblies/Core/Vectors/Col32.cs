@@ -72,7 +72,7 @@ namespace Larnix.Core.Vectors
 
         public static bool operator !=(Col32 lhs, Col32 rhs) => !(lhs == rhs);
 
-        public static Col32 Lerp(Col32 start, Col32 end, float t = 0.5f)
+        public static Col32 Lerp(Col32 start, Col32 end, double t = 0.5f)
         {
             t = Math.Clamp(t, 0f, 1f);
             byte lerp(byte a, byte b) => (byte)(a + (b - a) * t);

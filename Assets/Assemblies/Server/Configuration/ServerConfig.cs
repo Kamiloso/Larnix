@@ -8,7 +8,7 @@ namespace Larnix.Server.Configuration
 {
     internal class ServerConfig : Config
     {
-        public int ConfigVersion { get; set; } = 12;
+        public int ConfigVersion { get; set; } = 13;
 
         // --- Main ---
         public ushort MaxPlayers { get; set; } = 10;
@@ -16,6 +16,7 @@ namespace Larnix.Server.Configuration
         public string Motd { get; set; } = "Welcome to Larnix server!";
 
         // --- Administration ---
+        public bool ElevateHostToAdmin { get; set; } = false;
         public List<string> Administration_Admins { get; init; } = new();
         public List<string> Administration_Banned { get; init; } = new();
 
@@ -63,6 +64,11 @@ namespace Larnix.Server.Configuration
                 {
                     prop.SetValue(this, prop.GetValue(defaults));
                 }
+            }
+
+            if (ConfigVersion < 13) // added: ElevateHostToAdmin
+            {
+                ElevateHostToAdmin = defaults.ElevateHostToAdmin;
             }
 
             ConfigVersion = defaults.ConfigVersion;

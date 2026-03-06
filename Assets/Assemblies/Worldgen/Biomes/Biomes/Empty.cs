@@ -6,7 +6,7 @@ namespace Larnix.Worldgen.Biomes.All
 {
     public sealed class Empty : Biome
     {
-        private Empty() {}
+        public Empty(Seed seed) : base(seed) {}
         
         public override BlockData2 TranslateProtoBlock(ProtoBlock protoBlock)
         {

@@ -1,6 +1,5 @@
 <linker>
   <assembly fullname="Larnix.Worldgen">
-	<type fullname="Larnix.Worldgen.Ores.All.*" />
     <type fullname="Larnix.Worldgen.Biomes.All.*" />
   </assembly>
 	

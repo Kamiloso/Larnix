@@ -1,12 +1,8 @@
 using Larnix.Blocks;
-using System.Collections;
-using System.Collections.Generic;
-using Larnix.Core.Vectors;
-using Larnix.Blocks.Structs;
 
 namespace Larnix.Blocks.All
 {
-    public sealed class Stone : Block, ISolid
+    public sealed class Stone : Block, ISolid, IOreReplaceable
     {
         public bool ALLOW_PLACE_BACK() => true;
 

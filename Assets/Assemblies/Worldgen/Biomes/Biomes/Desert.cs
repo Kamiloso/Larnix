@@ -1,22 +1,15 @@
-using Larnix.Blocks;
 using System.Collections.Generic;
+using Larnix.Blocks;
 using Larnix.Blocks.Structs;
 using Larnix.Worldgen.Ores;
-using System.Collections.ObjectModel;
 
 namespace Larnix.Worldgen.Biomes.All
 {
-    public sealed class Desert : Biome, IHasOre
+    public sealed class Desert : Biome, IOreNormal
     {
-        private Desert() {}
+        IEnumerable<Ore> IHasOre.PRIVATE_OreCache { get; set; }
 
-        ReadOnlyDictionary<OreID, BlockData1> IHasOre.ORES() => _ores;
-        private static readonly ReadOnlyDictionary<OreID, BlockData1> _ores =
-            new(new Dictionary<OreID, BlockData1>()
-            {
-                [OreID.TestOre] = new(BlockID.Log, 0),
-                [OreID.BiomeTestOre] = null
-            });
+        public Desert(Seed seed) : base(seed) {}
 
         public override BlockData2 TranslateProtoBlock(ProtoBlock protoBlock) =>
             protoBlock switch

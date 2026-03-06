@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Larnix.Worldgen.Biomes
 {
-    public enum BiomeID : ushort // needed for serialization
+    public enum BiomeID : ushort
     {
         Empty = 0,
         Plains = 1,

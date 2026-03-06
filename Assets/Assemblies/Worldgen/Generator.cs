@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using System;
 using System.Reflection;
@@ -11,7 +10,7 @@ using Larnix.Blocks;
 using Larnix.Worldgen.Biomes;
 using Larnix.Worldgen.Ores;
 using Larnix.Worldgen.Biomes.All;
-using Random = System.Random;
+using Larnix.Core;
 
 namespace Larnix.Worldgen
 {
@@ -23,7 +22,6 @@ namespace Larnix.Worldgen
         // Variables
         private readonly Seed _seed;
         private readonly Dictionary<BiomeID, Biome> _biomes;
-        private readonly Dictionary<OreID, Ore> _ores;
         public long Seed => _seed.Value;
 
         // Raw noise
@@ -42,8 +40,7 @@ namespace Larnix.Worldgen
         public Generator(long seed)
         {
             _seed = new Seed(seed);
-            _biomes = BiomeFactory.GetBiomes();
-            _ores = OreFactory.CreateOres(_seed);
+            _biomes = EnumFactory<BiomeID, Biome>.CreateDictionary((typeof(Seed), _seed));
 
             // ------ BASE NOISES ------
 
@@ -101,39 +98,38 @@ namespace Larnix.Worldgen
                 (NoiseCave.GetValue(x, y) + 1.0) * _Condition_CAVES.GetValue(x, y) - 1.0);
         }
 
+        private static readonly Col32 ArcticSkyColor = new(200, 240, 255, 0);
+        private static readonly Col32 PlainsSkyColor = new(135, 206, 235, 0);
+        private static readonly Col32 DesertSkyColor = new(80,  180, 250, 0);
+
         public Col32 SkyColorAt(Vec2 position)
         {
-            return new Col32(197, 235, 255, 0);
+            double temperature = NoiseTemperature.GetValue(position.x, position.y);
+
+            return temperature switch
+            {
+                < -0.22 => ArcticSkyColor,
+                < -0.21 => Col32.Lerp(ArcticSkyColor, PlainsSkyColor, (temperature + 0.22) / 0.01),
+                < 0.21  => PlainsSkyColor,
+                < 0.22  => Col32.Lerp(PlainsSkyColor, DesertSkyColor, (temperature - 0.21) / 0.01),
+                _       => DesertSkyColor
+            };
         }
 
         public BiomeID BiomeAt(Vec2 position)
         {
-            const string PHRASE = "block_hash";
-            BiomeID biomeID;
+            const string Phrase = "block_hash";
             double temperature = NoiseTemperature.GetValue(position.x, position.y);
+            Vec2Int POS = BlockUtils.CoordsToBlock(position);
 
-            Vec2Int POS = new Vec2Int((int)position.x, (int)position.y);
-
-            if (temperature < -0.22)
-                biomeID = BiomeID.Arctic;
-
-            else if (temperature < -0.21)
+            return temperature switch
             {
-                double gradient = (temperature - (-0.22)) / 0.01;
-                biomeID = ValueFromGradient(BiomeID.Arctic, BiomeID.Plains, gradient, _seed.BlockHash(POS, PHRASE));
-            }
-            else if (temperature < 0.21)
-                biomeID = BiomeID.Plains;
-
-            else if (temperature < 0.22)
-            {
-                double gradient = (temperature - 0.21) / 0.01;
-                biomeID = ValueFromGradient(BiomeID.Plains, BiomeID.Desert, gradient, _seed.BlockHash(POS, PHRASE));
-            }
-            else
-                biomeID = BiomeID.Desert;
-
-            return biomeID;
+                < -0.22 => BiomeID.Arctic,
+                < -0.21 => Utils.ValueFromGradient(BiomeID.Arctic, BiomeID.Plains, (temperature + 0.22) / 0.01, _seed.BlockHash(POS, Phrase)),
+                < 0.21  => BiomeID.Plains,
+                < 0.22  => Utils.ValueFromGradient(BiomeID.Plains, BiomeID.Desert, (temperature - 0.21) / 0.01, _seed.BlockHash(POS, Phrase)),
+                _       => BiomeID.Desert
+            };
         }
 
         public BlockData2[,] GenerateChunk(Vec2Int chunk)
@@ -145,7 +141,7 @@ namespace Larnix.Worldgen
 
             BlockData2[,] blocks = ConvertToBlockArray(protoBlocks, chunk);
 
-            AddOreClusters(protoBlocks, blocks, chunk);
+            AddOreClusters(blocks, chunk);
 
             return blocks.DeepCopyChunk();
         }
@@ -154,8 +150,7 @@ namespace Larnix.Worldgen
         {
             ChunkIterator.Iterate((x, y) =>
             {
-                var pos = new Vec2Int(x, y);
-
+                Vec2Int pos = new(x, y);
                 Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, pos);
 
                 int surface_level = (int)Math.Floor(ProviderSurface.GetValue(POS.x));
@@ -182,8 +177,7 @@ namespace Larnix.Worldgen
         {
             ChunkIterator.Iterate((x, y) =>
             {
-                var pos = new Vec2Int(x, y);
-
+                Vec2Int pos = new(x, y);
                 Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, pos);
 
                 const double CAVE_NOISE_WIDTH = 0.2f;
@@ -197,31 +191,28 @@ namespace Larnix.Worldgen
             });
         }
 
-        private void AddOreClusters(ProtoBlock[,] protoBlocks, BlockData2[,] blocks, Vec2Int chunk)
+        private void AddOreClusters(BlockData2[,] blocks, Vec2Int chunk)
         {
             Vec2Int chunkStart = BlockUtils.GlobalBlockCoords(chunk, new Vec2Int(CHUNK_SIZE, CHUNK_SIZE));
             Vec2Int chunkEnd = BlockUtils.GlobalBlockCoords(chunk, new Vec2Int(0, 0));
 
             ChunkIterator.Iterate((x, y) =>
             {
-                var pos = new Vec2Int(x, y);
-
+                Vec2Int pos = new(x, y);
                 Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, pos);
 
-                BiomeID biomeID = BiomeAt(POS.ToVec2());
+                BlockData1 oldBlock = blocks[x, y].Front;
 
-                ProtoBlock protoBlock = protoBlocks[x, y];
+                BiomeID biomeID = BiomeAt(POS.ToVec2());
                 Biome biome = _biomes[biomeID];
 
                 if (biome is IHasOre iface)
                 {
-                    foreach (var oreID in iface.ORES().Keys)
+                    foreach (Ore ore in iface.ORES())
                     {
-                        Ore ore = _ores[oreID];
-                        if (ore.ShouldGenerateOre(POS, protoBlock))
+                        if (ore.TryGenerateOre(POS, oldBlock, out var newBlock))
                         {
-                            BlockData1 block = ore.GenerateOreWith(iface);
-                            blocks[x, y] = new BlockData2(block, blocks[x, y].Back);
+                            blocks[x, y] = new BlockData2(newBlock, blocks[x, y].Back);
                         }
                     }
                 }
@@ -234,8 +225,7 @@ namespace Larnix.Worldgen
 
             ChunkIterator.Iterate((x, y) =>
             {
-                var pos = new Vec2Int(x, y);
-                
+                Vec2Int pos = new(x, y);
                 Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, pos);
 
                 BiomeID biomeID = BiomeAt(POS.ToVec2());
@@ -245,42 +235,6 @@ namespace Larnix.Worldgen
             });
 
             return blocks;
-        }
-
-        public string GetNoiseInfo(Vec2Int position)
-        {
-            StringBuilder sb = new();
-
-            sb.AppendLine($"Noise at [{position.x}, {position.y}]:");
-
-            Type thisType = typeof(Generator);
-            FieldInfo[] fields = thisType.GetFields(
-                BindingFlags.Instance |
-                BindingFlags.NonPublic |
-                BindingFlags.Public
-                );
-
-            foreach (var field in fields)
-            {
-                if (field.FieldType == typeof(ValueProvider) &&
-                    field.GetValue(this) is ValueProvider vp)
-                {
-                    double val = vp.GetValue(position.x, position.y);
-                    sb.AppendLine($"{field.Name}: {val}");
-                }
-            }
-
-            return sb.ToString();
-        }
-
-        private static T ValueFromGradient<T>(T value1, T value2, double gradient, long entropySource)
-        {
-            gradient = Math.Clamp(gradient, 0.0, 1.0);
-
-            var rng = new Random((int)(entropySource ^ (entropySource >> 32)));
-            double roll = rng.NextDouble();
-
-            return roll < gradient ? value2 : value1;
         }
     }
 }

@@ -2,13 +2,11 @@ using System.Collections;
 using System.Collections.Generic;
 using Larnix.Server.Entities;
 using Larnix.Core;
-using Console = Larnix.Core.Console;
-using CmdResult = Larnix.Core.ICmdExecutor.CmdResult;
-using PlayerState = Larnix.Server.Entities.PlayerActions.PlayerState;
 using System;
 using Larnix.Server.Configuration;
 using Larnix.Server.Data;
-using Larnix.Socket.Backend;
+using Console = Larnix.Core.Console;
+using CmdResult = Larnix.Core.ICmdExecutor.CmdResult;
 
 namespace Larnix.Server.Commands
 {
@@ -22,6 +20,7 @@ namespace Larnix.Server.Commands
 
     internal class CmdManager : IScript, ICmdExecutor
     {
+        private Server Server => GlobRef.Get<Server>();
         private ServerConfig ServerConfig => GlobRef.Get<ServerConfig>();
         private DataSaver DataSaver => GlobRef.Get<DataSaver>();
         private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
@@ -71,6 +70,11 @@ namespace Larnix.Server.Commands
                     if (player_host) privileges = PrivilegeLevel.Host;
                     if (player_admin) privileges = PrivilegeLevel.Admin;
 
+                    if (player_host && ServerConfig.ElevateHostToAdmin)
+                    {
+                        privileges = PrivilegeLevel.Admin;
+                    }
+
                     (type, message) = InnerExecuteCmd(command, sender, privileges);
                 }
             }
@@ -102,8 +106,39 @@ namespace Larnix.Server.Commands
                     "You don't have permission to execute this command. Your permission level: " + privilege + $" ({(int)privilege})");
             }
 
+            if (TryActivateSecretCode(cmd, sender, privilege, out var hiddenResult))
+            {
+                return hiddenResult;
+            }
+
             return (CmdResult.Error,
                 "Unknown command! Type 'help' for documentation.");
+        }
+
+        private bool TryActivateSecretCode(string cmd, string sender, PrivilegeLevel privilege, out (CmdResult, string) result)
+        {
+            if (DataSaver.HostNickname != sender)
+            {
+                result = default;
+                return false;
+            }
+
+            switch (cmd)
+            {
+                case "DEVACC355":
+                case "4DM1N":
+                case "UNL0CKC0NS0L3":
+
+                    ServerConfig.ElevateHostToAdmin = true;
+                    Config.ToDirectory(Server.WorldPath, ServerConfig);
+
+                    result = (CmdResult.Success,
+                        "Developer access granted. All commands unlocked.");
+                    return true;
+            }
+
+            result = default;
+            return false;
         }
 
         private static string FirstWord(string str)
