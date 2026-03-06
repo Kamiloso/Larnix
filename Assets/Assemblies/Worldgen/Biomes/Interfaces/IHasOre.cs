@@ -1,32 +1,17 @@
-
 using Larnix.Blocks;
 using Larnix.Blocks.Structs;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using Larnix.Worldgen.Ores;
+using System.Collections.ObjectModel;
 
-namespace Larnix.Worldgen.Biomes.Interfaces
+namespace Larnix.Worldgen.Biomes.All
 {
     public interface IHasOre
     {
-        Dictionary<OreID, BlockData1> ORES();
-        Type BIOME();
-
-        BlockData1 STATIC_GetOreBlock(OreID oreID, BlockID baseBlockID)
-        {
-            var Ores = ORES();
-
-            if (!Ores.Keys.Contains(oreID)) throw new Exception("Incorrect OreID");
-
-            Type Biome = BIOME();
-
-            byte interfaceIndex = (byte)(BiomeID)Enum.Parse(typeof(BiomeID), Biome.Name);
-
-            BlockData1 outOreBlock = Ores[oreID] ?? new(baseBlockID, interfaceIndex);
-
-            return outOreBlock;
-        }
+        /// <summary>
+        /// Do not allocate new dictionary every time! Use static readonly field.
+        /// null -> use default ore block.
+        /// </summary>
+        ReadOnlyDictionary<OreID, BlockData1> ORES();
     }
 }

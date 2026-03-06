@@ -1,38 +1,45 @@
-
+using System;
+using System.Collections.Generic;
 using Larnix.Blocks;
 using Larnix.Blocks.Structs;
 using Larnix.Core.Vectors;
-using System.Collections.Generic;
+using Larnix.Worldgen.Biomes.All;
 
 namespace Larnix.Worldgen.Ores
 {
-    public abstract class Ore
+    internal abstract class Ore
     {
+        protected Seed Seed { get; private init; }
+        protected ValueProvider OreProvider { get; init; }
+        public OreID ID => Enum.Parse<OreID>(GetType().Name);
 
-        public long BaseSeed { get; }
-
-        public int DepthMin { get; set; } = 0;
-        public int DepthMax { get; set; } = 0;
-
-        public double OreClusterSizeCutoff { get; set; } = 0.5;
-
-        public BlockID OreBlockId { get; set; }
-
-        public ValueProvider OreProvider { get; set; }
-
-        public Ore(long seed) 
+        public abstract BlockData1 DefaultBlock { get; }
+        public abstract double OreClusterSizeCutoff { get; }
+        public virtual ProtoBlock BaseProtoBlock => ProtoBlock.Stone;
+        public virtual int MaxHeight => int.MaxValue;
+        public virtual int MinHeight => int.MinValue;
+        
+        public Ore(Seed seed)
         {
-            BaseSeed = seed;
+            Seed = seed;
         }
 
-        public virtual void GenerateOre(in ProtoBlock protoBlock,ref BlockData2 block,in Vec2Int POS,in BlockData1 oreBlock)
+        public bool ShouldGenerateOre(Vec2Int POS, ProtoBlock protoBlock)
         {
-            if (protoBlock != ProtoBlock.Stone) return;
-            if (POS.y > DepthMin || POS.y < DepthMax) return;
+            if (protoBlock != BaseProtoBlock) return false;
+            if (POS.y < MinHeight || POS.y > MaxHeight) return false;
 
-            double oreValue = OreProvider.GetValue(POS.x, POS.y);
-            if (oreValue > OreClusterSizeCutoff) 
-                block = new(oreBlock, block.Back);
+            double value = OreProvider?.GetValue(POS.x, POS.y) ?? 0.0;
+            return value > OreClusterSizeCutoff;
+        }
+
+        public BlockData1 GenerateOreWith(IHasOre iface)
+        {
+            var ores = iface.ORES();
+            if (ores.TryGetValue(ID, out BlockData1 blockData) && blockData != null)
+                return blockData.DeepCopy();
+            
+            return DefaultBlock;
         }
     }
 }

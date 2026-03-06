@@ -1,21 +1,20 @@
-
 using Larnix.Blocks;
 using Larnix.Worldgen.Noise;
+using Larnix.Blocks.Structs;
 
 namespace Larnix.Worldgen.Ores.All
 {
-    public sealed class TestOre : Ore
+    internal sealed class TestOre : Ore
     {
-        public TestOre(long seed) : base(seed)
-        {
-            Seed baseSeed = new Seed(BaseSeed);
+        public override BlockData1 DefaultBlock => new(BlockID.Plastic, 0);
+        public override double OreClusterSizeCutoff => 0.5;
+        public override int MaxHeight => -10;
+        public override int MinHeight => -100;
 
-            DepthMin = -10;
-            DepthMax = -100;
-            OreClusterSizeCutoff = 0.5;
-            OreBlockId = BlockID.Plastic;
+        public TestOre(Seed seed) : base(seed)
+        {
             OreProvider = ValueProvider.CreatePerlin(
-                new Perlin(seed: (int)baseSeed.Hash("test_ore"))
+                new Perlin(seed: (int)Seed.Hash("test_ore"))
                 {
                     Octaves = 2,
                     Frequency = 0.1,

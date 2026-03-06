@@ -5,12 +5,12 @@ using System.Linq;
 
 namespace Larnix.Worldgen.Biomes
 {
-    public class BiomeFactory
+    internal class BiomeFactory
     {
         private static Dictionary<BiomeID, Biome> _allBiomes;
         private static readonly object _lock = new();
 
-        internal static Dictionary<BiomeID, Biome> GetBiomes()
+        public static Dictionary<BiomeID, Biome> GetBiomes()
         {
             lock (_lock)
             {

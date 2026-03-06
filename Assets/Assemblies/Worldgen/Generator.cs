@@ -7,12 +7,11 @@ using Larnix.Core.Utils;
 using Larnix.Blocks.Structs;
 using Larnix.Core.Vectors;
 using Larnix.Worldgen.Noise;
-using Random = System.Random;
 using Larnix.Blocks;
-using NUnit.Framework;
 using Larnix.Worldgen.Biomes;
 using Larnix.Worldgen.Ores;
-using Larnix.Worldgen.Biomes.Interfaces;
+using Larnix.Worldgen.Biomes.All;
+using Random = System.Random;
 
 namespace Larnix.Worldgen
 {
@@ -35,7 +34,6 @@ namespace Larnix.Worldgen
         // Value providers
         private readonly ValueProvider ProviderSurface;
         private readonly ValueProvider ProviderCave;
-        private readonly ValueProvider ProviderTemperature;
 
         // Constants
         const int WATER_LEVEL = -1;
@@ -43,9 +41,9 @@ namespace Larnix.Worldgen
 
         public Generator(long seed)
         {
-            _biomes = BiomeFactory.GetBiomes();
-            _ores = OreFactory.GetOres(seed);
             _seed = new Seed(seed);
+            _biomes = BiomeFactory.GetBiomes();
+            _ores = OreFactory.CreateOres(_seed);
 
             // ------ BASE NOISES ------
 
@@ -101,11 +99,6 @@ namespace Larnix.Worldgen
 
             ProviderCave = ValueProvider.CreateFunction((x, y, z) =>
                 (NoiseCave.GetValue(x, y) + 1.0) * _Condition_CAVES.GetValue(x, y) - 1.0);
-
-            // ------ TEMPERATURE PROVIDER ------
-
-            //ProviderTemperature = ValueProvider.CreateFunction((x, y, z) =>
-            //    _SurfaceRelative.GetValue(x, y, z));
         }
 
         public Col32 SkyColorAt(Vec2 position)
@@ -119,7 +112,7 @@ namespace Larnix.Worldgen
             BiomeID biomeID;
             double temperature = NoiseTemperature.GetValue(position.x, position.y);
 
-            Vec2Int IntPos = new Vec2Int((int)position.x, (int)position.y);
+            Vec2Int POS = new Vec2Int((int)position.x, (int)position.y);
 
             if (temperature < -0.22)
                 biomeID = BiomeID.Arctic;
@@ -127,7 +120,7 @@ namespace Larnix.Worldgen
             else if (temperature < -0.21)
             {
                 double gradient = (temperature - (-0.22)) / 0.01;
-                biomeID = ValueFromGradient(BiomeID.Arctic, BiomeID.Plains, gradient, _seed.BlockHash(IntPos, PHRASE));
+                biomeID = ValueFromGradient(BiomeID.Arctic, BiomeID.Plains, gradient, _seed.BlockHash(POS, PHRASE));
             }
             else if (temperature < 0.21)
                 biomeID = BiomeID.Plains;
@@ -135,7 +128,7 @@ namespace Larnix.Worldgen
             else if (temperature < 0.22)
             {
                 double gradient = (temperature - 0.21) / 0.01;
-                biomeID = ValueFromGradient(BiomeID.Plains, BiomeID.Desert, gradient, _seed.BlockHash(IntPos, PHRASE));
+                biomeID = ValueFromGradient(BiomeID.Plains, BiomeID.Desert, gradient, _seed.BlockHash(POS, PHRASE));
             }
             else
                 biomeID = BiomeID.Desert;
@@ -198,13 +191,8 @@ namespace Larnix.Worldgen
 
                 if (cave_value > -CAVE_NOISE_WIDTH && cave_value < CAVE_NOISE_WIDTH) // cave
                 {
-                    ProtoBlock protoBlock = protoBlocks[x, y];
-                    protoBlock = protoBlock switch
-                    {
-                        ProtoBlock.Stone => ProtoBlock.Cave,
-                        _ => ProtoBlock.Air,
-                    };
-                    protoBlocks[x, y] = protoBlock;
+                    protoBlocks[x, y] = protoBlocks[x, y] == ProtoBlock.Stone ?
+                        ProtoBlock.Cave : ProtoBlock.Air;
                 }
             });
         }
@@ -225,18 +213,16 @@ namespace Larnix.Worldgen
                 ProtoBlock protoBlock = protoBlocks[x, y];
                 Biome biome = _biomes[biomeID];
 
-                var biomeWithOre = biome as IHasOre;
-
-                if (biomeWithOre != null)
+                if (biome is IHasOre iface)
                 {
-                    foreach (var oreID in biomeWithOre.ORES().Keys)
+                    foreach (var oreID in iface.ORES().Keys)
                     {
                         Ore ore = _ores[oreID];
-
-                        if (ore.DepthMax > chunkStart.y || ore.DepthMin < chunkEnd.y) continue;
-                        BlockData1 block = biomeWithOre.STATIC_GetOreBlock(oreID, ore.OreBlockId);
-
-                        ore.GenerateOre(protoBlock, ref blocks[x, y], POS, block);
+                        if (ore.ShouldGenerateOre(POS, protoBlock))
+                        {
+                            BlockData1 block = ore.GenerateOreWith(iface);
+                            blocks[x, y] = new BlockData2(block, blocks[x, y].Back);
+                        }
                     }
                 }
             });
@@ -261,38 +247,40 @@ namespace Larnix.Worldgen
             return blocks;
         }
 
-        private T ValueFromGradient<T>(T value1, T value2, double gradient, long entropySource)
-        {
-            gradient = Math.Clamp(gradient, 0.0, 1.0);
-
-            Random rng = new Random((int)(entropySource ^ (entropySource >> 32)));
-            double roll = rng.NextDouble();
-
-            return roll < gradient ? value2 : value1;
-        }
-
         public string GetNoiseInfo(Vec2Int position)
         {
-            var sb = new StringBuilder();
+            StringBuilder sb = new();
 
             sb.AppendLine($"Noise at [{position.x}, {position.y}]:");
 
-            FieldInfo[] fields = this.GetType().GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+            Type thisType = typeof(Generator);
+            FieldInfo[] fields = thisType.GetFields(
+                BindingFlags.Instance |
+                BindingFlags.NonPublic |
+                BindingFlags.Public
+                );
 
             foreach (var field in fields)
             {
-                if (field.FieldType == typeof(ValueProvider))
+                if (field.FieldType == typeof(ValueProvider) &&
+                    field.GetValue(this) is ValueProvider vp)
                 {
-                    ValueProvider vp = field.GetValue(this) as ValueProvider;
-                    if (vp != null)
-                    {
-                        double val = vp.GetValue(position.x, position.y);
-                        sb.AppendLine($"{field.Name}: {val}");
-                    }
+                    double val = vp.GetValue(position.x, position.y);
+                    sb.AppendLine($"{field.Name}: {val}");
                 }
             }
 
             return sb.ToString();
+        }
+
+        private static T ValueFromGradient<T>(T value1, T value2, double gradient, long entropySource)
+        {
+            gradient = Math.Clamp(gradient, 0.0, 1.0);
+
+            var rng = new Random((int)(entropySource ^ (entropySource >> 32)));
+            double roll = rng.NextDouble();
+
+            return roll < gradient ? value2 : value1;
         }
     }
 }

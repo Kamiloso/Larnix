@@ -8,6 +8,8 @@ namespace Larnix.Blocks.Structs
     {
         public const int SIZE = sizeof(BlockID) * 2 + sizeof(byte);
 
+        public static BlockData2 Empty => new();
+
         private BlockData1 _front, _back;
         public BlockData1 Front
         {

@@ -1,23 +1,20 @@
-
-using System.Collections.Generic;
-using Larnix.Blocks;
-using Larnix.Blocks.Structs;
 using Larnix.Worldgen.Noise;
+using Larnix.Blocks.Structs;
+using Larnix.Blocks;
 
 namespace Larnix.Worldgen.Ores.All
 {
-    public sealed class BiomeTestOre : Ore
+    internal sealed class BiomeTestOre : Ore
     {
-        public BiomeTestOre(long seed) : base(seed)
-        {
-            Seed baseSeed = new Seed(BaseSeed);
+        public override BlockData1 DefaultBlock => new(BlockID.Bedrock, 0);
+        public override double OreClusterSizeCutoff => 0.7;
+        public override int MaxHeight => -15;
+        public override int MinHeight => int.MinValue;
 
-            DepthMin = -15;
-            DepthMax = int.MinValue;
-            OreClusterSizeCutoff = 0.7;
-            
+        public BiomeTestOre(Seed seed) : base(seed)
+        {   
             OreProvider = ValueProvider.CreatePerlin(
-                new Perlin(seed: (int)baseSeed.Hash("biome_test_ore"))
+                new Perlin(seed: (int)Seed.Hash("biome_test_ore"))
                 {
                     Octaves = 2,
                     Frequency = 0.1,
