@@ -38,6 +38,12 @@ namespace Larnix.Blocks
             };
         }
 
+        public static void IterateWithPOS(Vec2Int chunk, Action<Vec2Int, int, int> action, IterationOrder order = IterationOrder.XY)
+        {
+            Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, Vec2Int.Zero);
+            Iterate((x, y) => action(POS + new Vec2Int(x, y), x, y), order);
+        }
+
         private static void IterateXY(Action<int, int> action)
         {
             for (int x = 0; x < CHUNK_SIZE; x++)

@@ -8,6 +8,9 @@ namespace Larnix.Worldgen.Ores
 {
     public abstract class Ore
     {
+        public bool FrontEnabled { get; init; } = true;
+        public bool BackEnabled { get; init; } = false;
+
         public Func<BlockData1, BlockData1> BlockTransform { private get; init; } =
             _ => new(BlockID.Bedrock, 0); // no ore defined => bedrock
 

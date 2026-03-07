@@ -63,7 +63,8 @@ namespace Larnix.Core.Vectors
         public static Vec2Int MaxCorner(Vec2Int a, Vec2Int b) => new Vec2Int(Math.Max(a.x, b.x), Math.Max(a.y, b.y));
 
         public override string ToString() => $"({x}, {y})";
-        public static implicit operator string(Vec2Int value) => value.ToString();
+        public static explicit operator string(Vec2Int value) => value.ToString();
+        public static implicit operator Vec2(Vec2Int value) => value.ToVec2();
 
         public static Vec2Int operator +(Vec2Int a, Vec2Int b) => new Vec2Int(a.x + b.x, a.y + b.y);
         public static Vec2Int operator -(Vec2Int a, Vec2Int b) => new Vec2Int(a.x - b.x, a.y - b.y);

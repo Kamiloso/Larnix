@@ -89,6 +89,11 @@ namespace Larnix.Core.Utils
             return returns;
         }
 
+        public static Vec2 BlockCenter(Vec2Int POS)
+        {
+            return new Vec2(POS.x, POS.y);
+        }
+
         public static Vec2 ChunkCenter(Vec2Int chunkpos)
         {
             return new Vec2(chunkpos.x << 4, chunkpos.y << 4) + new Vec2(7.5, 7.5);

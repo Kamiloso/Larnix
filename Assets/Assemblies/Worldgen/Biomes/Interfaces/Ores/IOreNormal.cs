@@ -12,15 +12,15 @@ namespace Larnix.Worldgen.Biomes.All
             yield return new PerlinOre(This.Seed, "PLAINS: plastic_0")
             {
                 BlockTransform = stone => MatchingOre(
-                    stone, baseOre: new BlockData1(BlockID.Plastic, 0)),
+                    stone, baseOre: new(BlockID.Plastic, 0)),
             };
 
             yield return new PerlinOre(This.Seed, "PLAINS: plastic_4")
             {
                 BlockTransform = stone => MatchingOre(
-                    stone, baseOre: new BlockData1(BlockID.Plastic, 4)),
+                    stone, baseOre: new(BlockID.Plastic, 4)),
                 
-                MinHeight = -200, MaxHeight = double.MaxValue,
+                MinHeight = -200,
                 TransitionWidth = 250,
                 MinNoise = 0.75
             };
@@ -28,9 +28,9 @@ namespace Larnix.Worldgen.Biomes.All
             yield return new PerlinOre(This.Seed, "PLAINS: plastic_5")
             {
                 BlockTransform = stone => MatchingOre(
-                    stone, baseOre: new BlockData1(BlockID.Plastic, 5)),
+                    stone, baseOre: new(BlockID.Plastic, 5)),
                 
-                MinHeight = double.MinValue, MaxHeight = -150,
+                MaxHeight = -150,
                 MinNoise = 0.75
             };
         }

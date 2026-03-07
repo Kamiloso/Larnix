@@ -2,12 +2,13 @@ using System.Collections.Generic;
 using System;
 using System.Reflection;
 using System.Linq;
+using System.Collections.ObjectModel;
 
 namespace Larnix.Core
 {
     public static class EnumFactory<TEnum, TClass> where TEnum : struct, IConvertible where TClass : class
     {
-        public static Dictionary<TEnum, TClass> CreateDictionary(params (Type Type, object Object)[] args)
+        public static ReadOnlyDictionary<TEnum, TClass> CreateDictionary(params (Type Type, object Object)[] args)
         {
             if (args.Any(elm => elm.Type is null || elm.Object is null))
                 throw new ArgumentNullException("Arguments cannot be null!");
@@ -41,7 +42,7 @@ namespace Larnix.Core
             })
             .ToList();
 
-            return enumValues
+            Dictionary<TEnum, TClass> enumDict = enumValues
                 .Select(id =>
                 {
                     IEnumerable<TClass> matchInsts = objInstances
@@ -57,6 +58,8 @@ namespace Larnix.Core
                     return ((TEnum Enum, TClass Class))(id, matchInsts.First());
                 })
                 .ToDictionary(kvp => kvp.Enum, kvp => kvp.Class);
+
+            return new ReadOnlyDictionary<TEnum, TClass>(enumDict);
         }
     }
 }

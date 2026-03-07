@@ -1,5 +1,6 @@
 using Larnix.Core.Vectors;
 using Larnix.Worldgen.Noise;
+using Larnix.Worldgen.Providers;
 
 namespace Larnix.Worldgen.Ores
 {
@@ -43,9 +44,9 @@ namespace Larnix.Worldgen.Ores
         {
             var height = ValueProvider.CreateFunction(
                 (x, y, _) => y);
-            
-            var condition = ValueProvider.CreateCondition(
-                height, MinHeight, MaxHeight, TransitionWidth);
+
+            var goodHeight = height.Between(
+                MinHeight, MaxHeight, bufout: TransitionWidth);
 
             var provider = ValueProvider.CreatePerlin(
                 new Perlin(seed: (int)_seed.Hash(_saltPhrase))
@@ -60,7 +61,7 @@ namespace Larnix.Worldgen.Ores
                     dim: 2
                 )
                 .Stretch(StretchX, StretchY)
-                .If(condition);
+                .When(goodHeight);
 
             return provider;
         }

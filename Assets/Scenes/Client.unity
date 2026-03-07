@@ -2448,6 +2448,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Larnix.Client.Background.Sky
   MainCamera: {fileID: 1891027114}
+  transitionSpeed: 10
 --- !u!1 &1656402371
 GameObject:
   m_ObjectHideFlags: 0
