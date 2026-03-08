@@ -112,9 +112,7 @@ namespace Larnix.Socket.Security.Keys
             }
         }
 
-        // -------------------------- //
-        // ===== STATIC METHODS ===== //
-        // -------------------------- //
+#region Static Helpers
 
         private static AsymmetricCipherKeyPair ParseRSA(string text)
         {
@@ -184,5 +182,8 @@ namespace Larnix.Socket.Security.Keys
             Buffer.BlockCopy(input, 0, padded, size - input.Length, input.Length);
             return padded;
         }
+
+#endregion
+
     }
 }

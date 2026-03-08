@@ -5,12 +5,13 @@ using System.Diagnostics;
 using Larnix.Packets;
 using Larnix.Entities.Structs;
 using Larnix.Core;
+using Larnix.GameCore;
 
 namespace Larnix.Client.Entities
 {
     public class EntityProjections : MonoBehaviour
     {
-        private record DelayedEntity(EntityData EntityData, double Time);
+        private record DelayedEntity(EntityHeader EntityHeader, double Time);
 
         private HashSet<ulong> _nearbyUIDs = new();
         private Dictionary<ulong, EntityProjection> _projections = new();
@@ -51,14 +52,14 @@ namespace Larnix.Client.Entities
 
             uint relativeFixedFrame = msg.PacketFixedIndex - (uint)_startFixed;
 
-            Dictionary<ulong, EntityData> dict = msg.EntityTransforms;
+            Dictionary<ulong, EntityHeader> dict = msg.EntityTransforms;
             Dictionary<ulong, uint> fixeds = msg.PlayerFixedIndexes;
 
             // Update data
             foreach(var kvp in dict)
             {
                 ulong uid = kvp.Key;
-                EntityData entity = kvp.Value;
+                EntityHeader entity = kvp.Value;
 
                 if (uid == MainPlayer.UID || !_nearbyUIDs.Contains(uid))
                     continue;
@@ -123,7 +124,7 @@ namespace Larnix.Client.Entities
                 DelayedEntity delayedEntity = _delayedProjections[uid];
                 _delayedProjections.Remove(uid);
 
-                _projections[uid] = CreateProjection(uid, delayedEntity.EntityData, delayedEntity.Time);
+                _projections[uid] = CreateProjection(uid, delayedEntity.EntityHeader, delayedEntity.Time);
             }
 
             timer.Stop();
@@ -170,7 +171,7 @@ namespace Larnix.Client.Entities
             return false;
         }
 
-        private EntityProjection CreateProjection(ulong uid, EntityData entityData, double time)
+        private EntityProjection CreateProjection(ulong uid, EntityHeader entityData, double time)
         {
             GameObject gobj = Prefabs.CreateEntity(entityData.ID);
             gobj.transform.SetParent(transform, false);

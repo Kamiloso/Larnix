@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using Larnix.GameCore;
+using Larnix.GameCore.Enums;
 using Larnix.GameCore.Utils;
 using Larnix.Core.Vectors;
 using Larnix.Packets;

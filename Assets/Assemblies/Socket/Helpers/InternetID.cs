@@ -4,7 +4,7 @@ using System.Net.Sockets;
 using System;
 using Larnix.GameCore.Utils;
 
-namespace Larnix.Socket
+namespace Larnix.Socket.Helpers
 {
     internal class InternetID
     {

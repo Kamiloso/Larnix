@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using System;
 using Larnix.Socket.Security.Keys;
 using Larnix.Socket.Packets.Control;
-using Larnix.Socket.Channel.Networking;
+using Larnix.Socket.Helpers.Networking;
 using Larnix.Socket.Helpers;
 using Larnix.Socket.Helpers.Limiters;
 using Larnix.Core.Interfaces;

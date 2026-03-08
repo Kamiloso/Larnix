@@ -1,65 +1,44 @@
-using System;
-using System.Collections;
 using Larnix.Core.Vectors;
-using Larnix.Core.Binary;
-using Larnix.Core.Misc;
 using Larnix.GameCore.Json;
+using Larnix.GameCore.Enums;
+using Larnix.GameCore;
 
 namespace Larnix.Entities.Structs
 {
-    public class EntityData : IBinary<EntityData>
+    public class EntityData
     {
-        public const int SIZE = sizeof(EntityID) + Vec2.SIZE + sizeof(float);
+        public EntityHeader Header;
+        public Storage NBT { get; }
         
-        public EntityID ID { get; private set; }
-        public Vec2 Position { get; set; }
-        public float Rotation { get; set; }
-        public Storage Data { get; private set; }
-
-        public EntityData() => Data = new();
-        public EntityData(EntityID id, Vec2 position, float rotation, Storage data = null)
+        public EntityID ID => Header.ID;
+        public Vec2 Position
         {
-            ID = id;
-            Position = position;
-            Rotation = rotation;
-            Data = data ?? new();
+            get => Header.Position;
+            set => Header = new EntityHeader(ID, value, Header.Rotation);
+        }
+        public float Rotation
+        {
+            get => Header.Rotation;
+            set => Header = new EntityHeader(ID, Header.Position, value);
         }
 
-        public byte[] Serialize()
+        public EntityData(EntityID id, Vec2 position, float rotation, Storage nbt)
         {
-            return ArrayUtils.MegaConcat(
-                Primitives.GetBytes(ID),
-                Structures.GetBytes(Position),
-                Primitives.GetBytes(Rotation)
-                );
+            Header = new EntityHeader(id, position, rotation);
+            NBT = nbt;
         }
 
-        public bool Deserialize(byte[] bytes, int offset = 0)
+        public EntityData(EntityHeader header, Storage nbt)
         {
-            if (offset + SIZE > bytes.Length)
-                return false;
-
-            ID = Primitives.FromBytes<EntityID>(bytes, offset);
-            offset += sizeof(EntityID);
-
-            Position = Structures.FromBytes<Vec2>(bytes, offset);
-            offset += Vec2.SIZE;
-
-            Rotation = Primitives.FromBytes<float>(bytes, offset);
-            offset += sizeof(float);
-
-            return true;
+            Header = header;
+            NBT = nbt;
         }
 
         public EntityData DeepCopy()
         {
-            return new EntityData
-            {
-                ID = ID,
-                Position = Position,
-                Rotation = Rotation,
-                Data = Data.DeepCopy(),
-            };
+            return new EntityData(
+                Header, NBT.DeepCopy()
+            );
         }
     }
 }

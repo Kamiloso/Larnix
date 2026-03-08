@@ -1,7 +1,6 @@
-using System.Collections;
-using System.Collections.Generic;
+using System;
 
-namespace Larnix.Worldgen.Biomes
+namespace Larnix.GameCore.Enums
 {
     public enum BiomeID : ushort
     {

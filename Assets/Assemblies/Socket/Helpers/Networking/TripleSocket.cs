@@ -7,7 +7,7 @@ using Larnix.Socket.Packets;
 using System.Collections.Generic;
 using Larnix.GameCore.Utils;
 
-namespace Larnix.Socket.Channel.Networking
+namespace Larnix.Socket.Helpers.Networking
 {
     internal class TripleSocket : INetworkInteractions, IDisposable
     {

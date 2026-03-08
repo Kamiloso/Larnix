@@ -11,6 +11,7 @@ using System;
 using Larnix.Worldgen;
 using Larnix.GameCore;
 using Larnix.Core;
+using Larnix.GameCore.Enums;
 
 namespace Larnix.Server.Entities
 {
@@ -152,7 +153,7 @@ namespace Larnix.Server.Entities
                         Clock.ServerTick,
                         Worldgen.SkyColorAt(renderingPosition),
                         Worldgen.BiomeAt(renderingPosition),
-                        Weather.Clear, // TODO: implement weather
+                        WeatherID.Clear, // TODO: implement weather
                         Clock.TPS
                     );
                     QuickServer.Send(nickname, packet, false);

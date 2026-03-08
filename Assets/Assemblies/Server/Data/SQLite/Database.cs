@@ -13,6 +13,7 @@ using Larnix.Blocks.Structs;
 using Larnix.Blocks;
 using Larnix.GameCore.DbStructs;
 using Larnix.Core.Misc;
+using Larnix.GameCore.Enums;
 
 namespace Larnix.Server.Data.SQLite
 {
@@ -233,7 +234,7 @@ namespace Larnix.Server.Data.SQLite
                             id: (EntityID)(long)reader["type"],
                             position: new Vec2((double)reader["pos_x"], (double)reader["pos_y"]),
                             rotation: (float)(double)reader["rotation"],
-                            data: Storage.FromString((string)reader["nbt"])
+                            nbt: Storage.FromString((string)reader["nbt"])
                         );
                         return entityData;
                     }
@@ -259,7 +260,7 @@ namespace Larnix.Server.Data.SQLite
                             id: (EntityID)(long)reader["type"],
                             position: new Vec2((double)reader["pos_x"], (double)reader["pos_y"]),
                             rotation: (float)(double)reader["rotation"],
-                            data: Storage.FromString((string)reader["nbt"])
+                            nbt: Storage.FromString((string)reader["nbt"])
                         ));
                     }
                     return returns;
@@ -300,7 +301,7 @@ namespace Larnix.Server.Data.SQLite
                     paramPosX.Value = entity.Position.x;
                     paramPosY.Value = entity.Position.y;
                     paramRotation.Value = entity.Rotation;
-                    paramNbt.Value = entity.Data.ToString();
+                    paramNbt.Value = entity.NBT.ToString();
                     cmd.ExecuteNonQuery();
                 }
             }

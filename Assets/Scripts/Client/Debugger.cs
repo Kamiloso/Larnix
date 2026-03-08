@@ -9,6 +9,7 @@ using Larnix.Worldgen.Biomes;
 using Larnix.Core;
 using Larnix.GameCore.Utils;
 using Larnix.Scoping;
+using Larnix.GameCore.Enums;
 
 namespace Larnix.Client
 {

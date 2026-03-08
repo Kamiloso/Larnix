@@ -7,6 +7,7 @@ using Larnix.Entities.Structs;
 using Larnix.Server.Entities;
 using Larnix.Core;
 using CmdResult = Larnix.GameCore.ICmdExecutor.CmdResult;
+using Larnix.GameCore.Enums;
 
 namespace Larnix.Server.Commands.All
 {
@@ -62,7 +63,7 @@ namespace Larnix.Server.Commands.All
                 id: _entityID,
                 position: _position,
                 rotation: 0.0f,
-                data: Storage.FromString(_json)
+                nbt: Storage.FromString(_json)
             ));
 
             if (success)

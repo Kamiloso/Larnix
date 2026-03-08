@@ -1,32 +1,21 @@
-using Larnix.Entities.Structs;
 using Larnix.GameCore.Utils;
 using Larnix.Core.Binary;
-using Larnix.Entities;
 using Larnix.Core.Vectors;
 using Larnix.Core.Misc;
+using Larnix.GameCore.Enums;
+using Larnix.GameCore;
 
 namespace Larnix.Packets
 {
-    public class EntityDataCompressed : IBinary<EntityDataCompressed>
+    public struct EntityHeaderCompressed : IBinary<EntityHeaderCompressed>
     {
         public const int SIZE = sizeof(EntityID) + 2 * CompressionUtils.COMPRESSED_DOUBLE_SIZE + sizeof(byte);
 
-        public EntityData Contents { get; private set; }
+        public EntityHeader Header { get; private set; }
 
-        public EntityDataCompressed() { }
-        public EntityDataCompressed(EntityData contents)
+        public EntityHeaderCompressed(EntityHeader header)
         {
-            Contents = contents ?? new();
-        }
-
-        public byte[] Serialize()
-        {
-            return ArrayUtils.MegaConcat(
-                Primitives.GetBytes(Contents.ID),
-                CompressionUtils.CompressWorldDouble(Contents.Position.x),
-                CompressionUtils.CompressWorldDouble(Contents.Position.y),
-                new byte[] { CompressionUtils.CompressRotation(Contents.Rotation) }
-            );
+            Header = header;
         }
 
         public bool Deserialize(byte[] bytes, int offset = 0)
@@ -46,8 +35,18 @@ namespace Larnix.Packets
             float rotation = CompressionUtils.DecompressRotation(bytes[offset]);
             offset += sizeof(byte);
 
-            Contents = new EntityData(id, new Vec2(x, y), rotation);
+            Header = new EntityHeader(id, new Vec2(x, y), rotation);
             return true;
+        }
+
+        public readonly byte[] Serialize()
+        {
+            return ArrayUtils.MegaConcat(
+                Primitives.GetBytes(Header.ID),
+                CompressionUtils.CompressWorldDouble(Header.Position.x),
+                CompressionUtils.CompressWorldDouble(Header.Position.y),
+                new byte[] { CompressionUtils.CompressRotation(Header.Rotation) }
+            );
         }
     }
 }

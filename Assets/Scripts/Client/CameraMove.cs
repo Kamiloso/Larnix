@@ -4,6 +4,7 @@ using UnityEngine;
 using Larnix.Core.Vectors;
 using Larnix.Core;
 using IHasCollider = Larnix.Entities.All.IHasCollider;
+using Larnix.GameCore.Enums;
 
 namespace Larnix.Client
 {

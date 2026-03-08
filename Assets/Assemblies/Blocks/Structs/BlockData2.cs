@@ -1,7 +1,6 @@
-using System.Collections;
-using Larnix.GameCore.Utils;
 using Larnix.Core.Binary;
 using Larnix.Core.Misc;
+using Larnix.Core.Enums;
 
 namespace Larnix.Blocks.Structs
 {

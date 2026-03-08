@@ -9,6 +9,7 @@ using Larnix.Core.Vectors;
 using Larnix.Background;
 using Larnix.GameCore;
 using Larnix.Core.Misc;
+using Larnix.GameCore.Enums;
 
 namespace Larnix.Menu
 {
@@ -57,7 +58,7 @@ namespace Larnix.Menu
             Sky.UpdateSky(
                 biomeID: Generator.BiomeAt(camPos),
                 skyColor: Generator.SkyColorAt(camPos),
-                weather: Weather.Clear
+                weather: WeatherID.Clear
                 );
 
             firstGeneration = false;

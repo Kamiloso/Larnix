@@ -7,17 +7,18 @@ using Larnix.GameCore;
 using System.Collections.ObjectModel;
 using Larnix.Worldgen.Transformers;
 using Larnix.Worldgen.Transformers.Pipeline;
+using Larnix.GameCore.Enums;
 
 namespace Larnix.Worldgen
 {
-    public enum ProtoBlock
+    public enum ProtoBlock : ushort
     {
-        Sky,
-        Stone,
-        Dirt,
-        Surface,
-        Cave,
-        Lake
+        Sky = 0,
+        Stone = 1,
+        Dirt = 2,
+        Surface = 3,
+        Cave = 4,
+        Lake = 5
     }
 
     public class Generator

@@ -1,7 +1,6 @@
-using System.Collections;
-using System.Collections.Generic;
+using System;
 
-namespace Larnix.Entities
+namespace Larnix.GameCore.Enums
 {
     public enum EntityID : ushort
     {

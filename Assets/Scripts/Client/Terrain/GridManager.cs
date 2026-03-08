@@ -9,11 +9,11 @@ using Larnix.GameCore.Physics;
 using Larnix.Core;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
-using Larnix.GameCore;
 using Larnix.Client.Particles;
-using Random = System.Random;
-using IHasCollider = Larnix.Blocks.All.IHasCollider;
+using Larnix.GameCore.Enums;
 using Larnix.Core.Misc;
+using IHasCollider = Larnix.Blocks.All.IHasCollider;
+using Larnix.Core.Enums;
 
 namespace Larnix.Client.Terrain
 {

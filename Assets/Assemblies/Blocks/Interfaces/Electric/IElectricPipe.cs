@@ -1,7 +1,6 @@
-using Larnix.GameCore;
-using System.Collections.Generic;
 using System;
 using Larnix.Blocks.Structs;
+using Larnix.Core.Enums;
 using Larnix.Core.Vectors;
 
 namespace Larnix.Blocks.All

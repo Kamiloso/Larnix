@@ -7,6 +7,8 @@ using System;
 using Larnix.GameCore.Utils;
 using Larnix.Server.Data;
 using EntityInits = Larnix.Entities.Entity.EntityInits;
+using Larnix.GameCore.Enums;
+using Larnix.GameCore.Json;
 
 namespace Larnix.Server.Entities
 {
@@ -40,7 +42,8 @@ namespace Larnix.Server.Entities
             ActiveData = EntityDataManager.TryFindEntityData(UID) ?? new EntityData(
                 id: EntityID.Player,
                 position: new Vec2(0, 0),
-                rotation: 0.0f
+                rotation: 0.0f,
+                nbt: new Storage()
             );
             ActiveData.Position += Common.UpEpsilon;
             _nickname = nickname;

@@ -1,8 +1,7 @@
 using UnityEngine;
-using Larnix.Worldgen.Biomes;
 using Larnix.Core.Vectors;
-using Larnix.GameCore;
 using Larnix.Core;
+using Larnix.GameCore.Enums;
 
 namespace Larnix.Background
 {
@@ -37,7 +36,7 @@ namespace Larnix.Background
             MainCamera.backgroundColor = CurrentColor;
         }
 
-        public void UpdateSky(BiomeID biomeID, Col32 skyColor, Weather weather)
+        public void UpdateSky(BiomeID biomeID, Col32 skyColor, WeatherID weather)
         {
             TargetColor = skyColor.ToUnity();
 

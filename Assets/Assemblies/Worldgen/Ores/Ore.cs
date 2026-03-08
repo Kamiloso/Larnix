@@ -3,6 +3,7 @@ using Larnix.Blocks;
 using Larnix.Blocks.Structs;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.All;
+using Larnix.Core.Enums;
 
 namespace Larnix.Worldgen.Ores
 {

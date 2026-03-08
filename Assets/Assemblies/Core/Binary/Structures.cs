@@ -4,7 +4,7 @@ namespace Larnix.Core.Binary
 {
     public static class Structures
     {
-        public static byte[] GetBytes<T>(IBinary<T> structure) where T : IBinary<T>, new()
+        public static byte[] GetBytes<T>(in IBinary<T> structure) where T : IBinary<T>, new()
         {
             return structure.Serialize();
         }

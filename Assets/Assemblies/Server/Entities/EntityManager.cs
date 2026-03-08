@@ -14,6 +14,7 @@ using Larnix.Server.Configuration;
 using Larnix.Packets;
 using Larnix.GameCore.Json;
 using Larnix.Core.Misc;
+using Larnix.GameCore;
 
 namespace Larnix.Server.Entities
 {
@@ -82,7 +83,7 @@ namespace Larnix.Server.Entities
             {
                 if (controller.IsActive)
                 {
-                    Storage storage = controller.ActiveData.Data;
+                    Storage storage = controller.ActiveData.NBT;
                     if (Tags.TryConsume(storage, "tags", Tags.TO_BE_KILLED))
                     {
                         ulong uid = controller.UID;
@@ -103,7 +104,7 @@ namespace Larnix.Server.Entities
                     ulong playerUID = PlayerActions.UidByNickname(nickname);
                     Vec2 playerPos = PlayerActions.RenderingPosition(nickname);
 
-                    var entityList = new Dictionary<ulong, EntityData>();
+                    var entityHeaders = new Dictionary<ulong, EntityHeader>();
                     var playerFixedIndexes = new Dictionary<ulong, uint>();
                     var entitiesWithInactive = new HashSet<ulong>(); // contains inactive entities too (not inactive players)
 
@@ -121,7 +122,7 @@ namespace Larnix.Server.Entities
                         {
                             if (entity.IsActive)
                             {
-                                entityList.Add(uid, entity.ActiveData);
+                                entityHeaders.Add(uid, entity.ActiveData.Header);
                                 entitiesWithInactive.Add(uid);
 
                                 // adding indexes
@@ -147,7 +148,7 @@ namespace Larnix.Server.Entities
                     PlayerActions.UpdateNearbyUIDs(
                         nickname, entitiesWithInactive, Clock.FixedFrame, sendAtLeastOne);
 
-                    var fragments = EntityBroadcast.CreateList(Clock.FixedFrame, entityList, playerFixedIndexes);
+                    var fragments = EntityBroadcast.CreateList(Clock.FixedFrame, entityHeaders, playerFixedIndexes);
                     foreach (var brdcst in fragments)
                     {
                         broadcastsToSend.Add((nickname, brdcst));

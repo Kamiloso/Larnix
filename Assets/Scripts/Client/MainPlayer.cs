@@ -12,6 +12,9 @@ using System;
 using Larnix.Entities.All;
 using Larnix.Scoping;
 using Larnix.Core;
+using Larnix.GameCore.Enums;
+using Larnix.GameCore.Json;
+using Larnix.GameCore;
 
 namespace Larnix.Client
 {
@@ -141,11 +144,8 @@ namespace Larnix.Client
         private void UpdateEntityObject(double time)
         {
             transform.position = ToUnityPos(Position);
-            EntityProjection.UpdateTransform(new EntityData(
-                id: EntityID.Player,
-                position: Position,
-                rotation: Rotation
-            ), time);
+            EntityHeader playerHeader = new(EntityID.Player, Position, Rotation);
+            EntityProjection.UpdateTransform(playerHeader, time);
         }
 
         public void LoadPlayerData(PlayerInitialize msg)

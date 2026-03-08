@@ -2,6 +2,7 @@ using Larnix.Worldgen.Ores;
 using System.Collections.Generic;
 using Larnix.Blocks;
 using Larnix.Blocks.Structs;
+using Larnix.Core.Enums;
 
 namespace Larnix.Worldgen.Biomes.All
 {

@@ -7,6 +7,7 @@ using System.Runtime.Serialization;
 using Larnix.Core;
 using Larnix.Blocks.All;
 using BlockInits = Larnix.Blocks.Block.BlockInits;
+using Larnix.Core.Enums;
 
 namespace Larnix.Blocks
 {

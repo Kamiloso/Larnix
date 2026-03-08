@@ -7,7 +7,7 @@ using Larnix.Socket.Packets;
 using System.Threading;
 using Larnix.Core;
 
-namespace Larnix.Socket.Channel.Networking
+namespace Larnix.Socket.Helpers.Networking
 {
     internal class UdpClient2 : INetworkInteractions, IDisposable
     {

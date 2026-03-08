@@ -4,7 +4,7 @@ using Larnix.Core.Vectors;
 using Larnix.Core.Binary;
 using Larnix.Core.Misc;
 using Larnix.Socket.Packets;
-using Larnix.GameCore;
+using Larnix.GameCore.Enums;
 
 namespace Larnix.Packets
 {

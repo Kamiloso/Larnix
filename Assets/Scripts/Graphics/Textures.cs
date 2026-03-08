@@ -3,6 +3,7 @@ using UnityEngine.Tilemaps;
 using Larnix.Blocks;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.All;
+using Larnix.Core.Enums;
 
 namespace Larnix.Graphics
 {

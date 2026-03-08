@@ -6,6 +6,7 @@ using Larnix.Core.Vectors;
 using Larnix.Core;
 using Larnix.Server.Data.SQLite;
 using System;
+using Larnix.GameCore.Enums;
 
 namespace Larnix.Server.Data
 {

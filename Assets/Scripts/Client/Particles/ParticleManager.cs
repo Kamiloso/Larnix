@@ -9,6 +9,7 @@ using Larnix.Blocks.Structs;
 using Larnix.Blocks;
 using Larnix.Blocks.All;
 using Larnix.Core;
+using Larnix.GameCore.Enums;
 
 namespace Larnix.Client.Particles
 {

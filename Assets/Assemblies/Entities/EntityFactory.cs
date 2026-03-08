@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Runtime.Serialization;
 using Larnix.Core;
 using Larnix.Entities.All;
+using Larnix.GameCore.Enums;
 using EntityInits = Larnix.Entities.Entity.EntityInits;
 
 namespace Larnix.Entities

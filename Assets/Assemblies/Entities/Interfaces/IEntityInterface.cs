@@ -9,6 +9,6 @@ namespace Larnix.Entities.All
     {
         Entity This => (Entity)this;
         PhysicsManager Physics => This.Physics;
-        Storage Data => This.EntityData.Data;
+        Storage Data => This.EntityData.NBT;
     }
 }

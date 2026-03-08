@@ -1,5 +1,4 @@
 using System;
-using Larnix.GameCore.Utils;
 using Larnix.Core.Misc;
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Modes;
@@ -15,19 +14,17 @@ namespace Larnix.Socket.Security.Keys
 
         private readonly byte[] _key;
 
-        public KeyAES(byte[] keyBytes = null)
+        public KeyAES()
         {
-            if (keyBytes != null)
-            {
-                if (keyBytes.Length != KeySize)
-                    throw new ArgumentException($"AES key length must be {KeySize} bytes (256-bit)!", nameof(keyBytes));
+            _key = RandUtils.SecureBytes(KeySize);
+        }
 
-                _key = keyBytes;
-            }
-            else
-            {
-                _key = RandUtils.SecureBytes(KeySize);
-            }
+        public KeyAES(byte[] keyBytes)
+        {
+            if (keyBytes.Length != KeySize)
+                throw new ArgumentException($"AES key length must be {KeySize} bytes (256-bit)!", nameof(keyBytes));
+
+            _key = keyBytes;
         }
 
         public byte[] ExportKey()

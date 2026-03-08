@@ -6,6 +6,7 @@ using Larnix.GameCore.Utils;
 using Larnix.Entities.Structs;
 using Larnix.Client.Relativity;
 using Larnix.Core.Misc;
+using Larnix.GameCore;
 
 namespace Larnix.Client.Entities
 {
@@ -55,7 +56,7 @@ namespace Larnix.Client.Entities
             return renderers;
         }
 
-        public void UpdateTransform(EntityData entityData, double time)
+        public void UpdateTransform(EntityHeader entityData, double time)
         {
             if (!Initialized)
             {

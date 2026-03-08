@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
@@ -6,10 +5,9 @@ using System;
 using Larnix.Socket.Packets;
 using System.Threading.Tasks;
 using Larnix.Socket.Security;
-using Larnix.Socket.Channel;
 using Larnix.Socket.Security.Keys;
 using Larnix.Socket.Packets.Control;
-using Larnix.Socket.Channel.Networking;
+using Larnix.Socket.Helpers.Networking;
 using Larnix.Core.Interfaces;
 using Larnix.GameCore.Utils;
 using Larnix.Core;

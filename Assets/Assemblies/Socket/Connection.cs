@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -7,12 +6,12 @@ using System;
 using Larnix.GameCore.Utils;
 using Larnix.Socket.Security.Keys;
 using Larnix.Socket.Packets.Control;
-using Larnix.Socket.Channel.Networking;
+using Larnix.Socket.Helpers.Networking;
 using Larnix.Socket.Helpers;
 using Larnix.Core.Interfaces;
 using Larnix.Core.Misc;
 
-namespace Larnix.Socket.Channel
+namespace Larnix.Socket
 {
     internal class Connection : ITickable, IDisposable
     {
