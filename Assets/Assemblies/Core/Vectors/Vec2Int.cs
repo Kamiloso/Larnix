@@ -1,6 +1,6 @@
 using System;
-using Larnix.Core.Utils;
 using Larnix.Core.Binary;
+using Larnix.Core.Misc;
 
 namespace Larnix.Core.Vectors
 {
@@ -22,9 +22,13 @@ namespace Larnix.Core.Vectors
             return new Vec2(x, y);
         }
 
-        public int ManhattanDistance(Vec2Int other)
+        public static int ManhattanDistance(Vec2Int v1, Vec2Int v2)
         {
-            return GeometryUtils.ManhattanDistance(this, other);
+            long a = Math.Abs(v1.x - v2.x);
+            long b = Math.Abs(v1.y - v2.y);
+            long result = a + b;
+            
+            return (int)Math.Min(result, int.MaxValue);
         }
 
         public byte[] Serialize()

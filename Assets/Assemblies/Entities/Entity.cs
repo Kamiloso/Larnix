@@ -1,4 +1,4 @@
-using Larnix.Core.Physics;
+using Larnix.GameCore.Physics;
 using System;
 using Larnix.Core.Vectors;
 using Larnix.Entities.Structs;

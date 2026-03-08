@@ -1,12 +1,12 @@
 using System;
-using Larnix.Core.Json;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Json;
+using Larnix.GameCore.Utils;
 using Larnix.Core.Vectors;
 using Larnix.Entities;
 using Larnix.Entities.Structs;
 using Larnix.Server.Entities;
 using Larnix.Core;
-using CmdResult = Larnix.Core.ICmdExecutor.CmdResult;
+using CmdResult = Larnix.GameCore.ICmdExecutor.CmdResult;
 
 namespace Larnix.Server.Commands.All
 {

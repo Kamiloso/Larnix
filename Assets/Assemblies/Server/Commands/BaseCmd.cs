@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using CmdResult = Larnix.Core.ICmdExecutor.CmdResult;
+using CmdResult = Larnix.GameCore.ICmdExecutor.CmdResult;
 using System;
 using System.Text;
 using System.Linq;

@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using Larnix.Blocks.Structs;
-using Larnix.Core.Physics;
+using Larnix.GameCore.Physics;
 using Larnix.Core.Vectors;
 
 namespace Larnix.Blocks.All

@@ -3,14 +3,13 @@ using System.Collections.Generic;
 using System;
 using System.Security.Cryptography;
 using Larnix.Core.Files;
-using Larnix.Core;
 using Org.BouncyCastle.Crypto.Generators;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Security;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.OpenSsl;
 using System.IO;
-using Larnix.Core.Utils;
+using Larnix.Core.Misc;
 
 namespace Larnix.Socket.Security.Keys
 {

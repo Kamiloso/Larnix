@@ -1,4 +1,4 @@
-using Larnix.Core;
+using Larnix.GameCore;
 using System;
 using System.Collections;
 using System.Collections.Generic;

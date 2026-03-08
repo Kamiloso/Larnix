@@ -2,7 +2,7 @@ using System;
 using Larnix.Core.Vectors;
 using System.Buffers.Binary;
 using System.Security.Cryptography;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Utils;
 using Larnix.Core.Binary;
 
 namespace Larnix.Worldgen

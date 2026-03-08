@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
-using Larnix.Core.Json;
+using Larnix.GameCore.Json;
 
 namespace Larnix.Blocks.All
 {

@@ -1,5 +1,4 @@
-using System.Collections;
-using System.Collections.Generic;
+using Larnix.Core;
 using System.IO;
 using TMPro;
 using UnityEngine;
@@ -7,7 +6,7 @@ using UnityEngine.UI;
 using Larnix.Menu.Worlds;
 using Larnix.Server;
 using System.Threading.Tasks;
-using Larnix.Core;
+using Larnix.GameCore;
 using ServerAnswer = Larnix.Server.ServerRunner.ServerAnswer;
 using RunSuggestions = Larnix.Server.ServerRunner.RunSuggestions;
 

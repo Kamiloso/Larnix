@@ -1,8 +1,9 @@
 using Larnix.Entities.Structs;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Utils;
 using Larnix.Core.Binary;
 using Larnix.Entities;
 using Larnix.Core.Vectors;
+using Larnix.Core.Misc;
 
 namespace Larnix.Packets
 {

@@ -1,5 +1,5 @@
 using System.Net;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Utils;
 
 namespace Larnix.Socket.Backend
 {

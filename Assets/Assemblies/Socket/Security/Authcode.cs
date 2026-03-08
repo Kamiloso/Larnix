@@ -1,10 +1,11 @@
 using Larnix.Core.Files;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Utils;
 using System.Collections;
 using System.Collections.Generic;
 using Org.BouncyCastle.Crypto.Generators;
 using System.Text;
 using Larnix.Core.Binary;
+using Larnix.Core.Misc;
 
 namespace Larnix.Socket.Security
 {
@@ -26,7 +27,7 @@ namespace Larnix.Socket.Security
                     return readSecret;
             }
 
-            long secret = Common.GetSecureLong();
+            long secret = RandUtils.SecureLong();
             FileManager.Write(path, filename, secret.ToString());
             return secret;
         }

@@ -1,10 +1,8 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using Larnix.Socket.Backend;
 using Larnix.Worldgen;
 using Larnix.Core;
-using CmdResult = Larnix.Core.ICmdExecutor.CmdResult;
+using CmdResult = Larnix.GameCore.ICmdExecutor.CmdResult;
 
 namespace Larnix.Server.Commands.All
 {
@@ -29,7 +27,7 @@ namespace Larnix.Server.Commands.All
         public override (CmdResult, string) Execute(string sender, PrivilegeLevel privilege)
         {
             IEnumerable<string> lines = new[] {
-                $"Version: {Core.Version.Current}",
+                $"Version: {GameCore.Version.Current}",
                 $"Players: {QuickServer.PlayerCount} / {QuickServer.PlayerLimit}",
                 $"Port: {Server.Port}",
                 $"Authcode: {QuickServer.Authcode}",

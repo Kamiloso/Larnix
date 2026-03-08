@@ -1,12 +1,11 @@
-using System.Collections;
-using System.Collections.Generic;
-using Larnix.Server.Entities;
 using Larnix.Core;
+using Larnix.Server.Entities;
+using Larnix.GameCore;
 using System;
 using Larnix.Server.Configuration;
 using Larnix.Server.Data;
-using Console = Larnix.Core.Console;
-using CmdResult = Larnix.Core.ICmdExecutor.CmdResult;
+using Larnix.GameCore.Json;
+using CmdResult = Larnix.GameCore.ICmdExecutor.CmdResult;
 
 namespace Larnix.Server.Commands
 {
@@ -27,7 +26,7 @@ namespace Larnix.Server.Commands
 
         void IScript.PostEarlyFrameUpdate()
         {
-            while (Console.TryPopInput(out string cmd))
+            while (Echo.TryPopLine(out string cmd))
             {
                 if (cmd.Trim() == string.Empty)
                     continue; // ignore empty commands
@@ -35,12 +34,12 @@ namespace Larnix.Server.Commands
                 var (type, message) = ExecuteCommand(cmd);
                 switch (type)
                 {
-                    case CmdResult.Raw: Console.LogRaw(message); break;
-                    case CmdResult.Log: Console.Log(message); break;
-                    case CmdResult.Info: Console.LogInfo(message); break;
-                    case CmdResult.Success: Console.LogSuccess(message); break;
-                    case CmdResult.Warning: Console.LogWarning(message); break;
-                    case CmdResult.Error: Console.LogError(message); break;
+                    case CmdResult.Raw: Echo.LogRaw(message); break;
+                    case CmdResult.Log: Echo.Log(message); break;
+                    case CmdResult.Info: Echo.LogInfo(message); break;
+                    case CmdResult.Success: Echo.LogSuccess(message); break;
+                    case CmdResult.Warning: Echo.LogWarning(message); break;
+                    case CmdResult.Error: Echo.LogError(message); break;
                 }
             }
         }
@@ -56,7 +55,7 @@ namespace Larnix.Server.Commands
 
                 if (type == CmdResult.Clear)
                 {
-                    Console.Clear();
+                    Echo.Cls();
                 }
             }
             else // from player

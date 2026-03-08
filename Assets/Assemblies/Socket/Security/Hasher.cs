@@ -2,7 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
-using Larnix.Core.Utils;
+using Larnix.Core.Misc;
+using Larnix.GameCore.Utils;
 
 namespace Larnix.Socket.Security
 {
@@ -89,7 +90,7 @@ namespace Larnix.Socket.Security
 
         public static string HashPassword(string password)
         {
-            byte[] salt = Common.GetSecureBytes(16);
+            byte[] salt = RandUtils.SecureBytes(16);
             byte[] hash = HashString(password, salt);
             return MergeSaltAndHash(salt, hash);
         }

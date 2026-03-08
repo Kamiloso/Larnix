@@ -1,4 +1,4 @@
-using Larnix.Core;
+using Larnix.GameCore;
 using Larnix.Core.Vectors;
 
 namespace Larnix.Blocks.All

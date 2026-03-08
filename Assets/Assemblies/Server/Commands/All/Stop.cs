@@ -1,7 +1,5 @@
-using System;
-using System.Collections.Generic;
 using Larnix.Core;
-using CmdResult = Larnix.Core.ICmdExecutor.CmdResult;
+using CmdResult = Larnix.GameCore.ICmdExecutor.CmdResult;
 
 namespace Larnix.Server.Commands.All
 {

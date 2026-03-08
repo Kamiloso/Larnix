@@ -1,7 +1,7 @@
 using System;
 using Larnix.Blocks;
 using Larnix.Blocks.Structs;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Utils;
 
 namespace Larnix.Server.Commands
 {

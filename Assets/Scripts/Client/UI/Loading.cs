@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using Larnix.Client.Entities;
 using Larnix.Client.Terrain;
 using UnityEngine;

@@ -1,7 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using Larnix.Core;
+using Larnix.Core.Interfaces;
 
 namespace Larnix.Core.Coroutines
 {
@@ -9,8 +9,8 @@ namespace Larnix.Core.Coroutines
     {
         private class Coroutine : IDisposable
         {
-            private IEnumerator _routine;
-            private Action<object> _onResult;
+            private readonly IEnumerator _routine;
+            private readonly Action<object> _onResult;
             private bool _ended = false; // obtained result
             private bool _disposed = false;
 

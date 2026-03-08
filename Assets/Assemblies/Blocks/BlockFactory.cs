@@ -4,7 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.Serialization;
-using Larnix.Core.Utils;
+using Larnix.Core;
 using Larnix.Blocks.All;
 using BlockInits = Larnix.Blocks.Block.BlockInits;
 
@@ -61,7 +61,7 @@ namespace Larnix.Blocks
                 }
                 else
                 {
-                    Core.Debug.LogWarning($"Class {Namespace}.{Name} must exist. Loading base class instead...");
+                    Echo.LogWarning($"Class {Namespace}.{Name} must exist. Loading base class instead...");
 
                     Constructor = inits =>
                     {

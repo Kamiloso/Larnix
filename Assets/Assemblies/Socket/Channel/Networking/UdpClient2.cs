@@ -5,6 +5,7 @@ using System;
 using System.Threading.Tasks;
 using Larnix.Socket.Packets;
 using System.Threading;
+using Larnix.Core;
 
 namespace Larnix.Socket.Channel.Networking
 {
@@ -152,7 +153,7 @@ namespace Larnix.Socket.Channel.Networking
             }
 
             if (!_stop)
-                Core.Debug.LogError(ex.ToString());
+                Echo.LogError(ex.ToString());
 
             return false; // other errors, close socket
         }

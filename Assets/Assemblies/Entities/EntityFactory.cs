@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.Serialization;
-using Larnix.Core.Utils;
+using Larnix.Core;
 using Larnix.Entities.All;
 using EntityInits = Larnix.Entities.Entity.EntityInits;
 
@@ -60,7 +60,7 @@ namespace Larnix.Entities
                 }
                 else
                 {
-                    Core.Debug.LogWarning($"Class {Namespace}.{Name} must exist. Loading base class instead...");
+                    Echo.LogWarning($"Class {Namespace}.{Name} must exist. Loading base class instead...");
 
                     Constructor = inits =>
                     {

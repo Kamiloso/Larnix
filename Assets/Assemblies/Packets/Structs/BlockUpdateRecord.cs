@@ -2,7 +2,7 @@ using System;
 using Larnix.Core.Binary;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
-using Larnix.Core.Utils;
+using Larnix.Core.Misc;
 using Larnix.Blocks;
 
 namespace Larnix.Packets.Structs

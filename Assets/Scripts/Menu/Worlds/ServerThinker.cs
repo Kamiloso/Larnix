@@ -4,8 +4,8 @@ using System.Threading.Tasks;
 using UnityEngine;
 using Larnix.Socket.Frontend;
 using Larnix.Socket.Packets;
-using Version = Larnix.Core.Version;
-using Larnix.Core.Utils;
+using Version = Larnix.GameCore.Version;
+using Larnix.GameCore.Utils;
 
 namespace Larnix.Menu.Worlds
 {

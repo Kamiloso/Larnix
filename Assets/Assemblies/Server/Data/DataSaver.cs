@@ -1,15 +1,17 @@
 using System;
-using Larnix.Core;
-using Larnix.Core.Utils;
+using Larnix.GameCore;
+using Larnix.GameCore.Utils;
 using Larnix.Socket.Backend;
 using Larnix.Server.Configuration;
 using Larnix.Server.Data.SQLite;
-using Version = Larnix.Core.Version;
-using Console = Larnix.Core.Console;
+using Larnix.Core.Interfaces;
+using Larnix.GameCore.Json;
+using Larnix.Core;
+using Version = Larnix.GameCore.Version;
 
 namespace Larnix.Server.Data
 {
-    public class DataSaver : IDisposable2, ITickable
+    public class DataSaver : IDisposable, ITickable
     {
         private string WorldPath { get; }
 
@@ -66,14 +68,14 @@ namespace Larnix.Server.Data
 
             if (HostNickname != Common.ReservedNickname)
             {
-                Core.Debug.LogRaw("This world was previously in use by " + HostNickname + ".\n");
-                Core.Debug.LogRaw("Choose a password for this player to start the server.\n");
+                Echo.LogRaw("This world was previously in use by " + HostNickname + ".\n");
+                Echo.LogRaw("Choose a password for this player to start the server.\n");
 
                 bool changeSuccess = false;
                 do
                 {
-                    Core.Debug.LogRaw("> ");
-                    string password = Console.GetInputSync();
+                    Echo.LogRaw("> ");
+                    string password = Echo.ReadLineSync();
 
                     if (Validation.IsGoodPassword(password))
                     {
@@ -83,12 +85,12 @@ namespace Larnix.Server.Data
                     }
                     else
                     {
-                        Core.Debug.LogRaw(Validation.WrongPasswordInfo + "\n");
+                        Echo.LogRaw(Validation.WrongPasswordInfo + "\n");
                     }
                     
                 } while (!changeSuccess);
 
-                Core.Debug.LogRaw("Password changed.\n");
+                Echo.LogRaw("Password changed.\n");
                 return true;
             }
             return false;
@@ -123,6 +125,7 @@ namespace Larnix.Server.Data
             }
         }
 
+        public void Dispose() => Dispose(false);
         public void Dispose(bool emergency)
         {
             if (!_disposed)
@@ -132,7 +135,7 @@ namespace Larnix.Server.Data
                 if (!emergency)
                 {
                     SaveAll();
-                    Core.Debug.Log("Data has been saved.");
+                    Echo.Log("Data has been saved.");
                 }
 
                 Database?.Dispose();

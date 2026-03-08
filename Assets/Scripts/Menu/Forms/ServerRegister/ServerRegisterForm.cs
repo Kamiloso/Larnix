@@ -1,10 +1,8 @@
-using System.Collections;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using Larnix.Menu.Worlds;
 using Larnix.Forms;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Utils;
 using Larnix.Core;
 
 namespace Larnix.Menu.Forms

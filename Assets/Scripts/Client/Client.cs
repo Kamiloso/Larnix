@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using Larnix.Socket.Packets;
 using System.Threading.Tasks;
-using Larnix.Core.Physics;
+using Larnix.GameCore.Physics;
 using Larnix.Server;
 using Larnix.Socket.Frontend;
 using Larnix.Patches;
@@ -88,11 +88,11 @@ namespace Larnix.Client
             {
                 _larnixClient = _connectingTask.Result;
                 _receiver = new Receiver(_larnixClient);
-                Core.Debug.Log($"{(IsMultiplayer ? "Remote" : "Local")} world on address {Address}");
+                Echo.Log($"{(IsMultiplayer ? "Remote" : "Local")} world on address {Address}");
             }
             else
             {
-                Core.Debug.LogError("Failed creating client! Returning to menu...");
+                Echo.LogError("Failed creating client! Returning to menu...");
                 BackToMenu();
             }
         }

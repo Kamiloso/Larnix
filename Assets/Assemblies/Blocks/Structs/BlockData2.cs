@@ -1,6 +1,7 @@
 using System.Collections;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Utils;
 using Larnix.Core.Binary;
+using Larnix.Core.Misc;
 
 namespace Larnix.Blocks.Structs
 {
@@ -10,28 +11,22 @@ namespace Larnix.Blocks.Structs
 
         public static BlockData2 Empty => new();
 
-        private BlockData1 _front, _back;
-        public BlockData1 Front
-        {
-            get => _front;
-            private set => _front = value ?? new();
-        }
-        public BlockData1 Back
-        {
-            get => _back;
-            private set => _back = value ?? new();
-        }
+        private BlockData1 _front;
+        public BlockData1 Front => _front;
+
+        private BlockData1 _back;
+        public BlockData1 Back => _back;
 
         public BlockData2()
         {
-            Front = new();
-            Back = new();
+            _front = new();
+            _back = new();
         }
 
         public BlockData2(BlockData1 front, BlockData1 back)
         {
-            Front = front ?? new();
-            Back = back ?? new();
+            _front = front ?? new();
+            _back = back ?? new();
         }
 
         public byte[] Serialize()
@@ -50,12 +45,12 @@ namespace Larnix.Blocks.Structs
 
             byte variants = bytes[4 + offset];
 
-            Front = new BlockData1(
+            _front = new BlockData1(
                 Primitives.FromBytes<BlockID>(bytes, 0 + offset),
                 (byte)(variants / 16)
                 );
             
-            Back = new BlockData1(
+            _back = new BlockData1(
                 Primitives.FromBytes<BlockID>(bytes, 2 + offset),
                 (byte)(variants % 16)
                 );
@@ -68,8 +63,8 @@ namespace Larnix.Blocks.Structs
         {
             return new BlockData2
             {
-                Front = Front.BinaryCopy(),
-                Back = Back.BinaryCopy(),
+                _front = Front.BinaryCopy(),
+                _back = Back.BinaryCopy(),
             };
         }
 
@@ -83,8 +78,8 @@ namespace Larnix.Blocks.Structs
         {
             return new BlockData2
             {
-                Front = Front.DeepCopy(),
-                Back = Back.DeepCopy(),
+                _front = Front.DeepCopy(),
+                _back = Back.DeepCopy(),
             };
         }
 

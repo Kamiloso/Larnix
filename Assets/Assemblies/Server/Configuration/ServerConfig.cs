@@ -1,8 +1,8 @@
 using System;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Utils;
 using System.Reflection;
 using System.Collections.Generic;
-using Larnix.Core;
+using Larnix.GameCore.Json;
 
 namespace Larnix.Server.Configuration
 {

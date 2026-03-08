@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -8,7 +7,7 @@ using UnityEngine.Profiling;
 using Larnix.Core.Vectors;
 using Larnix.Worldgen.Biomes;
 using Larnix.Core;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Utils;
 using Larnix.Scoping;
 
 namespace Larnix.Client

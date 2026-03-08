@@ -9,6 +9,7 @@ using Larnix.Packets;
 using Larnix.Server.Configuration;
 using System;
 using Larnix.Worldgen;
+using Larnix.GameCore;
 using Larnix.Core;
 
 namespace Larnix.Server.Entities

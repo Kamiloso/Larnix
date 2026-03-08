@@ -4,7 +4,8 @@ using Larnix.Core;
 using Larnix.Server.Configuration;
 using Larnix.Server.Entities;
 using Larnix.Socket.Backend;
-using CmdResult = Larnix.Core.ICmdExecutor.CmdResult;
+using Larnix.GameCore.Json;
+using CmdResult = Larnix.GameCore.ICmdExecutor.CmdResult;
 
 namespace Larnix.Server.Commands.All
 {

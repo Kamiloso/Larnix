@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
 using System.Linq;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Utils;
 using Larnix.Blocks;
 using Larnix.Blocks.All;
 using Larnix.Core;
@@ -158,7 +158,7 @@ namespace Larnix.Client.Terrain
             if (!IsMenu)
             {
                 Vec2Int playerChunk = BlockUtils.CoordsToChunk(MainPlayer.Position);
-                return GeometryUtils.ManhattanDistance(playerChunk, chunk);
+                return Vec2Int.ManhattanDistance(playerChunk, chunk);
             }
             else
             {

@@ -5,8 +5,10 @@ using TMPro;
 using UnityEngine;
 using Larnix.Menu.Worlds;
 using Larnix.Core;
-using Larnix.Core.Utils;
+using Larnix.GameCore;
+using Larnix.GameCore.Utils;
 using Larnix.Socket;
+using Larnix.Core.Misc;
 
 namespace Larnix.Menu.Forms
 {
@@ -22,7 +24,7 @@ namespace Larnix.Menu.Forms
         {
             IF_Nickname.text = Settings.Settings.Instance.GetValue("$last-nickname-SGP");
             IF_WorldName.text = "";
-            IF_Seed.text = Common.GetSecureLong().ToString();
+            IF_Seed.text = RandUtils.SecureLong().ToString();
 
             TX_ErrorText.text = "";
 
@@ -63,7 +65,7 @@ namespace Larnix.Menu.Forms
             }
             else if (seedStr.Length > 0)
             {
-                seedSuggestion = Common.GetSeedFromString(seedStr);
+                seedSuggestion = RandUtils.SeedFromString(seedStr);
             }
 
             WorldMeta.SaveToWorldFolder(worldName, new WorldMeta(Version.Current, nickname));

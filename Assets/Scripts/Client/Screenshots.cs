@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
 using Larnix.Core;
@@ -32,7 +31,7 @@ namespace Larnix.Client
         {
             if (camera == null || !cameraReady)
             {
-                Core.Debug.Log("Screenshot failied.");
+                Echo.Log("Screenshot failied.");
                 return false;
             }
 
@@ -72,19 +71,19 @@ namespace Larnix.Client
             Object.Destroy(rt);
             Object.Destroy(tex);
 
-            Core.Debug.Log($"Screenshot saved to: {path}");
+            Echo.Log($"Screenshot saved to: {path}");
             return true;
         }
 
         public void CaptureTitleImage()
         {
-            Core.Debug.Log("Capturing title image...");
+            Echo.Log("Capturing title image...");
             ScreenshotSave(ScreenshotCamera, Path.Combine(WorldLoad.WorldPath, "last_image.png"), 16f / 9f);
         }
 
         public void RemoveTitleImage()
         {
-            Core.Debug.Log("Removing title image...");
+            Echo.Log("Removing title image...");
             string file = Path.Combine(WorldLoad.WorldPath, "last_image.png");
             if(File.Exists(file))
                 File.Delete(file);

@@ -4,12 +4,13 @@ using System.Linq;
 using System.Net;
 using Larnix.Socket.Packets;
 using System;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Utils;
 using Larnix.Socket.Security.Keys;
 using Larnix.Socket.Packets.Control;
 using Larnix.Socket.Channel.Networking;
 using Larnix.Socket.Helpers;
-using Larnix.Core;
+using Larnix.Core.Interfaces;
+using Larnix.Core.Misc;
 
 namespace Larnix.Socket.Channel
 {
@@ -303,7 +304,7 @@ namespace Larnix.Socket.Channel
             if (isSyn != isRsa)
                 throw new ArgumentException("Unsupported flag combination!");
 
-            if (DEBUG_DROP_RATE > 0f && Common.Rand().NextDouble() < DEBUG_DROP_RATE)
+            if (DEBUG_DROP_RATE > 0f && RandUtils.GetDouble() < DEBUG_DROP_RATE)
                 return; // simulate network problems
             
             byte[] payload = box.Serialize(isSyn ? _rsaKey : _aesKey);

@@ -4,7 +4,7 @@ using System.Reflection;
 using System.Linq;
 using System.Collections.ObjectModel;
 
-namespace Larnix.Core
+namespace Larnix.GameCore
 {
     public static class EnumFactory<TEnum, TClass> where TEnum : struct, IConvertible where TClass : class
     {

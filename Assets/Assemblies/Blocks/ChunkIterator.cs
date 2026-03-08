@@ -1,6 +1,7 @@
 using System;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Utils;
 using Larnix.Core.Vectors;
+using Larnix.Core.Misc;
 
 namespace Larnix.Blocks
 {
@@ -70,7 +71,7 @@ namespace Larnix.Blocks
                 indexes[i] = i;
             }
 
-            var rng = Common.Rand();
+            var rng = RandUtils.Rand;
             int n = indexes.Length;
             while (n > 1)
             {

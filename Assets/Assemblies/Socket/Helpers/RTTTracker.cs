@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Utils;
 
 namespace Larnix.Socket.Helpers
 {

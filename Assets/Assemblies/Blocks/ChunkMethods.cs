@@ -5,8 +5,8 @@ using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
 using Larnix.Core.Binary;
 using SimpleJSON;
-using Larnix.Core.Json;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Json;
+using Larnix.GameCore.Utils;
 
 namespace Larnix.Blocks
 {

@@ -3,7 +3,7 @@ using UnityEngine.SceneManagement;
 using System.IO;
 using Larnix.Menu.Worlds;
 using Larnix.Server;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Utils;
 using ServerType = Larnix.Server.ServerType;
 using ServerAnswer = Larnix.Server.ServerRunner.ServerAnswer;
 using RunSuggestions = Larnix.Server.ServerRunner.RunSuggestions;

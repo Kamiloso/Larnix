@@ -3,10 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 using Larnix.Core.Vectors;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Utils;
 using Larnix.Blocks.Structs;
 using Larnix.Core;
-using Larnix.Graphics;
 
 namespace Larnix.Client.Terrain
 {

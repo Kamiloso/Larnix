@@ -1,8 +1,8 @@
 using System;
 using System.Collections;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Utils;
 using Larnix.Core.Vectors;
-using Larnix.Core.DataStructures;
+using Larnix.Core.Collections;
 
 namespace Larnix.Blocks
 {

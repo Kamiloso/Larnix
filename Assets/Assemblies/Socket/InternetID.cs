@@ -2,7 +2,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Utils;
 
 namespace Larnix.Socket
 {

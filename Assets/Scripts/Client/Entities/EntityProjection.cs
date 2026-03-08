@@ -2,9 +2,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Client.Entities.Body;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Utils;
 using Larnix.Entities.Structs;
 using Larnix.Client.Relativity;
+using Larnix.Core.Misc;
 
 namespace Larnix.Client.Entities
 {
@@ -26,16 +27,16 @@ namespace Larnix.Client.Entities
             SetRenderingLayer();
         }
 
-        private static int previousLayer = Common.Rand().Next(1, 6007);
+        private static int _previousLayer = RandUtils.GetInt(1, 6007);
         private void SetRenderingLayer()
         {
-            int currentLayer = previousLayer * 211 % 6007;
+            int currentLayer = _previousLayer * 211 % 6007;
             foreach (var sprite in GetAllRenderers(transform))
             {
                 sprite.sortingLayerName = RenderingLayer;
                 sprite.sortingOrder += 10 * (-3000 + currentLayer);
             }
-            previousLayer = currentLayer;
+            _previousLayer = currentLayer;
         }
 
         private List<SpriteRenderer> GetAllRenderers(Transform tran)

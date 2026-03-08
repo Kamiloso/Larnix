@@ -10,8 +10,9 @@ using Larnix.Socket.Channel;
 using Larnix.Socket.Security.Keys;
 using Larnix.Socket.Packets.Control;
 using Larnix.Socket.Channel.Networking;
+using Larnix.Core.Interfaces;
+using Larnix.GameCore.Utils;
 using Larnix.Core;
-using Larnix.Core.Utils;
 
 namespace Larnix.Socket.Frontend
 {
@@ -40,7 +41,7 @@ namespace Larnix.Socket.Frontend
             }
             catch (Exception ex)
             {
-                Core.Debug.LogError(ex.Message);
+                Echo.LogError(ex.Message);
                 return null;
             }
         }

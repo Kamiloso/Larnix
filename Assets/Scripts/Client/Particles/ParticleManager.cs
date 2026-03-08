@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using Larnix.Core;
+using Larnix.GameCore;
 using Larnix.Core.Vectors;
 using Larnix.Client.Entities;
 using Larnix.Client.Relativity;
@@ -8,6 +8,7 @@ using System.Linq;
 using Larnix.Blocks.Structs;
 using Larnix.Blocks;
 using Larnix.Blocks.All;
+using Larnix.Core;
 
 namespace Larnix.Client.Particles
 {

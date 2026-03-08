@@ -2,9 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System;
 using Larnix.Core.Binary;
-using Larnix.Core.Utils;
-using Larnix.Socket.Packets;
-using Version = Larnix.Core.Version;
+using Larnix.GameCore.Utils;
+using Larnix.Core.Misc;
+using Version = Larnix.GameCore.Version;
 
 namespace Larnix.Socket.Packets.Control
 {

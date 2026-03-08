@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System;
 using System.Diagnostics;
 using UnityEngine;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Utils;
 using Larnix.Core.Files;
 
 public enum BuildMode { Windows, Linux, MacIntel, MacSilicon }

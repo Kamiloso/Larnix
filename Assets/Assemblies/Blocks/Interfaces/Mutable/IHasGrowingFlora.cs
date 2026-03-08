@@ -2,7 +2,8 @@ using Larnix.Blocks;
 using System.Collections;
 using System.Collections.Generic;
 using Larnix.Core.Vectors;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Utils;
+using Larnix.Core.Misc;
 
 namespace Larnix.Blocks.All
 {
@@ -23,7 +24,7 @@ namespace Larnix.Blocks.All
         {
             if (This.BlockData.Variant != 0)
             {
-                if (Common.Rand().NextDouble() < DRY_CHANCE())
+                if (RandUtils.GetDouble() < DRY_CHANCE())
                 {
                     bool? suppressed = IsSuppressed();
                     if (suppressed == true)
@@ -36,7 +37,7 @@ namespace Larnix.Blocks.All
         {
             if (This.BlockData.Variant != 0)
             {
-                if (Common.Rand().NextDouble() < GROWTH_CHANCE())
+                if (RandUtils.GetDouble() < GROWTH_CHANCE())
                 {
                     bool? self_suppressed = IsSuppressed();
                     if (self_suppressed == false)
@@ -58,7 +59,7 @@ namespace Larnix.Blocks.All
 
                         if(candidates.Count > 0)
                         {
-                            int rand = Common.Rand().Next(0, candidates.Count);
+                            int rand = RandUtils.GetInt(candidates.Count);
                             WorldAPI.MutateBlockVariant(candidates[rand].Position, This.IsFront, This.BlockData.Variant);
                         }
                     }

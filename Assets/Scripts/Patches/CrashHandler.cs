@@ -3,6 +3,7 @@ using System.IO;
 using UnityEngine;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Larnix.Core;
 
 namespace Larnix.Patches
 {
@@ -39,10 +40,11 @@ namespace Larnix.Patches
 
         private static void UniversalExceptionHandle(string log)
         {
-#if !UNITY_EDITOR
-        SaveCrashLog(log);
-        System.Diagnostics.Process.GetCurrentProcess().Kill(); // brutal kill
-#endif
+            if (!Application.isEditor)
+            {
+                SaveCrashLog(log);
+                Process.GetCurrentProcess().Kill(); // brutal kill
+            }
         }
 
         private static void SaveCrashLog(string message)
@@ -70,7 +72,7 @@ namespace Larnix.Patches
             }
             catch
             {
-                Core.Debug.LogError("An error occurred while saving / openning file crash.log. Is it even possible?");
+                Echo.LogError("An error occurred while saving / openning file crash.log. Is it even possible?");
             }
         }
     }

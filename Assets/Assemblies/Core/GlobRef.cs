@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using Larnix.Core.Utils;
+using Larnix.Core.Misc;
 
 namespace Larnix.Core
 {
@@ -11,23 +11,14 @@ namespace Larnix.Core
         private static readonly ConcurrentDictionary<int, long> _threadToKey = new();
         private static int ThreadID => Environment.CurrentManagedThreadId;
 
-        public static long GetKey() =>
-            _threadToKey.GetOrAdd(ThreadID, _ => Common.GetSecureLong());
-
-        public static void SetKey(long key) =>
-            _threadToKey[ThreadID] = key;
+        public static long GetKey() => _threadToKey.GetOrAdd(ThreadID, _ => RandUtils.SecureLong());
+        public static void SetKey(long key) => _threadToKey[ThreadID] = key;
 
         public static long NewScope()
         {
-            long newKey = Common.GetSecureLong();
+            long newKey = RandUtils.SecureLong();
             _threadToKey[ThreadID] = newKey;
             return newKey;
-        }
-
-        public static T New<T>() where T : class, new()
-        {
-            var instance = new T();
-            return Set(instance);
         }
 
         public static T Set<T>(T instance) where T : class
@@ -36,6 +27,12 @@ namespace Larnix.Core
             var dict = _keyToData.GetOrAdd(key, _ => new());
             dict[typeof(T)] = instance;
             return instance;
+        }
+
+        public static T New<T>() where T : class, new()
+        {
+            var instance = new T();
+            return Set(instance);
         }
 
         public static T Get<T>() where T : class

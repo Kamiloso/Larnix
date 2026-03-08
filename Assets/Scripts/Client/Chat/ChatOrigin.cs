@@ -1,7 +1,6 @@
-using System;
 using Larnix.Core;
 using UnityEngine;
-using LogType = Larnix.Core.Debug.LogType;
+using LogType = Larnix.Core.Echo.LogType;
 
 namespace Larnix.Client.Chat
 {

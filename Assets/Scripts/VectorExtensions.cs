@@ -1,7 +1,7 @@
 using UnityEngine;
 using Larnix.Core.Vectors;
 using System;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Utils;
 
 namespace Larnix
 {

@@ -3,7 +3,7 @@ using TMPro;
 using System.Text;
 using Larnix.Core;
 using Larnix.Packets;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Utils;
 using System.Collections.Generic;
 using Larnix.Scoping;
 using ChatCode = Larnix.Packets.ChatMessage.ChatCode;

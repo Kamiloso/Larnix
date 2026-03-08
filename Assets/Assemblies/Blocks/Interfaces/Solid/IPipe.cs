@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using Larnix.Core.Vectors;
-using Larnix.Core;
+using Larnix.GameCore;
 using System.Linq;
 using System;
 using Larnix.Blocks.Structs;

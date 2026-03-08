@@ -1,8 +1,9 @@
-using Larnix.Core;
-using Larnix.Core.Physics;
+using Larnix.GameCore;
+using Larnix.GameCore.Physics;
 using System.Collections;
 using System.Collections.Generic;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Utils;
+using Larnix.Core.Misc;
 
 namespace Larnix.Entities.All
 {
@@ -27,11 +28,11 @@ namespace Larnix.Entities.All
                 {
                     "LEFT" => "",
                     "RIGHT" => "",
-                    _ => Common.Rand().Next() % 2 == 0 ? "LEFT" : "RIGHT",
+                    _ => RandUtils.NextBool() ? "LEFT" : "RIGHT",
                 };
 
                 Data["walking.state"].String = nextAction;
-                Data["walking.next_in"].Int = Common.Rand().Next(
+                Data["walking.next_in"].Int = RandUtils.GetInt(
                     MIN_THINKING_TIME(),
                     MAX_THINKING_TIME()
                     );

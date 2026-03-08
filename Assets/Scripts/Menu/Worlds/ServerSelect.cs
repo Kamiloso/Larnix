@@ -1,5 +1,4 @@
 using Larnix.UI;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System;
@@ -10,7 +9,7 @@ using TMPro;
 using Unity.VisualScripting;
 using Larnix.Core.Files;
 using Larnix.Menu.Forms;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Utils;
 using Larnix.Core;
 
 namespace Larnix.Menu.Worlds
@@ -329,7 +328,7 @@ namespace Larnix.Menu.Worlds
                 else
                 {
                     Directory.Delete(path, true);
-                    Core.Debug.LogWarning("Detected and removed saved server name conflict. Address: " + arg[0]);
+                    Echo.LogWarning("Detected and removed saved server name conflict. Address: " + arg[0]);
                 }
             }
 

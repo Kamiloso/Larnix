@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Worldgen;
 using Larnix.Client.Terrain;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Utils;
+using Larnix.Core;
 using Larnix.Core.Vectors;
 using Larnix.Background;
-using Larnix.Core;
+using Larnix.GameCore;
+using Larnix.Core.Misc;
 
 namespace Larnix.Menu
 {
@@ -24,7 +26,8 @@ namespace Larnix.Menu
 
         private void Start()
         {
-            Generator = new Generator(Common.Rand().Next());
+            long seed = RandUtils.SecureLong();
+            Generator = new Generator(seed);
         }
 
         private void Update()

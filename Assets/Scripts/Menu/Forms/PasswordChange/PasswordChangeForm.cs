@@ -5,7 +5,7 @@ using Larnix.Menu.Worlds;
 using Larnix.Forms;
 using System.Threading.Tasks;
 using Larnix.Socket.Frontend;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Utils;
 using Larnix.Core;
 
 namespace Larnix.Menu.Forms

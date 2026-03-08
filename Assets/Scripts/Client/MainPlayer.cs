@@ -1,13 +1,11 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Socket.Packets;
 using Larnix.Client.Entities;
 using Larnix.Entities;
-using Larnix.Core.Physics;
+using Larnix.GameCore.Physics;
 using Larnix.Core.Vectors;
 using Larnix.Entities.Structs;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Utils;
 using Larnix.Packets;
 using Larnix.Client.Terrain;
 using System;

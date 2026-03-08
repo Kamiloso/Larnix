@@ -5,15 +5,17 @@ using System.Net;
 using Larnix.Socket.Packets;
 using System.Threading.Tasks;
 using System;
-using Larnix.Core.Utils;
 using Larnix.Socket.Security.Keys;
 using Larnix.Socket.Packets.Control;
 using Larnix.Socket.Channel.Networking;
 using Larnix.Socket.Helpers;
 using Larnix.Socket.Helpers.Limiters;
+using Larnix.Core.Interfaces;
+using Larnix.Core.Misc;
 using Larnix.Core;
+using Larnix.GameCore.Utils;
+using Larnix.GameCore.DbStructs;
 using LoginMode = Larnix.Socket.Backend.UserManager.LoginMode;
-using Larnix.Core.DbStructs;
 
 namespace Larnix.Socket.Backend
 {
@@ -60,7 +62,7 @@ namespace Larnix.Socket.Backend
             // Constants
             ServerSecret = Security.Authcode.ObtainSecret(config.DataPath, SERVER_SECRET_FILENAME);
             Authcode = Security.Authcode.ProduceAuthCodeRSA(_keyRSA.ExportPublicKey(), ServerSecret);
-            RunID = Common.GetSecureLong();
+            RunID = RandUtils.SecureLong();
 
             // Cycle timers
             _cycleTimers = new[]
@@ -76,14 +78,14 @@ namespace Larnix.Socket.Backend
                 
             if (relayPort != null)
             {
-                string address = Common.FormatUdpAddress(relayAddress, relayPort.Value);
-                Core.Debug.LogSuccess("Connected to relay!");
-                Core.Debug.Log("Address: " + address);
+                string address = Common.FormatAddress(relayAddress, relayPort.Value);
+                Echo.LogSuccess("Connected to relay!");
+                Echo.Log("Address: " + address);
                 return address;
             }
             else
             {
-                Core.Debug.LogWarning("Cannot connect to relay!");
+                Echo.LogWarning("Cannot connect to relay!");
                 return null;
             }
         }
@@ -209,7 +211,7 @@ namespace Larnix.Socket.Backend
                     publicKey: _keyRSA.ExportPublicKey(),
                     currentPlayers: PlayerCount,
                     maxPlayers: PlayerLimit,
-                    gameVersion: Core.Version.Current,
+                    gameVersion: GameCore.Version.Current,
                     challengeID: UserManager.GetChallengeID(nickname),
                     timestamp: Timestamp.GetTimestamp(),
                     runID: RunID,

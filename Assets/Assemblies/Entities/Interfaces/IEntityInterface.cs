@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
-using Larnix.Core.Physics;
-using Larnix.Core.Json;
+using Larnix.GameCore.Physics;
+using Larnix.GameCore.Json;
 
 namespace Larnix.Entities.All
 {

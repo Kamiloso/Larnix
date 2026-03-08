@@ -1,5 +1,5 @@
 using System;
-using Larnix.Core;
+using Larnix.Core.Interfaces;
 
 namespace Larnix.Server
 {

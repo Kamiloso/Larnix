@@ -1,4 +1,3 @@
-using Larnix.Client.Entities;
 using Larnix.Entities;
 using Larnix.Scoping;
 using UnityEngine;

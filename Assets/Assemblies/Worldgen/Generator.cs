@@ -1,9 +1,9 @@
 using System.Collections.Generic;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Utils;
 using Larnix.Blocks.Structs;
 using Larnix.Core.Vectors;
 using Larnix.Worldgen.Biomes;
-using Larnix.Core;
+using Larnix.GameCore;
 using System.Collections.ObjectModel;
 using Larnix.Worldgen.Transformers;
 using Larnix.Worldgen.Transformers.Pipeline;

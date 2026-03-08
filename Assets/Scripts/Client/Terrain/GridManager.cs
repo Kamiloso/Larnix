@@ -4,14 +4,16 @@ using UnityEngine;
 using Larnix.Blocks;
 using System.Linq;
 using System;
-using Larnix.Core.Utils;
-using Larnix.Core.Physics;
+using Larnix.GameCore.Utils;
+using Larnix.GameCore.Physics;
+using Larnix.Core;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
-using Larnix.Core;
+using Larnix.GameCore;
 using Larnix.Client.Particles;
 using Random = System.Random;
 using IHasCollider = Larnix.Blocks.All.IHasCollider;
+using Larnix.Core.Misc;
 
 namespace Larnix.Client.Terrain
 {
@@ -191,8 +193,7 @@ namespace Larnix.Client.Terrain
 
         private long LockBlock(Vec2Int POS)
         {
-            Random Rand = Common.Rand();
-            long operation = ((long)Rand.Next(int.MinValue, int.MaxValue) << 32) | (uint)Rand.Next(int.MinValue, int.MaxValue);
+            long operation = RandUtils.NextLong();
             _lockedBlocks.Add(new BlockLock
             {
                 POS = POS,

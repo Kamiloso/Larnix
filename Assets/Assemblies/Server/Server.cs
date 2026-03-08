@@ -2,7 +2,7 @@ using System;
 using Larnix.Server.Data;
 using Larnix.Core;
 using System.IO;
-using Larnix.Core.Physics;
+using Larnix.GameCore.Physics;
 using Larnix.Server.Entities;
 using Larnix.Server.Terrain;
 using System.Threading.Tasks;
@@ -15,18 +15,18 @@ using Larnix.Server.APIs;
 using Larnix.Server.Transmission;
 using Larnix.Server.Configuration;
 using Larnix.Server.Data.SQLite;
-using Version = Larnix.Core.Version;
-using Console = Larnix.Core.Console;
+using Larnix.Core.Interfaces;
+using Version = Larnix.GameCore.Version;
 using RunSuggestions = Larnix.Server.ServerRunner.RunSuggestions;
 using ServerAnswer = Larnix.Server.ServerRunner.ServerAnswer;
 
 namespace Larnix.Server
 {
-    internal class Server : IDisposable2, ITickable
+    internal class Server : IDisposable, ITickable
     {
-        public ServerType Type { get; init; }
-        public string WorldPath { get; init; }
-        public Action CloseServer { get; init; }
+        public ServerType Type { get; }
+        public string WorldPath { get; }
+        public Action CloseServer { get; }
 
         public ushort Port => QuickServer.Port;
         public string LocalAddress => "localhost:" + Port;
@@ -54,7 +54,7 @@ namespace Larnix.Server
 
             if (Type == ServerType.Remote)
             {
-                Core.Debug.LogRaw("Starting the server...\n");
+                Echo.LogRaw("Starting the server...\n");
             }
 
             IOException MakeLockException() =>
@@ -100,20 +100,20 @@ namespace Larnix.Server
 
             // --- Finalize ---
             answer = new ServerAnswer(LocalAddress, Authcode, relayTask);
-            Core.Debug.LogSuccess("Server is ready!");
+            Echo.LogSuccess("Server is ready!");
         }
 
         private void ConfigureConsole()
         {
-            void PrintBorder() => Core.Debug.LogRaw($"{new string('-', 60)}\n");
+            void PrintBorder() => Echo.LogRaw($"{new string('-', 60)}\n");
 
             if (Type == ServerType.Remote)
             {
-                Console.SetTitle("Larnix Server " + Version.Current);
+                Echo.SetTitle("Larnix Server " + Version.Current);
                 PrintBorder();
 
-                Core.Debug.LogRaw($"Socket created on port: {Port}\n");
-                Core.Debug.LogRaw($"Authcode: {Authcode}\n");
+                Echo.LogRaw($"Socket created on port: {Port}\n");
+                Echo.LogRaw($"Authcode: {Authcode}\n");
                 PrintBorder();
 
                 // --- Check if the world is detached ---
@@ -125,7 +125,7 @@ namespace Larnix.Server
             }
             else
             {
-                Core.Debug.Log($"Port: {Port} | Authcode: {Authcode}");
+                Echo.Log($"Port: {Port} | Authcode: {Authcode}");
             }
         }
 
@@ -174,6 +174,7 @@ namespace Larnix.Server
             DataSaver.Tick(Clock.DeltaTime);
         }
 
+        public void Dispose() => Dispose(false);
         public void Dispose(bool emergency)
         {
             if (!_disposed)
@@ -185,7 +186,7 @@ namespace Larnix.Server
                 
                 _locker?.Dispose();
 
-                Core.Debug.Log(emergency ?
+                Echo.Log(emergency ?
                     "Server has crashed!" :
                     "Server has been closed.");
             }

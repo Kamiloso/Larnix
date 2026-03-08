@@ -1,4 +1,4 @@
-using Larnix.Core.Physics;
+using Larnix.GameCore.Physics;
 using System.Collections;
 using System.Collections.Generic;
 

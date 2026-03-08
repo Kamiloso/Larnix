@@ -1,10 +1,7 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Drawing;
 using Larnix.Core.Binary;
-using Larnix.Core.Json;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Json;
+using Larnix.Core.Misc;
 
 namespace Larnix.Blocks.Structs
 {

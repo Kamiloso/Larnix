@@ -2,10 +2,10 @@ using System;
 using System.Collections;
 using Larnix.Core.Vectors;
 using Larnix.Core.Binary;
-using Larnix.Core.Utils;
+using Larnix.Core.Misc;
 using Larnix.Socket.Packets;
 using Larnix.Worldgen.Biomes;
-using Larnix.Core;
+using Larnix.GameCore;
 
 namespace Larnix.Packets
 {

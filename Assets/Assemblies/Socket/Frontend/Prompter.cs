@@ -5,7 +5,8 @@ using System.Threading.Tasks;
 using Larnix.Socket.Security.Keys;
 using Larnix.Socket.Channel.Networking;
 using Larnix.Socket.Packets;
-using Larnix.Core.Utils;
+using Larnix.Core.Misc;
+using Larnix.Core;
 
 namespace Larnix.Socket.Frontend
 {
@@ -42,7 +43,7 @@ namespace Larnix.Socket.Frontend
 
         private async Task<TAnswer> SendAndWaitAsync<TAnswer>(Payload prompt, KeyRSA publicKey, int timeoutMiliseconds) where TAnswer : Payload
         {
-            int promptID = (int)Common.GetSecureLong();
+            int promptID = RandUtils.SecureInt();
 
             PayloadBox payloadBox = new PayloadBox(
                 seqNum: promptID,
@@ -61,7 +62,7 @@ namespace Larnix.Socket.Frontend
             }
             catch
             {
-                Core.Debug.LogWarning($"Cannot send prompt! CmdID = {prompt.ID}");
+                Echo.LogWarning($"Cannot send prompt! CmdID = {prompt.ID}");
                 return null; // sending error
             }
 

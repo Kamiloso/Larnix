@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using Larnix.Core.Vectors;
 using Larnix.Socket.Frontend;
 using Larnix.Packets;
@@ -103,7 +101,7 @@ namespace Larnix.Client
             {
                 Vec2 targetPos = msg.TargetPosition;
                 MainPlayer.Teleport(targetPos);
-                Core.Debug.Log("Teleported");
+                Echo.Log("Teleported");
             }
         }
 

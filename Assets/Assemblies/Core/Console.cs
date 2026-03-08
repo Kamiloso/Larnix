@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -6,14 +5,14 @@ using System.Collections.Concurrent;
 
 namespace Larnix.Core
 {
-    public static class Console
+    internal static class Console
     {
         private static Thread _inputThread;
         private static ConcurrentQueue<string> _cmdQueue = new();
         private static readonly object _outputLock = new();
         private static readonly object _inputLock = new();
 
-        public static string Timestamp => DateTime.Now.ToString("[yyyy-MM-dd HH:mm:ss]");
+        private static string Timestamp => DateTime.Now.ToString("[yyyy-MM-dd HH:mm:ss]");
 
         public static void SetTitle(string title)
         {

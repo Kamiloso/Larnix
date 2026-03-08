@@ -1,13 +1,14 @@
 using System;
 using System.Collections.Generic;
-using Larnix.Core;
-using Larnix.Core.Utils;
+using Larnix.GameCore;
+using Larnix.GameCore.Utils;
 using Larnix.Core.Vectors;
 using Larnix.Packets;
 using Larnix.Server.Entities;
 using Larnix.Socket.Backend;
 using Larnix.Socket.Packets;
-using CmdResult = Larnix.Core.ICmdExecutor.CmdResult;
+using Larnix.Core;
+using CmdResult = Larnix.GameCore.ICmdExecutor.CmdResult;
 
 namespace Larnix.Server.Commands.All
 {

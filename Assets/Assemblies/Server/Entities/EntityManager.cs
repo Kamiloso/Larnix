@@ -5,14 +5,15 @@ using Larnix.Socket.Packets;
 using Larnix.Server.Terrain;
 using Larnix.Core.Vectors;
 using System;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Utils;
+using Larnix.Core;
 using Larnix.Entities.Structs;
 using Larnix.Socket.Backend;
 using Larnix.Server.Data;
 using Larnix.Server.Configuration;
 using Larnix.Packets;
-using Larnix.Core.Json;
-using Larnix.Core;
+using Larnix.GameCore.Json;
+using Larnix.Core.Misc;
 
 namespace Larnix.Server.Entities
 {
@@ -153,7 +154,10 @@ namespace Larnix.Server.Entities
                     }
                 }
 
-                broadcastsToSend = broadcastsToSend.OrderBy(x => Common.Rand().Next()).ToList();
+                broadcastsToSend = broadcastsToSend
+                    .OrderBy(_ => RandUtils.NextInt())
+                    .ToList();
+                
                 foreach (var pair in broadcastsToSend)
                 {
                     QuickServer.Send(pair.Nickname, pair.Packet, false); // fast mode (over raw UDP)

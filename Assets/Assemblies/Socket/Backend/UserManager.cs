@@ -1,7 +1,6 @@
-using Larnix.Core;
 using Larnix.Core.Coroutines;
-using Larnix.Core.DbStructs;
-using Larnix.Core.Utils;
+using Larnix.GameCore.DbStructs;
+using Larnix.GameCore.Utils;
 using Larnix.Socket.Helpers;
 using Larnix.Socket.Helpers.Limiters;
 using Larnix.Socket.Packets.Control;
@@ -10,6 +9,8 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
+using Larnix.Core.Interfaces;
+using Larnix.Core;
 
 namespace Larnix.Socket.Backend
 {
@@ -444,7 +445,7 @@ namespace Larnix.Socket.Backend
                         {
                             ulong cur = _registerLimiter.Current(internetID);
                             ulong max = _registerLimiter.Max;
-                            Core.Debug.Log($"{nickname} registered from network {internetID} | Reg: {cur}/{max}");
+                            Echo.Log($"{nickname} registered from network {internetID} | Reg: {cur}/{max}");
                         }
 
                         yield return new Box<bool>(true);
@@ -456,7 +457,7 @@ namespace Larnix.Socket.Backend
                         ulong max = _registerLimiter.Max;
                         if (cur >= max)
                         {
-                            Core.Debug.LogWarning($"Network {internetID} has reached the limit of {max} registrations.\n" +
+                            Echo.LogWarning($"Network {internetID} has reached the limit of {max} registrations.\n" +
                                 $"Please wait a few hours or restart the server to reset the limit.");
                         }
                     }

@@ -6,7 +6,7 @@ using UnityEngine.Tilemaps;
 using System;
 using System.Linq;
 using Larnix.Core.Vectors;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Utils;
 using Larnix.Blocks.Structs;
 using Larnix.Client.Relativity;
 using Larnix.Client.UI;

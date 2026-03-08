@@ -1,7 +1,7 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Entities;
+using Larnix.Core;
 
 namespace Larnix
 {
@@ -28,7 +28,7 @@ namespace Larnix
             GameObject prefab = GetPrefabChild("Entities/" + entityID.ToString());
             if (prefab == null)
             {
-                Core.Debug.LogWarning("Couldn't find '" + entityID + "' entity prefab!");
+                Echo.LogWarning("Couldn't find '" + entityID + "' entity prefab!");
                 prefab = GetPrefabChild("Entities/None");
             }
 

@@ -1,11 +1,9 @@
-using System.Collections;
-using System.Collections.Generic;
 using System.IO;
 using TMPro;
 using UnityEngine;
 using Larnix.Core;
 using Larnix.Menu.Worlds;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Utils;
 
 namespace Larnix.Menu.Forms
 {
@@ -35,7 +33,7 @@ namespace Larnix.Menu.Forms
             string oldDir = Path.Combine(WorldSelect.SavesPath, IF_OldName.text);
             string newDir = Path.Combine(WorldSelect.SavesPath, IF_NewName.text);
 
-            if (DirectoryUtils.AreSameDirectory(oldDir, newDir) || !Directory.Exists(newDir))
+            if (Common.AreSameDirectory(oldDir, newDir) || !Directory.Exists(newDir))
                 return ErrorCode.SUCCESS;
             else
                 return ErrorCode.WORLD_EXISTS;
@@ -53,7 +51,7 @@ namespace Larnix.Menu.Forms
 
             if (Directory.Exists(oldDir))
             {
-                if (!DirectoryUtils.AreSameDirectory(oldDir, newDir)) // casual name change
+                if (!Common.AreSameDirectory(oldDir, newDir)) // casual name change
                 {
                     Directory.Move(oldDir, newDir);
                 }

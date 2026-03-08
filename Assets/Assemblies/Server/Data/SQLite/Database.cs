@@ -5,13 +5,14 @@ using System.IO;
 using System;
 using Larnix.Entities;
 using Larnix.Core.Files;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Utils;
 using Larnix.Core.Vectors;
 using Larnix.Entities.Structs;
-using Larnix.Core.Json;
+using Larnix.GameCore.Json;
 using Larnix.Blocks.Structs;
 using Larnix.Blocks;
-using Larnix.Core.DbStructs;
+using Larnix.GameCore.DbStructs;
+using Larnix.Core.Misc;
 
 namespace Larnix.Server.Data.SQLite
 {
@@ -403,7 +404,7 @@ namespace Larnix.Server.Data.SQLite
             }
             else
             {
-                seed = suggestion ?? Common.GetSecureLong();
+                seed = suggestion ?? RandUtils.SecureLong();
                 
                 using (var cmd = CreateCommand())
                 {

@@ -1,10 +1,10 @@
 using System;
-using System.Collections;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Utils;
 using Larnix.Core.Binary;
 using Larnix.Socket.Packets;
-using LogType = Larnix.Core.Debug.LogType;
 using System.Linq;
+using Larnix.Core.Misc;
+using LogType = Larnix.Core.Echo.LogType;
 
 namespace Larnix.Packets
 {

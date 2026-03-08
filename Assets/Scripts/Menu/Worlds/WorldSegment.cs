@@ -1,11 +1,10 @@
 using Larnix.UI;
-using System.Collections;
-using System.Collections.Generic;
+using Larnix.Core;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using Larnix.Core;
-using Version = Larnix.Core.Version;
+using Larnix.GameCore;
+using Version = Larnix.GameCore.Version;
 
 namespace Larnix.Menu.Worlds
 {
@@ -17,10 +16,11 @@ namespace Larnix.Menu.Worlds
 
         private ServerSelect ServerSelect => GlobRef.Get<ServerSelect>();
 
+        public string Name { get; private set; }
+        
         private UniversalSelect _mySelect;
         private bool _versionChecked = false;
 
-        public string Name { get; private set; }
 
         public void Init(string name, UniversalSelect mySelect)
         {
@@ -60,7 +60,9 @@ namespace Larnix.Menu.Worlds
             if (_mySelect is ServerSelect)
             {
                 ServerThinker thinker = GetComponent<ServerThinker>();
-                PlayButton.interactable = thinker != null ? thinker.GetLoginState() == LoginState.Good : false;
+                PlayButton.interactable = thinker != null
+                    ? thinker.GetLoginState() == LoginState.Good
+                    : false;
             }
         }
 

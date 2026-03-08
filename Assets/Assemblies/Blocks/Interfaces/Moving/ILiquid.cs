@@ -1,8 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using Larnix.Core.Vectors;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Utils;
 using Larnix.Blocks.Structs;
+using Larnix.Core.Misc;
 
 namespace Larnix.Blocks.All
 {
@@ -77,7 +78,7 @@ namespace Larnix.Blocks.All
                 if (mem_direction == 0)
                 {
                     if (can_left && can_right)
-                        mem_direction = Common.Rand().Next() % 2 == 0 ? -1 : 1;
+                        mem_direction = RandUtils.NextBool() ? -1 : 1;
 
                     else if (can_left)
                         mem_direction = -1;

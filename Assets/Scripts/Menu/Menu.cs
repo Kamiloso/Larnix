@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Menu.Worlds;
@@ -6,7 +5,7 @@ using TMPro;
 using Larnix.Server;
 using Larnix.Core;
 using Larnix.Scoping;
-using Ver = Larnix.Core.Version;
+using Ver = Larnix.GameCore.Version;
 
 namespace Larnix.Menu
 {
@@ -26,7 +25,7 @@ namespace Larnix.Menu
             GlobRef.Set(this);
             Scopes.Reset();
 
-            Core.Debug.Log("Menu loaded");
+            Echo.Log("Menu loaded");
         }
 
         private void Start()

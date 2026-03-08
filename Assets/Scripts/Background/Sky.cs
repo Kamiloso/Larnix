@@ -1,6 +1,7 @@
 using UnityEngine;
 using Larnix.Worldgen.Biomes;
 using Larnix.Core.Vectors;
+using Larnix.GameCore;
 using Larnix.Core;
 
 namespace Larnix.Background

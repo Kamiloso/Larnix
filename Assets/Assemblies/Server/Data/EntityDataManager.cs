@@ -1,7 +1,6 @@
-using System.Collections;
 using System.Collections.Generic;
 using Larnix.Entities;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Utils;
 using Larnix.Entities.Structs;
 using Larnix.Core.Vectors;
 using Larnix.Core;

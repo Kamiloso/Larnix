@@ -6,11 +6,12 @@ using Larnix.Socket.Channel;
 using Larnix.Socket.Channel.Networking;
 using Larnix.Socket.Packets;
 using Larnix.Socket.Security.Keys;
-using Larnix.Core.Utils;
 using Larnix.Socket.Helpers.Limiters;
-using Larnix.Core;
 using Larnix.Socket.Packets.Control;
-using Larnix.Core.DataStructures;
+using Larnix.Core.Collections;
+using Larnix.Core.Interfaces;
+using Larnix.Core.Misc;
+using Larnix.Core;
 
 namespace Larnix.Socket.Backend
 {
@@ -77,7 +78,7 @@ namespace Larnix.Socket.Backend
 
                 if (TryGetEndPoint(nickname, out var alreadyConnectedEp))
                 {
-                    Core.Debug.LogWarning($"Player {nickname} tried to connect, but is already connected.");
+                    Echo.LogWarning($"Player {nickname} tried to connect, but is already connected.");
 
                     KickRequest(alreadyConnectedEp);
                     return false; // reject, player may connect once again
@@ -87,7 +88,7 @@ namespace Larnix.Socket.Backend
                 if (!_connLimiter.TryAdd(internetID))
                 {
                     ulong max = _connLimiter.Max;
-                    Core.Debug.LogWarning($"Network {internetID} has reached the limit of {max} simultaneous connections.\n" +
+                    Echo.LogWarning($"Network {internetID} has reached the limit of {max} simultaneous connections.\n" +
                         $"Cannot accept {nickname} while connecting from {endPoint}");
                     
                     return false; // reject, too many connections from internet ID
@@ -130,7 +131,8 @@ namespace Larnix.Socket.Backend
                 throw new InvalidOperationException("Not all packets were flushed! Cannot tick.");
 
             List<IPEndPoint> shuffledEndpoints = _connections.Keys
-                .OrderBy(_ => Common.Rand()).ToList();
+                .OrderBy(_ => RandUtils.NextInt())
+                .ToList();
             
             foreach (IPEndPoint endPoint in shuffledEndpoints)
             {

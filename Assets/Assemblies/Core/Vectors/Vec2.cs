@@ -1,7 +1,7 @@
 using System;
-using Larnix.Core.Utils;
 using Larnix.Core.Binary;
 using System.Globalization;
+using Larnix.Core.Misc;
 
 namespace Larnix.Core.Vectors
 {

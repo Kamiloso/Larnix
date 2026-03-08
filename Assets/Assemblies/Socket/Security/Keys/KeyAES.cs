@@ -1,8 +1,6 @@
 using System;
-using System.IO;
-using System.Security.Cryptography;
-using Larnix.Core.Utils;
-using Larnix.Core;
+using Larnix.GameCore.Utils;
+using Larnix.Core.Misc;
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Modes;
 using Org.BouncyCastle.Crypto.Parameters;
@@ -28,7 +26,7 @@ namespace Larnix.Socket.Security.Keys
             }
             else
             {
-                _key = Common.GetSecureBytes(KeySize);
+                _key = RandUtils.SecureBytes(KeySize);
             }
         }
 
@@ -44,7 +42,7 @@ namespace Larnix.Socket.Security.Keys
             if (plaintext == null)
                 throw new ArgumentNullException(nameof(plaintext));
 
-            byte[] nonce = Common.GetSecureBytes(NonceSize);
+            byte[] nonce = RandUtils.SecureBytes(NonceSize);
 
             var cipher = new GcmBlockCipher(new AesEngine());
             var parameters = new AeadParameters(

@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Utils;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.All;
 using Larnix.Blocks;
 using System.Collections.ObjectModel;
-using Larnix.Core.DataStructures;
+using Larnix.Core.Collections;
 using Larnix.Server.Configuration;
 using Larnix.Core;
 
@@ -140,7 +140,7 @@ namespace Larnix.Server.Terrain
                         {
                             _warningEmitted = true;
                             Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, Vec2Int.Zero);
-                            Core.Debug.LogWarning(
+                            Echo.LogWarning(
                                 $"Electric contraption at {POS} is too large to be fully loaded!\n" +
                                 $"Its events will be disabled to prevent inconsistent behaviour.\n" +
                                 $"You can increase the limit or suppress this warning in the server config."

@@ -1,5 +1,5 @@
 using Larnix.Socket.Packets.Control;
-using Version = Larnix.Core.Version;
+using Version = Larnix.GameCore.Version;
 
 namespace Larnix.Socket.Packets
 {

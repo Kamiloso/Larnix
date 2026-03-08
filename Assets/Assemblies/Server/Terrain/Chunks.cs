@@ -3,11 +3,12 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Larnix.Server.Entities;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Utils;
 using Larnix.Core.Vectors;
 using Larnix.Server.Transmission;
 using Larnix.Server.Configuration;
 using Larnix.Core;
+using Larnix.Core.Misc;
 
 namespace Larnix.Server.Terrain
 {
@@ -234,10 +235,13 @@ namespace Larnix.Server.Terrain
                 .Select(n => BlockUtils.CoordsToChunk(PlayerActions.RenderingPosition(n)))
                 .ToList();
 
-            Vec2Int? wishChunk = AtomicChunks.WishChunk;
-            if (wishChunk != null)
+            if (RandUtils.NextBool()) // prevent loading deadlocks
             {
-                playerChunks.Add(wishChunk.Value);
+                Vec2Int? wishChunk = AtomicChunks.WishChunk;
+                if (wishChunk != null)
+                {
+                    playerChunks.Add(wishChunk.Value);
+                }
             }
 
             if (playerChunks.Count == 0)
@@ -252,7 +256,7 @@ namespace Larnix.Server.Terrain
 
                 foreach (var pChunk in playerChunks)
                 {
-                    int dist = GeometryUtils.ManhattanDistance(candidate, pChunk);
+                    int dist = Vec2Int.ManhattanDistance(candidate, pChunk);
                     if (dist < distMin) distMin = dist;
                     if (distMin == 0) break; // can't get better for this candidate
                 }

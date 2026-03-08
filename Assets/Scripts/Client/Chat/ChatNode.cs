@@ -2,7 +2,7 @@ using System;
 using TMPro;
 using UnityEngine;
 using Larnix.Core;
-using LogType = Larnix.Core.Debug.LogType;
+using LogType = Larnix.Core.Echo.LogType;
 
 namespace Larnix.Client.Chat
 {

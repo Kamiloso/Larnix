@@ -1,18 +1,18 @@
-using System.Collections;
 using System.Collections.Generic;
 using Larnix.Packets;
 using Larnix.Server.Entities;
-using Larnix.Core.Utils;
+using Larnix.GameCore.Utils;
 using Larnix.Socket.Backend;
 using Larnix.Socket.Packets.Control;
 using Larnix.Core.Vectors;
 using System;
 using Larnix.Socket.Packets;
 using Larnix.Blocks;
-using Larnix.Core;
+using Larnix.GameCore;
 using Larnix.Server.Commands;
-using LogType = Larnix.Core.Debug.LogType;
-using CmdResult = Larnix.Core.ICmdExecutor.CmdResult;
+using Larnix.Core;
+using LogType = Larnix.Core.Echo.LogType;
+using CmdResult = Larnix.GameCore.ICmdExecutor.CmdResult;
 using ChatCode = Larnix.Packets.ChatMessage.ChatCode;
 
 namespace Larnix.Server.Transmission
@@ -66,7 +66,7 @@ namespace Larnix.Server.Transmission
                     {
                         if (!softLimit) // hard limit - disconnect client
                         {
-                            Core.Debug.Log("Rate limit for packet " + typeof(T).Name + " from " + owner + " exceeded.");
+                            Echo.Log("Rate limit for packet " + typeof(T).Name + " from " + owner + " exceeded.");
                             QuickServer.KickRequest(owner);
                         }
                     }
@@ -95,7 +95,7 @@ namespace Larnix.Server.Transmission
             // No player data methods are reliable here.
 
             PlayerActions.JoinPlayer(owner);
-            Core.Debug.Log(owner + " joined the game.");
+            Echo.Log(owner + " joined the game.");
         }
 
         private void _Stop(Stop msg, string owner)
@@ -105,7 +105,7 @@ namespace Larnix.Server.Transmission
             // No player data methods are reliable here.
 
             PlayerActions.DisconnectPlayer(owner);
-            Core.Debug.Log(owner + " disconnected.");
+            Echo.Log(owner + " disconnected.");
         }
 
         private void _PlayerUpdate(PlayerUpdate msg, string owner)
@@ -181,7 +181,7 @@ namespace Larnix.Server.Transmission
                 {
                     LogType logType = ICmdExecutor.ConvertToLogType(result);
 
-                    String512[] answerParts = StringUtils.SplitString(answer, str => (String512)str);
+                    String512[] answerParts = IStringStruct.Cut<String512>(answer, s => new(s));
                     for (int i = 0; i < answerParts.Length; i++)
                     {
                         bool isLast = i == answerParts.Length - 1;
@@ -208,7 +208,7 @@ namespace Larnix.Server.Transmission
 
                 if (packet.TryGetMsgText(out string msgText))
                 {
-                    Core.Console.Log(msgText); // log to console
+                    Echo.Log(msgText); // log to console
                 }
 
                 QuickServer.Broadcast(packet);

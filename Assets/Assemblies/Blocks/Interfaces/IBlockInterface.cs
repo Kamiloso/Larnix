@@ -1,8 +1,8 @@
-using Larnix.Core;
+using Larnix.GameCore;
 using System.Collections;
 using System.Collections.Generic;
-using Larnix.Core.Utils;
-using Larnix.Core.Json;
+using Larnix.GameCore.Utils;
+using Larnix.GameCore.Json;
 using Larnix.Blocks.Structs;
 
 namespace Larnix.Blocks.All
