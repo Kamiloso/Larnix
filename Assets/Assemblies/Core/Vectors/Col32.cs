@@ -3,14 +3,14 @@ using Larnix.Core.Binary;
 
 namespace Larnix.Core.Vectors
 {
-    public struct Col32 : IEquatable<Col32>, IBinary<Col32>
+    public readonly struct Col32 : IEquatable<Col32>, IBinary<Col32>
     {
         public const int SIZE = sizeof(byte) * 4;
 
-        public byte r { get; private set; }
-        public byte g { get; private set; }
-        public byte b { get; private set; }
-        public byte a { get; private set; }
+        public byte r { get; }
+        public byte g { get; }
+        public byte b { get; }
+        public byte a { get; }
 
         public Col32(byte r, byte g, byte b, byte a)
         {
@@ -35,16 +35,20 @@ namespace Larnix.Core.Vectors
             return new byte[] { r, g, b, a };
         }
 
-        public bool Deserialize(byte[] bytes, int offset = 0)
+        public bool Deserialize(byte[] bytes, int offset, out Col32 result)
         {
             if (offset + SIZE > bytes.Length)
+            {
+                result = default;
                 return false;
+            }
 
-            r = bytes[offset + 0];
-            g = bytes[offset + 1];
-            b = bytes[offset + 2];
-            a = bytes[offset + 3];
-
+            result = new Col32(
+                bytes[offset + 0],
+                bytes[offset + 1],
+                bytes[offset + 2],
+                bytes[offset + 3]
+            );
             return true;
         }
 

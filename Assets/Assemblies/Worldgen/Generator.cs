@@ -41,14 +41,19 @@ namespace Larnix.Worldgen
                 new IdentifyBiomes(ub),
                 new BuildBaseTerrain(ub),
                 new DrillCaves(ub),
-                new ApplyRealBlocks(ub),
-                new AddOreClusters(ub)
+                new ApplyHeaders(ub),
+                new AddOreClusters(ub),
+                new ApplyRealBlocks(ub)
             );
         }
 
-        public BlockData2[,] GenerateChunk(Vec2Int chunk)
+        public ChunkData GenerateChunk(Vec2Int chunk)
         {
-            return _genPipeline.Run(chunk);
+            BlockData2[,] blocks = _genPipeline.Run(chunk);
+
+            ChunkData chunkData = new();
+            ChunkIterator.Iterate((x, y) => chunkData[x, y] = blocks[x, y]);
+            return chunkData;
         }
 
 #region Biome & Sky Color

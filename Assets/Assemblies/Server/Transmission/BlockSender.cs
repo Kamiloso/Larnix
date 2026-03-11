@@ -11,6 +11,7 @@ using Larnix.Core.Vectors;
 using Larnix.Packets.Structs;
 using Larnix.Core;
 using Larnix.Server.Terrain;
+using Larnix.GameCore.Structs;
 
 namespace Larnix.Server.Transmission
 {
@@ -90,8 +91,8 @@ namespace Larnix.Server.Transmission
                 bool success = element.Success;
                 long operation = element.Operation;
 
-                Block blockFront = WorldAPI.GetBlock(POS, true);
-                Block blockBack = WorldAPI.GetBlock(POS, false);
+                BlockData1 blockFront = WorldAPI.GetBlock(POS, true)?.BlockData;
+                BlockData1 blockBack = WorldAPI.GetBlock(POS, false)?.BlockData;
 
                 if (
                     PlayerActions.StateOf(nickname) != Entities.PlayerActions.PlayerState.None &&
@@ -99,7 +100,9 @@ namespace Larnix.Server.Transmission
                     blockFront != null && blockBack != null
                     )
                 {
-                    BlockData2 currentBlock = new BlockData2(blockFront.BlockData, blockBack.BlockData);
+                    BlockHeader2 currentBlock = new(
+                        blockFront.Header, blockBack.Header
+                        );
 
                     Payload packet = new RetBlockChange(POS, operation, currentBlock, front, success);
                     QuickServer.Send(nickname, packet);
@@ -128,8 +131,8 @@ namespace Larnix.Server.Transmission
                 // Send added
                 foreach (var chunk in added)
                 {
-                    BlockData2[,] chunkArray = Chunks.GetChunk(chunk).ActiveChunkReference;
-                    Payload packet = new ChunkInfo(chunk, chunkArray);
+                    ChunkData chunkData = Chunks.GetChunk(chunk).ActiveChunkReference;
+                    Payload packet = new ChunkInfo(chunk, chunkData);
                     QuickServer.Send(nickname, packet);
                 }
 

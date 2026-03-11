@@ -11,7 +11,7 @@ namespace Larnix.Blocks.All
     {
         Block This => (Block)this;
         IWorldAPI WorldAPI => This.WorldAPI;
-        Storage Data => This.BlockData.Data;
+        Storage Data => This.BlockData.NBT;
 
         void SelfChangeVariant(byte variant)
         {

@@ -1,12 +1,11 @@
 using System;
-using System.Linq;
 
 namespace Larnix.Core.Binary
 {
-    public interface IBinary<T> where T : IBinary<T>, new()
+    public interface IBinary<T> where T : struct, IBinary<T>
     {
         public byte[] Serialize();
-        public bool Deserialize(byte[] data, int offset = 0);
+        public bool Deserialize(byte[] data, int offset, out T result);
 
         internal static T Create(byte[] data, int offset = 0)
         {
@@ -16,19 +15,14 @@ namespace Larnix.Core.Binary
 
         internal static bool TryCreate(byte[] data, out T result, int offset = 0)
         {
-            T instance = new T();
-            if (instance.Deserialize(data, offset))
+            T slave = new();
+            if (slave.Deserialize(data, offset, out result))
             {
-                result = instance;
                 return true;
             }
 
             result = default;
             return false;
         }
-
-        public T BinaryCopy() => Create(Serialize());
-        public bool BinaryEquals(T other) =>
-            other != null && Serialize().SequenceEqual(other.Serialize());
     }
 }

@@ -12,6 +12,7 @@ using Larnix.Client.Relativity;
 using Larnix.Client.UI;
 using Larnix.Blocks.All;
 using Larnix.Core;
+using Larnix.GameCore.Structs;
 
 namespace Larnix.Client.Terrain
 {
@@ -99,15 +100,15 @@ namespace Larnix.Client.Terrain
 
             Action HideSelector = () =>
             {
-                Tile tile = Tiles.GetTile(new BlockData1(), true);
+                Tile tile = Tiles.GetTile(BlockHeader1.Air, true);
                 Selector.sprite = tile.sprite;
             };
 
-            Tile tile = Tiles.GetTile(holdBlock, !shift);
+            Tile tile = Tiles.GetTile(holdBlock.Header, !shift);
 
             if (is_tool)
             {
-                bool can_be_broken = TerrainAPI.CanBeBroken(pointed_block, holdBlock, !shift);
+                bool can_be_broken = TerrainAPI.CanBeBroken(pointed_block, holdBlock.Header, !shift);
 
                 Selector.sprite = tile.sprite;
                 Selector.color = new Color(1, 1, 1);
@@ -117,7 +118,7 @@ namespace Larnix.Client.Terrain
 
                 if (hold_0 && can_be_broken)
                 {
-                    TerrainAPI.BreakBlock(pointed_block, holdBlock, !shift);
+                    TerrainAPI.BreakBlock(pointed_block, holdBlock.Header, !shift);
                 }
             }
             else
@@ -125,7 +126,7 @@ namespace Larnix.Client.Terrain
                 Color transpColor = new Color(1, 1, 1, TRANSPARENCY);
                 Color darkerColor = new Color(0, 0, 0, TRANSPARENCY);
 
-                if (TerrainAPI.CanBePlaced(pointed_block, holdBlock, !shift))
+                if (TerrainAPI.CanBePlaced(pointed_block, holdBlock.Header, !shift))
                 {
                     Selector.sprite = tile.sprite;
 
@@ -142,7 +143,7 @@ namespace Larnix.Client.Terrain
 
                     if (hold_0)
                     {
-                        TerrainAPI.PlaceBlock(pointed_block, holdBlock, !shift);
+                        TerrainAPI.PlaceBlock(pointed_block, holdBlock.Header, !shift);
                     }
                 }
                 else HideSelector();

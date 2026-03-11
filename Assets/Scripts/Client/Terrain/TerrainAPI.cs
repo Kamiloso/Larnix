@@ -1,9 +1,10 @@
 using Larnix.Blocks;
 using Larnix.Socket.Packets;
-using Larnix.Blocks.Structs;
 using Larnix.Packets;
 using Larnix.Core.Vectors;
 using Larnix.Core;
+using Larnix.GameCore.Structs;
+using System;
 
 namespace Larnix.Client.Terrain
 {
@@ -12,46 +13,60 @@ namespace Larnix.Client.Terrain
         private static Client Client => GlobRef.Get<Client>();
         private static GridManager GridManager => GlobRef.Get<GridManager>();
 
-        public static bool CanBePlaced(Vec2Int POS, BlockData1 item, bool front)
+        public static bool CanBePlaced(Vec2Int POS, BlockHeader1 item, bool front)
         {
-            BlockData2 blockData = GridManager.BlockDataAtPOS(POS);
+            BlockHeader2? blockNullable = GridManager.BlockDataAtPOS(POS);
             bool isLocked = GridManager.IsBlockLocked(POS);
 
-            if (blockData != null && !isLocked)
+            if (blockNullable != null && !isLocked)
             {
-                return BlockInteractions.CanBePlaced(blockData, item, front);
+                BlockHeader2 block = blockNullable.Value;
+                return BlockInteractions.CanBePlaced(block, item, front);
             }
             return false;
         }
 
-        public static bool CanBeBroken(Vec2Int POS, BlockData1 tool, bool front)
+        public static bool CanBeBroken(Vec2Int POS, BlockHeader1 tool, bool front)
         {
-            BlockData2 blockData = GridManager.BlockDataAtPOS(POS);
+            BlockHeader2? blockNullable = GridManager.BlockDataAtPOS(POS);
             bool isLocked = GridManager.IsBlockLocked(POS);
 
-            if (blockData != null && !isLocked)
+            if (blockNullable != null && !isLocked)
             {
-                BlockData1 item = front ? blockData.Front : blockData.Back;
-                return BlockInteractions.CanBeBroken(blockData, item, tool, front);
+                BlockHeader2 block = blockNullable.Value;
+
+                BlockHeader1 item = front
+                    ? block.Front
+                    : block.Back;
+
+                return BlockInteractions.CanBeBroken(block, item, tool, front);
             }
             return false;
         }
 
-        public static void PlaceBlock(Vec2Int POS, BlockData1 item, bool front)
+        public static void PlaceBlock(Vec2Int POS, BlockHeader1 item, bool front)
         {
+            _ = GridManager.BlockDataAtPOS(POS) ?? 
+                throw new InvalidOperationException("Cannot place a block at unloaded position!");
+    
             long operation = GridManager.PlaceBlockClient(POS, item, front);
-            SendBlockChange(POS, item, new(), front, operation, 0);
+            SendBlockChange(POS, item, BlockHeader1.Air, front, operation, 0);
         }
 
-        public static void BreakBlock(Vec2Int POS, BlockData1 tool, bool front)
+        public static void BreakBlock(Vec2Int POS, BlockHeader1 tool, bool front)
         {
-            BlockData2 _oldblock = GridManager.BlockDataAtPOS(POS);
-            BlockData1 oldblock = front ? _oldblock.Front : _oldblock.Back;
+            BlockHeader2 oldBlock2 = GridManager.BlockDataAtPOS(POS) ?? 
+                throw new InvalidOperationException("Cannot break a block at unloaded position!");
+            
+            BlockHeader1 oldblock1 = front
+                ? oldBlock2.Front
+                : oldBlock2.Back;
+            
             long operation = GridManager.BreakBlockClient(POS, front);
-            SendBlockChange(POS, oldblock, tool, front, operation, 1);
+            SendBlockChange(POS, oldblock1, tool, front, operation, 1);
         }
 
-        private static void SendBlockChange(Vec2Int POS, BlockData1 item, BlockData1 tool, bool front, long operation, byte code)
+        private static void SendBlockChange(Vec2Int POS, BlockHeader1 item, BlockHeader1 tool, bool front, long operation, byte code)
         {
             Payload packet = new BlockChange(POS, item, tool, operation, front, code);
             Client.Send(packet);

@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using Larnix.Core.Vectors;
-using Larnix.GameCore.Utils;
+using Larnix.GameCore.Structs;
 using Larnix.Blocks.Structs;
 using Larnix.Core.Misc;
 
@@ -15,7 +15,7 @@ namespace Larnix.Blocks.All
                  () => Flow());
         }
 
-        bool IReplaceable.STATIC_IsReplaceable(BlockData1 thisBlock, BlockData1 otherBlock, bool isFront)
+        bool IReplaceable.STATIC_IsReplaceable(BlockHeader1 thisBlock, BlockHeader1 otherBlock, bool isFront)
         {
             if (LIQUID_IS_REPLACEABLE())
             {

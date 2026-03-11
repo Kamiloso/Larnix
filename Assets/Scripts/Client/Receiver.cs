@@ -66,9 +66,9 @@ namespace Larnix.Client
 
         private void _ChunkInfo(ChunkInfo msg)
         {
-            if (msg.Blocks != null) // activation packet
+            if (msg.Chunk != null) // activation packet
             {
-                GridManager.AddChunk(msg.Chunkpos, msg.Blocks);
+                GridManager.AddChunk(msg.Chunkpos, msg.Chunk.HeaderLook);
             }
             else // removal packet
             {

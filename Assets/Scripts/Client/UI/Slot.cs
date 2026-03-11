@@ -6,6 +6,7 @@ using UnityEngine.UI;
 using Larnix.Blocks.Structs;
 using Larnix.Blocks.All;
 using Larnix.Core;
+using Larnix.GameCore.Structs;
 
 namespace Larnix.Client.UI
 {
@@ -52,14 +53,14 @@ namespace Larnix.Client.UI
             Item item = Inventory.GetItemInSlot(_slotID);
             if(item.Count != 0)
             {
-                Image.sprite = Tiles.GetSprite(item.Block, true);
+                Image.sprite = Tiles.GetSprite(item.Block.Header, true);
                 Title.text = _textDisplayTime > 0f ?
                     BlockFactory.GetSlaveInstance<IBlockInterface>(item.Block.ID)?.STATIC_GetBlockName(item.Block.Variant) ?? string.Empty :
                     string.Empty;
             }
             else
             {
-                Image.sprite = Tiles.GetSprite(new BlockData1(), true);
+                Image.sprite = Tiles.GetSprite(BlockHeader1.Air, true);
                 Title.text = string.Empty;
             }
 

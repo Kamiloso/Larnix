@@ -14,6 +14,7 @@ using Larnix.GameCore.Enums;
 using Larnix.Core.Misc;
 using IHasCollider = Larnix.Blocks.All.IHasCollider;
 using Larnix.Core.Enums;
+using Larnix.GameCore.Structs;
 
 namespace Larnix.Client.Terrain
 {
@@ -56,7 +57,7 @@ namespace Larnix.Client.Terrain
             base.LateUpdate();
         }
 
-        public void UpdateBlock(Vec2Int POS, BlockData2 data, IWorldAPI.BreakMode breakMode, long? unlock = null)
+        public void UpdateBlock(Vec2Int POS, BlockHeader2 data, IWorldAPI.BreakMode breakMode, long? unlock = null)
         {
             Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
             Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
@@ -79,15 +80,17 @@ namespace Larnix.Client.Terrain
             return nearbyChunks.Count == 0;
         }
 
-        public long PlaceBlockClient(Vec2Int POS, BlockData1 block, bool front)
+        public long PlaceBlockClient(Vec2Int POS, BlockHeader1 block, bool front)
         {
-            BlockData2 oldblock = BlockDataAtPOS(POS);
-            if (oldblock == null)
+            BlockHeader2? oldblockNullable = BlockDataAtPOS(POS);
+            if (oldblockNullable == null)
                 throw new InvalidOperationException($"Cannot place block at {POS}");
 
-            BlockData2 blockdata = new BlockData2(
-                front ? block : oldblock.Front.DeepCopy(),
-                front ? oldblock.Back.DeepCopy() : block
+            BlockHeader2 oldBlock = oldblockNullable.Value;
+
+            BlockHeader2 blockdata = new(
+                front ? block : oldBlock.Front,
+                front ? oldBlock.Back : block
                 );
 
             ChangeBlockData(POS, blockdata, IWorldAPI.BreakMode.Effects);
@@ -97,13 +100,15 @@ namespace Larnix.Client.Terrain
 
         public long BreakBlockClient(Vec2Int POS, bool front)
         {
-            BlockData2 oldblock = BlockDataAtPOS(POS);
-            if (oldblock == null)
+            BlockHeader2? oldBlockNullable = BlockDataAtPOS(POS);
+            if (oldBlockNullable == null)
                 throw new InvalidOperationException($"Cannot break block at {POS}");
 
-            BlockData2 blockdata = new BlockData2(
-                front ? new BlockData1 { } : oldblock.Front.DeepCopy(),
-                front ? oldblock.Back.DeepCopy() : new BlockData1 { }
+            BlockHeader2 oldBlock = oldBlockNullable.Value;
+
+            BlockHeader2 blockdata = new(
+                front ? BlockHeader1.Air : oldBlock.Front,
+                front ? oldBlock.Back : BlockHeader1.Air
                 );
 
             ChangeBlockData(POS, blockdata, IWorldAPI.BreakMode.Effects);
@@ -111,12 +116,12 @@ namespace Larnix.Client.Terrain
             return operation;
         }
 
-        private void ChangeBlockData(Vec2Int POS, BlockData2 newBlock, IWorldAPI.BreakMode breakMode)
+        private void ChangeBlockData(Vec2Int POS, BlockHeader2 newBlock, IWorldAPI.BreakMode breakMode)
         {
             Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
             Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
 
-            BlockData2 oldBlock = _allChunks[chunk][pos.x, pos.y];
+            BlockHeader2 oldBlock = _allChunks[chunk][pos.x, pos.y];
             _allChunks[chunk][pos.x, pos.y] = newBlock;
 
             if (breakMode == IWorldAPI.BreakMode.Effects)
@@ -140,21 +145,21 @@ namespace Larnix.Client.Terrain
 
         public void UpdateChunkColliders(Vec2Int chunk)
         {
-            if (!_allChunks.TryGetValue(chunk, out BlockData2[,] chunkBlocks))
-                chunkBlocks = null;
+            if (!_allChunks.TryGetValue(chunk, out ChunkLook chunkLook))
+                chunkLook = null;
 
             ChunkIterator.Iterate((x, y) =>
             {
                 var pos = new Vec2Int(x, y);
 
                 Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, pos);
-                UpdateBlockCollider(POS, chunkBlocks != null ? chunkBlocks[x, y] : null);
+                UpdateBlockCollider(POS, chunkLook?[x, y]);
             });
 
-            PhysicsManager.SetChunkActive(chunk, chunkBlocks != null);
+            PhysicsManager.SetChunkActive(chunk, chunkLook != null);
         }
 
-        private void UpdateBlockCollider(Vec2Int POS, BlockData2 block)
+        private void UpdateBlockCollider(Vec2Int POS, BlockHeader2? blockNullable)
         {
             { // free old collider
                 if (_colliderCollections.TryGetValue(POS, out var staticColliders))
@@ -167,8 +172,10 @@ namespace Larnix.Client.Terrain
                 }
             }
 
-            if (block != null)
+            if (blockNullable != null)
             {
+                BlockHeader2 block = (BlockHeader2)blockNullable;
+
                 IHasCollider iface = BlockFactory.GetSlaveInstance<IHasCollider>(block.Front.ID);
                 if (iface != null)
                 {

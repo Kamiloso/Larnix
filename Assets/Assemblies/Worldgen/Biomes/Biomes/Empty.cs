@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using Larnix.Blocks.Structs;
+using Larnix.GameCore.Structs;
 
 namespace Larnix.Worldgen.Biomes.All
 {
@@ -8,9 +9,9 @@ namespace Larnix.Worldgen.Biomes.All
     {
         public Empty(Seed seed) : base(seed) {}
         
-        public override BlockData2 TranslateProtoBlock(ProtoBlock protoBlock)
+        public override BlockHeader2 TranslateProtoBlock(ProtoBlock protoBlock)
         {
-            return BlockData2.Empty;
+            return BlockHeader2.Empty;
         }
     }
 }

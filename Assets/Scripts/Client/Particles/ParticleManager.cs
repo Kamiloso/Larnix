@@ -1,15 +1,14 @@
 using System.Collections.Generic;
-using Larnix.GameCore;
 using Larnix.Core.Vectors;
 using Larnix.Client.Entities;
 using Larnix.Client.Relativity;
 using UnityEngine;
 using System.Linq;
-using Larnix.Blocks.Structs;
 using Larnix.Blocks;
 using Larnix.Blocks.All;
 using Larnix.Core;
 using Larnix.GameCore.Enums;
+using Larnix.GameCore.Structs;
 
 namespace Larnix.Client.Particles
 {
@@ -20,7 +19,7 @@ namespace Larnix.Client.Particles
         private EntityProjections EntityProjections => GlobRef.Get<EntityProjections>();
         private HashSet<GameObject> ActiveParticles = new();
 
-        private BlockData1 _optionBlock = new();
+        private BlockHeader1 _optionBlock = BlockHeader1.Air;
         private bool _optionFront = false;
 
         private void Awake()
@@ -42,7 +41,7 @@ namespace Larnix.Client.Particles
             GameObject prefab = GetParticlePrefab(id);
             if (prefab == null || ActiveParticles.Count >= MaxParticles) return;
 
-            GameObject obj = GameObject.Instantiate(prefab).Relativise(position);
+            GameObject obj = Instantiate(prefab).Relativise(position);
             obj.transform.SetParent(this.transform, false);
 
             if (obj.TryGetComponent<ParticleControl>(out var particles))
@@ -56,7 +55,7 @@ namespace Larnix.Client.Particles
                         (place_particles && id == ParticleID.BlockPlace))
                     {
                         particles.SetTextureFromBlock(
-                            blockData: _optionBlock.DeepCopy(),
+                            blockData: _optionBlock,
                             front: _optionFront
                         );
                     }
@@ -77,7 +76,7 @@ namespace Larnix.Client.Particles
 
             if (EntityProjections.TryGetProjection(uid, true, out var projection))
             {
-                GameObject obj = GameObject.Instantiate(prefab);
+                GameObject obj = Instantiate(prefab);
                 obj.transform.SetParent(projection.transform, false);
                 obj.transform.localPosition = localPosition.ExtractPosition(Vec2.Zero);
 
@@ -85,9 +84,9 @@ namespace Larnix.Client.Particles
             }
         }
 
-        public void SpawnBlockParticles(BlockData1 blockData, Vec2Int POS, bool front, ParticleID id)
+        public void SpawnBlockParticles(BlockHeader1 blockData, Vec2Int POS, bool front, ParticleID id)
         {
-            _optionBlock = blockData ?? new();
+            _optionBlock = blockData;
             _optionFront = front;
 
             SpawnGlobalParticles(id, POS.ToVec2());

@@ -14,6 +14,7 @@ using Larnix.Blocks;
 using Larnix.GameCore.DbStructs;
 using Larnix.Core.Misc;
 using Larnix.GameCore.Enums;
+using Larnix.GameCore.Structs;
 
 namespace Larnix.Server.Data.SQLite
 {
@@ -346,20 +347,20 @@ namespace Larnix.Server.Data.SQLite
 #endregion
 #region Chunk Data Access
 
-        public void SetChunk(int x, int y, BlockData2[,] chunk)
+        public void SetChunk(int x, int y, ChunkData chunk)
         {
             using (var cmd = CreateCommand())
             {
                 cmd.CommandText = "INSERT OR REPLACE INTO chunks (chunk_x, chunk_y, block_bytes, nbt) VALUES ($chunk_x, $chunk_y, $block_bytes, $nbt);";
                 cmd.Parameters.AddWithValue("$chunk_x", x);
                 cmd.Parameters.AddWithValue("$chunk_y", y);
-                cmd.Parameters.AddWithValue("$block_bytes", chunk.SerializeChunk());
+                cmd.Parameters.AddWithValue("$block_bytes", chunk.Serialize());
                 cmd.Parameters.AddWithValue("$nbt", chunk.ExportData());
                 cmd.ExecuteNonQuery();
             }
         }
 
-        public bool TryGetChunk(int x, int y, out BlockData2[,] chunk)
+        public bool TryGetChunk(int x, int y, out ChunkData chunk)
         {
             using (var cmd = CreateCommand())
             {
@@ -371,8 +372,8 @@ namespace Larnix.Server.Data.SQLite
                 {
                     if (reader.Read())
                     {
-                        chunk = ChunkMethods.DeserializeChunk((byte[])reader["block_bytes"]);
-                        chunk.InsertData((string)reader["nbt"]);
+                        chunk = ChunkData.DeserializeChunk((byte[])reader["block_bytes"]);
+                        chunk.ImportData((string)reader["nbt"]);
                         return true;
                     }
                 }

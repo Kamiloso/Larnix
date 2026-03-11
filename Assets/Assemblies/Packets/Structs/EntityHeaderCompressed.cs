@@ -3,25 +3,28 @@ using Larnix.Core.Binary;
 using Larnix.Core.Vectors;
 using Larnix.Core.Misc;
 using Larnix.GameCore.Enums;
-using Larnix.GameCore;
+using Larnix.GameCore.Structs;
 
 namespace Larnix.Packets
 {
-    public struct EntityHeaderCompressed : IBinary<EntityHeaderCompressed>
+    public readonly struct EntityHeaderCompressed : IBinary<EntityHeaderCompressed>
     {
         public const int SIZE = sizeof(EntityID) + 2 * CompressionUtils.COMPRESSED_DOUBLE_SIZE + sizeof(byte);
 
-        public EntityHeader Header { get; private set; }
+        public EntityHeader Header { get; }
 
         public EntityHeaderCompressed(EntityHeader header)
         {
             Header = header;
         }
 
-        public bool Deserialize(byte[] bytes, int offset = 0)
+        public bool Deserialize(byte[] bytes, int offset, out EntityHeaderCompressed result)
         {
             if (offset + SIZE > bytes.Length)
+            {
+                result = default;
                 return false;
+            }
 
             EntityID id = Primitives.FromBytes<EntityID>(bytes, offset);
             offset += sizeof(EntityID);
@@ -35,11 +38,11 @@ namespace Larnix.Packets
             float rotation = CompressionUtils.DecompressRotation(bytes[offset]);
             offset += sizeof(byte);
 
-            Header = new EntityHeader(id, new Vec2(x, y), rotation);
+            result = new EntityHeaderCompressed(new EntityHeader(id, new Vec2(x, y), rotation));
             return true;
         }
 
-        public readonly byte[] Serialize()
+        public byte[] Serialize()
         {
             return ArrayUtils.MegaConcat(
                 Primitives.GetBytes(Header.ID),

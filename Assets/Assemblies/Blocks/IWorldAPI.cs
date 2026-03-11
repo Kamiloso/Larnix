@@ -4,6 +4,7 @@ using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
 using Larnix.GameCore;
 using Larnix.GameCore.Utils;
+using Larnix.GameCore.Structs;
 
 namespace Larnix.Blocks
 {

@@ -1,6 +1,7 @@
 using Larnix.Blocks;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
+using Larnix.GameCore.Structs;
 
 namespace Larnix.Blocks.All
 {
@@ -40,7 +41,7 @@ namespace Larnix.Blocks.All
                 data1 = new BlockData1(
                     id: data1.ID,
                     variant: sourceNewVariant.Value,
-                    data: data1.Data);
+                    data: data1.NBT);
             }
 
             if (block2 is Air || block2 is ILiquid) // swap

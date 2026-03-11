@@ -5,12 +5,12 @@ using Larnix.Core.Binary;
 
 namespace Larnix.GameCore
 {
-    public struct Version : IBinary<Version>
+    public readonly struct Version : IBinary<Version>
     {
-        public static readonly Version Current = new("0.0.44.1");
+        public static readonly Version Current = new("0.0.44.2");
 
         public const int SIZE = sizeof(uint);
-        public uint ID { get; private set; }
+        public uint ID { get; }
 
         public Version(uint id)
         {
@@ -59,12 +59,15 @@ namespace Larnix.GameCore
             return Primitives.GetBytes(ID);
         }
 
-        public bool Deserialize(byte[] bytes, int offset = 0)
+        public bool Deserialize(byte[] bytes, int offset, out Version result)
         {
             if (offset + SIZE > bytes.Length)
+            {
+                result = default;
                 return false;
-            
-            ID = Primitives.FromBytes<uint>(bytes, offset);
+            }
+
+            result = new Version(Primitives.FromBytes<uint>(bytes, offset));
             return true;
         }
 

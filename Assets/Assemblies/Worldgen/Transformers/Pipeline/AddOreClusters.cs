@@ -1,21 +1,20 @@
-using System;
-using Larnix.Blocks;
-using Larnix.Blocks.Structs;
 using Larnix.Core.Vectors;
+using Larnix.GameCore.Structs;
 using Larnix.Worldgen.Biomes;
 using Larnix.Worldgen.Biomes.All;
 using Larnix.Worldgen.Ores;
+using Larnix.GameCore.Utils;
 
 namespace Larnix.Worldgen.Transformers.Pipeline
 {
-    public class AddOreClusters : Transformer<BlockData2, BlockData2>
+    public class AddOreClusters : Transformer<BlockHeader2, BlockHeader2>
     {
         public AddOreClusters(UsefulBag usefulBag) : base(usefulBag)
         {
             ;
         }
 
-        public override BlockData2[,] Rebuild(Vec2Int chunk, BlockData2[,] blocks)
+        public override BlockHeader2[,] Rebuild(Vec2Int chunk, BlockHeader2[,] blocks)
         {
             ChunkIterator.IterateWithPOS(chunk, (POS, x, y) =>
             {
@@ -26,18 +25,18 @@ namespace Larnix.Worldgen.Transformers.Pipeline
                 
                 foreach (Ore ore in iface.ORES())
                 {
-                    BlockData1 newBlock;
+                    BlockHeader1 newBlock;
 
                     if (ore.FrontEnabled && // front layer ores
                         ore.TryGenerateOre(POS, blocks[x, y].Front, out newBlock))
                     {
-                        blocks[x, y] = new BlockData2(newBlock, blocks[x, y].Back);
+                        blocks[x, y] = new BlockHeader2(newBlock, blocks[x, y].Back);
                     }
 
                     if (ore.BackEnabled && // back layer ores
                         ore.TryGenerateOre(POS, blocks[x, y].Back, out newBlock))
                     {
-                        blocks[x, y] = new BlockData2(blocks[x, y].Front, newBlock);
+                        blocks[x, y] = new BlockHeader2(blocks[x, y].Front, newBlock);
                     }
                 }
             });

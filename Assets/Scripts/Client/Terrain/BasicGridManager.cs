@@ -7,6 +7,7 @@ using Larnix.GameCore.Utils;
 using Larnix.Blocks;
 using Larnix.Blocks.All;
 using Larnix.Core;
+using Larnix.GameCore.Structs;
 
 namespace Larnix.Client.Terrain
 {
@@ -14,7 +15,7 @@ namespace Larnix.Client.Terrain
     {
         [SerializeField] protected ChunkedTilemap ChunkedTilemap;
 
-        protected readonly Dictionary<Vec2Int, BlockData2[,]> _allChunks = new();
+        protected readonly Dictionary<Vec2Int, ChunkLook> _allChunks = new();
         protected readonly HashSet<Vec2Int> _dirtyChunks = new();
         protected readonly HashSet<Vec2Int> _visibleChunks = new();
 
@@ -37,13 +38,16 @@ namespace Larnix.Client.Terrain
             RedrawGrid();
         }
 
-        public void AddChunk(Vec2Int chunk, BlockData2[,] BlockArray, bool instantLoad = false)
+        public void AddChunk(Vec2Int chunk, ChunkLook chunkLook, bool instantLoad = false)
         {
-            _allChunks[chunk] = BlockArray;
+            _allChunks[chunk] = chunkLook;
             if (!IsMenu) NotMenu.UpdateChunkColliders(chunk);
             _dirtyChunks.Add(chunk);
 
-            if (instantLoad) RedrawGrid(true);
+            if (instantLoad)
+            {
+                RedrawGrid(true);
+            }
         }
 
         public void RemoveChunk(Vec2Int chunk)
@@ -109,7 +113,7 @@ namespace Larnix.Client.Terrain
             else _visibleChunks.Remove(chunk);
         }
 
-        protected void RedrawTileChecked(Vec2Int chunk, Vec2Int pos, BlockData2 block)
+        protected void RedrawTileChecked(Vec2Int chunk, Vec2Int pos, BlockHeader2 block)
         {
             if(_visibleChunks.Contains(chunk))
             {
@@ -117,7 +121,7 @@ namespace Larnix.Client.Terrain
             }
         }
 
-        public BlockData2 BlockDataAtPOS(Vec2Int POS)
+        public BlockHeader2? BlockDataAtPOS(Vec2Int POS)
         {
             Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
             if (!_allChunks.ContainsKey(chunk))
@@ -138,12 +142,14 @@ namespace Larnix.Client.Terrain
                     if (dx == 0 && dy == 0) continue;
 
                     Vec2Int n_POS = new Vec2Int(POS.x + dx, POS.y + dy);
-                    BlockData1 n_block = BlockDataAtPOS(n_POS)?.Front;
+                    BlockHeader1? blockNullable = BlockDataAtPOS(n_POS)?.Front;
 
                     IHasConture iface;
-                    if (n_block != null && (iface = BlockFactory.GetSlaveInstance<IHasConture>(n_block.ID)) != null)
+                    if (blockNullable != null && (iface = BlockFactory.GetSlaveInstance<IHasConture>(blockNullable.Value.ID)) != null)
                     {
-                        if (iface.STATIC_GetAlphaByte(n_block.Variant) != 0)
+                        BlockHeader1 block = blockNullable.Value;
+
+                        if (iface.STATIC_GetAlphaByte(block.Variant) != 0)
                             borderByte = (byte)(borderByte | (1 << i));
                     }
 

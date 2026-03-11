@@ -1,7 +1,7 @@
 using Larnix.Blocks;
 using System.Collections;
 using System.Collections.Generic;
-using Larnix.Blocks.Structs;
+using Larnix.GameCore.Structs;
 
 namespace Larnix.Blocks.All
 {
@@ -10,7 +10,7 @@ namespace Larnix.Blocks.All
         bool ALLOW_PLACE_BACK();
         bool HAS_PLACE_PARTICLES() => false;
 
-        public bool STATIC_IsPlaceable(BlockData1 block, bool front)
+        public bool STATIC_IsPlaceable(BlockHeader1 block, bool front)
         {
             return front || ALLOW_PLACE_BACK();
         }

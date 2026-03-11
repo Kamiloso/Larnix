@@ -17,7 +17,7 @@ namespace Larnix.Blocks.All
 
         private void ExecuteCommand()
         {
-            Storage data = This.BlockData.Data;
+            Storage data = This.BlockData.NBT;
             
             string command = data["tech_execute.command"].String;
             ICmdExecutor.InsertParameters(ref command, new Dictionary<string, string>

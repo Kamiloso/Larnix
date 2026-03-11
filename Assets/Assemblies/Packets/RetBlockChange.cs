@@ -1,24 +1,23 @@
-using System;
 using Larnix.Core.Vectors;
 using Larnix.GameCore.Utils;
-using Larnix.Blocks.Structs;
 using Larnix.Core.Binary;
 using Larnix.Socket.Packets;
 using Larnix.Core.Misc;
+using Larnix.GameCore.Structs;
 
 namespace Larnix.Packets
 {
     public sealed class RetBlockChange : Payload
     {
-        private const int SIZE = Vec2Int.SIZE + sizeof(long) + BlockData2.SIZE + sizeof(byte);
+        private const int SIZE = Vec2Int.SIZE + sizeof(long) + BlockHeader2.SIZE + sizeof(byte);
 
         public Vec2Int BlockPosition => Structures.FromBytes<Vec2Int>(Bytes, 0); // Vec2Int.SIZE
         public long Operation => Primitives.FromBytes<long>(Bytes, Vec2Int.SIZE); // sizeof(long)
-        public BlockData2 CurrentBlock => Structures.FromBytes<BlockData2>(Bytes, Vec2Int.SIZE + sizeof(long)); // BlockData2.SIZE
-        public bool Front => (Bytes[Vec2Int.SIZE + sizeof(long) + BlockData2.SIZE] & 0b01) != 0; // flag
-        public bool Success => (Bytes[Vec2Int.SIZE + sizeof(long) + BlockData2.SIZE] & 0b10) != 0; // flag
+        public BlockHeader2 CurrentBlock => Structures.FromBytes<BlockHeader2>(Bytes, Vec2Int.SIZE + sizeof(long)); // BlockHeader2.SIZE
+        public bool Front => (Bytes[Vec2Int.SIZE + sizeof(long) + BlockHeader2.SIZE] & 0b01) != 0; // flag
+        public bool Success => (Bytes[Vec2Int.SIZE + sizeof(long) + BlockHeader2.SIZE] & 0b10) != 0; // flag
 
-        public RetBlockChange(Vec2Int blockPosition, long operation, BlockData2 currentBlock, bool front, bool success, byte code = 0)
+        public RetBlockChange(Vec2Int blockPosition, long operation, BlockHeader2 currentBlock, bool front, bool success, byte code = 0)
         {
             InitializePayload(ArrayUtils.MegaConcat(
                 Structures.GetBytes(blockPosition),

@@ -5,12 +5,12 @@ using Larnix.Core.Misc;
 
 namespace Larnix.Core.Vectors
 {
-    public struct Vec2 : IEquatable<Vec2>, IBinary<Vec2>
+    public readonly struct Vec2 : IEquatable<Vec2>, IBinary<Vec2>
     {
         public const int SIZE = sizeof(double) * 2;
         
-        public double x { get; private set; }
-        public double y { get; private set; }
+        public double x { get; }
+        public double y { get; }
 
         public Vec2(double x, double y)
         {
@@ -26,17 +26,21 @@ namespace Larnix.Core.Vectors
             );
         }
 
-        public bool Deserialize(byte[] bytes, int offset = 0)
+        public bool Deserialize(byte[] bytes, int offset, out Vec2 result)
         {
             if (offset + SIZE > bytes.Length)
+            {
+                result = default;
                 return false;
+            }
 
             double _x = Primitives.FromBytes<double>(bytes, offset);
             double _y = Primitives.FromBytes<double>(bytes, offset + 8);
 
-            x = double.IsFinite(_x) ? _x : 0.0;
-            y = double.IsFinite(_y) ? _y : 0.0;
-
+            result = new Vec2(
+                double.IsFinite(_x) ? _x : 0.0,
+                double.IsFinite(_y) ? _y : 0.0
+            );
             return true;
         }
 

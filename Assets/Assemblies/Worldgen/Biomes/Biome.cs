@@ -1,5 +1,6 @@
 using Larnix.Blocks.Structs;
 using Larnix.Core.Vectors;
+using Larnix.GameCore.Structs;
 using Larnix.Worldgen.Biomes.All;
 
 namespace Larnix.Worldgen.Biomes
@@ -11,7 +12,7 @@ namespace Larnix.Worldgen.Biomes
         public Col32 SkyColor => (this as ISkyColor)?.SKY_COLOR() ?? ISkyColor.Temperate;
         public Col32 NightSkyColor => (this as ISkyColor)?.NIGHT_SKY_COLOR() ?? ISkyColor.Night;
 
-        public abstract BlockData2 TranslateProtoBlock(ProtoBlock protoBlock);
+        public abstract BlockHeader2 TranslateProtoBlock(ProtoBlock protoBlock);
 
         protected Biome(Seed seed)
         {

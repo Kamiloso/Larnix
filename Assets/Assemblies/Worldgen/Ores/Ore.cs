@@ -4,6 +4,7 @@ using Larnix.Blocks.Structs;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.All;
 using Larnix.Core.Enums;
+using Larnix.GameCore.Structs;
 
 namespace Larnix.Worldgen.Ores
 {
@@ -12,14 +13,14 @@ namespace Larnix.Worldgen.Ores
         public bool FrontEnabled { get; init; } = true;
         public bool BackEnabled { get; init; } = false;
 
-        public Func<BlockData1, BlockData1> BlockTransform { private get; init; } =
+        public Func<BlockHeader1, BlockHeader1> BlockTransform { private get; init; } =
             _ => new(BlockID.Bedrock, 0); // no ore defined => bedrock
 
         public Ore() { }
 
         public abstract bool OrePresentAt(Vec2Int POS);
 
-        public bool TryGenerateOre(Vec2Int POS, BlockData1 oldBlock, out BlockData1 newBlock)
+        public bool TryGenerateOre(Vec2Int POS, BlockHeader1 oldBlock, out BlockHeader1 newBlock)
         {
             if (BlockFactory.HasInterface<IOreReplaceable>(oldBlock.ID) &&
                 OrePresentAt(POS))

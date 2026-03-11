@@ -25,7 +25,7 @@ namespace Larnix.Blocks.All
                 return;
 
             // clean state
-            This.BlockData.Data["conway"].String = "";
+            This.BlockData.NBT["conway"].String = "";
 
             for (int dx = -1; dx <= 1; dx++)
                 for (int dy = -1; dy <= 1; dy++)
@@ -46,12 +46,12 @@ namespace Larnix.Blocks.All
             if (!isAlive)
             {
                 if (aliveNeighbors == 3)
-                    This.BlockData.Data[$"conway.{delta.x}_{delta.y}"].String = "BIRTH";
+                    This.BlockData.NBT[$"conway.{delta.x}_{delta.y}"].String = "BIRTH";
             }
             else
             {
                 if (aliveNeighbors < 2 || aliveNeighbors > 3)
-                    This.BlockData.Data[$"conway.{delta.x}_{delta.y}"].String = "DEATH";
+                    This.BlockData.NBT[$"conway.{delta.x}_{delta.y}"].String = "DEATH";
             }
         }
 
@@ -75,7 +75,7 @@ namespace Larnix.Blocks.All
         private void FinalizeAt(Vec2Int POS, bool isFront)
         {
             Vec2Int delta = POS - This.Position;
-            string action = This.BlockData.Data[$"conway.{delta.x}_{delta.y}"].String;
+            string action = This.BlockData.NBT[$"conway.{delta.x}_{delta.y}"].String;
 
             switch (action)
             {

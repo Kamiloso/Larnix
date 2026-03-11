@@ -139,13 +139,13 @@ namespace Larnix.Server.Transmission
             {
                 bool has_item = true;
                 bool has_chunk = PlayerActions.PlayerHasChunk(owner, chunk);
-                bool can_place = WorldAPI.CanPlaceBlock(POS, front, msg.Item);
+                bool can_place = WorldAPI.CanPlaceBlock(POS, front, new(msg.Item));
 
                 bool success = has_item && has_chunk && can_place;
 
                 if (success)
                 {
-                    WorldAPI.PlaceBlockWithEffects(POS, front, msg.Item);
+                    WorldAPI.PlaceBlockWithEffects(POS, front, new(msg.Item));
                 }
 
                 BlockSender.AddRetBlockChange(new BlockChangeItem(owner, msg.Operation, POS, front, success));
@@ -155,13 +155,13 @@ namespace Larnix.Server.Transmission
             {
                 bool has_tool = true;
                 bool has_chunk = PlayerActions.PlayerHasChunk(owner, chunk);
-                bool can_break = WorldAPI.CanBreakBlock(POS, front, msg.Item, msg.Tool);
+                bool can_break = WorldAPI.CanBreakBlock(POS, front, new(msg.Item), new(msg.Tool));
 
                 bool success = has_tool && has_chunk && can_break;
 
                 if (success)
                 {
-                    WorldAPI.BreakBlockWithEffects(POS, front, msg.Tool);
+                    WorldAPI.BreakBlockWithEffects(POS, front, new(msg.Tool));
                 }
 
                 BlockSender.AddRetBlockChange(new BlockChangeItem(owner, msg.Operation, POS, front, success));

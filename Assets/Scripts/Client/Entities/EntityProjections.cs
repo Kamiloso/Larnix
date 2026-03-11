@@ -6,6 +6,7 @@ using Larnix.Packets;
 using Larnix.Entities.Structs;
 using Larnix.Core;
 using Larnix.GameCore;
+using Larnix.GameCore.Structs;
 
 namespace Larnix.Client.Entities
 {

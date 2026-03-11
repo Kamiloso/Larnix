@@ -15,6 +15,7 @@ using Larnix.Packets;
 using Larnix.GameCore.Json;
 using Larnix.Core.Misc;
 using Larnix.GameCore;
+using Larnix.GameCore.Structs;
 
 namespace Larnix.Server.Entities
 {

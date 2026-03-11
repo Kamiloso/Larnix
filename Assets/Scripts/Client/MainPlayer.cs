@@ -4,7 +4,6 @@ using Larnix.Client.Entities;
 using Larnix.Entities;
 using Larnix.GameCore.Physics;
 using Larnix.Core.Vectors;
-using Larnix.Entities.Structs;
 using Larnix.GameCore.Utils;
 using Larnix.Packets;
 using Larnix.Client.Terrain;
@@ -13,8 +12,7 @@ using Larnix.Entities.All;
 using Larnix.Scoping;
 using Larnix.Core;
 using Larnix.GameCore.Enums;
-using Larnix.GameCore.Json;
-using Larnix.GameCore;
+using Larnix.GameCore.Structs;
 
 namespace Larnix.Client
 {

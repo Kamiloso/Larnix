@@ -1,12 +1,10 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Larnix.Core.Misc;
-using Larnix.Entities.Structs;
 using Larnix.Core.Binary;
 using Larnix.Socket.Packets;
-using Larnix.GameCore;
+using Larnix.GameCore.Structs;
 
 namespace Larnix.Packets
 {

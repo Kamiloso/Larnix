@@ -1,13 +1,13 @@
 using Larnix.Core.Vectors;
 using Larnix.GameCore.Json;
 using Larnix.GameCore.Enums;
-using Larnix.GameCore;
+using Larnix.GameCore.Structs;
 
 namespace Larnix.Entities.Structs
 {
     public class EntityData
     {
-        public EntityHeader Header;
+        public EntityHeader Header { get; private set; }
         public Storage NBT { get; }
         
         public EntityID ID => Header.ID;
@@ -22,16 +22,16 @@ namespace Larnix.Entities.Structs
             set => Header = new EntityHeader(ID, Header.Position, value);
         }
 
-        public EntityData(EntityID id, Vec2 position, float rotation, Storage nbt)
-        {
-            Header = new EntityHeader(id, position, rotation);
-            NBT = nbt;
-        }
-
-        public EntityData(EntityHeader header, Storage nbt)
+        public EntityData(in EntityHeader header, Storage nbt = null)
         {
             Header = header;
-            NBT = nbt;
+            NBT = nbt ?? new();
+        }
+
+        public EntityData(EntityID id, Vec2 position, float rotation, Storage nbt = null)
+        {
+            Header = new EntityHeader(id, position, rotation);
+            NBT = nbt ?? new();
         }
 
         public EntityData DeepCopy()
@@ -39,6 +39,11 @@ namespace Larnix.Entities.Structs
             return new EntityData(
                 Header, NBT.DeepCopy()
             );
+        }
+
+        public override string ToString()
+        {
+            return Header.ToString();
         }
     }
 }

@@ -2,6 +2,7 @@ using System;
 using Larnix.Blocks.Structs;
 using Larnix.Core.Enums;
 using Larnix.Core.Vectors;
+using Larnix.GameCore.Structs;
 
 namespace Larnix.Blocks.All
 {
@@ -30,7 +31,7 @@ namespace Larnix.Blocks.All
         ITool.Type IBreakable.MATERIAL_TYPE() => ITool.Type.Normal;
         ITool.Tier IBreakable.MATERIAL_TIER() => ITool.Tier.Copper;
 
-        bool IBreakable.STATIC_IsBreakableItemMatch(BlockData1 block, BlockData1 item)
+        bool IBreakable.STATIC_IsBreakableItemMatch(BlockHeader1 block, BlockHeader1 item)
         {
             string id1 = BlockFactory.GetSlaveInstance<IElectricPipe>(block.ID)?.ELECTRIC_PIPE_ID();
             string id2 = BlockFactory.GetSlaveInstance<IElectricPipe>(item.ID)?.ELECTRIC_PIPE_ID();

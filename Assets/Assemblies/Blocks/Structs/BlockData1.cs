@@ -1,93 +1,46 @@
-using System;
-using Larnix.Core.Binary;
 using Larnix.GameCore.Json;
-using Larnix.Core.Misc;
 using Larnix.Core.Enums;
+using Larnix.GameCore.Structs;
 
 namespace Larnix.Blocks.Structs
 {
-    public class BlockData1 : IBinary<BlockData1>
+    public class BlockData1
     {
-        public const int SIZE = sizeof(BlockID) + sizeof(byte);
-        public const byte MAX_VARIANT = 0b00001111; // 15
+        public BlockHeader1 Header { get; private set; }
+        public Storage NBT { get; private set; }
 
-        public BlockID ID { get; private set; }
-        private byte _variant;
+        public BlockID ID => Header.ID;
         public byte Variant
         {
-            get => _variant;
-            private set => _variant = (byte)(value & MAX_VARIANT);
+            get => Header.Variant;
+            set => Header = new BlockHeader1(ID, value);
         }
-        public Storage Data { get; private set; }
-        
-        // USE CAREFULLY! Breaks immutability, but may increase performance.
-        public void __MutateVariant__(byte variant) => Variant = variant;
 
-        public static BlockData1 Air => new(BlockID.Air, 0);
-        public static BlockData1 UltimateTool => new(BlockID.UltimateTool, 0);
+        public static BlockData1 Air => new(BlockHeader1.Air);
+        public static BlockData1 UltimateTool => new(BlockHeader1.UltimateTool);
 
-        public BlockData1() => Data = new();
+        public BlockData1(in BlockHeader1 header, Storage nbt = null)
+        {
+            Header = header;
+            NBT = nbt ?? new();
+        }
+
         public BlockData1(BlockID id, byte variant, Storage data = null)
         {
-            ID = id;
-            Variant = variant;
-            Data = data ?? new();
-        }
-
-        public byte[] Serialize()
-        {
-            return ArrayUtils.MegaConcat(
-                Primitives.GetBytes(ID),
-                Primitives.GetBytes(Variant)
-                );
-        }
-
-        public bool Deserialize(byte[] bytes, int offset = 0)
-        {
-            if (offset + SIZE > bytes.Length)
-                return false;
-            
-            ID = Primitives.FromBytes<BlockID>(bytes, offset);
-            offset += sizeof(BlockID);
-
-            Variant = Primitives.FromBytes<byte>(bytes, offset);
-            offset += sizeof(byte);
-
-            return true;
-        }
-
-        public BlockData1 BinaryCopy() => ((IBinary<BlockData1>)this).BinaryCopy();
-        BlockData1 IBinary<BlockData1>.BinaryCopy()
-        {
-            return new BlockData1
-            {
-                ID = ID,
-                Variant = Variant,
-            };
-        }
-
-        public bool BinaryEquals(BlockData1 other) => ((IBinary<BlockData1>)this).BinaryEquals(other);
-        bool IBinary<BlockData1>.BinaryEquals(BlockData1 other)
-        {
-            return ID == other.ID && Variant == other.Variant;
+            Header = new BlockHeader1(id, variant);
+            NBT = data ?? new();
         }
 
         public BlockData1 DeepCopy()
         {
-            return new BlockData1
-            {
-                ID = ID,
-                Variant = Variant,
-                Data = Data.DeepCopy(),
-            };
+            return new BlockData1(
+                Header, NBT.DeepCopy()
+            );
         }
 
-        public override string ToString() => ToString(":");
-        public string ToString(string separator)
+        public override string ToString()
         {
-            return Variant > 0 ?
-                $"{ID}{separator}{Variant}" :
-                $"{ID}";
+            return Header.ToString();
         }
     }
 }

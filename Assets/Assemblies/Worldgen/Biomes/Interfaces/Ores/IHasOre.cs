@@ -1,6 +1,6 @@
 using Larnix.Worldgen.Ores;
 using System.Collections.Generic;
-using Larnix.Blocks.Structs;
+using Larnix.GameCore.Structs;
 using System.Linq;
 
 namespace Larnix.Worldgen.Biomes.All
@@ -16,7 +16,7 @@ namespace Larnix.Worldgen.Biomes.All
             return PRIVATE_OreCache;
         }
 
-        protected static BlockData1 MatchingOre(BlockData1 stone, BlockData1 baseOre)
+        protected static BlockHeader1 MatchingOre(BlockHeader1 stone, BlockHeader1 baseOre)
         {
             // TODO: Make ores match the stone texture
             return baseOre;

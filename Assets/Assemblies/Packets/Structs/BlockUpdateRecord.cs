@@ -1,25 +1,23 @@
-using System;
 using Larnix.Core.Binary;
 using Larnix.Core.Vectors;
-using Larnix.Blocks.Structs;
 using Larnix.Core.Misc;
-using Larnix.Blocks;
+using Larnix.GameCore.Structs;
+using BreakMode = Larnix.Blocks.IWorldAPI.BreakMode;
 
 namespace Larnix.Packets.Structs
 {
-    public class BlockUpdateRecord : IBinary<BlockUpdateRecord>
+    public readonly struct BlockUpdateRecord : IBinary<BlockUpdateRecord>
     {
-        public const int SIZE = Vec2Int.SIZE + BlockData2.SIZE + sizeof(IWorldAPI.BreakMode);
+        public const int SIZE = Vec2Int.SIZE + BlockHeader2.SIZE + sizeof(BreakMode);
 
-        public Vec2Int Position { get; private set; }
-        public BlockData2 Block { get; private set; }
-        public IWorldAPI.BreakMode BreakMode { get; private set; }
+        public Vec2Int Position { get; }
+        public BlockHeader2 Block { get; }
+        public BreakMode BreakMode { get; }
 
-        public BlockUpdateRecord() { }
-        public BlockUpdateRecord(Vec2Int position, BlockData2 block, IWorldAPI.BreakMode breakMode)
+        public BlockUpdateRecord(Vec2Int position, BlockHeader2 block, BreakMode breakMode)
         {
             Position = position;
-            Block = block ?? new();
+            Block = block;
             BreakMode = breakMode;
         }
 
@@ -32,20 +30,24 @@ namespace Larnix.Packets.Structs
                 );
         }
 
-        public bool Deserialize(byte[] bytes, int offset = 0)
+        public bool Deserialize(byte[] bytes, int offset, out BlockUpdateRecord result)
         {
             if (offset + SIZE > bytes.Length)
+            {
+                result = default;
                 return false;
+            }
 
-            Position = Structures.FromBytes<Vec2Int>(bytes, offset);
+            Vec2Int position = Structures.FromBytes<Vec2Int>(bytes, offset);
             offset += Vec2Int.SIZE;
 
-            Block = Structures.FromBytes<BlockData2>(bytes, offset);
-            offset += BlockData2.SIZE;
+            BlockHeader2 block = Structures.FromBytes<BlockHeader2>(bytes, offset);
+            offset += BlockHeader2.SIZE;
 
-            BreakMode = (IWorldAPI.BreakMode)bytes[offset];
-            offset += sizeof(IWorldAPI.BreakMode);
+            BreakMode breakMode = (BreakMode)bytes[offset];
+            offset += sizeof(BreakMode);
 
+            result = new BlockUpdateRecord(position, block, breakMode);
             return true;
         }
     }

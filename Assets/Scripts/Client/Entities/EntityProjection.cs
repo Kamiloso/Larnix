@@ -7,6 +7,7 @@ using Larnix.Entities.Structs;
 using Larnix.Client.Relativity;
 using Larnix.Core.Misc;
 using Larnix.GameCore;
+using Larnix.GameCore.Structs;
 
 namespace Larnix.Client.Entities
 {

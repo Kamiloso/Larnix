@@ -13,6 +13,7 @@ using Larnix.Core;
 using Larnix.Server.Data;
 using Larnix.Server.Transmission;
 using BlockInits = Larnix.Blocks.Block.BlockInits;
+using Larnix.GameCore.Structs;
 
 namespace Larnix.Server.Terrain
 {
@@ -32,7 +33,7 @@ namespace Larnix.Server.Terrain
         private BlockSender BlockSender => GlobRef.Get<BlockSender>();
 
         public IEnumerable FrameInvoker => _blockEvents.GetFrameInvoker();
-        public readonly BlockData2[,] ActiveChunkReference;
+        public readonly ChunkData ActiveChunkReference;
 
         private bool _disposed = false;
 
@@ -79,10 +80,10 @@ namespace Larnix.Server.Terrain
         {
             // --- Chunk changes ---
 
-            BlockData2 oldHeader = ActiveChunkReference[pos.x, pos.y].BinaryCopy();
+            BlockHeader2 oldHeader = ActiveChunkReference[pos.x, pos.y].Header;
             Block result = RefreshBlock(pos, newBlock, isFront);
             RefreshCollider(pos);
-            BlockData2 newHeader = ActiveChunkReference[pos.x, pos.y].BinaryCopy();
+            BlockHeader2 newHeader = ActiveChunkReference[pos.x, pos.y].Header;
 
             // --- Rearm EventFlag ---
 
@@ -91,7 +92,7 @@ namespace Larnix.Server.Terrain
 
             // --- Push send update ---
 
-            if (!oldHeader.BinaryEquals(newHeader))
+            if (oldHeader != newHeader)
             {
                 Vec2Int POS = BlockUtils.GlobalBlockCoords(_chunkpos, pos);
                 BlockSender.AddBlockUpdate(new BlockUpdateRecord(
@@ -109,7 +110,7 @@ namespace Larnix.Server.Terrain
 
             Block result = GetBlock(pos, isFront);
             RefreshCollider(pos);
-            BlockData2 newHeader = ActiveChunkReference[pos.x, pos.y].BinaryCopy();
+            BlockHeader2 newHeader = ActiveChunkReference[pos.x, pos.y].Header;
 
             // --- Push send update ---
 

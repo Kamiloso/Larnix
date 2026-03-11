@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Larnix.Blocks.Structs;
 using Larnix.Core.Binary;
 using System;
+using Larnix.GameCore.Structs;
 
 namespace Larnix.Blocks.All
 {
@@ -16,7 +17,7 @@ namespace Larnix.Blocks.All
         public DropMatchMode DEFAULT_DROP_MATCH_MODE() => DropMatchMode.OnlyID;
         public bool HAS_BREAK_PARTICLES() => true;
 
-        public bool STATIC_IsBreakableItemMatch(BlockData1 block, BlockData1 item)
+        public bool STATIC_IsBreakableItemMatch(BlockHeader1 block, BlockHeader1 item)
         {
             switch (DEFAULT_DROP_MATCH_MODE())
             {
@@ -29,7 +30,7 @@ namespace Larnix.Blocks.All
             return false;
         }
 
-        public bool STATIC_IsBreakable(BlockData1 block, BlockData1 tool, bool front)
+        public bool STATIC_IsBreakable(BlockHeader1 block, BlockHeader1 tool, bool front)
         {
             if (!BlockFactory.HasInterface<ITool>(tool.ID))
                 return false;

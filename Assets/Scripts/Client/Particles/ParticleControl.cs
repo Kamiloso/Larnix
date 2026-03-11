@@ -2,6 +2,7 @@ using System;
 using Larnix.Blocks;
 using Larnix.Blocks.Structs;
 using Larnix.Client.Terrain;
+using Larnix.GameCore.Structs;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
@@ -38,7 +39,7 @@ namespace Larnix.Client.Particles
         }
 
         public bool UsesBlockTexture() => InheritsBlockTexture;
-        public void SetTextureFromBlock(BlockData1 blockData, bool front)
+        public void SetTextureFromBlock(BlockHeader1 blockData, bool front)
         {
             if (!InheritsBlockTexture) return;
 

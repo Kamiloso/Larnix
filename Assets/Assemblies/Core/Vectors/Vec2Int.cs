@@ -4,12 +4,12 @@ using Larnix.Core.Misc;
 
 namespace Larnix.Core.Vectors
 {
-    public struct Vec2Int : IEquatable<Vec2Int>, IBinary<Vec2Int>
+    public readonly struct Vec2Int : IEquatable<Vec2Int>, IBinary<Vec2Int>
     {
         public const int SIZE = sizeof(int) * 2;
 
-        public int x { get; private set; }
-        public int y { get; private set; }
+        public int x { get; }
+        public int y { get; }
 
         public Vec2Int(int x, int y)
         {
@@ -39,14 +39,18 @@ namespace Larnix.Core.Vectors
             );
         }
 
-        public bool Deserialize(byte[] bytes, int offset = 0)
+        public bool Deserialize(byte[] bytes, int offset, out Vec2Int result)
         {
             if (offset + SIZE > bytes.Length)
+            {
+                result = default;
                 return false;
+            }
 
-            x = Primitives.FromBytes<int>(bytes, offset);
-            y = Primitives.FromBytes<int>(bytes, offset + 4);
-
+            result = new Vec2Int(
+                Primitives.FromBytes<int>(bytes, offset),
+                Primitives.FromBytes<int>(bytes, offset + 4)
+            );
             return true;
         }
 

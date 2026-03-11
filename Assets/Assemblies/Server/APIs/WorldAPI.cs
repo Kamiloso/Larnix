@@ -7,6 +7,7 @@ using Larnix.Core;
 using Larnix.Server.Terrain;
 using BreakMode = Larnix.Blocks.IWorldAPI.BreakMode;
 using ResultType = Larnix.GameCore.ICmdExecutor.CmdResult;
+using Larnix.GameCore.Structs;
 
 namespace Larnix.Server.APIs
 {
@@ -56,7 +57,8 @@ namespace Larnix.Server.APIs
             if (Chunks.TryGetChunk(chunk, out var chunkObject))
             {
                 Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
-                GetBlock(POS, isFront).BlockData.__MutateVariant__(variant);
+                BlockData1 blockData = GetBlock(POS, isFront).BlockData;
+                blockData.Variant = variant;
                 return chunkObject.UpdateBlockMutated(pos, isFront);
             }
             return null;
@@ -69,8 +71,10 @@ namespace Larnix.Server.APIs
 
             if (frontBlock != null && backBlock != null)
             {
-                BlockData2 blockPair = new BlockData2(frontBlock, backBlock);
-                return BlockInteractions.CanBePlaced(blockPair, item, front);
+                BlockHeader2 h_blockPair = new(frontBlock.Header, backBlock.Header);
+                BlockHeader1 h_item = item.Header;
+
+                return BlockInteractions.CanBePlaced(h_blockPair, h_item, front);
             }
             return false;
         }
@@ -82,8 +86,11 @@ namespace Larnix.Server.APIs
             
             if (frontBlock != null && backBlock != null)
             {
-                BlockData2 blockPair = new BlockData2(frontBlock, backBlock);
-                return BlockInteractions.CanBeBroken(blockPair, item, tool, front);
+                BlockHeader2 h_blockPair = new(frontBlock.Header, backBlock.Header);
+                BlockHeader1 h_item = item.Header;
+                BlockHeader1 h_tool = tool.Header;
+
+                return BlockInteractions.CanBeBroken(h_blockPair, h_item, h_tool, front);
             }
             return false;
         }
@@ -100,7 +107,7 @@ namespace Larnix.Server.APIs
 
             // TODO: Drop items code here
 
-            ReplaceBlock(POS, front, new BlockData1(), BreakMode.Effects);
+            ReplaceBlock(POS, front, BlockData1.Air, BreakMode.Effects);
         }
 
         public (ResultType, string) ExecuteCommand(string command, string sender = null)

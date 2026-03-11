@@ -40,7 +40,7 @@ namespace Larnix.Core.Coroutines
                 if (crAlive)
                 {
                     Box<object> result = ((IBox)_routine.Current)?.AsObject();
-                    if (result == null)
+                    if (result is null)
                     {
                         return true;
                     }

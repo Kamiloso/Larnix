@@ -4,17 +4,17 @@ namespace Larnix.Core.Binary
 {
     public static class Structures
     {
-        public static byte[] GetBytes<T>(in IBinary<T> structure) where T : IBinary<T>, new()
+        public static byte[] GetBytes<T>(in IBinary<T> structure) where T : struct, IBinary<T>
         {
             return structure.Serialize();
         }
 
-        public static T FromBytes<T>(byte[] bytes, int startIndex = 0) where T : IBinary<T>, new()
+        public static T FromBytes<T>(byte[] bytes, int startIndex = 0) where T : struct, IBinary<T>
         {
             return IBinary<T>.Create(bytes, startIndex);
         }
 
-        public static byte[] ArrayGetBytes<T>(T[] values, int SIZE) where T : IBinary<T>, new()
+        public static byte[] ArrayGetBytes<T>(T[] values, int SIZE) where T : struct, IBinary<T>
         {
             if (values == null)
                 throw new ArgumentNullException(nameof(values));
@@ -30,7 +30,7 @@ namespace Larnix.Core.Binary
             return result;
         }
 
-        public static T[] ArrayFromBytes<T>(byte[] bytes, int count, int SIZE, int startIndex = 0) where T : IBinary<T>, new()
+        public static T[] ArrayFromBytes<T>(byte[] bytes, int count, int SIZE, int startIndex = 0) where T : struct, IBinary<T>
         {
             if (bytes == null)
                 throw new ArgumentNullException(nameof(bytes));

@@ -11,7 +11,7 @@ namespace Larnix.Server.Data
 {
     internal class BlockDataManager
     {
-        private readonly Dictionary<Vec2Int, BlockData2[,]> _chunkCache = new();
+        private readonly Dictionary<Vec2Int, ChunkData> _chunkCache = new();
         private readonly HashSet<Vec2Int> _referencedChunks = new();
 
         private Database Database => GlobRef.Get<Database>();
@@ -23,14 +23,14 @@ namespace Larnix.Server.Data
         /// Modify this reference during FixedUpdate time and it will automatically update in this script.
         /// Don't forget to DisableChunkReference(...) when unloading chunk!
         /// </summary>
-        public BlockData2[,] ObtainChunkReference(Vec2Int chunk)
+        public ChunkData ObtainChunkReference(Vec2Int chunk)
         {
             if (_referencedChunks.Contains(chunk))
                 throw new InvalidOperationException($"Cannot get more than one reference to chunk {chunk}!");
 
             _referencedChunks.Add(chunk);
 
-            BlockData2[,] blocks;
+            ChunkData blocks;
 
             if (_chunkCache.ContainsKey(chunk)) // Get from cache
             {
@@ -65,7 +65,7 @@ namespace Larnix.Server.Data
                 foreach(var kvp in _chunkCache.ToList())
                 {
                     Vec2Int chunk = kvp.Key;
-                    BlockData2[,] data = kvp.Value;
+                    ChunkData data = kvp.Value;
 
                     // flush data
                     Database.SetChunk(chunk.x, chunk.y, data);

@@ -2,6 +2,7 @@ using System;
 using Larnix.Blocks;
 using Larnix.Blocks.Structs;
 using Larnix.Core.Enums;
+using Larnix.GameCore.Structs;
 using Larnix.GameCore.Utils;
 
 namespace Larnix.Server.Commands
@@ -68,7 +69,7 @@ namespace Larnix.Server.Commands
                     if (parts.Length == 2)
                     {
                         if (byte.TryParse(parts[1], out variant) &&
-                            variant <= BlockData1.MAX_VARIANT)
+                            variant <= BlockHeader1.MAX_VARIANT)
                         {
                             return true;
                         }

@@ -10,6 +10,9 @@ using Larnix.Background;
 using Larnix.GameCore;
 using Larnix.Core.Misc;
 using Larnix.GameCore.Enums;
+using Larnix.Blocks;
+using Larnix.Blocks.Structs;
+using Larnix.GameCore.Structs;
 
 namespace Larnix.Menu
 {
@@ -44,7 +47,8 @@ namespace Larnix.Menu
 
             foreach(var chunk in ToAdd)
             {
-                BasicGridManager.AddChunk(chunk, Generator.GenerateChunk(chunk), firstGeneration);
+                ChunkLook chunkLook = Generator.GenerateChunk(chunk).HeaderLook;
+                BasicGridManager.AddChunk(chunk, chunkLook, firstGeneration);
                 ActiveChunks.Add(chunk);
             }
 

@@ -17,7 +17,7 @@ namespace Larnix.Blocks.All
             data["tech_execute.command"].String = command;
             data["tech_execute.replace.id"].Int = (int)replaceBlock.ID;
             data["tech_execute.replace.variant"].Int = replaceBlock.Variant;
-            data["tech_execute.replace.data"].String = replaceBlock.Data.ToString();
+            data["tech_execute.replace.data"].String = replaceBlock.NBT.ToString();
 
             return new BlockData1(
                 id: BlockID.TechExecute,

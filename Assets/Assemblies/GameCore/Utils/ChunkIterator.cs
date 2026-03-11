@@ -1,9 +1,8 @@
 using System;
-using Larnix.GameCore.Utils;
 using Larnix.Core.Vectors;
 using Larnix.Core.Misc;
 
-namespace Larnix.Blocks
+namespace Larnix.GameCore.Utils
 {
     public enum IterationOrder { XY, YX, Random }
     public static class ChunkIterator

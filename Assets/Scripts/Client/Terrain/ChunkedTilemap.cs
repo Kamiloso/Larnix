@@ -6,6 +6,7 @@ using Larnix.Core.Vectors;
 using Larnix.GameCore.Utils;
 using Larnix.Blocks.Structs;
 using Larnix.Core;
+using Larnix.GameCore.Structs;
 
 namespace Larnix.Client.Terrain
 {
@@ -29,16 +30,16 @@ namespace Larnix.Client.Terrain
         private readonly Dictionary<Vec2Int, Tilemaps> _tileChunks = new();
         private Vec2Int _currentOrigin = new Vec2Int(0, 0);
 
-        public void RedrawChunk(Vec2Int chunk, BlockData2[,] blocks)
+        public void RedrawChunk(Vec2Int chunk, ChunkLook chunkLook)
         {
-            PrepareChunk(chunk, blocks != null);
+            PrepareChunk(chunk, chunkLook != null);
 
-            if (blocks == null) return;
+            if (chunkLook == null) return;
 
             ChunkIterator.Iterate((x, y) =>
             {
-                var pos = new Vec2Int(x, y);
-                RedrawExistingTile(chunk, pos, blocks[pos.x, pos.y], false);
+                Vec2Int pos = new(x, y);
+                RedrawExistingTile(chunk, pos, chunkLook[x, y], false);
             });
 
             RedrawBorderTilesInRect(
@@ -47,7 +48,7 @@ namespace Larnix.Client.Terrain
             );
         }
 
-        public void RedrawExistingTile(Vec2Int chunk, Vec2Int pos, BlockData2 block, bool redrawBorder)
+        public void RedrawExistingTile(Vec2Int chunk, Vec2Int pos, BlockHeader2 block, bool redrawBorder)
         {
             Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, pos);
             Tilemaps Tilemaps = _tileChunks[chunk];

@@ -1,12 +1,12 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
-using Larnix.Blocks.Structs;
 using Larnix.Core.Vectors;
 using Larnix.Blocks;
 using Larnix.Blocks.All;
 using Larnix.Core;
 using Larnix.Graphics;
+using Larnix.GameCore.Structs;
 
 namespace Larnix.Client.Terrain
 {
@@ -14,7 +14,7 @@ namespace Larnix.Client.Terrain
     {
         private static readonly Dictionary<string, Tile> _tileCache = new();
 
-        public static Tile GetTile(BlockData1 block, bool isFront)
+        public static Tile GetTile(BlockHeader1 block, bool isFront)
         {
             string string_id = block.ID + ":" + block.Variant + ":" + isFront;
 
@@ -26,10 +26,10 @@ namespace Larnix.Client.Terrain
             return tile;
         }
 
-        public static Sprite GetSprite(BlockData1 item, bool isFront) =>
+        public static Sprite GetSprite(BlockHeader1 item, bool isFront) =>
             GetTile(item, isFront).sprite;
 
-        public static Texture2D GetTexture(BlockData1 item, bool isFront) =>
+        public static Texture2D GetTexture(BlockHeader1 item, bool isFront) =>
             GetTile(item, isFront).sprite.texture;
 
         public static Tile GetBorderTile(Vec2Int POS, bool isMenu)
@@ -37,11 +37,13 @@ namespace Larnix.Client.Terrain
             BasicGridManager grid = isMenu ?
                 GlobRef.Get<BasicGridManager>() : GlobRef.Get<GridManager>();
             
-            BlockData1 block = grid.BlockDataAtPOS(POS)?.Front;
+            BlockHeader1? blockNullable = grid.BlockDataAtPOS(POS)?.Front;
 
             IHasConture iface;
-            if (block != null && (iface = BlockFactory.GetSlaveInstance<IHasConture>(block.ID)) != null)
+            if (blockNullable != null && (iface = BlockFactory.GetSlaveInstance<IHasConture>(blockNullable.Value.ID)) != null)
             {
+                BlockHeader1 block = blockNullable.Value;
+
                 byte alphaByte = iface.STATIC_GetAlphaByte(block.Variant);
                 byte borderByte = grid.CalculateBorderByte(POS);
 
@@ -57,7 +59,7 @@ namespace Larnix.Client.Terrain
                 }
             }
 
-            return GetTile(BlockData1.Air, true);
+            return GetTile(BlockHeader1.Air, true);
         }
 
         public static Sprite GetBorderSprite(Vec2Int POS, bool isMenu) =>
