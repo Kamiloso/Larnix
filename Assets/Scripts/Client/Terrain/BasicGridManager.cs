@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using System.Collections.Generic;
 using Larnix.Core.Vectors;
@@ -15,12 +16,14 @@ namespace Larnix.Client.Terrain
     {
         [SerializeField] protected ChunkedTilemap ChunkedTilemap;
 
-        protected readonly Dictionary<Vec2Int, ChunkLook> _allChunks = new();
+        protected readonly Dictionary<Vec2Int, ChunkView> _allChunks = new();
         protected readonly HashSet<Vec2Int> _dirtyChunks = new();
         protected readonly HashSet<Vec2Int> _visibleChunks = new();
 
+        protected event Action<Vec2Int> OnChunkChanged;
+        protected event Action<Vec2Int> OnChunkRemoved;
+
         protected bool IsMenu => this is not GridManager;
-        private GridManager NotMenu => this as GridManager;
         protected MainPlayer MainPlayer => !IsMenu ? GlobRef.Get<MainPlayer>() : null;
 
         protected virtual void Awake()
@@ -38,10 +41,10 @@ namespace Larnix.Client.Terrain
             RedrawGrid();
         }
 
-        public void AddChunk(Vec2Int chunk, ChunkLook chunkLook, bool instantLoad = false)
+        public void AddChunk(Vec2Int chunk, ChunkView chunkView, bool instantLoad = false)
         {
-            _allChunks[chunk] = chunkLook;
-            if (!IsMenu) NotMenu.UpdateChunkColliders(chunk);
+            _allChunks[chunk] = chunkView;
+            OnChunkChanged?.Invoke(chunk);
             _dirtyChunks.Add(chunk);
 
             if (instantLoad)
@@ -56,10 +59,10 @@ namespace Larnix.Client.Terrain
                 return;
 
             _allChunks.Remove(chunk);
-            if (!IsMenu) NotMenu.UpdateChunkColliders(chunk);
+            OnChunkChanged?.Invoke(chunk);
             _dirtyChunks.Add(chunk);
 
-            if (!IsMenu) NotMenu.UnlockChunk(chunk);
+            OnChunkRemoved?.Invoke(chunk);
         }
 
         public bool ChunkLoaded(Vec2Int chunk)
@@ -69,12 +72,20 @@ namespace Larnix.Client.Terrain
 
         public void RedrawGrid(bool instantLoad = false)
         {
+            LoadChunksSequence(instantLoad);
+            UnloadChunksSequence(instantLoad);
+        }
+
+        private void LoadChunksSequence(bool instantLoad)
+        {
             const int MAX_LOAD_PER_FRAME = 1;
-            const int MAX_UNLOAD_PER_FRAME = 2;
 
             // Ascending - ADD
-            List<Vec2Int> addChunks = _dirtyChunks.Where(c => _allChunks.ContainsKey(c)).ToList();
-            addChunks.Sort((Vec2Int a, Vec2Int b) => ChunkDistance(a) - ChunkDistance(b));
+            List<Vec2Int> addChunks = _dirtyChunks
+                .Where(c => _allChunks.ContainsKey(c))
+                .ToList();
+            
+            addChunks.Sort((a, b) => ChunkDistance(a) - ChunkDistance(b));
             int loadCount = 0;
 
             foreach (var chunk in addChunks)
@@ -87,10 +98,18 @@ namespace Larnix.Client.Terrain
                     if (loadCount >= MAX_LOAD_PER_FRAME) break;
                 }
             }
+        }
+
+        private void UnloadChunksSequence(bool instantLoad)
+        {
+            const int MAX_UNLOAD_PER_FRAME = 2;
 
             // Descending - REMOVE
-            List<Vec2Int> removeChunks = _dirtyChunks.Where(c => !_allChunks.ContainsKey(c)).ToList();
-            removeChunks.Sort((Vec2Int a, Vec2Int b) => ChunkDistance(b) - ChunkDistance(a));
+            List<Vec2Int> removeChunks = _dirtyChunks
+                .Where(c => !_allChunks.ContainsKey(c))
+                .ToList();
+            
+            removeChunks.Sort((a, b) => ChunkDistance(b) - ChunkDistance(a));
             int unloadCount = 0;
             
             foreach (var chunk in removeChunks)

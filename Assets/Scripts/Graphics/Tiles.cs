@@ -7,21 +7,22 @@ using Larnix.Blocks.All;
 using Larnix.Core;
 using Larnix.Graphics;
 using Larnix.GameCore.Structs;
+using Larnix.Client.Terrain;
 
-namespace Larnix.Client.Terrain
+namespace Larnix.Client.Graphics
 {
     public static class Tiles
     {
-        private static readonly Dictionary<string, Tile> _tileCache = new();
+        private static readonly Dictionary<string, Tile> TileCache = new();
 
         public static Tile GetTile(BlockHeader1 block, bool isFront)
         {
             string string_id = block.ID + ":" + block.Variant + ":" + isFront;
 
-            if (!_tileCache.TryGetValue(string_id, out Tile tile))
+            if (!TileCache.TryGetValue(string_id, out Tile tile))
             {
                 tile = Textures.CreateTileObject(block.ID, block.Variant);
-                _tileCache.Add(string_id, tile);
+                TileCache.Add(string_id, tile);
             }
             return tile;
         }
@@ -34,8 +35,9 @@ namespace Larnix.Client.Terrain
 
         public static Tile GetBorderTile(Vec2Int POS, bool isMenu)
         {
-            BasicGridManager grid = isMenu ?
-                GlobRef.Get<BasicGridManager>() : GlobRef.Get<GridManager>();
+            BasicGridManager grid = isMenu
+                ? GlobRef.Get<BasicGridManager>()
+                : GlobRef.Get<GridManager>();
             
             BlockHeader1? blockNullable = grid.BlockDataAtPOS(POS)?.Front;
 
@@ -50,10 +52,10 @@ namespace Larnix.Client.Terrain
                 if (alphaByte != 0)
                 {
                     string string_id = "border[" + borderByte + ":" + alphaByte + "]";
-                    if (!_tileCache.TryGetValue(string_id, out Tile tile))
+                    if (!TileCache.TryGetValue(string_id, out Tile tile))
                     {
                         tile = Textures.CreateBorderTileObject(borderByte, alphaByte);
-                        _tileCache.Add(string_id, tile);
+                        TileCache.Add(string_id, tile);
                     }
                     return tile;
                 }

@@ -28,7 +28,7 @@ namespace Larnix.Core.Vectors
 
         public bool Deserialize(byte[] bytes, int offset, out Vec2 result)
         {
-            if (offset + SIZE > bytes.Length)
+            if (offset < 0 || offset + SIZE > bytes.Length)
             {
                 result = default;
                 return false;
@@ -62,12 +62,12 @@ namespace Larnix.Core.Vectors
         public override string ToString() => $"({x.ToString(CultureInfo.InvariantCulture)}, {y.ToString(CultureInfo.InvariantCulture)})";
         public static implicit operator string(Vec2 value) => value.ToString();
 
-        public static Vec2 operator +(Vec2 a, Vec2 b) => new Vec2(a.x + b.x, a.y + b.y);
-        public static Vec2 operator -(Vec2 a, Vec2 b) => new Vec2(a.x - b.x, a.y - b.y);
-        public static Vec2 operator *(Vec2 a, double s) => new Vec2(a.x * s, a.y * s);
-        public static Vec2 operator *(double s, Vec2 a) => new Vec2(a.x * s, a.y * s);
-        public static Vec2 operator /(Vec2 a, double s) => new Vec2(a.x / s, a.y / s);
-        public static Vec2 operator -(Vec2 a) => new Vec2(-a.x, -a.y);
+        public static Vec2 operator +(Vec2 a, Vec2 b) => new(a.x + b.x, a.y + b.y);
+        public static Vec2 operator -(Vec2 a, Vec2 b) => new(a.x - b.x, a.y - b.y);
+        public static Vec2 operator *(Vec2 a, double s) => new(a.x * s, a.y * s);
+        public static Vec2 operator *(double s, Vec2 a) => new(a.x * s, a.y * s);
+        public static Vec2 operator /(Vec2 a, double s) => new(a.x / s, a.y / s);
+        public static Vec2 operator -(Vec2 a) => new(-a.x, -a.y);
         public static bool operator ==(Vec2 a, Vec2 b) => a.Equals(b);
         public static bool operator !=(Vec2 a, Vec2 b) => !a.Equals(b);
 

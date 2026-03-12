@@ -1,10 +1,8 @@
 using System;
-using Larnix.Blocks;
-using Larnix.Blocks.Structs;
-using Larnix.Client.Terrain;
 using Larnix.GameCore.Structs;
 using UnityEngine;
 using UnityEngine.Tilemaps;
+using Larnix.Client.Graphics;
 
 namespace Larnix.Client.Particles
 {

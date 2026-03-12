@@ -7,23 +7,16 @@ namespace Larnix.Client.Relativity
 {
     public static class RelativityExtensions
     {
-        private static MainPlayer MainPlayer => GlobRef.Get<MainPlayer>();
+        private static RelativityManager RelativityManager => GlobRef.Get<RelativityManager>();
+        private static IRelativityOrigin Origin => RelativityManager.Origin;
 
         public static Transform SetLarnixPos(this Transform transform, Vec2 targetPos)
         {
             if (transform == null)
                 throw new ArgumentNullException(nameof(transform));
 
-            transform.position = MainPlayer.ToUnityPos(targetPos);
+            transform.position = targetPos.ToUnityPos();
             return transform;
-        }
-
-        public static GameObject SetLarnixPos(this GameObject gameObject, Vec2 targetPos)
-        {
-            if (gameObject == null)
-                throw new ArgumentNullException(nameof(gameObject));
-
-            return gameObject.transform.SetLarnixPos(targetPos).gameObject;
         }
 
         public static Transform Relativise(this Transform transform, Vec2 targetPos)
@@ -33,18 +26,22 @@ namespace Larnix.Client.Relativity
 
             Relativiser relativiser = transform.GetComponent<Relativiser>();
             if(relativiser == null)
+            {
                 relativiser = transform.gameObject.AddComponent<Relativiser>();
+            }
 
             relativiser.Position = targetPos;
             return transform;
         }
 
-        public static GameObject Relativise(this GameObject gameObject, Vec2 targetPos)
+        public static Vec2 ToLarnixPos(this Vector2 unityPos)
         {
-            if (gameObject == null)
-                throw new ArgumentNullException(nameof(gameObject));
+            return Origin.ToLarnixPos(unityPos);
+        }
 
-            return gameObject.transform.Relativise(targetPos).gameObject;
+        public static Vector2 ToUnityPos(this Vec2 larnixPos)
+        {
+            return Origin.ToUnityPos(larnixPos);
         }
     }
 }

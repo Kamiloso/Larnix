@@ -10,14 +10,12 @@ internal static class Program
 
     static void Main(string[] args)
     {
-        ServerRunner runner = ServerRunner.Instance;
+        using ServerRunner runner = new();
         runner.Start(ServerType.Remote, WorldDir, new RunSuggestions());
 
         while (runner.IsRunning)
         {
             Thread.Sleep(10);
         }
-
-        runner.Stop();
     }
 }

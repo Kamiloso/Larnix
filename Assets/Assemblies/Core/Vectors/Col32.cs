@@ -20,15 +20,15 @@ namespace Larnix.Core.Vectors
             this.a = a;
         }
 
-        public static Col32 Red => new Col32(255, 0, 0, 255);
-        public static Col32 Green => new Col32(0, 255, 0, 255);
-        public static Col32 Blue => new Col32(0, 0, 255, 255);
-        public static Col32 White => new Col32(255, 255, 255, 255);
-        public static Col32 Black => new Col32(0, 0, 0, 255);
-        public static Col32 Yellow => new Col32(255, 255, 0, 255);
-        public static Col32 Cyan => new Col32(0, 255, 255, 255);
-        public static Col32 Magenta => new Col32(255, 0, 255, 255);
-        public static Col32 Transparent => new Col32(0, 0, 0, 0);
+        public static Col32 Red => new(255, 0, 0, 255);
+        public static Col32 Green => new(0, 255, 0, 255);
+        public static Col32 Blue => new(0, 0, 255, 255);
+        public static Col32 White => new(255, 255, 255, 255);
+        public static Col32 Black => new(0, 0, 0, 255);
+        public static Col32 Yellow => new(255, 255, 0, 255);
+        public static Col32 Cyan => new(0, 255, 255, 255);
+        public static Col32 Magenta => new(255, 0, 255, 255);
+        public static Col32 Transparent => new(0, 0, 0, 0);
 
         public byte[] Serialize()
         {
@@ -37,7 +37,7 @@ namespace Larnix.Core.Vectors
 
         public bool Deserialize(byte[] bytes, int offset, out Col32 result)
         {
-            if (offset + SIZE > bytes.Length)
+            if (offset < 0 || offset + SIZE > bytes.Length)
             {
                 result = default;
                 return false;

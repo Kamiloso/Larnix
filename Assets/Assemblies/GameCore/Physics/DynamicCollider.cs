@@ -3,44 +3,10 @@ using System.Collections.Generic;
 using System;
 using Larnix.GameCore.Utils;
 using Larnix.Core.Vectors;
+using Larnix.GameCore.Physics.Structs;
 
 namespace Larnix.GameCore.Physics
 {
-    public struct InputData
-    {
-        public bool Left;
-        public bool Right;
-        public bool Jump;
-    }
-
-    public struct OutputData
-    {
-        public Vec2 Position;
-        public bool OnGround;
-        public bool OnCeil;
-        public bool OnLeftWall;
-        public bool OnRightWall;
-
-        public void Merge(OutputData other)
-        {
-            Position = other.Position;
-            OnGround |= other.OnGround;
-            OnLeftWall |= other.OnLeftWall;
-            OnRightWall |= other.OnRightWall;
-            OnCeil |= other.OnCeil;
-        }
-    }
-
-    public struct PhysicsProperties
-    {
-        public double Gravity;
-        public double ControlForce;
-        public double HorizontalDrag;
-        public double JumpSize;
-        public double MaxVerticalVelocity;
-        public double MaxHorizontalVelocity;
-    }
-
     public class DynamicCollider
     {
         private const double MAX_TOUCH_VELOCITY = 0.1f;
@@ -149,8 +115,10 @@ namespace Larnix.GameCore.Physics
 
         private OutputData RemoveOffset(OutputData odata)
         {
-            odata.Position -= Offset;
-            return odata;
+            return new OutputData(odata)
+            {
+                Position = odata.Position - Offset
+            };
         }
     }
 }

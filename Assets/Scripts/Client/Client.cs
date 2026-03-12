@@ -10,7 +10,7 @@ using Larnix.Socket.Frontend;
 using Larnix.Patches;
 using Larnix.Packets;
 using Larnix.Client.UI;
-using Larnix.Client.Terrain;
+using Larnix.Client.Terrain.Selector;
 using Larnix.Client.Entities;
 using Larnix.Scoping;
 using Larnix.Core;
@@ -21,10 +21,9 @@ namespace Larnix.Client
     {
         private record DelayedPacket(Payload Packet, bool Safemode);
 
-        private QuickClient _larnixClient = null;
+        private QuickClient _larnixClient;
+        private Task<QuickClient> _connectingTask;
         private Queue<DelayedPacket> _delayedPackets = new();
-        private Task<QuickClient> _connectingTask = null;
-        private Receiver _receiver = null;
 
         private Loading Loading => GlobRef.Get<Loading>();
         private Inventory Inventory => GlobRef.Get<Inventory>();
@@ -33,6 +32,7 @@ namespace Larnix.Client
         private MainPlayer MainPlayer => GlobRef.Get<MainPlayer>();
         private Screenshots Screenshots => GlobRef.Get<Screenshots>();
 
+        // --- CONSTANT VALUES ---
         public string Address { get; private set; }
         public string Authcode { get; private set; }
         public string Nickname { get; private set; }
@@ -40,8 +40,10 @@ namespace Larnix.Client
         public string WorldPath { get; private set; }
         public bool IsMultiplayer { get; private set; }
 
-        private uint _fixedFrame = 0;
-        public uint FixedFrame => _fixedFrame;
+        // --- CHANGABLE PROPERTIES ---
+        public bool IsGameFocused { get; private set; } = true; // start focused
+        public uint FixedFrame { get; private set; }
+        public float Ping => _larnixClient?.GetPing() ?? 0f;
 
         void Awake()
         {
@@ -87,7 +89,7 @@ namespace Larnix.Client
             if (_connectingTask.Result != null)
             {
                 _larnixClient = _connectingTask.Result;
-                _receiver = new Receiver(_larnixClient);
+                _ = new Receiver(_larnixClient);
                 Echo.Log($"{(IsMultiplayer ? "Remote" : "Local")} world on address {Address}");
             }
             else
@@ -97,19 +99,16 @@ namespace Larnix.Client
             }
         }
 
-        public void Send(Payload packet, bool safemode = true)
+        private void OnApplicationFocus(bool hasFocus)
         {
-            if (_larnixClient != null && _delayedPackets.Count == 0)
-                _larnixClient.Send(packet, safemode);
-            else
-                _delayedPackets.Enqueue(new DelayedPacket(packet, safemode));
+            IsGameFocused = hasFocus;
         }
 
         private void FixedUpdate()
         {
-            _fixedFrame++;
+            FixedFrame++;
 
-            if (MainPlayer.IsAlive) // 1
+            if (MainPlayer.Alive) // 1
                 MainPlayer.FixedPlayerUpdate();
         }
 
@@ -159,20 +158,18 @@ namespace Larnix.Client
             }
         }
 
-        public float GetPing()
+        public void Send(Payload packet, bool safemode = true)
         {
-            return _larnixClient?.GetPing() ?? 0f;
+            if (_larnixClient != null && _delayedPackets.Count == 0)
+                _larnixClient.Send(packet, safemode);
+            else
+                _delayedPackets.Enqueue(new DelayedPacket(packet, safemode));
         }
 
         public void BackToMenu()
         {
+            Screenshots.TryCaptureTitleImage();
             SceneManager.LoadScene("Menu");
-
-            if (WorldPath != null)
-            {
-                if (MainPlayer.IsAlive)
-                    Screenshots.CaptureTitleImage();
-            }
         }
 
         private void OnDestroy()

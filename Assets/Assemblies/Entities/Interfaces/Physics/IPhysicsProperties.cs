@@ -1,12 +1,10 @@
-using Larnix.GameCore.Physics;
-using System.Collections;
-using System.Collections.Generic;
+using Larnix.GameCore.Physics.Structs;
 
 namespace Larnix.Entities.All
 {
     public interface IPhysicsProperties : IEntityInterface
     {
-        public PhysicsProperties PHYSICS_PROPERTIES() => new PhysicsProperties
+        public PhysicsProperties PHYSICS_PROPERTIES() => new()
         {
             Gravity = GRAVITY(),
             ControlForce = CONTROL_FORCE(),

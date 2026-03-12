@@ -32,7 +32,7 @@ namespace Larnix.Packets.Structs
 
         public bool Deserialize(byte[] bytes, int offset, out BlockUpdateRecord result)
         {
-            if (offset + SIZE > bytes.Length)
+            if (offset < 0 || offset + SIZE > bytes.Length)
             {
                 result = default;
                 return false;

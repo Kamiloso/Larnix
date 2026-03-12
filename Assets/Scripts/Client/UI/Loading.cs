@@ -13,7 +13,7 @@ namespace Larnix.Client.UI
         private GridManager GridManager => GlobRef.Get<GridManager>();
 
         private bool _tryingToEnd = false;
-        private uint _fixFrame = 0; // frame at which waiting will start
+        private uint _fixFrame = 0; // frame at which waiting has started
 
         private void Awake()
         {
@@ -22,10 +22,12 @@ namespace Larnix.Client.UI
 
         private void Update()
         {
-            if(_tryingToEnd)
+            if (_tryingToEnd)
             {
-                if (EntityProjections.EverythingLoaded(_fixFrame) &&
-                    GridManager.LoadedAroundPlayer())
+                bool entitiesLoaded = EntityProjections.EverythingLoaded(_fixFrame);
+                bool terrainLoaded = GridManager.LoadedAroundPlayer();
+
+                if (entitiesLoaded && terrainLoaded)
                 {
                     EndLoading();
                 }
@@ -34,7 +36,10 @@ namespace Larnix.Client.UI
 
         public void StartLoading(string info)
         {
-            LoadingScreen.Enable(info);
+            if (!MainPlayer.Alive)
+            {
+                LoadingScreen.Enable(info);
+            }
         }
 
         public void StartWaitingFrom(uint fixFrame)
@@ -47,7 +52,7 @@ namespace Larnix.Client.UI
         {
             _tryingToEnd = false;
             LoadingScreen.Disable();
-            MainPlayer.SetAlive();
+            MainPlayer.Alive = true;
         }
     }
 }

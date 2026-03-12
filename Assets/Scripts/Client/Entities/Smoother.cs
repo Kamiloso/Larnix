@@ -6,8 +6,8 @@ namespace Larnix.Client.Entities
 {
     public class Smoother
     {
-        public readonly int MaxCount;
-        public readonly double Delay; // time delay behind server
+        public int MaxCount { get; }
+        public double Delay { get; } // time delay behind server
 
         private double _time;
         private LinkedList<Record> _records = new();

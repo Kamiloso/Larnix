@@ -1,5 +1,4 @@
 using Larnix.Blocks;
-using Larnix.Client.Terrain;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -7,6 +6,7 @@ using Larnix.Blocks.Structs;
 using Larnix.Blocks.All;
 using Larnix.Core;
 using Larnix.GameCore.Structs;
+using Larnix.Client.Graphics;
 
 namespace Larnix.Client.UI
 {

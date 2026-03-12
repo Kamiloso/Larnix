@@ -7,7 +7,7 @@ namespace Larnix.GameCore
 {
     public readonly struct Version : IBinary<Version>
     {
-        public static readonly Version Current = new("0.0.44.2");
+        public static readonly Version Current = new("0.0.44.3");
 
         public const int SIZE = sizeof(uint);
         public uint ID { get; }
@@ -61,7 +61,7 @@ namespace Larnix.GameCore
 
         public bool Deserialize(byte[] bytes, int offset, out Version result)
         {
-            if (offset + SIZE > bytes.Length)
+            if (offset < 0 || offset + SIZE > bytes.Length)
             {
                 result = default;
                 return false;

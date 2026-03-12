@@ -372,7 +372,7 @@ namespace Larnix.Server.Data.SQLite
                 {
                     if (reader.Read())
                     {
-                        chunk = ChunkData.DeserializeChunk((byte[])reader["block_bytes"]);
+                        chunk = ChunkData.Deserialize((byte[])reader["block_bytes"]);
                         chunk.ImportData((string)reader["nbt"]);
                         return true;
                     }

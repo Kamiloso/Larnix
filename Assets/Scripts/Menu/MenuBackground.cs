@@ -47,8 +47,8 @@ namespace Larnix.Menu
 
             foreach(var chunk in ToAdd)
             {
-                ChunkLook chunkLook = Generator.GenerateChunk(chunk).HeaderLook;
-                BasicGridManager.AddChunk(chunk, chunkLook, firstGeneration);
+                ChunkView chunkView = Generator.GenerateChunk(chunk).HeaderView;
+                BasicGridManager.AddChunk(chunk, chunkView, firstGeneration);
                 ActiveChunks.Add(chunk);
             }
 

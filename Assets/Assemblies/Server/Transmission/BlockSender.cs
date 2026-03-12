@@ -131,7 +131,7 @@ namespace Larnix.Server.Transmission
                 // Send added
                 foreach (var chunk in added)
                 {
-                    ChunkData chunkData = Chunks.GetChunk(chunk).ActiveChunkReference;
+                    ChunkView chunkData = Chunks.GetChunk(chunk).ActiveChunkReference.HeaderView;
                     Payload packet = new ChunkInfo(chunk, chunkData);
                     QuickServer.Send(nickname, packet);
                 }

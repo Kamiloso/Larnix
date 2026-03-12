@@ -22,7 +22,7 @@ namespace Larnix.GameCore.Structs
 
         public bool Deserialize(byte[] data, int offset, out BlockHeader2 result)
         {
-            if (offset + SIZE > data.Length)
+            if (offset < 0 || offset + SIZE > data.Length)
             {
                 result = default;
                 return false;

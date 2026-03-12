@@ -35,14 +35,14 @@ namespace Larnix.Server.Terrain
         public void Tick(float deltaTime) => _unloadTime -= deltaTime;
         public void Stimulate() => _unloadTime = UNLOADING_TIME;
 
-        public bool ShouldUnload(Func<Vec2Int, ChunkContainer> chunkLookup)
+        public bool ShouldUnload(Func<Vec2Int, ChunkContainer> chunkViewup)
         {
             IEnumerable<Vec2Int> atomicGroup = AtomicChunks.GetAtomicSet(Chunkpos) ??
                 new[] { Chunkpos };
             
             foreach (var chunk in atomicGroup)
             {
-                if (chunkLookup(chunk)._unloadTime > 0f)
+                if (chunkViewup(chunk)._unloadTime > 0f)
                     return false;
             }
             return true;

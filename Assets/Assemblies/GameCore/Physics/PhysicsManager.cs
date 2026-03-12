@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Larnix.Core.Vectors;
 using Larnix.GameCore.Utils;
+using Larnix.GameCore.Physics.Structs;
 
 namespace Larnix.GameCore.Physics
 {
@@ -84,7 +85,7 @@ namespace Larnix.GameCore.Physics
                         bestReport?.hitPosition ?? Vec2.Zero,
                         bestReport?.report.Position ?? Vec2.Zero
                     );
-                    totalReport.Merge(bestReport?.report ?? default);
+                    totalReport = totalReport.Merge(bestReport?.report ?? default);
                     list[(int)lowestIndex] = null; // removing inside list is expansive --> nulling elements instead
                 }
                 else break;

@@ -5,7 +5,6 @@ using System;
 using System.Linq;
 using UnityEngine.Profiling;
 using Larnix.Core.Vectors;
-using Larnix.Worldgen.Biomes;
 using Larnix.Core;
 using Larnix.GameCore.Utils;
 using Larnix.Scoping;
@@ -74,7 +73,7 @@ namespace Larnix.Client
 
             if (_lastPing == 0f || Client.FixedFrame % 25 == 0)
             {
-                _lastPing = (float)(Math.Round(Client.GetPing() * 10f) / 10f);
+                _lastPing = (float)(Math.Round(Client.Ping * 10f) / 10f);
             }
 
             // TPS calculate (average like FPS)
@@ -116,7 +115,7 @@ namespace Larnix.Client
                 $"World Age: {TextAge(_serverTick)}\n" +
                 $"TPS: {_lastTPS ?? _tps:F1} / {Common.TargetTPS:F1}\n";
 
-            DebugF3.text = ShowDebugInfo && MainPlayer.IsAlive ? debugText : "";
+            DebugF3.text = ShowDebugInfo && MainPlayer.Alive ? debugText : "";
         }
 
         private static string TextAge(long ticks)

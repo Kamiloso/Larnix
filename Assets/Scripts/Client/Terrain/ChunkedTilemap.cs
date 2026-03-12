@@ -1,4 +1,3 @@
-using Larnix.Blocks;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
@@ -7,6 +6,7 @@ using Larnix.GameCore.Utils;
 using Larnix.Blocks.Structs;
 using Larnix.Core;
 using Larnix.GameCore.Structs;
+using Larnix.Client.Graphics;
 
 namespace Larnix.Client.Terrain
 {
@@ -30,21 +30,21 @@ namespace Larnix.Client.Terrain
         private readonly Dictionary<Vec2Int, Tilemaps> _tileChunks = new();
         private Vec2Int _currentOrigin = new Vec2Int(0, 0);
 
-        public void RedrawChunk(Vec2Int chunk, ChunkLook chunkLook)
+        public void RedrawChunk(Vec2Int chunk, ChunkView chunkView)
         {
-            PrepareChunk(chunk, chunkLook != null);
+            PrepareChunk(chunk, chunkView != null);
 
-            if (chunkLook == null) return;
+            if (chunkView == null) return;
 
             ChunkIterator.Iterate((x, y) =>
             {
                 Vec2Int pos = new(x, y);
-                RedrawExistingTile(chunk, pos, chunkLook[x, y], false);
+                RedrawExistingTile(chunk, pos, chunkView[x, y], false);
             });
 
             RedrawBorderTilesInRect(
-                BlockUtils.GlobalBlockCoords(chunk, new Vec2Int(0, 0)),
-                BlockUtils.GlobalBlockCoords(chunk, new Vec2Int(CHUNK_SIZE - 1, CHUNK_SIZE - 1))
+                BlockUtils.GlobalBlockCoords(chunk, new Vec2Int(0, 0)) - new Vec2Int(1, 1),
+                BlockUtils.GlobalBlockCoords(chunk, new Vec2Int(CHUNK_SIZE - 1, CHUNK_SIZE - 1)) + new Vec2Int(1, 1)
             );
         }
 
@@ -60,7 +60,7 @@ namespace Larnix.Client.Terrain
             if (redrawBorder)
             {
                 RedrawBorderTilesInRect(
-                    POS + new Vec2Int(-1, -1),
+                    POS - new Vec2Int(1, 1),
                     POS + new Vec2Int(1, 1)
                 );
             }
@@ -68,11 +68,11 @@ namespace Larnix.Client.Terrain
 
         public void RedrawBorderTilesInRect(Vec2Int POS1, Vec2Int POS2)
         {
-            Vec2Int MIN = new Vec2Int(System.Math.Min(POS1.x, POS2.x), System.Math.Min(POS1.y, POS2.y));
-            Vec2Int MAX = new Vec2Int(System.Math.Max(POS1.x, POS2.x), System.Math.Max(POS1.y, POS2.y));
+            Vec2Int MIN = Vec2Int.MinCorner(POS1, POS2);
+            Vec2Int MAX = Vec2Int.MaxCorner(POS1, POS2);
 
-            for (int x = MIN.x - 1; x <= MAX.x + 1; x++)
-                for (int y = MIN.y - 1; y <= MAX.y + 1; y++)
+            for (int x = MIN.x; x <= MAX.x + 1; x++)
+                for (int y = MIN.y; y <= MAX.y + 1; y++)
                 {
                     Vec2Int POS = new Vec2Int(x, y);
 

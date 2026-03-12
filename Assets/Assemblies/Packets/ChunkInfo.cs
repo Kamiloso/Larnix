@@ -1,5 +1,4 @@
 #nullable enable
-using Larnix.Blocks;
 using Larnix.Core.Vectors;
 using Larnix.GameCore.Utils;
 using Larnix.Blocks.Structs;
@@ -18,13 +17,13 @@ namespace Larnix.Packets
         private const int MAX_SIZE = Vec2Int.SIZE + CHUNK_SIZE * CHUNK_SIZE * BlockHeader2.SIZE;
 
         public Vec2Int Chunkpos => Structures.FromBytes<Vec2Int>(Bytes, 0); // Vec2Int.SIZE
-        public ChunkData? Chunk => Bytes.Length != MIN_SIZE ?
-            ChunkData.DeserializeChunk(Bytes, Vec2Int.SIZE) : null; // 0B - 1280B
+        public ChunkView? Chunk => Bytes.Length != MIN_SIZE ?
+            ChunkView.Deserialize(Bytes, Vec2Int.SIZE) : null; // 0B - 1280B
 
         /// <summary>
         /// Chunk load / unload packet constructor.
         /// </summary>
-        public ChunkInfo(Vec2Int chunkpos, ChunkData? chunk, byte code = 0)
+        public ChunkInfo(Vec2Int chunkpos, ChunkView? chunk, byte code = 0)
         {
             InitializePayload(ArrayUtils.MegaConcat(
                 Structures.GetBytes(chunkpos),

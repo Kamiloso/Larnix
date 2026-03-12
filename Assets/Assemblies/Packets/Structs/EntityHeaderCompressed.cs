@@ -20,7 +20,7 @@ namespace Larnix.Packets
 
         public bool Deserialize(byte[] bytes, int offset, out EntityHeaderCompressed result)
         {
-            if (offset + SIZE > bytes.Length)
+            if (offset < 0 || offset + SIZE > bytes.Length)
             {
                 result = default;
                 return false;

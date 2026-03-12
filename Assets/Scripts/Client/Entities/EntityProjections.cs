@@ -3,9 +3,7 @@ using UnityEngine;
 using System.Linq;
 using System.Diagnostics;
 using Larnix.Packets;
-using Larnix.Entities.Structs;
 using Larnix.Core;
-using Larnix.GameCore;
 using Larnix.GameCore.Structs;
 
 namespace Larnix.Client.Entities
@@ -46,8 +44,6 @@ namespace Larnix.Client.Entities
 
         public void InterpretEntityBroadcast(EntityBroadcast msg)
         {
-            if (MainPlayer.UID == 0) return; // drop, too early to display
-
             if (_startFixed == null)
                 _startFixed = msg.PacketFixedIndex;
 
@@ -62,8 +58,8 @@ namespace Larnix.Client.Entities
                 ulong uid = kvp.Key;
                 EntityHeader entity = kvp.Value;
 
-                if (uid == MainPlayer.UID || !_nearbyUIDs.Contains(uid))
-                    continue;
+                if (!_nearbyUIDs.Contains(uid))
+                    continue; // not nearby - ignore
 
                 double time_fixed = (double)(relativeFixedFrame * Time.fixedDeltaTime);
 
@@ -160,11 +156,13 @@ namespace Larnix.Client.Entities
         public bool TryGetProjection(ulong uid, bool includePlayer, out EntityProjection projection)
         {
             if (_projections.TryGetValue(uid, out projection))
-                return true;
-
-            if (includePlayer && MainPlayer.UID == uid)
             {
-                projection = MainPlayer.GetEntityProjection();
+                return true;
+            }
+
+            if (includePlayer && MainPlayer.MyUid == uid && MainPlayer.Alive)
+            {
+                projection = MainPlayer.Projection;
                 return true;
             }
 

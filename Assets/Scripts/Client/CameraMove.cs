@@ -3,8 +3,8 @@ using Larnix.Scoping;
 using UnityEngine;
 using Larnix.Core.Vectors;
 using Larnix.Core;
-using IHasCollider = Larnix.Entities.All.IHasCollider;
 using Larnix.GameCore.Enums;
+using IHasCollider = Larnix.Entities.All.IHasCollider;
 
 namespace Larnix.Client
 {
@@ -26,6 +26,12 @@ namespace Larnix.Client
 
         private const float ZOOM_BASE_SPECT = 18.0f;
         private const float STEP_SIZE_SPECT = 1.5f;
+
+        private void Awake()
+        {
+            GlobRef.Set(this);
+            GlobRef.Set(MainCamera);
+        }
 
         private void LateUpdate()
         {

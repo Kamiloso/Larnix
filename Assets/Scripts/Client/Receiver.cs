@@ -41,7 +41,7 @@ namespace Larnix.Client
 
         private void _PlayerInitialize(PlayerInitialize msg)
         {
-            MainPlayer.LoadPlayerData(msg);
+            MainPlayer.LoadPlayerData(msg.Position, msg.MyUid);
             Loading.StartWaitingFrom(msg.LastFixedFrame);
         }
 
@@ -59,8 +59,9 @@ namespace Larnix.Client
         {
             switch (msg.Code)
             {
-                case CodeInfo.Info.YouDie: MainPlayer.SetDead(); break;
-                default: break;
+                case CodeInfo.Info.YouDie:
+                    MainPlayer.Alive = false;
+                    break;
             }
         }
 
@@ -68,7 +69,7 @@ namespace Larnix.Client
         {
             if (msg.Chunk != null) // activation packet
             {
-                GridManager.AddChunk(msg.Chunkpos, msg.Chunk.HeaderLook);
+                GridManager.AddChunk(msg.Chunkpos, msg.Chunk);
             }
             else // removal packet
             {
@@ -97,7 +98,7 @@ namespace Larnix.Client
 
         private void _Teleport(Teleport msg)
         {
-            if (MainPlayer.IsAlive)
+            if (MainPlayer.Alive)
             {
                 Vec2 targetPos = msg.TargetPosition;
                 MainPlayer.Teleport(targetPos);

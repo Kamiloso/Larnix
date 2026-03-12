@@ -9,7 +9,10 @@ namespace Larnix.Client
     {
         [SerializeField] Camera ScreenshotCamera;
 
-        private bool cameraReady = false;
+        private Client Client => GlobRef.Get<Client>();
+        private MainPlayer MainPlayer => GlobRef.Get<MainPlayer>();
+
+        private bool _cameraReady = false;
 
         private void Awake()
         {
@@ -21,17 +24,27 @@ namespace Larnix.Client
             StartCoroutine(WaitForCameraReady());
         }
 
-        IEnumerator WaitForCameraReady()
+        private IEnumerator WaitForCameraReady()
         {
             yield return new WaitForEndOfFrame();
-            cameraReady = true;
+            _cameraReady = true;
         }
 
-        public bool ScreenshotSave(Camera camera, string path, float ratio)
+        public bool TryCaptureTitleImage()
         {
-            if (camera == null || !cameraReady)
+            if (Client != null && Client.WorldPath != null && MainPlayer.Alive)
             {
-                Echo.Log("Screenshot failied.");
+                string filename = Path.Combine(WorldLoad.WorldPath, "last_image.png");
+                return ScreenshotSave(ScreenshotCamera, filename, 16f / 9f);
+            }
+            return false;
+        }
+
+        private bool ScreenshotSave(Camera camera, string path, float ratio)
+        {
+            if (camera == null || !_cameraReady)
+            {
+                Echo.LogWarning("Screenshot failed!");
                 return false;
             }
 
@@ -68,25 +81,10 @@ namespace Larnix.Client
             // Cleaning
             camera.targetTexture = null;
             RenderTexture.active = null;
-            Object.Destroy(rt);
-            Object.Destroy(tex);
+            Destroy(rt);
+            Destroy(tex);
 
-            Echo.Log($"Screenshot saved to: {path}");
             return true;
-        }
-
-        public void CaptureTitleImage()
-        {
-            Echo.Log("Capturing title image...");
-            ScreenshotSave(ScreenshotCamera, Path.Combine(WorldLoad.WorldPath, "last_image.png"), 16f / 9f);
-        }
-
-        public void RemoveTitleImage()
-        {
-            Echo.Log("Removing title image...");
-            string file = Path.Combine(WorldLoad.WorldPath, "last_image.png");
-            if(File.Exists(file))
-                File.Delete(file);
         }
     }
 }

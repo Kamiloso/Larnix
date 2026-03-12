@@ -16,8 +16,8 @@ namespace Larnix.Blocks.Structs
 
         public BlockData2[,] Blocks { get; }
 
-        private ChunkLook? _headerLook;
-        public ChunkLook HeaderLook => _headerLook ??= new ChunkLook(this);
+        private ChunkView? _headerLook;
+        public ChunkView HeaderView => _headerLook ??= new ChunkView(this);
 
         public BlockData2 this[int x, int y]
         {
@@ -98,7 +98,7 @@ namespace Larnix.Blocks.Structs
             return bytes;
         }
 
-        public void Deserialize(byte[] bytes, int offset = 0)
+        public void DeserializeInPlace(byte[] bytes, int offset = 0)
         {
             if (bytes == null) throw new ArgumentNullException(nameof(bytes));
 
@@ -178,10 +178,10 @@ namespace Larnix.Blocks.Structs
             }
         }
 
-        public static ChunkData DeserializeChunk(byte[] bytes, int offset = 0)
+        public static ChunkData Deserialize(byte[] bytes, int offset = 0)
         {
             ChunkData chunkData = new();
-            chunkData.Deserialize(bytes, offset);
+            chunkData.DeserializeInPlace(bytes, offset);
             return chunkData;
         }
 
@@ -240,21 +240,33 @@ namespace Larnix.Blocks.Structs
         }
     }
 
-#region Chunk Headers Look
+#region Chunk Headers View
 
-    public class ChunkLook
+    public class ChunkView
     {
-        public ChunkData ChunkData { get; }
+        private readonly ChunkData _chunk;
 
         public BlockHeader2 this[int x, int y]
         {
-            get => ChunkData.Blocks[x, y].Header;
-            set => ChunkData.Blocks[x, y] = new BlockData2(value);
+            get => _chunk.Blocks[x, y].Header;
+            set => _chunk.Blocks[x, y] = new BlockData2(value);
         }
 
-        public ChunkLook(ChunkData chunkData)
+        public ChunkView(ChunkData chunkData)
         {
-            ChunkData = chunkData;
+            _chunk = chunkData;
+        }
+
+        public byte[] Serialize()
+        {
+            return _chunk.Serialize();
+        }
+
+        public static ChunkView Deserialize(byte[] bytes, int offset = 0)
+        {
+            return new ChunkView(
+                ChunkData.Deserialize(bytes, offset)
+            );
         }
     }
 

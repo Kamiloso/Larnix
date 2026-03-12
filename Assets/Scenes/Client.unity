@@ -435,8 +435,6 @@ MonoBehaviour:
   Camera: {fileID: 1891027114}
   EntityProjection: {fileID: 2080946437}
   RaycastCenter: {fileID: 386513221}
-  DebugTeleportPos: {x: 0, y: 0}
-  DebugTeleportSubmit: 0
 --- !u!114 &119917773
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1550,6 +1548,7 @@ Transform:
   - {fileID: 31173428}
   - {fileID: 2136405199}
   - {fileID: 1648844578}
+  - {fileID: 2022185392}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &968907756
@@ -1866,6 +1865,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1182593194}
   - component: {fileID: 1182593195}
+  - component: {fileID: 1182593196}
   m_Layer: 0
   m_Name: TileSelector
   m_TagString: Untagged
@@ -1902,7 +1902,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Camera: {fileID: 1891027114}
-  Selector: {fileID: 1346840036}
+  Selector: {fileID: 1182593196}
+--- !u!114 &1182593196
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1182593193}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d336d104dc1fe4244b05f9eda053447d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Larnix.Client.Terrain.SelectorDisplay
+  SpriteRenderer: {fileID: 1346840036}
 --- !u!1 &1346840034
 GameObject:
   m_ObjectHideFlags: 0
@@ -2854,6 +2867,50 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 590a569968e76624ea9505afe1c74cb2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!1 &2022185391
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2022185392}
+  - component: {fileID: 2022185393}
+  m_Layer: 0
+  m_Name: RelativityManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2022185392
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2022185391}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 968907755}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2022185393
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2022185391}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3a38c576c8ba4fb4aab4f016bbb02f83, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Larnix.Client.Relativity.RelativityManager
 --- !u!1 &2056817377
 GameObject:
   m_ObjectHideFlags: 0

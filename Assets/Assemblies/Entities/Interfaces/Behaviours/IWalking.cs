@@ -1,8 +1,4 @@
-using Larnix.GameCore;
-using Larnix.GameCore.Physics;
-using System.Collections;
-using System.Collections.Generic;
-using Larnix.GameCore.Utils;
+using Larnix.GameCore.Physics.Structs;
 using Larnix.Core.Misc;
 
 namespace Larnix.Entities.All

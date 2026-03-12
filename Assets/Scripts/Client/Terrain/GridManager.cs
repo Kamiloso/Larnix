@@ -40,6 +40,9 @@ namespace Larnix.Client.Terrain
             base.Awake();
 
             GlobRef.Set(this);
+
+            OnChunkChanged += UpdateChunkColliders;
+            OnChunkRemoved += UnlockChunk;
         }
 
         protected override void Update()
@@ -143,20 +146,20 @@ namespace Larnix.Client.Terrain
             UpdateBlockCollider(POS, newBlock);
         }
 
-        public void UpdateChunkColliders(Vec2Int chunk)
+        private void UpdateChunkColliders(Vec2Int chunk)
         {
-            if (!_allChunks.TryGetValue(chunk, out ChunkLook chunkLook))
-                chunkLook = null;
+            if (!_allChunks.TryGetValue(chunk, out ChunkView chunkView))
+                chunkView = null;
 
             ChunkIterator.Iterate((x, y) =>
             {
                 var pos = new Vec2Int(x, y);
 
                 Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, pos);
-                UpdateBlockCollider(POS, chunkLook?[x, y]);
+                UpdateBlockCollider(POS, chunkView?[x, y]);
             });
 
-            PhysicsManager.SetChunkActive(chunk, chunkLook != null);
+            PhysicsManager.SetChunkActive(chunk, chunkView != null);
         }
 
         private void UpdateBlockCollider(Vec2Int POS, BlockHeader2? blockNullable)
@@ -214,7 +217,7 @@ namespace Larnix.Client.Terrain
             _lockedBlocks.RemoveAll(l => l.operation == operation);
         }
 
-        public void UnlockChunk(Vec2Int chunk)
+        private void UnlockChunk(Vec2Int chunk)
         {
             _lockedBlocks.RemoveAll(l => BlockUtils.InChunk(chunk, l.POS));
         }

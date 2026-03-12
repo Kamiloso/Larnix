@@ -41,7 +41,7 @@ namespace Larnix.Core.Vectors
 
         public bool Deserialize(byte[] bytes, int offset, out Vec2Int result)
         {
-            if (offset + SIZE > bytes.Length)
+            if (offset < 0 || offset + SIZE > bytes.Length)
             {
                 result = default;
                 return false;

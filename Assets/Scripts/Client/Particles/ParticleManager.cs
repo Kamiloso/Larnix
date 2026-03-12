@@ -41,10 +41,10 @@ namespace Larnix.Client.Particles
             GameObject prefab = GetParticlePrefab(id);
             if (prefab == null || ActiveParticles.Count >= MaxParticles) return;
 
-            GameObject obj = Instantiate(prefab).Relativise(position);
-            obj.transform.SetParent(this.transform, false);
+            Transform trn = Instantiate(prefab).transform.Relativise(position);
+            trn.SetParent(transform, false);
 
-            if (obj.TryGetComponent<ParticleControl>(out var particles))
+            if (trn.TryGetComponent<ParticleControl>(out var particles))
             {
                 if (particles.UsesBlockTexture())
                 {
@@ -66,7 +66,7 @@ namespace Larnix.Client.Particles
                 }
             }
 
-            ActiveParticles.Add(obj);
+            ActiveParticles.Add(trn.gameObject);
         }
 
         public void SpawnEntityParticles(ParticleID id, ulong uid, Vec2 localPosition)
