@@ -36,10 +36,11 @@ However, the architecture and core systems are already in place, giving it stron
 
 ## Preview
 
-![Demo1](Screenshots/Demo1.png)
-![Demo2](Screenshots/Demo2.png)
-![Demo3](Screenshots/Demo3.png)
-![Demo4](Screenshots/Demo4.png)
+| ![Demo1](Screenshots/Demo1.png) |
+| ------------------------------- |
+| ![Demo2](Screenshots/Demo2.png) |
+| ![Demo3](Screenshots/Demo3.png) |
+| ![Demo4](Screenshots/Demo4.png) |
 
 ---
 
@@ -57,5 +58,3 @@ Supported platforms:
 
 - **.NET 8.0**
 - **Unity** (version used by the project)
-
-No additional dependencies are required.
