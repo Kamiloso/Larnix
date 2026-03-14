@@ -18,15 +18,6 @@ Although the project is technically made in Unity, **most of the core code has n
 
 ---
 
-## Build & Automation
-
-Build automation scripts can be executed **directly from Unity**.
-
-> ⚠️ Note:  
-> These scripts currently require a **Windows machine** to run properly.
-
----
-
 ## Project Status
 
 The project is currently in an **early foundation stage**.  
@@ -48,7 +39,7 @@ However, the architecture and core systems are already in place, giving it stron
 
 There are **no official builds yet**, but you can compile the project yourself using Unity.
 
-Supported platforms:
+### Supported platforms
 
 - Windows
 - Linux
@@ -56,5 +47,12 @@ Supported platforms:
 
 ### Requirements
 
-- **.NET 8.0**
-- **Unity** (version used by the project)
+- .NET 8.0
+- Unity (version used by the project)
+
+### Build & Automation
+
+Build automation scripts can be executed **directly from Unity**. You can run them by entering the `Automation` menu segment.
+
+> ⚠️ Note:  
+> Server-building scripts currently require a **Windows machine** to work.
