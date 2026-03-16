@@ -118,7 +118,9 @@ namespace Larnix.Socket.Helpers.Networking
                 try
                 {
                     while (_recvQueue.Count > _maxQueueLength)
+                    {
                         _recvQueue.TryDequeue(out _); // discard old packets
+                    }
 
                     var result = await _udpClient.ReceiveAsync();
                     IPEndPoint remoteEP = result.RemoteEndPoint;
@@ -166,14 +168,29 @@ namespace Larnix.Socket.Helpers.Networking
             _sendQueue.Enqueue(new DataBox(remoteEP, data));
         }
 
+        private int _deqLimit = 0;
+        private readonly object _deqLock = new();
+
         public bool TryReceive(out DataBox result)
         {
-            if (_recvQueue.TryDequeue(out var _result))
+            bool allowRecvDequeue = false;
+
+            lock (_deqLock)
             {
-                result = _result;
-                return true;
+                if (_deqLimit <= 0)
+                {
+                    _deqLimit = _recvQueue.Count + 1;
+                }
+
+                _deqLimit--;
+                allowRecvDequeue = _deqLimit > 0;
             }
 
+            if (allowRecvDequeue && _recvQueue.TryDequeue(out result))
+            {
+                return true;
+            }
+            
             result = default;
             return false;
         }

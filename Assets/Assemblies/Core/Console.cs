@@ -7,6 +7,8 @@ namespace Larnix.Core
 {
     internal static class Console
     {
+        private const int INPUT_MAX_QUEUE_LENGTH = 64;
+
         private static Thread _inputThread;
         private static ConcurrentQueue<string> _cmdQueue = new();
         private static readonly object _outputLock = new();
@@ -129,7 +131,10 @@ namespace Larnix.Core
                     continue;
                 }
 
-                _cmdQueue.Enqueue(input);
+                if (_cmdQueue.Count < INPUT_MAX_QUEUE_LENGTH)
+                {
+                    _cmdQueue.Enqueue(input);
+                }
             }
         }
 
