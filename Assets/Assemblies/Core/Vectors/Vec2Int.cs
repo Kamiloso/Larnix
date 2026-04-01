@@ -85,16 +85,6 @@ namespace Larnix.Core.Vectors
 
         public override bool Equals(object obj) => obj is Vec2Int v && Equals(v);
         public bool Equals(Vec2Int other) => x == other.x && y == other.y;
-
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                int hash = 17;
-                hash = hash * 31 + x.GetHashCode();
-                hash = hash * 31 + y.GetHashCode();
-                return hash;
-            }
-        }
+        public override int GetHashCode() => HashCode.Combine(x, y);
     }
 }

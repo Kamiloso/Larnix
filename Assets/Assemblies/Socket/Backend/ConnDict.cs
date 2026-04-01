@@ -74,7 +74,7 @@ namespace Larnix.Socket.Backend
                 AllowConnection allowConnection = preLogin.AllowConnection;
 
                 string nickname = allowConnection.Nickname;
-                KeyAES keyAES = new KeyAES(allowConnection.KeyAES);
+                KeyAES keyAES = new(allowConnection.KeyAES);
 
                 if (TryGetEndPoint(nickname, out var alreadyConnectedEp))
                 {
@@ -143,7 +143,7 @@ namespace Larnix.Socket.Backend
                 {
                     string nickname = _nickAndEp[endPoint];
 
-                    PacketPair pair = new PacketPair(packet, nickname);
+                    PacketPair pair = new(packet, nickname);
                     int priority = 0; // default priority
 
                     if (packet.ID == Payload.CmdID<AllowConnection>()) priority = -1; // higher

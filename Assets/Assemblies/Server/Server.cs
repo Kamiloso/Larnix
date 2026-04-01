@@ -14,11 +14,12 @@ using Larnix.Blocks;
 using Larnix.Server.APIs;
 using Larnix.Server.Transmission;
 using Larnix.Server.Configuration;
-using Larnix.Server.Data.SQLite;
 using Larnix.Core.Interfaces;
 using Version = Larnix.GameCore.Version;
 using RunSuggestions = Larnix.Server.ServerRunner.RunSuggestions;
 using ServerAnswer = Larnix.Server.ServerRunner.ServerAnswer;
+using Larnix.Core.Misc;
+using Larnix.GameCore.DbStructs;
 
 namespace Larnix.Server
 {
@@ -33,10 +34,10 @@ namespace Larnix.Server
         public string Authcode => QuickServer.Authcode;
         public string SocketPath => Path.Combine(WorldPath, "Socket");
 
+        private IDbControl Db => GlobRef.Get<IDbControl>();
         private QuickServer QuickServer => GlobRef.Get<QuickServer>();
         private ServerConfig ServerConfig => GlobRef.Get<ServerConfig>();
         private QuickSettings QuickSettings => GlobRef.Get<QuickSettings>();
-        private Database Database => GlobRef.Get<Database>();
         private Receiver Receiver => GlobRef.Get<Receiver>();
         private Clock Clock => GlobRef.Get<Clock>();
         private DataSaver DataSaver => GlobRef.Get<DataSaver>();
@@ -58,7 +59,7 @@ namespace Larnix.Server
             }
 
             IOException MakeLockException() =>
-                new IOException($"Trying to access world at {WorldPath} that is already open.");
+                new($"Trying to access world at {WorldPath} that is already open.");
             
             _locker = Locker.LockOrException(WorldPath, "world_locker.lock", MakeLockException);
 
@@ -66,9 +67,14 @@ namespace Larnix.Server
             GlobRef.Set(this);
             GlobRef.New<PhysicsManager>();
             GlobRef.New<Chat>();
+
             GlobRef.Set(new DataSaver(WorldPath));
-            GlobRef.Set(new Generator(Database.GetSeed(suggestions.Seed)));
-            GlobRef.Set(new Clock(Database.GetServerTick()));
+            long seed = Db.Values.GetOrPut("seed", () => suggestions.Seed ?? RandUtils.SecureLong());
+            long serverTick = Db.Values.GetOrPut("server_tick", () => 0L);
+
+            GlobRef.Set(new Generator(seed));
+            GlobRef.Set(new Clock(serverTick));
+
             GlobRef.Set<IWorldAPI>(new WorldAPI());
 
             // --- Scripts ---
@@ -85,9 +91,8 @@ namespace Larnix.Server
             // --- QuickServer ---
             GlobRef.New<QuickSettings>();
             GlobRef.Set(new QuickServer(
-                port: Type == ServerType.Remote ?
-                    ServerConfig.Port : (ushort)0,
-                userAccess: Database,
+                port: Type == ServerType.Remote ? ServerConfig.Port : (ushort)0,
+                userAccess: (IDbUserAccess)Db.Users,
                 config: QuickSettings
             ));
             GlobRef.Set(QuickServer.IUserManager);

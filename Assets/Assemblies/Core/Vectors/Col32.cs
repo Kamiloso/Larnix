@@ -52,29 +52,6 @@ namespace Larnix.Core.Vectors
             return true;
         }
 
-        public override string ToString() => $"(R: {r}, G: {g}, B: {b}, A: {a})";
-
-        public override bool Equals(object obj) => obj is Col32 other && Equals(other);
-
-        public bool Equals(Col32 other) => r == other.r && g == other.g && b == other.b && a == other.a;
-
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                int hash = 17;
-                hash = hash * 31 + r.GetHashCode();
-                hash = hash * 31 + g.GetHashCode();
-                hash = hash * 31 + b.GetHashCode();
-                hash = hash * 31 + a.GetHashCode();
-                return hash;
-            }
-        }
-
-        public static bool operator ==(Col32 lhs, Col32 rhs) => lhs.Equals(rhs);
-
-        public static bool operator !=(Col32 lhs, Col32 rhs) => !(lhs == rhs);
-
         public static Col32 Lerp(Col32 start, Col32 end, double t = 0.5f)
         {
             t = Math.Clamp(t, 0f, 1f);
@@ -87,5 +64,13 @@ namespace Larnix.Core.Vectors
                 lerp(start.a, end.a)
             );
         }
+
+        public static bool operator ==(Col32 lhs, Col32 rhs) => lhs.Equals(rhs);
+        public static bool operator !=(Col32 lhs, Col32 rhs) => !(lhs == rhs);
+
+        public override string ToString() => $"(R: {r}, G: {g}, B: {b}, A: {a})";
+        public override bool Equals(object obj) => obj is Col32 other && Equals(other);
+        public bool Equals(Col32 other) => r == other.r && g == other.g && b == other.b && a == other.a;
+        public override int GetHashCode() => HashCode.Combine(r, g, b, a);
     }
 }

@@ -1,39 +1,36 @@
+#nullable enable
 using System;
-using System.Collections;
 using System.IO;
 
 namespace Larnix.Core.Files
 {
     public class Locker : IDisposable
     {
-        public readonly string _file;
-        private FileStream _fileStream = null;
+        private readonly FileStream _fileStream;
         
-        private Locker(string file)
+        private Locker(FileStream fileStream)
         {
-            _file = file;
+            _fileStream = fileStream;
         }
 
-        public static Locker LockOrException(string path, string filename, Func<Exception> makeException = null)
+        public static Locker LockOrException(string path, string filename, Func<Exception>? makeException = null)
         {
-            Locker locker = new Locker(Path.Combine(path, filename));
-
             FileManager.EnsureDirectory(path);
             try
             {
-                locker._fileStream = new FileStream(
-                    locker._file,
+                FileStream fileStream = new(
+                    Path.Combine(path, filename),
                     FileMode.OpenOrCreate,
                     FileAccess.ReadWrite,
                     FileShare.None);
+
+                return new Locker(fileStream);
             }
             catch
             {
                 throw makeException?.Invoke() ??
-                    new IOException($"Cannot acquire lock on file: {locker._file}");
+                    new IOException($"Cannot acquire lock on file: \"{filename}\"");
             }
-
-            return locker;
         }
 
         public void Dispose()

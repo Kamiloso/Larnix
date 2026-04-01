@@ -3,10 +3,10 @@ using Larnix.GameCore;
 using Larnix.GameCore.Utils;
 using Larnix.Socket.Backend;
 using Larnix.Server.Configuration;
-using Larnix.Server.Data.SQLite;
 using Larnix.Core.Interfaces;
 using Larnix.GameCore.Json;
 using Larnix.Core;
+using Larnix.Server.Data.Database;
 using Version = Larnix.GameCore.Version;
 
 namespace Larnix.Server.Data
@@ -33,13 +33,13 @@ namespace Larnix.Server.Data
             private set => WorldMeta = new WorldMeta(WorldMeta.Version, value);
         }
 
+        private IDbControl Db => GlobRef.Get<IDbControl>();
+        private IUserManager UserManager => GlobRef.Get<IUserManager>();
         private Server Server => GlobRef.Get<Server>();
-        private Database Database => GlobRef.Get<Database>();
         private ServerConfig ServerConfig => GlobRef.Get<ServerConfig>();
         private Clock Clock => GlobRef.Get<Clock>();
         private EntityDataManager EntityDataManager => GlobRef.Get<EntityDataManager>();
         private BlockDataManager BlockDataManager => GlobRef.Get<BlockDataManager>();
-        private IUserManager UserManager => GlobRef.Get<IUserManager>();
 
         private bool _disposed = false;
 
@@ -48,7 +48,11 @@ namespace Larnix.Server.Data
             WorldPath = worldPath;
 
             GlobRef.Set(Config.FromDirectory<ServerConfig>(WorldPath));
-            GlobRef.Set(new Database(WorldPath));
+            GlobRef.Set<IDbControl>(
+                new DbControl(
+                    new SqliteHandle(WorldPath, "database.sqlite")
+                    )
+                );
 
             GlobRef.New<BlockDataManager>();
             GlobRef.New<EntityDataManager>();
@@ -106,23 +110,14 @@ namespace Larnix.Server.Data
 
         public void SaveAll()
         {
-            if (Database != null)
-            {
-                Database.BeginTransaction();
-                try
-                {
-                    EntityDataManager.FlushIntoDatabase();
-                    BlockDataManager.FlushIntoDatabase();
-                    Database.SetServerTick(Clock.ServerTick);
+            if (Db is null) return;
 
-                    Database.CommitTransaction();
-                }
-                catch
-                {
-                    Database.RollbackTransaction();
-                    throw;
-                }
-            }
+            Db.Handle.AsTransaction(() =>
+            {
+                EntityDataManager.FlushIntoDatabase();
+                BlockDataManager.FlushIntoDatabase();
+                Db.Values.Put("server_tick", Clock.ServerTick);
+            });
         }
 
         public void Dispose() => Dispose(false);
@@ -138,7 +133,7 @@ namespace Larnix.Server.Data
                     Echo.Log("Data has been saved.");
                 }
 
-                Database?.Dispose();
+                Db?.Handle.Dispose();
             }
         }
     }

@@ -8,7 +8,7 @@ namespace Larnix.Server.Configuration
 {
     internal class ServerConfig : Config
     {
-        public int ConfigVersion { get; set; } = 13;
+        public int ConfigVersion { get; set; } = 14;
 
         // --- Main ---
         public ushort MaxPlayers { get; set; } = 10;
@@ -21,7 +21,7 @@ namespace Larnix.Server.Configuration
         public List<string> Administration_Banned { get; init; } = new();
 
         // --- Electric contraptions ---
-        public int Electricity_MaxContraptionChunks { get; set; } = 128;
+        public int Electricity_MaxContraptionChunks { get; set; } = 64;
         public bool Electricity_SizeWarningSuppress { get; set; } = false;
 
         // --- Periodic tasks ---
@@ -69,6 +69,11 @@ namespace Larnix.Server.Configuration
             if (ConfigVersion < 13) // added: ElevateHostToAdmin
             {
                 ElevateHostToAdmin = defaults.ElevateHostToAdmin;
+            }
+
+            if (ConfigVersion < 14) // updated: Electricity_MaxContraptionChunks: 128 -> 64
+            {
+                Electricity_MaxContraptionChunks = defaults.Electricity_MaxContraptionChunks;
             }
 
             ConfigVersion = defaults.ConfigVersion;

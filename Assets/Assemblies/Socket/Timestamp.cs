@@ -7,7 +7,6 @@ namespace Larnix.Socket
 {
     internal static class Timestamp
     {
-        private const long Window = 6_000; // miliseconds
         private static Dictionary<string, long> TimestampDifferences = new();
         private static object _lock1 = new();
 
@@ -31,7 +30,7 @@ namespace Larnix.Socket
             }
         }
 
-        public static bool InTimestamp(long timestamp, long window = Window)
+        public static bool InTimestamp(long timestamp, long window = 6000)
         {
             long localTimestamp = GetTimestamp();
             return timestamp >= localTimestamp - window && timestamp <= localTimestamp;

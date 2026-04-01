@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Linq;
 
@@ -31,10 +32,10 @@ namespace Larnix.Core.Misc
                 );
         }
 
-        public static T[] RemoveLeadingZeros<T>(T[] array) where T : new()
+        public static T[] RemoveLeadingZeros<T>(T[] array) where T : struct
         {
             int i = 0, lngt = array.Length;
-            while (i < lngt && array[i].Equals(new T()))
+            while (i < lngt && array[i].Equals(default(T)))
                 i++;
 
             return array[i..];

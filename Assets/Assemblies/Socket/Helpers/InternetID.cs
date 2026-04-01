@@ -1,8 +1,8 @@
+#nullable enable
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System;
-using Larnix.GameCore.Utils;
 
 namespace Larnix.Socket.Helpers
 {
@@ -11,9 +11,10 @@ namespace Larnix.Socket.Helpers
         private readonly IPAddress Address;
         private readonly int Subnet;
         public readonly bool IsIPv4;
-        public readonly bool IsClassE;
 
-        public static InternetID ClassE() => new InternetID(
+        public bool IsClassE { get; }
+
+        public static InternetID ClassE() => new(
             new IPAddress(stackalloc byte[] { 240, 0, 0, 0 }), 32); // any subnet is fine for class E
 
         public InternetID(IPAddress address, int subnet)
@@ -21,9 +22,7 @@ namespace Larnix.Socket.Helpers
             Address = address;
             Subnet = subnet;
             IsIPv4 = address.AddressFamily == AddressFamily.InterNetwork;
-
-            IsClassE = IsIPv4 &&
-                Address.GetAddressBytes()[0] >= 240;
+            IsClassE = IsIPv4 && Address.GetAddressBytes()[0] >= 240;
         }
 
         public static bool operator ==(InternetID left, InternetID right)
@@ -79,7 +78,7 @@ namespace Larnix.Socket.Helpers
                 return "IPv4:ClassE"; // class E address
 
             byte[] masked = MaskBytes(Address.GetAddressBytes(), Subnet);
-            IPAddress network = new IPAddress(masked);
+            IPAddress network = new(masked);
             return $"{network}/{Subnet}";
         }
 

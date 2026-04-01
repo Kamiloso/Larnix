@@ -1,4 +1,4 @@
-using System;
+#nullable enable
 using System.Collections.Generic;
 using System.Linq;
 using LogType = Larnix.Core.Echo.LogType;
@@ -9,7 +9,7 @@ namespace Larnix.GameCore
     {
         public enum CmdResult { Raw, Info, Log, Success, Warning, Error, Ignore, Clear }
 
-        public (CmdResult, string) ExecuteCommand(string command, string sender = null);
+        public (CmdResult, string) ExecuteCommand(string command, string? sender = null);
         public bool TryExecuteCommand(string command, out string message)
         {
             var (result, msg) = ExecuteCommand(command);

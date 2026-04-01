@@ -15,7 +15,7 @@ namespace Larnix.GameCore.Json
         
         public static T FromString<T>(string str) where T : Config, new()
         {
-            JSONObject json = str.AsJsonObject();
+            JSONObject json = str?.AsJsonObject() ?? new();
             List<PropertyInfo> props = AllProperties<T>();
 
             T config = new();

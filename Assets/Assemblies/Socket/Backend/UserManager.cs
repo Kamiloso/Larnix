@@ -118,7 +118,7 @@ namespace Larnix.Socket.Backend
 
         // ======== User Data Access ========
 
-        public bool TryGetUser(string username, out DbUser userData)
+        public bool TryGetUser(string username, out UserData userData)
         {
             return _userAccess.TryGetUserData(username, out userData);
         }
@@ -138,33 +138,33 @@ namespace Larnix.Socket.Backend
         public long GetUID(string username)
         {
             // WARNING: Fallback to default
-            return TryGetUser(username, out DbUser userData) ?
+            return TryGetUser(username, out UserData userData) ?
                 userData.UID : 0; // 0 --> no user
         }
 
         public string GetPasswordHash(string username)
         {
             // WARNING: Fallback to default
-            return TryGetUser(username, out DbUser userData) ?
+            return TryGetUser(username, out UserData userData) ?
                 userData.PasswordHash : null; // null --> no user
         }
 
         public long GetChallengeID(string username)
         {
             // WARNING: Fallback to default
-            return TryGetUser(username, out DbUser userData) ?
+            return TryGetUser(username, out UserData userData) ?
                 userData.ChallengeID : 0; // 0 --> no user
         }
 
         public bool MatchesOldHash(string username, string oldHash)
         {
-            return TryGetUser(username, out DbUser userData) &&
+            return TryGetUser(username, out UserData userData) &&
                 userData.PasswordHash == oldHash;
         }
 
         public bool MatchesChallengeID(string username, long challengeID)
         {
-            return TryGetUser(username, out DbUser userData) &&
+            return TryGetUser(username, out UserData userData) &&
                 userData.ChallengeID == challengeID;
         }
 
@@ -172,10 +172,10 @@ namespace Larnix.Socket.Backend
 
         public bool TryIncrementLogin(string username)
         {
-            if (TryGetUser(username, out DbUser userData) &&
+            if (TryGetUser(username, out UserData userData) &&
                 !_server.Config.IsBanned(username))
             {
-                DbUser updatedUser = userData.AfterLogin();
+                UserData updatedUser = userData.AfterLogin();
                 _userAccess.SaveUserData(updatedUser);
                 return true;
             }
@@ -187,7 +187,7 @@ namespace Larnix.Socket.Backend
             if (!UserExists(username) &&
                 !_server.Config.IsBanned(username))
             {
-                DbUser updatedUser = DbUser.CreateNew(username, passwordHash);
+                UserData updatedUser = UserData.CreateNew(username, passwordHash);
                 _userAccess.SaveUserData(updatedUser);
                 return true;
             }
@@ -196,10 +196,10 @@ namespace Larnix.Socket.Backend
 
         public bool TryRenameUser(string oldUsername, string newUsername)
         {
-            if (TryGetUser(oldUsername, out DbUser userData) &&
+            if (TryGetUser(oldUsername, out UserData userData) &&
                 !IsOnline(oldUsername) && !UserExists(newUsername))
             {
-                DbUser updatedUser = userData.AfterUsernameChange(newUsername);
+                UserData updatedUser = userData.AfterUsernameChange(newUsername);
                 _userAccess.SaveUserData(updatedUser);
                 return true;
             }
@@ -208,10 +208,10 @@ namespace Larnix.Socket.Backend
 
         public bool TryDeleteUserLink(string username)
         {
-            if (TryGetUser(username, out DbUser userData) &&
+            if (TryGetUser(username, out UserData userData) &&
                 !IsOnline(username))
             {
-                DbUser updatedUser = userData.WithoutUsername();
+                UserData updatedUser = userData.WithoutUsername();
                 _userAccess.SaveUserData(updatedUser);
                 return true;
             }
@@ -220,9 +220,9 @@ namespace Larnix.Socket.Backend
 
         public bool TryChangePasswordHash(string username, string newHash)
         {
-            if (TryGetUser(username, out DbUser userData))
+            if (TryGetUser(username, out UserData userData))
             {
-                DbUser updatedUser = userData.AfterPasswordChange(newHash);
+                UserData updatedUser = userData.AfterPasswordChange(newHash);
                 _userAccess.SaveUserData(updatedUser);
                 return true;
             }

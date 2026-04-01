@@ -29,6 +29,7 @@ namespace Larnix.Core.Coroutines
             throw new InvalidCastException($"Cannot cast value of type {typeof(T)} to {typeof(U)}.");
         }
 
+        public override string ToString() => Value?.ToString() ?? "null";
         public override bool Equals(object obj) => obj as Box<T> == this;
         public override int GetHashCode() => Value?.GetHashCode() ?? 0;
         
@@ -39,8 +40,5 @@ namespace Larnix.Core.Coroutines
             return left.Value?.Equals(right.Value) ?? right.Value is null;
         }
         public static bool operator !=(Box<T> left, Box<T> right) => !(left == right);
-
-        public static explicit operator Box<T>(T value) => new Box<T>(value);
-        public static explicit operator T(Box<T> box) => box.Value;
     }
 }

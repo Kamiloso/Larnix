@@ -77,7 +77,7 @@ namespace Larnix.UI
             return element;
         }
 
-        public void RemoveWhere(Func<RectTransform, bool> condition)
+        public void RemoveWhere(Predicate<RectTransform> condition)
         {
             Stack<(RectTransform, float)> otherStack = new();
 

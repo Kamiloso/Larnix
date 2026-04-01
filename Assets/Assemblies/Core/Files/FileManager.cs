@@ -1,4 +1,4 @@
-using System.Collections;
+#nullable enable
 using System.IO;
 using System;
 
@@ -8,8 +8,8 @@ namespace Larnix.Core.Files
     {
         private const string TOMBSTONE_FILE = ".tombstone.tmp";
 
-        public static string Read(string path, string filename) => Read(path, filename, false);
-        private static string Read(string path, string filename, bool ignoreTombstone)
+        public static string? Read(string path, string filename) => Read(path, filename, false);
+        private static string? Read(string path, string filename, bool ignoreTombstone)
         {
             FilenameCheck(filename, ignoreTombstone);
             EnsureDirectory(path);
@@ -93,7 +93,7 @@ namespace Larnix.Core.Files
 
         private static void TombstoneCheck(string path)
         {
-            string fileList = Read(path, TOMBSTONE_FILE, true);
+            string? fileList = Read(path, TOMBSTONE_FILE, true);
             if (fileList != null)
             {
                 string[] filenames = fileList.Split('/');

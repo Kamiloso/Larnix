@@ -21,8 +21,8 @@ namespace Larnix.Core.Coroutines
 
             private Coroutine(IEnumerator routine, Action<object> onResult)
             {
-                if (routine == null || onResult == null)
-                    throw new ArgumentNullException(routine == null ? nameof(routine) : nameof(onResult));
+                if (routine is null || onResult is null)
+                    throw new ArgumentNullException(routine is null ? nameof(routine) : nameof(onResult));
 
                 _routine = routine;
                 _onResult = onResult;

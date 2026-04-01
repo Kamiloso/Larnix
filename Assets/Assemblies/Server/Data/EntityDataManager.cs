@@ -1,10 +1,9 @@
+#nullable enable
 using System.Collections.Generic;
-using Larnix.Entities;
 using Larnix.GameCore.Utils;
 using Larnix.Entities.Structs;
 using Larnix.Core.Vectors;
 using Larnix.Core;
-using Larnix.Server.Data.SQLite;
 using System;
 using Larnix.GameCore.Enums;
 
@@ -16,25 +15,14 @@ namespace Larnix.Server.Data
         private readonly Dictionary<ulong, EntityData> _unloadedEntityData = new();
         private readonly Dictionary<ulong, EntityData> _deletedEntityData = new();
 
-        private Database Database => GlobRef.Get<Database>();
+        private IDbControl Db => GlobRef.Get<IDbControl>();
 
-        private ulong? _nextUID = null;
         public ulong NextUID()
         {
-            if (_nextUID != null)
-            {
-                ulong uid = _nextUID.Value;
-                _nextUID--;
-                return uid;
-            }
-            else
-            {
-                _nextUID = (ulong)(Database.GetMinUID() - 1);
-                return NextUID();
-            }
+            return Db.Entities.NextEntityUid();
         }
 
-        public EntityData TryFindEntityData(ulong uid)
+        public EntityData? TryFindEntityData(ulong uid)
         {
             if (_deletedEntityData.ContainsKey(uid))
                 return null;
@@ -45,12 +33,12 @@ namespace Larnix.Server.Data
             if(_entityData.ContainsKey(uid))
                 return _entityData[uid];
 
-            return Database.FindEntity(uid);
+            return Db.Entities.FindEntity(uid);
         }
 
         public Dictionary<ulong, EntityData> GetUnloadedEntitiesByChunk(Vec2Int chunkCoords)
         {
-            Dictionary<ulong, EntityData> entityList = Database.GetEntitiesByChunkNoPlayers(chunkCoords);
+            Dictionary<ulong, EntityData> entityList = Db.Entities.GetEntitiesByChunkNoPlayers(chunkCoords);
 
             foreach(var kvp in _entityData)
             {
@@ -72,15 +60,15 @@ namespace Larnix.Server.Data
 
                 if (entityList.ContainsKey(kvp.Key))
                 {
-                    if(in_the_chunk)
+                    if (in_the_chunk)
                         entityList[kvp.Key] = newData; // update existing data
 
-                    if(!in_the_chunk)
+                    if (!in_the_chunk)
                         entityList.Remove(kvp.Key); // no longer in this chunk
                 }
                 else
                 {
-                    if(in_the_chunk)
+                    if (in_the_chunk)
                     {
                         if(newData.ID != EntityID.Player)
                             entityList.Add(kvp.Key, newData); // additional data found
@@ -122,11 +110,14 @@ namespace Larnix.Server.Data
 
         public void FlushIntoDatabase()
         {
-            Database.DeleteEntities(GetKeyList(_deletedEntityData));
-            _deletedEntityData.Clear();
+            Db.Handle.AsTransaction(() =>
+            {
+                Db.Entities.DeleteEntities(GetKeyList(_deletedEntityData));
+                _deletedEntityData.Clear();
 
-            Database.FlushEntities(MergeDictionaries(_entityData, _unloadedEntityData));
-            _unloadedEntityData.Clear();
+                Db.Entities.FlushEntities(MergeDictionaries(_entityData, _unloadedEntityData));
+                _unloadedEntityData.Clear();
+            });
         }
 
         private static Dictionary<ulong, EntityData> MergeDictionaries(

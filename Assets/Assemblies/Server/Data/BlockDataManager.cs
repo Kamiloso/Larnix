@@ -1,10 +1,10 @@
+#nullable enable
 using System.Collections.Generic;
 using Larnix.Blocks.Structs;
 using System.Linq;
 using Larnix.Worldgen;
 using Larnix.Core.Vectors;
 using System;
-using Larnix.Server.Data.SQLite;
 using Larnix.Core;
 
 namespace Larnix.Server.Data
@@ -14,10 +14,10 @@ namespace Larnix.Server.Data
         private readonly Dictionary<Vec2Int, ChunkData> _chunkCache = new();
         private readonly HashSet<Vec2Int> _referencedChunks = new();
 
-        private Database Database => GlobRef.Get<Database>();
+        private IDbControl Db => GlobRef.Get<IDbControl>();
         private Generator Generator => GlobRef.Get<Generator>();
 
-        private bool _debugUnlinkDatabase = false;
+        private static readonly bool debugUnlinkDatabase = false;
 
         /// <summary>
         /// Modify this reference during FixedUpdate time and it will automatically update in this script.
@@ -30,17 +30,17 @@ namespace Larnix.Server.Data
 
             _referencedChunks.Add(chunk);
 
-            ChunkData blocks;
+            ChunkData? blocks;
 
             if (_chunkCache.ContainsKey(chunk)) // Get from cache
             {
                 blocks = _chunkCache[chunk];
                 return blocks;
             }
-            else if(!_debugUnlinkDatabase && Database.TryGetChunk(chunk.x, chunk.y, out blocks)) // Get from database
+            else if(!debugUnlinkDatabase && Db.Chunks.TryGetChunk(chunk.x, chunk.y, out blocks)) // Get from database
             {
-                _chunkCache[chunk] = blocks;
-                return blocks;
+                _chunkCache[chunk] = blocks!;
+                return blocks!;
             }
             else // Generate a new chunk
             {
@@ -60,21 +60,25 @@ namespace Larnix.Server.Data
 
         public void FlushIntoDatabase()
         {
-            if (!_debugUnlinkDatabase)
+            if (debugUnlinkDatabase) return;
+
+            Db.Handle.AsTransaction(() =>
             {
-                foreach(var kvp in _chunkCache.ToList())
+                foreach (var kvp in _chunkCache.ToList())
                 {
                     Vec2Int chunk = kvp.Key;
                     ChunkData data = kvp.Value;
 
                     // flush data
-                    Database.SetChunk(chunk.x, chunk.y, data);
+                    Db.Chunks.SetChunk(chunk.x, chunk.y, data);
 
                     // remove disabled chunks from cache
                     if (!_referencedChunks.Contains(chunk))
+                    {
                         _chunkCache.Remove(chunk);
+                    }
                 }
-            }
+            });
         }
     }
 }

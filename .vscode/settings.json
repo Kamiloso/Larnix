@@ -56,7 +56,9 @@
         "temp/": true,
         "Temp/": true,
         "**/*.unitypackage": true,
+        "**/*.sln": true,
         "**/*.slnx": true,
+        "**/*.csproj": true,
         "Assets/Packages": true,
         "Assets/Scenes": true,
         "Assets/StreamingAssets": true,
@@ -66,8 +68,8 @@
         "LarnixRelay": true,
         "Packages": true,
         "Builds": true,
-        "**/*.csproj": true,
-        "Larnix.sln": true,
+        "Screenshots/": true,
+        "ProfilerCaptures/": true
     },
     "dotnet.defaultSolution": "Larnix.slnx"
 }

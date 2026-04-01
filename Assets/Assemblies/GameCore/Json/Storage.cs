@@ -1,11 +1,11 @@
-using System;
+#nullable enable
 using SimpleJSON;
 
 namespace Larnix.GameCore.Json
 {
     public class Storage
     {
-        private JSONObject _root;
+        private JSONObject? _root;
         private JSONObject Root => _root ??= new JSONObject();
 
         public Storage() {}
@@ -62,9 +62,9 @@ namespace Larnix.GameCore.Json
             return _root?.ToString() ?? "{}";
         }
 
-        public static Storage FromString(string json)
+        public static Storage FromString(string? json)
         {
-            JSONObject jsonObject = json.AsJsonObject();
+            JSONObject jsonObject = json?.AsJsonObject() ?? new();
             return new Storage(jsonObject);
         }
     }

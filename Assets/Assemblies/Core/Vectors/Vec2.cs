@@ -59,6 +59,10 @@ namespace Larnix.Core.Vectors
             }
         }
 
+        public override bool Equals(object obj) => obj is Vec2 v && Equals(v);
+        public bool Equals(Vec2 other) => x.Equals(other.x) && y.Equals(other.y);
+        public override int GetHashCode() => HashCode.Combine(x, y);
+
         public override string ToString() => $"({x.ToString(CultureInfo.InvariantCulture)}, {y.ToString(CultureInfo.InvariantCulture)})";
         public static implicit operator string(Vec2 value) => value.ToString();
 
@@ -70,19 +74,5 @@ namespace Larnix.Core.Vectors
         public static Vec2 operator -(Vec2 a) => new(-a.x, -a.y);
         public static bool operator ==(Vec2 a, Vec2 b) => a.Equals(b);
         public static bool operator !=(Vec2 a, Vec2 b) => !a.Equals(b);
-
-        public override bool Equals(object obj) => obj is Vec2 v && Equals(v);
-        public bool Equals(Vec2 other) => x.Equals(other.x) && y.Equals(other.y);
-
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                int hash = 17;
-                hash = hash * 31 + x.GetHashCode();
-                hash = hash * 31 + y.GetHashCode();
-                return hash;
-            }
-        }
     }
 }

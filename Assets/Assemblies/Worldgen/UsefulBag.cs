@@ -13,7 +13,7 @@ namespace Larnix.Worldgen
         public UsefulBag(Generator generator)
         {
             Generator = generator ?? throw new ArgumentNullException(nameof(generator));
-            Providers = new Dictionary<string, ValueProvider>();
+            Providers = new();
         }
 
         public T Get<T>(string key) where T : ValueProvider

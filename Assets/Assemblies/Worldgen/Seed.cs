@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using Larnix.Core.Vectors;
 using System.Buffers.Binary;
@@ -7,24 +8,17 @@ using Larnix.Core.Binary;
 
 namespace Larnix.Worldgen
 {
-    public class Seed
+    public record Seed(long Value)
     {
-        private readonly long _seed;
-
-        public Seed(long seed)
-        {
-            _seed = seed;
-        }
-
-        public static explicit operator Seed(long value) => new Seed(value);
-        public static implicit operator long(Seed seed) => seed._seed;
+        public static explicit operator Seed(long value) => new(value);
+        public static implicit operator long(Seed seed) => seed.Value;
 
         public long Hash(string saltPhrase)
         {
             long salt = HashPhrase(saltPhrase);
             Span<byte> buffer = stackalloc byte[8 + 8];
 
-            BinaryPrimitives.WriteInt64BigEndian(buffer.Slice(0, 8), _seed);
+            BinaryPrimitives.WriteInt64BigEndian(buffer.Slice(0, 8), Value);
             BinaryPrimitives.WriteInt64BigEndian(buffer.Slice(8, 8), salt);
 
             using SHA256 sha = SHA256.Create();
@@ -43,7 +37,7 @@ namespace Larnix.Worldgen
             long salt = HashPhrase(saltPhrase);
             Span<byte> buffer = stackalloc byte[8 + 4 + 4 + 8];
 
-            BinaryPrimitives.WriteInt64BigEndian(buffer.Slice(0, 8), _seed);
+            BinaryPrimitives.WriteInt64BigEndian(buffer.Slice(0, 8), Value);
             BinaryPrimitives.WriteInt32BigEndian(buffer.Slice(8, 4), POS.x);
             BinaryPrimitives.WriteInt32BigEndian(buffer.Slice(12, 4), POS.y);
             BinaryPrimitives.WriteInt64BigEndian(buffer.Slice(16, 8), salt);

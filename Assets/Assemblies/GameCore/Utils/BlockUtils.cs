@@ -1,6 +1,6 @@
+#nullable enable
 using Larnix.Core.Vectors;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 
 namespace Larnix.GameCore.Utils

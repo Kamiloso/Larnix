@@ -1,5 +1,4 @@
-using System;
-using System.Collections.Generic;
+#nullable enable
 using System.Globalization;
 using Larnix.GameCore.Utils;
 using SimpleJSON;
@@ -31,7 +30,7 @@ namespace Larnix.GameCore.Json
 
         public bool Bool
         {
-            get => bool.TryParse(_node.Value, out bool result) ? result : default;
+            get => bool.TryParse(_node.Value, out bool result) && result;
             set => _node.Value = value.ToString();
         }
     }

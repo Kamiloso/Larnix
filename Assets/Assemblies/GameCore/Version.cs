@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +8,7 @@ namespace Larnix.GameCore
 {
     public readonly struct Version : IBinary<Version>
     {
-        public static readonly Version Current = new("0.0.44.4");
+        public static readonly Version Current = new("0.0.45");
 
         public const int SIZE = sizeof(uint);
         public uint ID { get; }

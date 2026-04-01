@@ -1,5 +1,4 @@
-using System.Collections;
-using System.Collections.Generic;
+#nullable enable
 using System.IO;
 using Larnix.GameCore.Utils;
 using Larnix.Core.Files;
@@ -19,7 +18,7 @@ namespace Larnix.GameCore
         public Version Version { get; init; }
         public string Nickname { get; init; }
 
-        public static WorldMeta Default => new WorldMeta(
+        public static WorldMeta Default => new(
             Version.Current, Common.ReservedNickname
             );
 
@@ -31,7 +30,7 @@ namespace Larnix.GameCore
 
         private static WorldMeta FromText(string text)
         {
-            WorldMeta ParseFormat(string text, char sep)
+            static WorldMeta ParseFormat(string text, char sep)
             {
                 string[] parts = text.Split(sep);
                 string versionPart = parts.Length > 0 ? parts[0].Trim() : string.Empty;
@@ -67,7 +66,7 @@ namespace Larnix.GameCore
 
         public static WorldMeta ReadFromFolder(string path)
         {
-            string contents = FileManager.Read(path, "metadata.txt");
+            string? contents = FileManager.Read(path, "metadata.txt");
             if (contents == null)
             {
                 return Default;

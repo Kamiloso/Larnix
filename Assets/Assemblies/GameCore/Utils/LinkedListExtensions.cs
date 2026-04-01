@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,7 +7,7 @@ namespace Larnix.GameCore.Utils
 {
     public static class LinkedListExtensions
     {
-        public static void ForEachRemove<T>(this LinkedList<T> list, Predicate<T> predicate, Action<T> onRemove = null)
+        public static void ForEachRemove<T>(this LinkedList<T> list, Predicate<T> predicate, Action<T>? onRemove = null)
         {
             if (list == null)
                 throw new ArgumentNullException(nameof(list));
@@ -40,7 +41,7 @@ namespace Larnix.GameCore.Utils
             return list.Last.Value;
         }
 
-        public static bool TryPopFirst<T>(this LinkedList<T> list, out T value)
+        public static bool TryPopFirst<T>(this LinkedList<T> list, out T? value)
         {
             if (list == null)
                 throw new ArgumentNullException(nameof(list));
@@ -55,7 +56,7 @@ namespace Larnix.GameCore.Utils
             return true;
         }
 
-        public static bool TryPopLast<T>(this LinkedList<T> list, out T value)
+        public static bool TryPopLast<T>(this LinkedList<T> list, out T? value)
         {
             if (list == null)
                 throw new ArgumentNullException(nameof(list));
