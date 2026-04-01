@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using Larnix.Core.Binary;
 using Larnix.Core.Enums;

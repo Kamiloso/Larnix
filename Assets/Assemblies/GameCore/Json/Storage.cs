@@ -64,7 +64,7 @@ public class Storage
 
     public static Storage FromString(string? json)
     {
-        JSONObject jsonObject = json?.AsJsonObject() ?? new();
+        JSONObject jsonObject = JsonUtils.ToJsonObject(json);
         return new Storage(jsonObject);
     }
 }

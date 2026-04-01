@@ -4,44 +4,45 @@ using UnityEngine;
 using Larnix.Menu.Worlds;
 using Larnix.Core;
 
-namespace Larnix.Menu.Forms;
-
-public class WorldDeleteForm : BaseForm
+namespace Larnix.Menu.Forms
 {
-    private Menu Menu => GlobRef.Get<Menu>();
-    private WorldSelect WorldSelect => GlobRef.Get<WorldSelect>();
-    [SerializeField] TMP_InputField IF_DeleteName;
-
-    public override void EnterForm(params string[] args)
+    public class WorldDeleteForm : BaseForm
     {
-        IF_DeleteName.text = args[0];
+        private Menu Menu => GlobRef.Get<Menu>();
+        private WorldSelect WorldSelect => GlobRef.Get<WorldSelect>();
+        [SerializeField] TMP_InputField IF_DeleteName;
 
-        TX_ErrorText.text = "";
-
-        Menu.SetScreen("DeleteWorld");
-    }
-
-    protected override ErrorCode GetErrorCode()
-    {
-        return ErrorCode.SUCCESS;
-    }
-
-    protected override void RealSubmit()
-    {
-        string delName = IF_DeleteName.text;
-        string delDir = Path.Combine(WorldSelect.SavesPath, delName);
-
-        if (Directory.Exists(delDir))
+        public override void EnterForm(params string[] args)
         {
-            Directory.Delete(delDir, true);
-            WorldSelect.ReloadWorldList();
+            IF_DeleteName.text = args[0];
+
+            TX_ErrorText.text = "";
+
+            Menu.SetScreen("DeleteWorld");
         }
 
-        Menu.SetScreen("Singleplayer");
-    }
+        protected override ErrorCode GetErrorCode()
+        {
+            return ErrorCode.SUCCESS;
+        }
 
-    public void Cancel()
-    {
-        Menu.GoBack();
+        protected override void RealSubmit()
+        {
+            string delName = IF_DeleteName.text;
+            string delDir = Path.Combine(WorldSelect.SavesPath, delName);
+
+            if (Directory.Exists(delDir))
+            {
+                Directory.Delete(delDir, true);
+                WorldSelect.ReloadWorldList();
+            }
+
+            Menu.SetScreen("Singleplayer");
+        }
+
+        public void Cancel()
+        {
+            Menu.GoBack();
+        }
     }
 }

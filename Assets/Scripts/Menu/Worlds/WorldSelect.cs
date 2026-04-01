@@ -13,176 +13,177 @@ using Larnix.GameCore.Utils;
 using ServerAnswer = Larnix.Server.ServerRunner.ServerAnswer;
 using RunSuggestions = Larnix.Server.ServerRunner.RunSuggestions;
 
-namespace Larnix.Menu.Worlds;
-
-public class WorldSelect : UniversalSelect
+namespace Larnix.Menu.Worlds
 {
-    public static string SavesPath => GamePath.SavesPath;
-
-    [SerializeField] Image TitleImage;
-    [SerializeField] TextMeshProUGUI DescriptionText;
-
-    [SerializeField] Button BT_Play;
-    [SerializeField] Button BT_Host;
-    [SerializeField] Button BT_Rename;
-    [SerializeField] Button BT_Delete;
-
-    private readonly Dictionary<string, WorldMeta> _metadatas = new();
-
-    private void Awake()
+    public class WorldSelect : UniversalSelect
     {
-        GlobRef.Set(this);
-        ReloadWorldList();
-    }
+        public static string SavesPath => GamePath.SavesPath;
 
-    public void CreateWorld()
-    {
-        BaseForm.GetInstance<WorldCreateForm>().EnterForm();
-    }
+        [SerializeField] Image TitleImage;
+        [SerializeField] TextMeshProUGUI DescriptionText;
 
-    public void PlayWorld()
-    {
-        PlayWorldByName(SelectedWorld);
-    }
+        [SerializeField] Button BT_Play;
+        [SerializeField] Button BT_Host;
+        [SerializeField] Button BT_Rename;
+        [SerializeField] Button BT_Delete;
 
-    public static void PlayWorldByName(string name, long? seedSuggestion = null)
-    {
-        WorldMeta mdata = WorldMeta.ReadFromWorldFolder(name);
+        private readonly Dictionary<string, WorldMeta> _metadatas = new();
 
-        if(mdata.Nickname != Common.ReservedNickname)
-            Settings.Settings.Instance.SetValue("$last-nickname-SGP", mdata.Nickname, true);
-
-        var suggestions = new RunSuggestions(seedSuggestion);
-
-        WorldLoad.StartLocal(name, mdata.Nickname, suggestions);
-    }
-
-    public static void HostAndPlayWorldByName(string name, ServerAnswer answer)
-    {
-        WorldMeta mdata = WorldMeta.ReadFromWorldFolder(name);
-
-        if (mdata.Nickname != Common.ReservedNickname)
-            Settings.Settings.Instance.SetValue("$last-nickname-SGP", mdata.Nickname, true);
-
-        WorldLoad.StartHost(name, mdata.Nickname, answer);
-    }
-
-    public void HostWorld()
-    {
-        WorldMeta mdata = WorldMeta.ReadFromWorldFolder(SelectedWorld);
-        BaseForm.GetInstance<WorldHostForm>().EnterForm(SelectedWorld, mdata.Nickname);
-    }
-
-    public void RenameWorld()
-    {
-        BaseForm.GetInstance<WorldRenameForm>().EnterForm(SelectedWorld);
-    }
-
-    public void DeleteWorld()
-    {
-        BaseForm.GetInstance<WorldDeleteForm>().EnterForm(SelectedWorld);
-    }
-
-    public override void ReloadWorldList()
-    {
-        SelectWorld(null);
-        ScrollView.ClearAll();
-        _metadatas.Clear();
-
-        // World Segments
-        List<string> availableWorldPaths = GetSortedWorldPaths(SavesPath, "database.sqlite");
-        foreach (string worldPath in availableWorldPaths)
+        private void Awake()
         {
-            RectTransform rt = Instantiate(WorldSegmentPrefab).transform as RectTransform;
-            if (rt == null)
-                throw new InvalidOperationException("Prefab should be of type RectTransform!");
-
-            string worldName = WorldPathToName(worldPath);
-
-            rt.name = $"WorldSegment: \"{worldName}\"";
-            rt.GetComponent<WorldSegment>().Init(worldName, this);
-            ScrollView.BottomAddElement(rt);
-
-            _metadatas[worldName] = WorldMeta.ReadFromWorldFolder(worldPath);
+            GlobRef.Set(this);
+            ReloadWorldList();
         }
-    }
 
-    protected override void OnWorldSelect(string worldName)
-    {
-        NameText.text = worldName ?? "";
-
-        bool enable = worldName != null;
-        bool compatible = enable ? _metadatas[worldName].Version <= Version.Current : false;
-
-        BT_Play.interactable = enable && compatible;
-        BT_Host.interactable = enable && compatible;
-        BT_Rename.interactable = enable;
-        BT_Delete.interactable = enable;
-
-        if (enable)
+        public void CreateWorld()
         {
-            string versionDisplay = _metadatas[worldName].Version.ToString();
-            string playerDisplay = _metadatas[worldName].Nickname;
-
-            LoadImageOrClear(Path.Combine(SavesPath, worldName, "last_image.png"), TitleImage);
-            string description = $"Version: {versionDisplay}[REPLACE]\n" +
-                                 (playerDisplay != Common.ReservedNickname ? $"Player: {playerDisplay}" : "Detached World");
-
-            DescriptionText.text = description.Replace("[REPLACE]", compatible ? "" : " - Incompatible");
+            BaseForm.GetInstance<WorldCreateForm>().EnterForm();
         }
-        else
+
+        public void PlayWorld()
         {
-            LoadImageOrClear(null, TitleImage);
-            DescriptionText.text = "";
+            PlayWorldByName(SelectedWorld);
         }
-    }
 
-    private static void LoadImageOrClear(string path, Image targetImage)
-    {
-        bool success = false;
-
-        if (File.Exists(path))
+        public static void PlayWorldByName(string name, long? seedSuggestion = null)
         {
-            byte[] imageData = File.ReadAllBytes(path);
-            Texture2D tex = new Texture2D(2, 2, TextureFormat.RGB24, false);
+            WorldMeta mdata = WorldMeta.ReadFromWorldFolder(name);
 
-            if (tex.LoadImage(imageData))
+            if(mdata.Nickname != Common.ReservedNickname)
+                Settings.Settings.Instance.SetValue("$last-nickname-SGP", mdata.Nickname, true);
+
+            var suggestions = new RunSuggestions(seedSuggestion);
+
+            WorldLoad.StartLocal(name, mdata.Nickname, suggestions);
+        }
+
+        public static void HostAndPlayWorldByName(string name, ServerAnswer answer)
+        {
+            WorldMeta mdata = WorldMeta.ReadFromWorldFolder(name);
+
+            if (mdata.Nickname != Common.ReservedNickname)
+                Settings.Settings.Instance.SetValue("$last-nickname-SGP", mdata.Nickname, true);
+
+            WorldLoad.StartHost(name, mdata.Nickname, answer);
+        }
+
+        public void HostWorld()
+        {
+            WorldMeta mdata = WorldMeta.ReadFromWorldFolder(SelectedWorld);
+            BaseForm.GetInstance<WorldHostForm>().EnterForm(SelectedWorld, mdata.Nickname);
+        }
+
+        public void RenameWorld()
+        {
+            BaseForm.GetInstance<WorldRenameForm>().EnterForm(SelectedWorld);
+        }
+
+        public void DeleteWorld()
+        {
+            BaseForm.GetInstance<WorldDeleteForm>().EnterForm(SelectedWorld);
+        }
+
+        public override void ReloadWorldList()
+        {
+            SelectWorld(null);
+            ScrollView.ClearAll();
+            _metadatas.Clear();
+
+            // World Segments
+            List<string> availableWorldPaths = GetSortedWorldPaths(SavesPath, "database.sqlite");
+            foreach (string worldPath in availableWorldPaths)
             {
-                Rect rect = new Rect(0, 0, tex.width, tex.height);
-                Vector2 pivot = new Vector2(0.5f, 0.5f);
-                Sprite sprite = Sprite.Create(tex, rect, pivot);
-                CleanSprite(targetImage.sprite);
-                targetImage.sprite = sprite;
-                success = true;
+                RectTransform rt = Instantiate(WorldSegmentPrefab).transform as RectTransform;
+                if (rt == null)
+                    throw new InvalidOperationException("Prefab should be of type RectTransform!");
+
+                string worldName = WorldPathToName(worldPath);
+
+                rt.name = $"WorldSegment: \"{worldName}\"";
+                rt.GetComponent<WorldSegment>().Init(worldName, this);
+                ScrollView.BottomAddElement(rt);
+
+                _metadatas[worldName] = WorldMeta.ReadFromWorldFolder(worldPath);
             }
         }
 
-        if (!success)
+        protected override void OnWorldSelect(string worldName)
         {
-            Texture2D blackTex = new Texture2D(1, 1);
-            blackTex.SetPixel(0, 0, new Color(0f, 0f, 0f, 0f));
-            blackTex.Apply();
+            NameText.text = worldName ?? "";
 
-            Rect rect = new Rect(0, 0, 1, 1);
-            Vector2 pivot = new Vector2(0.5f, 0.5f);
-            Sprite blackSprite = Sprite.Create(blackTex, rect, pivot);
-            CleanSprite(targetImage.sprite);
-            targetImage.sprite = blackSprite;
+            bool enable = worldName != null;
+            bool compatible = enable ? _metadatas[worldName].Version <= Version.Current : false;
+
+            BT_Play.interactable = enable && compatible;
+            BT_Host.interactable = enable && compatible;
+            BT_Rename.interactable = enable;
+            BT_Delete.interactable = enable;
+
+            if (enable)
+            {
+                string versionDisplay = _metadatas[worldName].Version.ToString();
+                string playerDisplay = _metadatas[worldName].Nickname;
+
+                LoadImageOrClear(Path.Combine(SavesPath, worldName, "last_image.png"), TitleImage);
+                string description = $"Version: {versionDisplay}[REPLACE]\n" +
+                                     (playerDisplay != Common.ReservedNickname ? $"Player: {playerDisplay}" : "Detached World");
+
+                DescriptionText.text = description.Replace("[REPLACE]", compatible ? "" : " - Incompatible");
+            }
+            else
+            {
+                LoadImageOrClear(null, TitleImage);
+                DescriptionText.text = "";
+            }
         }
-    }
 
-    private static void CleanSprite(Sprite sprite)
-    {
-        if (sprite != null)
+        private static void LoadImageOrClear(string path, Image targetImage)
         {
-            Texture2D tex = sprite.texture;
-            UnityEngine.Object.Destroy(sprite);
-            UnityEngine.Object.Destroy(tex);
-        }
-    }
+            bool success = false;
 
-    private void OnDestroy()
-    {
-        CleanSprite(TitleImage.sprite);
+            if (File.Exists(path))
+            {
+                byte[] imageData = File.ReadAllBytes(path);
+                Texture2D tex = new Texture2D(2, 2, TextureFormat.RGB24, false);
+
+                if (tex.LoadImage(imageData))
+                {
+                    Rect rect = new Rect(0, 0, tex.width, tex.height);
+                    Vector2 pivot = new Vector2(0.5f, 0.5f);
+                    Sprite sprite = Sprite.Create(tex, rect, pivot);
+                    CleanSprite(targetImage.sprite);
+                    targetImage.sprite = sprite;
+                    success = true;
+                }
+            }
+
+            if (!success)
+            {
+                Texture2D blackTex = new Texture2D(1, 1);
+                blackTex.SetPixel(0, 0, new Color(0f, 0f, 0f, 0f));
+                blackTex.Apply();
+
+                Rect rect = new Rect(0, 0, 1, 1);
+                Vector2 pivot = new Vector2(0.5f, 0.5f);
+                Sprite blackSprite = Sprite.Create(blackTex, rect, pivot);
+                CleanSprite(targetImage.sprite);
+                targetImage.sprite = blackSprite;
+            }
+        }
+
+        private static void CleanSprite(Sprite sprite)
+        {
+            if (sprite != null)
+            {
+                Texture2D tex = sprite.texture;
+                UnityEngine.Object.Destroy(sprite);
+                UnityEngine.Object.Destroy(tex);
+            }
+        }
+
+        private void OnDestroy()
+        {
+            CleanSprite(TitleImage.sprite);
+        }
     }
 }

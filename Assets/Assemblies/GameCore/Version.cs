@@ -8,7 +8,7 @@ namespace Larnix.GameCore;
 
 public readonly struct Version : IBinary<Version>
 {
-    public static readonly Version Current = new("0.0.45.1");
+    public static readonly Version Current = new("0.0.45.2");
 
     public const int SIZE = sizeof(uint);
     public uint ID { get; }

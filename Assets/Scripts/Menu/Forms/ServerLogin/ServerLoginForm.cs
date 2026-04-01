@@ -4,58 +4,59 @@ using Larnix.Menu.Worlds;
 using Larnix.GameCore.Utils;
 using Larnix.Core;
 
-namespace Larnix.Menu.Forms;
-
-public class ServerLoginForm : BaseForm
+namespace Larnix.Menu.Forms
 {
-    private Menu Menu => GlobRef.Get<Menu>();
-
-    [SerializeField] TMP_InputField IF_Address;
-    [SerializeField] TMP_InputField IF_Nickname;
-    [SerializeField] TMP_InputField IF_Password;
-
-    private ServerThinker _thinker = null;
-
-    public void ProvideServerThinker(ServerThinker thinker)
+    public class ServerLoginForm : BaseForm
     {
-        _thinker = thinker;
-    }
+        private Menu Menu => GlobRef.Get<Menu>();
 
-    public override void EnterForm(params string[] args)
-    {
-        IF_Address.text = args[0];
-        IF_Nickname.text = args[1];
-        IF_Password.text = args[2];
+        [SerializeField] TMP_InputField IF_Address;
+        [SerializeField] TMP_InputField IF_Nickname;
+        [SerializeField] TMP_InputField IF_Password;
 
-        TX_ErrorText.text = "Your login data will be visible to the server owner.";
+        private ServerThinker _thinker = null;
 
-        Menu.SetScreen("Login");
-    }
+        public void ProvideServerThinker(ServerThinker thinker)
+        {
+            _thinker = thinker;
+        }
 
-    protected override ErrorCode GetErrorCode()
-    {
-        string address = IF_Address.text;
-        string nickname = IF_Nickname.text;
-        string password = IF_Password.text;
+        public override void EnterForm(params string[] args)
+        {
+            IF_Address.text = args[0];
+            IF_Nickname.text = args[1];
+            IF_Password.text = args[2];
 
-        if (!Validation.IsGoodNickname(nickname))
-            return ErrorCode.NICKNAME_FORMAT;
+            TX_ErrorText.text = "Your login data will be visible to the server owner.";
 
-        if (nickname == Common.ReservedNickname)
-            return ErrorCode.NICKNAME_IS_PLAYER;
+            Menu.SetScreen("Login");
+        }
 
-        if (!Validation.IsGoodPassword(password))
-            return ErrorCode.PASSWORD_FORMAT;
+        protected override ErrorCode GetErrorCode()
+        {
+            string address = IF_Address.text;
+            string nickname = IF_Nickname.text;
+            string password = IF_Password.text;
 
-        return ErrorCode.SUCCESS;
-    }
+            if (!Validation.IsGoodNickname(nickname))
+                return ErrorCode.NICKNAME_FORMAT;
 
-    protected override void RealSubmit()
-    {
-        string nickname = IF_Nickname.text;
-        string password = IF_Password.text;
+            if (nickname == Common.ReservedNickname)
+                return ErrorCode.NICKNAME_IS_PLAYER;
 
-        _thinker.SubmitUser(nickname, password, false);
-        Menu.GoBack();
+            if (!Validation.IsGoodPassword(password))
+                return ErrorCode.PASSWORD_FORMAT;
+
+            return ErrorCode.SUCCESS;
+        }
+
+        protected override void RealSubmit()
+        {
+            string nickname = IF_Nickname.text;
+            string password = IF_Password.text;
+
+            _thinker.SubmitUser(nickname, password, false);
+            Menu.GoBack();
+        }
     }
 }

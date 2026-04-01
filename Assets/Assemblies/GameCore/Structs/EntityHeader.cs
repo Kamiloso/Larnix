@@ -1,3 +1,4 @@
+#nullable enable
 using Larnix.Core.Binary;
 using Larnix.Core.Misc;
 using Larnix.Core.Vectors;

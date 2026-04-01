@@ -12,23 +12,16 @@ public interface IWorldAPI : ICmdExecutor
     {
         Replace = 0,
         Effects = 1, // drops particles
-        Weak = 2, // rearm EventFlag
+        Weak = 2, // rearm event flag
     }
 
     public long ServerTick { get; }
 
     public bool IsChunkLoaded(Vec2Int chunk, bool atomic = false);
-    public bool IsBlockLoaded(Vec2Int POS)
-    {
-        Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
-        return IsChunkLoaded(chunk);
-    }
+    public bool IsBlockLoaded(Vec2Int POS) => IsChunkLoaded(BlockUtils.CoordsToChunk(POS));
 
     public Block GetBlock(Vec2Int POS, bool front);
-
-    public Block ReplaceBlock(Vec2Int POS, bool front, BlockData1 blockTemplate,
-        BreakMode breakMode = BreakMode.Replace);
-
+    public Block ReplaceBlock(Vec2Int POS, bool front, BlockData1 blockTemplate, BreakMode breakMode = BreakMode.Replace);
     public Block MutateBlockVariant(Vec2Int POS, bool front, byte variant);
 
     public bool CanPlaceBlock(Vec2Int POS, bool front, BlockData1 item);
@@ -45,8 +38,8 @@ public interface IWorldAPI : ICmdExecutor
             {
                 if (dx == 0 && dy == 0) continue;
 
-                Vec2Int POS_1 = new(POS.x + dx, POS.y + dy);
-                Block block = GetBlock(POS_1, front);
+                Vec2Int POS1 = POS + new Vec2Int(dx, dy);
+                Block block = GetBlock(POS1, front);
 
                 if (block is not null)
                 {

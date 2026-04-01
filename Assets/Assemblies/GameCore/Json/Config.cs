@@ -15,7 +15,7 @@ public abstract class Config
 
     public static T FromString<T>(string str) where T : Config, new()
     {
-        JSONObject json = str?.AsJsonObject() ?? new();
+        JSONObject json = JsonUtils.ToJsonObject(str);
         List<PropertyInfo> props = AllProperties<T>();
 
         T config = new();
@@ -25,7 +25,7 @@ public abstract class Config
             string[] parts = prop.Name.Split('_');
             string lastPart = parts[^1];
 
-            JSONObject traversed = json.TraversePath(parts[..^1]);
+            JSONObject traversed = JsonUtils.TraversePath(json, parts[..^1]);
             JSONNode node = traversed[lastPart];
 
             if (TryConvertNode(node, prop.PropertyType, out object parsedValue))
@@ -48,7 +48,7 @@ public abstract class Config
             string[] parts = prop.Name.Split('_');
             string lastPart = parts[^1];
 
-            JSONObject traversed = json.TraversePath(parts[..^1]);
+            JSONObject traversed = JsonUtils.TraversePath(json, parts[..^1]);
             object value = prop.GetValue(config);
             traversed[lastPart] = ToNode(value);
         }

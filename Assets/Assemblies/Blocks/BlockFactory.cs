@@ -1,20 +1,19 @@
-using Larnix.Blocks;
+#nullable enable
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.Serialization;
 using Larnix.Core;
 using Larnix.Blocks.All;
-using BlockInits = Larnix.Blocks.Block.BlockInits;
 using Larnix.Core.Enums;
+using BlockInits = Larnix.Blocks.Block.BlockInits;
 
 namespace Larnix.Blocks;
 
 public static class BlockFactory
 {
-    private static Dictionary<BlockID, BlockInfo> BlockCache = new();
-    private static object _locker = new();
+    private static readonly Dictionary<BlockID, BlockInfo> BlockCache = new();
+    private static readonly object _locker = new();
 
     private static readonly string Namespace = typeof(Air).Namespace;
     private static readonly string AsmName = typeof(Air).Assembly.GetName().Name;
@@ -22,7 +21,7 @@ public static class BlockFactory
     private class BlockInfo
     {
         public string Name;
-        public Type Type;
+        public Type? Type;
         public Func<BlockInits, Block> Constructor;
         public List<Action<Block>> Inits = new();
 
@@ -85,7 +84,7 @@ public static class BlockFactory
             }
             else
             {
-                BlockInfo info = new BlockInfo(ID);
+                BlockInfo info = new(ID);
                 BlockCache[ID] = info;
                 return info;
             }
@@ -111,7 +110,7 @@ public static class BlockFactory
         return GetSlaveInstance<TIface>(ID) != null;
     }
 
-    public static TIface GetSlaveInstance<TIface>(BlockID ID) where TIface : class, IBlockInterface
+    public static TIface? GetSlaveInstance<TIface>(BlockID ID) where TIface : class, IBlockInterface
     {
         BlockInfo info = GetBlockInfo(ID);
         return info.SlaveInstance as TIface;

@@ -1,18 +1,15 @@
-using System;
+#nullable enable
 using SimpleJSON;
 
-namespace Larnix.GameCore.Json;
+namespace Larnix.GameCore;
 
-public static class JsonExtensions
+public static class JsonUtils
 {
-    public static JSONObject AsJsonObject(this string str)
+    public static JSONObject ToJsonObject(string? json)
     {
-        if (str == null)
-            throw new ArgumentNullException(nameof(str));
-
         try
         {
-            return JSON.Parse(str)
+            return JSON.Parse(json)
                 .AsObject ?? new JSONObject();
         }
         catch
@@ -21,11 +18,8 @@ public static class JsonExtensions
         }
     }
 
-    public static JSONObject TraversePath(this JSONObject jsonObj, params string[] path)
+    public static JSONObject TraversePath(JSONObject jsonObj, params string[] path)
     {
-        if (jsonObj == null)
-            throw new ArgumentNullException(nameof(jsonObj));
-
         JSONObject current = jsonObj;
         foreach (string part in path)
         {

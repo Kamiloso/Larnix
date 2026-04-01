@@ -6,6 +6,7 @@ using Larnix.Core.Binary;
 using Larnix.GameCore.Json;
 using Larnix.GameCore.Structs;
 using Larnix.GameCore.Utils;
+using Larnix.GameCore;
 
 namespace Larnix.Blocks.Structs;
 
@@ -185,9 +186,9 @@ public class ChunkData
         return chunkData;
     }
 
-    public void ImportData(string chunkJson)
+    public void ImportData(string? chunkJson)
     {
-        JSONObject root = chunkJson?.AsJsonObject() ?? new();
+        JSONObject root = JsonUtils.ToJsonObject(chunkJson);
 
         for (int x = 0; x < CHUNK_SIZE; x++)
             for (int y = 0; y < CHUNK_SIZE; y++)

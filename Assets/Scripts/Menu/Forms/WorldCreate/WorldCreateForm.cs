@@ -10,65 +10,66 @@ using Larnix.GameCore.Utils;
 using Larnix.Socket;
 using Larnix.Core.Misc;
 
-namespace Larnix.Menu.Forms;
-
-public class WorldCreateForm : BaseForm
+namespace Larnix.Menu.Forms
 {
-    [SerializeField] TMP_InputField IF_Nickname;
-    [SerializeField] TMP_InputField IF_WorldName;
-    [SerializeField] TMP_InputField IF_Seed;
-
-    private Menu Menu => GlobRef.Get<Menu>();
-
-    public override void EnterForm(params string[] args)
+    public class WorldCreateForm : BaseForm
     {
-        IF_Nickname.text = Settings.Settings.Instance.GetValue("$last-nickname-SGP");
-        IF_WorldName.text = "";
-        IF_Seed.text = RandUtils.SecureLong().ToString();
+        [SerializeField] TMP_InputField IF_Nickname;
+        [SerializeField] TMP_InputField IF_WorldName;
+        [SerializeField] TMP_InputField IF_Seed;
 
-        TX_ErrorText.text = "";
+        private Menu Menu => GlobRef.Get<Menu>();
 
-        Menu.SetScreen("CreateWorld");
-    }
-
-    protected override ErrorCode GetErrorCode()
-    {
-        if (IF_Nickname.text == Common.ReservedNickname)
-            return ErrorCode.NICKNAME_IS_PLAYER;
-
-        if (!Validation.IsGoodNickname(IF_Nickname.text))
-            return ErrorCode.NICKNAME_FORMAT;
-
-        if (!Validation.IsValidWorldName(IF_WorldName.text))
-            return ErrorCode.WORLD_NAME_FORMAT;
-
-        string path = Path.Combine(WorldSelect.SavesPath, IF_WorldName.text);
-
-        if (Directory.Exists(path))
-            return ErrorCode.WORLD_EXISTS;
-
-        return ErrorCode.SUCCESS;
-    }
-
-    protected override void RealSubmit()
-    {
-        string nickname = IF_Nickname.text;
-        string worldName = IF_WorldName.text;
-        string seedStr = IF_Seed.text;
-
-        long? seedSuggestion = null;
-
-        // seed calculate
-        if (long.TryParse(seedStr, out long seed))
+        public override void EnterForm(params string[] args)
         {
-            seedSuggestion = seed;
-        }
-        else if (seedStr.Length > 0)
-        {
-            seedSuggestion = RandUtils.SeedFromString(seedStr);
+            IF_Nickname.text = Settings.Settings.Instance.GetValue("$last-nickname-SGP");
+            IF_WorldName.text = "";
+            IF_Seed.text = RandUtils.SecureLong().ToString();
+
+            TX_ErrorText.text = "";
+
+            Menu.SetScreen("CreateWorld");
         }
 
-        WorldMeta.SaveToWorldFolder(worldName, new WorldMeta(Version.Current, nickname));
-        WorldSelect.PlayWorldByName(worldName, seedSuggestion);
+        protected override ErrorCode GetErrorCode()
+        {
+            if (IF_Nickname.text == Common.ReservedNickname)
+                return ErrorCode.NICKNAME_IS_PLAYER;
+
+            if (!Validation.IsGoodNickname(IF_Nickname.text))
+                return ErrorCode.NICKNAME_FORMAT;
+
+            if (!Validation.IsValidWorldName(IF_WorldName.text))
+                return ErrorCode.WORLD_NAME_FORMAT;
+
+            string path = Path.Combine(WorldSelect.SavesPath, IF_WorldName.text);
+
+            if (Directory.Exists(path))
+                return ErrorCode.WORLD_EXISTS;
+
+            return ErrorCode.SUCCESS;
+        }
+
+        protected override void RealSubmit()
+        {
+            string nickname = IF_Nickname.text;
+            string worldName = IF_WorldName.text;
+            string seedStr = IF_Seed.text;
+
+            long? seedSuggestion = null;
+
+            // seed calculate
+            if (long.TryParse(seedStr, out long seed))
+            {
+                seedSuggestion = seed;
+            }
+            else if (seedStr.Length > 0)
+            {
+                seedSuggestion = RandUtils.SeedFromString(seedStr);
+            }
+
+            WorldMeta.SaveToWorldFolder(worldName, new WorldMeta(Version.Current, nickname));
+            WorldSelect.PlayWorldByName(worldName, seedSuggestion);
+        }
     }
 }
