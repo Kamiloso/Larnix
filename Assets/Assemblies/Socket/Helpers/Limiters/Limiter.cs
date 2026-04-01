@@ -1,39 +1,38 @@
 using System;
 
-namespace Larnix.Socket.Helpers.Limiters
+namespace Larnix.Socket.Helpers.Limiters;
+
+public class Limiter
 {
-    public class Limiter
+    public ulong Max { get; init; }
+    public ulong Current { get; private set; }
+
+    public Limiter(ulong max)
     {
-        public ulong Max { get; init; }
-        public ulong Current { get; private set; }
+        Max = max;
+        Current = 0;
+    }
 
-        public Limiter(ulong max)
+    public bool TryAdd()
+    {
+        if (Current < Max)
         {
-            Max = max;
-            Current = 0;
+            Current++;
+            return true;
         }
+        return false;
+    }
 
-        public bool TryAdd()
-        {
-            if (Current < Max)
-            {
-                Current++;
-                return true;
-            }
-            return false;
-        }
+    public void Remove()
+    {
+        if (Current == 0)
+            throw new InvalidOperationException("Cannot decrease limit below zero.");
 
-        public void Remove()
-        {
-            if (Current == 0)
-                throw new InvalidOperationException("Cannot decrease limit below zero.");
+        Current--;
+    }
 
-            Current--;
-        }
-
-        public void Reset()
-        {
-            Current = 0;
-        }
+    public void Reset()
+    {
+        Current = 0;
     }
 }

@@ -3,160 +3,159 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Collections.Concurrent;
 
-namespace Larnix.Core
+namespace Larnix.Core;
+
+internal static class Console
 {
-    internal static class Console
+    private const int INPUT_MAX_QUEUE_LENGTH = 64;
+
+    private static Thread _inputThread;
+    private static ConcurrentQueue<string> _cmdQueue = new();
+    private static readonly object _outputLock = new();
+    private static readonly object _inputLock = new();
+
+    private static string Timestamp => DateTime.Now.ToString("[yyyy-MM-dd HH:mm:ss]");
+
+    public static void SetTitle(string title)
     {
-        private const int INPUT_MAX_QUEUE_LENGTH = 64;
-
-        private static Thread _inputThread;
-        private static ConcurrentQueue<string> _cmdQueue = new();
-        private static readonly object _outputLock = new();
-        private static readonly object _inputLock = new();
-
-        private static string Timestamp => DateTime.Now.ToString("[yyyy-MM-dd HH:mm:ss]");
-
-        public static void SetTitle(string title)
+        lock (_outputLock)
         {
-            lock (_outputLock)
-            {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    System.Console.Title = title;
-                else
-                    System.Console.Write($"\x1b]0;{title}\x07");
-            }
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                System.Console.Title = title;
+            else
+                System.Console.Write($"\x1b]0;{title}\x07");
         }
+    }
 
 #region Output
 
-        public static void Log(string msg, ConsoleColor color = ConsoleColor.Gray)
+    public static void Log(string msg, ConsoleColor color = ConsoleColor.Gray)
+    {
+        lock (_outputLock)
         {
-            lock (_outputLock)
-            {
-                System.Console.ForegroundColor = color;
-                System.Console.WriteLine(Timestamp + " " + msg);
-                System.Console.ResetColor();
-            }
+            System.Console.ForegroundColor = color;
+            System.Console.WriteLine(Timestamp + " " + msg);
+            System.Console.ResetColor();
         }
+    }
 
-        public static void LogRaw(string msg, ConsoleColor color = ConsoleColor.Gray)
+    public static void LogRaw(string msg, ConsoleColor color = ConsoleColor.Gray)
+    {
+        lock (_outputLock)
         {
-            lock (_outputLock)
-            {
-                System.Console.ForegroundColor = color;
-                System.Console.Write(msg);
-                System.Console.ResetColor();
-            }
+            System.Console.ForegroundColor = color;
+            System.Console.Write(msg);
+            System.Console.ResetColor();
         }
+    }
 
-        public static void LogInfo(string msg)
+    public static void LogInfo(string msg)
+    {
+        lock (_outputLock)
         {
-            lock (_outputLock)
-            {
-                LogRaw(Timestamp + " ");
-                LogRaw("INFO: " + msg + "\n", ConsoleColor.Blue);
-            }
+            LogRaw(Timestamp + " ");
+            LogRaw("INFO: " + msg + "\n", ConsoleColor.Blue);
         }
+    }
 
-        public static void LogWarning(string msg)
+    public static void LogWarning(string msg)
+    {
+        lock (_outputLock)
         {
-            lock (_outputLock)
-            {
-                LogRaw(Timestamp + " ");
-                LogRaw("WARNING: " + msg + "\n", ConsoleColor.Yellow);
-            }
+            LogRaw(Timestamp + " ");
+            LogRaw("WARNING: " + msg + "\n", ConsoleColor.Yellow);
         }
+    }
 
-        public static void LogError(string msg)
+    public static void LogError(string msg)
+    {
+        lock (_outputLock)
         {
-            lock (_outputLock)
-            {
-                LogRaw(Timestamp + " ");
-                LogRaw("ERROR: " + msg + "\n", ConsoleColor.Red);
-            }
+            LogRaw(Timestamp + " ");
+            LogRaw("ERROR: " + msg + "\n", ConsoleColor.Red);
         }
+    }
 
-        public static void LogSuccess(string msg)
+    public static void LogSuccess(string msg)
+    {
+        lock (_outputLock)
         {
-            lock (_outputLock)
-            {
-                LogRaw(Timestamp + " ");
-                LogRaw("SUCCESS: " + msg + "\n", ConsoleColor.Green);
-            }
+            LogRaw(Timestamp + " ");
+            LogRaw("SUCCESS: " + msg + "\n", ConsoleColor.Green);
         }
+    }
 
-        public static void Clear()
+    public static void Clear()
+    {
+        lock (_outputLock)
         {
-            lock (_outputLock)
-            {
-                System.Console.Clear();
-            }
+            System.Console.Clear();
         }
+    }
 
 #endregion
 #region Input
 
-        public static string GetInputSync()
+    public static string GetInputSync()
+    {
+        while (true)
         {
-            while (true)
-            {
-                if (TryPopInput(out string input))
-                    return input;
+            if (TryPopInput(out string input))
+                return input;
 
-                Thread.Sleep(10);
-            }
+            Thread.Sleep(10);
+        }
+    }
+
+    public static bool TryPopInput(out string input)
+    {
+        EnsureInputThread();
+
+        if (_cmdQueue.TryDequeue(out input))
+        {
+            return true;
         }
 
-        public static bool TryPopInput(out string input)
-        {
-            EnsureInputThread();
+        input = default;
+        return false;
+    }
 
-            if (_cmdQueue.TryDequeue(out input))
+    private static void InputLoop()
+    {
+        while (true)
+        {
+            string input = System.Console.ReadLine();
+            if (input == null)
             {
-                return true;
+                Thread.Sleep(500);
+                continue;
             }
 
-            input = default;
-            return false;
-        }
-
-        private static void InputLoop()
-        {
-            while (true)
+            if (_cmdQueue.Count < INPUT_MAX_QUEUE_LENGTH)
             {
-                string input = System.Console.ReadLine();
-                if (input == null)
+                _cmdQueue.Enqueue(input);
+            }
+        }
+    }
+
+    private static void EnsureInputThread()
+    {
+        lock (_inputLock)
+        {
+            bool isAlive = _inputThread?.IsAlive ?? false;
+            if (!isAlive)
+            {
+                _inputThread = new Thread(InputLoop)
                 {
-                    Thread.Sleep(500);
-                    continue;
-                }
+                    IsBackground = true,
+                    Name = "Larnix::ConsoleInputThread"
+                };
 
-                if (_cmdQueue.Count < INPUT_MAX_QUEUE_LENGTH)
-                {
-                    _cmdQueue.Enqueue(input);
-                }
+                _inputThread.Start();
             }
         }
-
-        private static void EnsureInputThread()
-        {
-            lock (_inputLock)
-            {
-                bool isAlive = _inputThread?.IsAlive ?? false;
-                if (!isAlive)
-                {
-                    _inputThread = new Thread(InputLoop)
-                    {
-                        IsBackground = true,
-                        Name = "Larnix::ConsoleInputThread"
-                    };
-                    
-                    _inputThread.Start();
-                }
-            }
-        }
+    }
 
 #endregion
 
-    }
 }

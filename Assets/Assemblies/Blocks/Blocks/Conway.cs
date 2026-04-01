@@ -4,15 +4,14 @@ using System.Collections.Generic;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
 
-namespace Larnix.Blocks.All
+namespace Larnix.Blocks.All;
+
+public sealed class Conway : Block, ISolid, IConway
 {
-    public sealed class Conway : Block, ISolid, IConway
-    {
-        public bool ALLOW_PLACE_BACK() => true;
+    public bool ALLOW_PLACE_BACK() => true;
 
-        public ITool.Type MATERIAL_TYPE() => ITool.Type.Normal;
-        public ITool.Tier MATERIAL_TIER() => ITool.Tier.Wood;
+    public ITool.Type MATERIAL_TYPE() => ITool.Type.Normal;
+    public ITool.Tier MATERIAL_TIER() => ITool.Tier.Wood;
 
-        public int CONWAY_PERIOD() => 40;
-    }
+    public int CONWAY_PERIOD() => 40;
 }

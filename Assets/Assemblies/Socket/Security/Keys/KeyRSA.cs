@@ -11,179 +11,178 @@ using Org.BouncyCastle.OpenSsl;
 using System.IO;
 using Larnix.Core.Misc;
 
-namespace Larnix.Socket.Security.Keys
+namespace Larnix.Socket.Security.Keys;
+
+public class KeyRSA : IEncryptionKey, IDisposable
 {
-    public class KeyRSA : IEncryptionKey, IDisposable
+    private const int PublicKeySize = 264;
+    private readonly bool _isFullKey;
+    private readonly RSA _rsa;
+
+    private readonly bool _isBroken;
+
+    private bool _disposed;
+
+    public KeyRSA(string path, string filename) // private key
     {
-        private const int PublicKeySize = 264;
-        private readonly bool _isFullKey;
-        private readonly RSA _rsa;
+        AsymmetricCipherKeyPair keyPair;
 
-        private readonly bool _isBroken;
-
-        private bool _disposed;
-
-        public KeyRSA(string path, string filename) // private key
+        string data = FileManager.Read(path, filename);
+        if (data == null || (keyPair = ParseRSA(data)) == null)
         {
-            AsymmetricCipherKeyPair keyPair;
+            // generate key
+            var keyGen = new RsaKeyPairGenerator();
+            keyGen.Init(new KeyGenerationParameters(new SecureRandom(), 2048));
+            keyPair = keyGen.GenerateKeyPair();
 
-            string data = FileManager.Read(path, filename);
-            if (data == null || (keyPair = ParseRSA(data)) == null)
-            {
-                // generate key
-                var keyGen = new RsaKeyPairGenerator();
-                keyGen.Init(new KeyGenerationParameters(new SecureRandom(), 2048));
-                keyPair = keyGen.GenerateKeyPair();
-
-                data = ConvertKeyPairToPem(keyPair);
-                FileManager.Write(path, filename, data);
-            }
-
-            _isFullKey = true;
-            _rsa = BouncyToRSA(keyPair);
+            data = ConvertKeyPairToPem(keyPair);
+            FileManager.Write(path, filename, data);
         }
 
-        public KeyRSA(byte[] keyBytes) // public key
+        _isFullKey = true;
+        _rsa = BouncyToRSA(keyPair);
+    }
+
+    public KeyRSA(byte[] keyBytes) // public key
+    {
+        if (keyBytes == null)
+            throw new ArgumentNullException(nameof(keyBytes));
+
+        _isFullKey = false;
+        _rsa = RSA.Create();
+
+        try
         {
-            if (keyBytes == null)
-                throw new ArgumentNullException(nameof(keyBytes));
-
-            _isFullKey = false;
-            _rsa = RSA.Create();
-
-            try
+            _rsa.ImportParameters(new RSAParameters
             {
-                _rsa.ImportParameters(new RSAParameters
-                {
-                    Modulus = keyBytes[..256],
-                    Exponent = ArrayUtils.RemoveLeadingZeros(keyBytes[256..])
-                });
-            }
-            catch
-            {
-                _isBroken = true;
-            }
+                Modulus = keyBytes[..256],
+                Exponent = ArrayUtils.RemoveLeadingZeros(keyBytes[256..])
+            });
         }
-
-        public byte[] ExportPublicKey()
+        catch
         {
-            if (_isBroken)
-                return new byte[PublicKeySize];
-
-            var parameters = _rsa.ExportParameters(false);
-
-            return ArrayUtils.MegaConcat(
-                parameters.Modulus,
-                ArrayUtils.AddLeadingZeros(parameters.Exponent, 8)
-                );
+            _isBroken = true;
         }
+    }
 
-        public byte[] Encrypt(byte[] plaintext)
+    public byte[] ExportPublicKey()
+    {
+        if (_isBroken)
+            return new byte[PublicKeySize];
+
+        var parameters = _rsa.ExportParameters(false);
+
+        return ArrayUtils.MegaConcat(
+            parameters.Modulus,
+            ArrayUtils.AddLeadingZeros(parameters.Exponent, 8)
+            );
+    }
+
+    public byte[] Encrypt(byte[] plaintext)
+    {
+        return !_isBroken ?
+            _rsa.Encrypt(plaintext, RSAEncryptionPadding.OaepSHA1) :
+            new byte[0];
+    }
+
+    public byte[] Decrypt(byte[] ciphertext)
+    {
+        if (!_isFullKey)
+            throw new InvalidOperationException("Cannot decrypt using public key!");
+
+        try
         {
             return !_isBroken ?
-                _rsa.Encrypt(plaintext, RSAEncryptionPadding.OaepSHA1) :
+                _rsa.Decrypt(ciphertext, RSAEncryptionPadding.OaepSHA1) :
                 new byte[0];
         }
-
-        public byte[] Decrypt(byte[] ciphertext)
+        catch (CryptographicException)
         {
-            if (!_isFullKey)
-                throw new InvalidOperationException("Cannot decrypt using public key!");
-
-            try
-            {
-                return !_isBroken ?
-                    _rsa.Decrypt(ciphertext, RSAEncryptionPadding.OaepSHA1) :
-                    new byte[0];
-            }
-            catch (CryptographicException)
-            {
-                return new byte[0];
-            }
+            return new byte[0];
         }
+    }
 
-        public void Dispose()
+    public void Dispose()
+    {
+        if (!_disposed)
         {
-            if (!_disposed)
-            {
-                _disposed = true;
+            _disposed = true;
 
-                _rsa?.Dispose();
-            }
+            _rsa?.Dispose();
         }
+    }
 
 #region Static Helpers
 
-        private static AsymmetricCipherKeyPair ParseRSA(string text)
+    private static AsymmetricCipherKeyPair ParseRSA(string text)
+    {
+        try
         {
-            try
+            using (var reader = new StringReader(text))
             {
-                using (var reader = new StringReader(text))
-                {
-                    var pemReader = new PemReader(reader);
-                    var obj = pemReader.ReadObject();
+                var pemReader = new PemReader(reader);
+                var obj = pemReader.ReadObject();
 
-                    if (obj is AsymmetricCipherKeyPair keyPair)
-                        return keyPair;
-                    else
-                        return null;
-                }
-            }
-            catch
-            {
-                return null;
+                if (obj is AsymmetricCipherKeyPair keyPair)
+                    return keyPair;
+                else
+                    return null;
             }
         }
-
-        private static string ConvertKeyPairToPem(AsymmetricCipherKeyPair keyPair)
+        catch
         {
-            using (var stringWriter = new StringWriter())
-            {
-                var pemWriter = new PemWriter(stringWriter);
-                pemWriter.WriteObject(keyPair);
-                pemWriter.Writer.Flush();
-                return stringWriter.ToString();
-            }
+            return null;
         }
+    }
 
-        private static RSA BouncyToRSA(AsymmetricCipherKeyPair keyPair)
+    private static string ConvertKeyPairToPem(AsymmetricCipherKeyPair keyPair)
+    {
+        using (var stringWriter = new StringWriter())
         {
-            var priv = (RsaPrivateCrtKeyParameters)keyPair.Private;
-
-            int modulusSize = (priv.Modulus.BitLength + 7) / 8;
-            int halfSize = (modulusSize + 1) / 2;
-
-            var rsaParams = new RSAParameters
-            {
-                Modulus = Pad(priv.Modulus.ToByteArrayUnsigned(), modulusSize),
-                Exponent = priv.PublicExponent.ToByteArrayUnsigned(),
-                D = Pad(priv.Exponent.ToByteArrayUnsigned(), modulusSize),
-                P = Pad(priv.P.ToByteArrayUnsigned(), halfSize),
-                Q = Pad(priv.Q.ToByteArrayUnsigned(), halfSize),
-                DP = Pad(priv.DP.ToByteArrayUnsigned(), halfSize),
-                DQ = Pad(priv.DQ.ToByteArrayUnsigned(), halfSize),
-                InverseQ = Pad(priv.QInv.ToByteArrayUnsigned(), halfSize)
-            };
-
-            var rsa = RSA.Create();
-            rsa.ImportParameters(rsaParams);
-            return rsa;
+            var pemWriter = new PemWriter(stringWriter);
+            pemWriter.WriteObject(keyPair);
+            pemWriter.Writer.Flush();
+            return stringWriter.ToString();
         }
+    }
 
-        private static byte[] Pad(byte[] input, int size)
+    private static RSA BouncyToRSA(AsymmetricCipherKeyPair keyPair)
+    {
+        var priv = (RsaPrivateCrtKeyParameters)keyPair.Private;
+
+        int modulusSize = (priv.Modulus.BitLength + 7) / 8;
+        int halfSize = (modulusSize + 1) / 2;
+
+        var rsaParams = new RSAParameters
         {
-            if (input.Length == size)
-                return input;
+            Modulus = Pad(priv.Modulus.ToByteArrayUnsigned(), modulusSize),
+            Exponent = priv.PublicExponent.ToByteArrayUnsigned(),
+            D = Pad(priv.Exponent.ToByteArrayUnsigned(), modulusSize),
+            P = Pad(priv.P.ToByteArrayUnsigned(), halfSize),
+            Q = Pad(priv.Q.ToByteArrayUnsigned(), halfSize),
+            DP = Pad(priv.DP.ToByteArrayUnsigned(), halfSize),
+            DQ = Pad(priv.DQ.ToByteArrayUnsigned(), halfSize),
+            InverseQ = Pad(priv.QInv.ToByteArrayUnsigned(), halfSize)
+        };
 
-            if (input.Length > size)
-                throw new CryptographicException("RSA parameter larger than expected.");
+        var rsa = RSA.Create();
+        rsa.ImportParameters(rsaParams);
+        return rsa;
+    }
 
-            var padded = new byte[size];
-            Buffer.BlockCopy(input, 0, padded, size - input.Length, input.Length);
-            return padded;
-        }
+    private static byte[] Pad(byte[] input, int size)
+    {
+        if (input.Length == size)
+            return input;
+
+        if (input.Length > size)
+            throw new CryptographicException("RSA parameter larger than expected.");
+
+        var padded = new byte[size];
+        Buffer.BlockCopy(input, 0, padded, size - input.Length, input.Length);
+        return padded;
+    }
 
 #endregion
 
-    }
 }

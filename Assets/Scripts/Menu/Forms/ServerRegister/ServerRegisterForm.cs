@@ -5,85 +5,84 @@ using Larnix.Forms;
 using Larnix.GameCore.Utils;
 using Larnix.Core;
 
-namespace Larnix.Menu.Forms
+namespace Larnix.Menu.Forms;
+
+public class ServerRegisterForm : BaseForm
 {
-    public class ServerRegisterForm : BaseForm
+    [SerializeField] TMP_InputField IF_Address;
+    [SerializeField] TMP_InputField IF_Nickname;
+    [SerializeField] TMP_InputField IF_Password;
+    [SerializeField] TMP_InputField IF_Confirm;
+
+    private Menu Menu => GlobRef.Get<Menu>();
+
+    private ServerThinker _thinker;
+    private InputSwapper _swapper;
+
+    private void Awake()
     {
-        [SerializeField] TMP_InputField IF_Address;
-        [SerializeField] TMP_InputField IF_Nickname;
-        [SerializeField] TMP_InputField IF_Password;
-        [SerializeField] TMP_InputField IF_Confirm;
+        _swapper = GetComponent<InputSwapper>();
+    }
 
-        private Menu Menu => GlobRef.Get<Menu>();
+    public void ProvideServerThinker(ServerThinker thinker)
+    {
+        _thinker = thinker;
+    }
 
-        private ServerThinker _thinker;
-        private InputSwapper _swapper;
+    public override void EnterForm(params string[] args)
+    {
+        IF_Address.text = args[0];
+        IF_Nickname.text = "";
+        IF_Password.text = "";
+        IF_Confirm.text = "";
 
-        private void Awake()
+        _swapper.SetState(0);
+        IF_Nickname.interactable = true;
+
+        TX_ErrorText.text = "Your login data will be visible to the server owner.";
+
+        Menu.SetScreen("Register");
+    }
+
+    protected override ErrorCode GetErrorCode()
+    {
+        string address = IF_Address.text;
+        string nickname = IF_Nickname.text;
+        string password = IF_Password.text;
+        string confirm = IF_Confirm.text;
+
+        if (!Validation.IsGoodNickname(nickname))
+            return ErrorCode.NICKNAME_FORMAT;
+
+        if (nickname == Common.ReservedNickname)
+            return ErrorCode.NICKNAME_IS_PLAYER;
+
+        if (!Validation.IsGoodPassword(password))
+            return ErrorCode.PASSWORD_FORMAT;
+
+        if (_swapper.State == 1)
         {
-            _swapper = GetComponent<InputSwapper>();
+            if (password != confirm)
+                return ErrorCode.PASSWORDS_NOT_MATCH;
         }
 
-        public void ProvideServerThinker(ServerThinker thinker)
+        return ErrorCode.SUCCESS;
+    }
+
+    protected override void RealSubmit()
+    {
+        if (_swapper.State == 0) // before submit 1
         {
-            _thinker = thinker;
+            _swapper.SetState(1);
+            IF_Nickname.interactable = false;
         }
-
-        public override void EnterForm(params string[] args)
+        else if (_swapper.State == 1) // before submit 2
         {
-            IF_Address.text = args[0];
-            IF_Nickname.text = "";
-            IF_Password.text = "";
-            IF_Confirm.text = "";
-
-            _swapper.SetState(0);
-            IF_Nickname.interactable = true;
-
-            TX_ErrorText.text = "Your login data will be visible to the server owner.";
-
-            Menu.SetScreen("Register");
-        }
-
-        protected override ErrorCode GetErrorCode()
-        {
-            string address = IF_Address.text;
             string nickname = IF_Nickname.text;
             string password = IF_Password.text;
-            string confirm = IF_Confirm.text;
 
-            if (!Validation.IsGoodNickname(nickname))
-                return ErrorCode.NICKNAME_FORMAT;
-
-            if (nickname == Common.ReservedNickname)
-                return ErrorCode.NICKNAME_IS_PLAYER;
-
-            if (!Validation.IsGoodPassword(password))
-                return ErrorCode.PASSWORD_FORMAT;
-
-            if (_swapper.State == 1)
-            {
-                if (password != confirm)
-                    return ErrorCode.PASSWORDS_NOT_MATCH;
-            }
-
-            return ErrorCode.SUCCESS;
-        }
-
-        protected override void RealSubmit()
-        {
-            if (_swapper.State == 0) // before submit 1
-            {
-                _swapper.SetState(1);
-                IF_Nickname.interactable = false;
-            }
-            else if (_swapper.State == 1) // before submit 2
-            {
-                string nickname = IF_Nickname.text;
-                string password = IF_Password.text;
-
-                _thinker.SubmitUser(nickname, password, true);
-                Menu.GoBack();
-            }
+            _thinker.SubmitUser(nickname, password, true);
+            Menu.GoBack();
         }
     }
 }

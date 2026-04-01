@@ -1,110 +1,109 @@
 using System;
 using System.Collections.Generic;
 
-namespace Larnix.Core.Collections
+namespace Larnix.Core.Collections;
+
+public class BiMap<K, V>
 {
-    public class BiMap<K, V>
+    private readonly Dictionary<K, V> _keyToValue;
+    private readonly Dictionary<V, K> _valueToKey;
+
+    public int Count => _keyToValue.Count;
+    public IEnumerable<K> Keys => _keyToValue.Keys;
+    public IEnumerable<V> Values => _valueToKey.Keys;
+
+    public V this[K key] => GetValue(key);
+    public K this[V value] => GetKey(value);
+
+    public BiMap()
     {
-        private readonly Dictionary<K, V> _keyToValue;
-        private readonly Dictionary<V, K> _valueToKey;
+        _keyToValue = new();
+        _valueToKey = new();
+    }
 
-        public int Count => _keyToValue.Count;
-        public IEnumerable<K> Keys => _keyToValue.Keys;
-        public IEnumerable<V> Values => _valueToKey.Keys;
+    public BiMap(int capacity)
+    {
+        _keyToValue = new(capacity);
+        _valueToKey = new(capacity);
+    }
 
-        public V this[K key] => GetValue(key);
-        public K this[V value] => GetKey(value);
+    public BiMap(BiMap<K, V> original)
+    {
+        _keyToValue = new(original._keyToValue);
+        _valueToKey = new(original._valueToKey);
+    }
 
-        public BiMap()
+    public void SetPair(K key, V value)
+    {
+        if (key == null) throw new ArgumentNullException(nameof(key));
+        if (value == null) throw new ArgumentNullException(nameof(value));
+
+        if (_keyToValue.TryGetValue(key, out var oldValue))
         {
-            _keyToValue = new();
-            _valueToKey = new();
+            _valueToKey.Remove(oldValue);
         }
 
-        public BiMap(int capacity)
+        if (_valueToKey.TryGetValue(value, out var oldKey))
         {
-            _keyToValue = new(capacity);
-            _valueToKey = new(capacity);
+            _keyToValue.Remove(oldKey);
         }
 
-        public BiMap(BiMap<K, V> original)
-        {
-            _keyToValue = new(original._keyToValue);
-            _valueToKey = new(original._valueToKey);
-        }
-        
-        public void SetPair(K key, V value)
-        {
-            if (key == null) throw new ArgumentNullException(nameof(key));
-            if (value == null) throw new ArgumentNullException(nameof(value));
+        _keyToValue[key] = value;
+        _valueToKey[value] = key;
+    }
 
-            if (_keyToValue.TryGetValue(key, out var oldValue))
-            {
-                _valueToKey.Remove(oldValue);
-            }
+    public bool ContainsKey(K key) => _keyToValue.ContainsKey(key);
+    public bool ContainsValue(V value) => _valueToKey.ContainsKey(value);
 
-            if (_valueToKey.TryGetValue(value, out var oldKey))
-            {
-                _keyToValue.Remove(oldKey);
-            }
+    public bool TryGetValue(K key, out V value)
+    {
+        return _keyToValue.TryGetValue(key, out value);
+    }
 
-            _keyToValue[key] = value;
-            _valueToKey[value] = key;
-        }
+    public bool TryGetKey(V value, out K key)
+    {
+        return _valueToKey.TryGetValue(value, out key);
+    }
 
-        public bool ContainsKey(K key) => _keyToValue.ContainsKey(key);
-        public bool ContainsValue(V value) => _valueToKey.ContainsKey(value);
+    public V GetValue(K key)
+    {
+        if (!_keyToValue.TryGetValue(key, out var value))
+            throw new KeyNotFoundException($"Key '{key}' not found.");
 
-        public bool TryGetValue(K key, out V value)
-        {
-            return _keyToValue.TryGetValue(key, out value);
-        }
+        return value;
+    }
 
-        public bool TryGetKey(V value, out K key)
-        {
-            return _valueToKey.TryGetValue(value, out key);
-        }
+    public K GetKey(V value)
+    {
+        if (!_valueToKey.TryGetValue(value, out var key))
+            throw new KeyNotFoundException($"Value '{value}' not found.");
 
-        public V GetValue(K key)
-        {
-            if (!_keyToValue.TryGetValue(key, out var value))
-                throw new KeyNotFoundException($"Key '{key}' not found.");
+        return key;
+    }
 
-            return value;
-        }
+    public bool RemoveByKey(K key)
+    {
+        if (!TryGetValue(key, out var value))
+            return false;
 
-        public K GetKey(V value)
-        {
-            if (!_valueToKey.TryGetValue(value, out var key))
-                throw new KeyNotFoundException($"Value '{value}' not found.");
+        _keyToValue.Remove(key);
+        _valueToKey.Remove(value);
+        return true;
+    }
 
-            return key;
-        }
+    public bool RemoveByValue(V value)
+    {
+        if (!TryGetKey(value, out var key))
+            return false;
 
-        public bool RemoveByKey(K key)
-        {
-            if (!TryGetValue(key, out var value))
-                return false;
+        _valueToKey.Remove(value);
+        _keyToValue.Remove(key);
+        return true;
+    }
 
-            _keyToValue.Remove(key);
-            _valueToKey.Remove(value);
-            return true;
-        }
-
-        public bool RemoveByValue(V value)
-        {
-            if (!TryGetKey(value, out var key))
-                return false;
-
-            _valueToKey.Remove(value);
-            _keyToValue.Remove(key);
-            return true;
-        }
-
-        public void Clear()
-        {
-            _keyToValue.Clear();
-            _valueToKey.Clear();
-        }
+    public void Clear()
+    {
+        _keyToValue.Clear();
+        _valueToKey.Clear();
     }
 }

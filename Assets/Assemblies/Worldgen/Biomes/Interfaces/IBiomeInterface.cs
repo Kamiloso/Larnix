@@ -1,10 +1,9 @@
 using Larnix.Worldgen.Ores;
 using System.Collections.Generic;
 
-namespace Larnix.Worldgen.Biomes.All
+namespace Larnix.Worldgen.Biomes.All;
+
+public interface IBiomeInterface
 {
-    public interface IBiomeInterface
-    {
-        Biome This => (Biome)this;
-    }
+    Biome This => (Biome)this;
 }

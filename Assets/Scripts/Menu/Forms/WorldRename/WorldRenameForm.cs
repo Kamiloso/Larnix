@@ -5,67 +5,66 @@ using Larnix.Core;
 using Larnix.Menu.Worlds;
 using Larnix.GameCore.Utils;
 
-namespace Larnix.Menu.Forms
+namespace Larnix.Menu.Forms;
+
+public class WorldRenameForm : BaseForm
 {
-    public class WorldRenameForm : BaseForm
+    [SerializeField] TMP_InputField IF_OldName;
+    [SerializeField] TMP_InputField IF_NewName;
+
+    private Menu Menu => GlobRef.Get<Menu>();
+    private WorldSelect WorldSelect => GlobRef.Get<WorldSelect>();
+
+    public override void EnterForm(params string[] args)
     {
-        [SerializeField] TMP_InputField IF_OldName;
-        [SerializeField] TMP_InputField IF_NewName;
+        IF_OldName.text = args[0];
+        IF_NewName.text = "";
 
-        private Menu Menu => GlobRef.Get<Menu>();
-        private WorldSelect WorldSelect => GlobRef.Get<WorldSelect>();
+        TX_ErrorText.text = "";
 
-        public override void EnterForm(params string[] args)
+        Menu.SetScreen("RenameWorld");
+    }
+
+    protected override ErrorCode GetErrorCode()
+    {
+        if (!Validation.IsValidWorldName(IF_NewName.text))
+            return ErrorCode.WORLD_NAME_FORMAT;
+
+        string oldDir = Path.Combine(WorldSelect.SavesPath, IF_OldName.text);
+        string newDir = Path.Combine(WorldSelect.SavesPath, IF_NewName.text);
+
+        if (Common.AreSameDirectory(oldDir, newDir) || !Directory.Exists(newDir))
+            return ErrorCode.SUCCESS;
+        else
+            return ErrorCode.WORLD_EXISTS;
+    }
+
+    protected override void RealSubmit()
+    {
+        string oldName = IF_OldName.text;
+        string newName = IF_NewName.text;
+        string tempName = ".temp_world";
+
+        string oldDir = Path.Combine(WorldSelect.SavesPath, oldName);
+        string newDir = Path.Combine(WorldSelect.SavesPath, newName);
+        string tempDir = Path.Combine(WorldSelect.SavesPath, tempName);
+
+        if (Directory.Exists(oldDir))
         {
-            IF_OldName.text = args[0];
-            IF_NewName.text = "";
-
-            TX_ErrorText.text = "";
-
-            Menu.SetScreen("RenameWorld");
-        }
-
-        protected override ErrorCode GetErrorCode()
-        {
-            if (!Validation.IsValidWorldName(IF_NewName.text))
-                return ErrorCode.WORLD_NAME_FORMAT;
-
-            string oldDir = Path.Combine(WorldSelect.SavesPath, IF_OldName.text);
-            string newDir = Path.Combine(WorldSelect.SavesPath, IF_NewName.text);
-
-            if (Common.AreSameDirectory(oldDir, newDir) || !Directory.Exists(newDir))
-                return ErrorCode.SUCCESS;
-            else
-                return ErrorCode.WORLD_EXISTS;
-        }
-
-        protected override void RealSubmit()
-        {
-            string oldName = IF_OldName.text;
-            string newName = IF_NewName.text;
-            string tempName = ".temp_world";
-
-            string oldDir = Path.Combine(WorldSelect.SavesPath, oldName);
-            string newDir = Path.Combine(WorldSelect.SavesPath, newName);
-            string tempDir = Path.Combine(WorldSelect.SavesPath, tempName);
-
-            if (Directory.Exists(oldDir))
+            if (!Common.AreSameDirectory(oldDir, newDir)) // casual name change
             {
-                if (!Common.AreSameDirectory(oldDir, newDir)) // casual name change
-                {
-                    Directory.Move(oldDir, newDir);
-                }
-                else // something like "Name" -> "name" on Windows
-                {
-                    Directory.Move(oldDir, tempDir);
-                    Directory.Move(tempDir, newDir);
-                }
-
-                WorldSelect.ReloadWorldList();
-                WorldSelect.SelectWorld(newName);
+                Directory.Move(oldDir, newDir);
+            }
+            else // something like "Name" -> "name" on Windows
+            {
+                Directory.Move(oldDir, tempDir);
+                Directory.Move(tempDir, newDir);
             }
 
-            Menu.SetScreen("Singleplayer");
+            WorldSelect.ReloadWorldList();
+            WorldSelect.SelectWorld(newName);
         }
+
+        Menu.SetScreen("Singleplayer");
     }
 }

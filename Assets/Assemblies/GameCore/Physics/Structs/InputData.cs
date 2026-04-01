@@ -1,18 +1,17 @@
 using Larnix.Core.Vectors;
 
-namespace Larnix.GameCore.Physics.Structs
-{
-    public readonly struct InputData
-    {
-        public bool Left { get; init; }
-        public bool Right { get; init; }
-        public bool Jump { get; init; }
+namespace Larnix.GameCore.Physics.Structs;
 
-        public InputData(in InputData original)
-        {
-            Left = original.Left;
-            Right = original.Right;
-            Jump = original.Jump;
-        }
+public readonly struct InputData
+{
+    public bool Left { get; init; }
+    public bool Right { get; init; }
+    public bool Jump { get; init; }
+
+    public InputData(in InputData original)
+    {
+        Left = original.Left;
+        Right = original.Right;
+        Jump = original.Jump;
     }
 }

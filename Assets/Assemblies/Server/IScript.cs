@@ -6,16 +6,15 @@ using Larnix.Server.Data;
 using Larnix.Server.Terrain;
 using Larnix.Socket.Backend;
 
-namespace Larnix.Server
+namespace Larnix.Server;
+
+internal interface IScript
 {
-    internal interface IScript
-    {
-        void Start() {}
-        
-        void EarlyFrameUpdate() {}
-        void PostEarlyFrameUpdate() {}
-        void FrameUpdate() {}
-        void LateFrameUpdate() {}
-        void PostLateFrameUpdate() {}
-    }
+    void Start() {}
+
+    void EarlyFrameUpdate() {}
+    void PostEarlyFrameUpdate() {}
+    void FrameUpdate() {}
+    void LateFrameUpdate() {}
+    void PostLateFrameUpdate() {}
 }

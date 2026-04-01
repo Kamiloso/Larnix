@@ -5,92 +5,91 @@ using Larnix.Core.Enums;
 using Larnix.GameCore.Structs;
 using Larnix.GameCore.Utils;
 
-namespace Larnix.Server.Commands
+namespace Larnix.Server.Commands;
+
+internal static class Parsing
 {
-    internal static class Parsing
+    public static bool TryParseFront(string input, out bool front)
     {
-        public static bool TryParseFront(string input, out bool front)
+        string lower = input.ToLowerInvariant();
+        front = lower == "front";
+        return front || lower == "back";
+    }
+
+    public static bool TryParseNickname(string input, out string nickname)
+    {
+        if (Validation.IsGoodNickname(input))
         {
-            string lower = input.ToLowerInvariant();
-            front = lower == "front";
-            return front || lower == "back";
+            nickname = input;
+            return true;
         }
 
-        public static bool TryParseNickname(string input, out string nickname)
+        nickname = default;
+        return false;
+    }
+
+    public static bool TryParsePassword(string input, out string password)
+    {
+        if (Validation.IsGoodPassword(input))
         {
-            if (Validation.IsGoodNickname(input))
-            {
-                nickname = input;
-                return true;
-            }
-            
-            nickname = default;
-            return false;
+            password = input;
+            return true;
         }
 
-        public static bool TryParsePassword(string input, out string password)
+        password = default;
+        return false;
+    }
+
+    public static bool TryParseUid(string input, out ulong uid)
+    {
+        if (ulong.TryParse(input, out ulong u_uid))
         {
-            if (Validation.IsGoodPassword(input))
-            {
-                password = input;
-                return true;
-            }
-            
-            password = default;
-            return false;
+            uid = u_uid;
+            return true;
         }
 
-        public static bool TryParseUid(string input, out ulong uid)
+        if (long.TryParse(input, out long s_uid))
         {
-            if (ulong.TryParse(input, out ulong u_uid))
-            {
-                uid = u_uid;
-                return true;
-            }
-            
-            if (long.TryParse(input, out long s_uid))
-            {
-                uid = (ulong)s_uid;
-                return true;
-            }
-
-            uid = default;
-            return false;
+            uid = (ulong)s_uid;
+            return true;
         }
 
-        public static bool TryParseBlock(string input, out BlockID blockID, out byte variant)
+        uid = default;
+        return false;
+    }
+
+    public static bool TryParseBlock(string input, out BlockID blockID, out byte variant)
+    {
+        string[] parts = input.Split(':');
+        if (parts.Length == 1 || parts.Length == 2)
         {
-            string[] parts = input.Split(':');
-            if (parts.Length == 1 || parts.Length == 2)
+            if (Enum.TryParse(parts[0], ignoreCase: true, out blockID) &&
+                Enum.IsDefined(typeof(BlockID), blockID))
             {
-                if (Enum.TryParse(parts[0], ignoreCase: true, out blockID) &&
-                    Enum.IsDefined(typeof(BlockID), blockID))
+                if (parts.Length == 2)
                 {
-                    if (parts.Length == 2)
+                    if (byte.TryParse(parts[1], out variant) &&
+                        variant <= BlockHeader1.MAX_VARIANT)
                     {
-                        if (byte.TryParse(parts[1], out variant) &&
-                            variant <= BlockHeader1.MAX_VARIANT)
-                        {
-                            return true;
-                        }
-                        else
-                        {
-                            blockID = default;
-                            variant = default;
-                            return false;
-                        }
+                        return true;
                     }
                     else
                     {
-                        variant = 0;
-                        return true;
+                        blockID = default;
+                        variant = default;
+                        return false;
                     }
                 }
+                else
+                {
+                    variant = 0;
+                    return true;
+                }
             }
-
-            blockID = default;
-            variant = default;
-            return false;
         }
+
+        blockID = default;
+        variant = default;
+        return false;
     }
 }

@@ -1,10 +1,9 @@
 using System;
 
-namespace Larnix.GameCore.Enums
+namespace Larnix.GameCore.Enums;
+
+public enum ParticleID : ushort
 {
-    public enum ParticleID : ushort
-    {
-        BlockBreak = 0,
-        BlockPlace = 1,
-    }
+    BlockBreak = 0,
+    BlockPlace = 1,
 }

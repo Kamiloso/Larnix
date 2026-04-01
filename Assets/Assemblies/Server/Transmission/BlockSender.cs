@@ -13,138 +13,137 @@ using Larnix.Core;
 using Larnix.Server.Terrain;
 using Larnix.GameCore.Structs;
 
-namespace Larnix.Server.Transmission
+namespace Larnix.Server.Transmission;
+
+internal record BlockChangeItem(
+    string Owner, long Operation, Vec2Int POS, bool Front, bool Success);
+
+internal class BlockSender : IScript
 {
-    internal record BlockChangeItem(
-        string Owner, long Operation, Vec2Int POS, bool Front, bool Success);
+    private readonly Queue<BlockUpdateRecord> _blockUpdates = new();
+    private readonly Queue<BlockChangeItem> _blockChanges = new();
 
-    internal class BlockSender : IScript
+    private IWorldAPI WorldAPI => GlobRef.Get<IWorldAPI>();
+    private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
+    private QuickServer QuickServer => GlobRef.Get<QuickServer>();
+    private Chunks Chunks => GlobRef.Get<Chunks>();
+
+    public void AddBlockUpdate(BlockUpdateRecord element)
     {
-        private readonly Queue<BlockUpdateRecord> _blockUpdates = new();
-        private readonly Queue<BlockChangeItem> _blockChanges = new();
+        _blockUpdates.Enqueue(element);
+    }
 
-        private IWorldAPI WorldAPI => GlobRef.Get<IWorldAPI>();
-        private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
-        private QuickServer QuickServer => GlobRef.Get<QuickServer>();
-        private Chunks Chunks => GlobRef.Get<Chunks>();
+    public void AddRetBlockChange(BlockChangeItem element)
+    {
+        _blockChanges.Enqueue(element);
+    }
 
-        public void AddBlockUpdate(BlockUpdateRecord element)
+    void IScript.PostLateFrameUpdate()
+    {
+        SendBlockUpdate(); // common block updates (server / players)
+        SendBlockChanges(); // unlocking client-side & telling the real block state
+    }
+
+    private void SendBlockUpdate()
+    {
+        Dictionary<string, Queue<BlockUpdateRecord>> IndividualUpdates = new();
+
+        foreach (string nickname in PlayerActions.AllPlayers())
         {
-            _blockUpdates.Enqueue(element);
+            IndividualUpdates[nickname] = new();
         }
 
-        public void AddRetBlockChange(BlockChangeItem element)
+        while (_blockUpdates.Count > 0)
         {
-            _blockChanges.Enqueue(element);
-        }
-
-        void IScript.PostLateFrameUpdate()
-        {
-            SendBlockUpdate(); // common block updates (server / players)
-            SendBlockChanges(); // unlocking client-side & telling the real block state
-        }
-
-        private void SendBlockUpdate()
-        {
-            Dictionary<string, Queue<BlockUpdateRecord>> IndividualUpdates = new();
+            var element = _blockUpdates.Dequeue();
+            Vec2Int chunk = BlockUtils.CoordsToChunk(element.Position);
 
             foreach (string nickname in PlayerActions.AllPlayers())
             {
-                IndividualUpdates[nickname] = new();
-            }
-
-            while (_blockUpdates.Count > 0)
-            {
-                var element = _blockUpdates.Dequeue();
-                Vec2Int chunk = BlockUtils.CoordsToChunk(element.Position);
-
-                foreach (string nickname in PlayerActions.AllPlayers())
-                {
-                    if (PlayerActions.PlayerHasChunk(nickname, chunk))
-                        IndividualUpdates[nickname].Enqueue(element);
-                }
-            }
-
-            foreach (string nickname in PlayerActions.AllPlayers())
-            {
-                Queue<BlockUpdateRecord> changes = IndividualUpdates[nickname];
-                BlockUpdateRecord[] records = changes.ToArray();
-
-                List<BlockUpdate> packets = BlockUpdate.CreateList(records);
-                foreach (Payload packet in packets)
-                {
-                    QuickServer.Send(nickname, packet);
-                }
+                if (PlayerActions.PlayerHasChunk(nickname, chunk))
+                    IndividualUpdates[nickname].Enqueue(element);
             }
         }
 
-        private void SendBlockChanges()
+        foreach (string nickname in PlayerActions.AllPlayers())
         {
-            while(_blockChanges.Count > 0)
+            Queue<BlockUpdateRecord> changes = IndividualUpdates[nickname];
+            BlockUpdateRecord[] records = changes.ToArray();
+
+            List<BlockUpdate> packets = BlockUpdate.CreateList(records);
+            foreach (Payload packet in packets)
             {
-                BlockChangeItem element = _blockChanges.Dequeue();
-
-                string nickname = element.Owner;
-                Vec2Int POS = element.POS;
-                Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
-                bool front = element.Front;
-                bool success = element.Success;
-                long operation = element.Operation;
-
-                BlockData1 blockFront = WorldAPI.GetBlock(POS, true)?.BlockData;
-                BlockData1 blockBack = WorldAPI.GetBlock(POS, false)?.BlockData;
-
-                if (
-                    PlayerActions.StateOf(nickname) != Entities.PlayerActions.PlayerState.None &&
-                    PlayerActions.PlayerHasChunk(nickname, chunk) &&
-                    blockFront != null && blockBack != null
-                    )
-                {
-                    BlockHeader2 currentBlock = new(
-                        blockFront.Header, blockBack.Header
-                        );
-
-                    Payload packet = new RetBlockChange(POS, operation, currentBlock, front, success);
-                    QuickServer.Send(nickname, packet);
-                }
+                QuickServer.Send(nickname, packet);
             }
         }
+    }
 
-        public void BroadcastChunkChanges()
+    private void SendBlockChanges()
+    {
+        while(_blockChanges.Count > 0)
         {
-            foreach (string nickname in PlayerActions.AllPlayers())
+            BlockChangeItem element = _blockChanges.Dequeue();
+
+            string nickname = element.Owner;
+            Vec2Int POS = element.POS;
+            Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
+            bool front = element.Front;
+            bool success = element.Success;
+            long operation = element.Operation;
+
+            BlockData1 blockFront = WorldAPI.GetBlock(POS, true)?.BlockData;
+            BlockData1 blockBack = WorldAPI.GetBlock(POS, false)?.BlockData;
+
+            if (
+                PlayerActions.StateOf(nickname) != Entities.PlayerActions.PlayerState.None &&
+                PlayerActions.PlayerHasChunk(nickname, chunk) &&
+                blockFront != null && blockBack != null
+                )
             {
-                Vec2Int chunkpos = BlockUtils.CoordsToChunk(PlayerActions.RenderingPosition(nickname));
-                var player_state = PlayerActions.StateOf(nickname);
+                BlockHeader2 currentBlock = new(
+                    blockFront.Header, blockBack.Header
+                    );
 
-                HashSet<Vec2Int> chunksMemory = PlayerActions.LoadedChunksCopy(nickname);
-                HashSet<Vec2Int> chunksNearby = BlockUtils.GetNearbyChunks(chunkpos, BlockUtils.LOADING_DISTANCE)
-                    .Where(c => Chunks.IsChunkLoaded(c))
-                    .ToHashSet();
-
-                HashSet<Vec2Int> added = new(chunksNearby);
-                added.ExceptWith(chunksMemory);
-
-                HashSet<Vec2Int> removed = new(chunksMemory);
-                removed.ExceptWith(chunksNearby);
-
-                // Send added
-                foreach (var chunk in added)
-                {
-                    ChunkView chunkData = Chunks.GetChunk(chunk).ActiveChunkReference.HeaderView;
-                    Payload packet = new ChunkInfo(chunk, chunkData);
-                    QuickServer.Send(nickname, packet);
-                }
-
-                // Send removed
-                foreach (var chunk in removed)
-                {
-                    Payload packet = new ChunkInfo(chunk, null);
-                    QuickServer.Send(nickname, packet);
-                }
-
-                PlayerActions.UpdateClientChunks(nickname, chunksNearby);
+                Payload packet = new RetBlockChange(POS, operation, currentBlock, front, success);
+                QuickServer.Send(nickname, packet);
             }
+        }
+    }
+
+    public void BroadcastChunkChanges()
+    {
+        foreach (string nickname in PlayerActions.AllPlayers())
+        {
+            Vec2Int chunkpos = BlockUtils.CoordsToChunk(PlayerActions.RenderingPosition(nickname));
+            var player_state = PlayerActions.StateOf(nickname);
+
+            HashSet<Vec2Int> chunksMemory = PlayerActions.LoadedChunksCopy(nickname);
+            HashSet<Vec2Int> chunksNearby = BlockUtils.GetNearbyChunks(chunkpos, BlockUtils.LOADING_DISTANCE)
+                .Where(c => Chunks.IsChunkLoaded(c))
+                .ToHashSet();
+
+            HashSet<Vec2Int> added = new(chunksNearby);
+            added.ExceptWith(chunksMemory);
+
+            HashSet<Vec2Int> removed = new(chunksMemory);
+            removed.ExceptWith(chunksNearby);
+
+            // Send added
+            foreach (var chunk in added)
+            {
+                ChunkView chunkData = Chunks.GetChunk(chunk).ActiveChunkReference.HeaderView;
+                Payload packet = new ChunkInfo(chunk, chunkData);
+                QuickServer.Send(nickname, packet);
+            }
+
+            // Send removed
+            foreach (var chunk in removed)
+            {
+                Payload packet = new ChunkInfo(chunk, null);
+                QuickServer.Send(nickname, packet);
+            }
+
+            PlayerActions.UpdateClientChunks(nickname, chunksNearby);
         }
     }
 }

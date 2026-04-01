@@ -4,46 +4,45 @@ using Larnix.GameCore.Physics;
 using Larnix.Core.Vectors;
 using Larnix.GameCore.Physics.Structs;
 
-namespace Larnix.Entities.All
+namespace Larnix.Entities.All;
+
+public interface IPhysics : IManagesTransform, IHasCollider, IPhysicsProperties
 {
-    public interface IPhysics : IManagesTransform, IHasCollider, IPhysicsProperties
+    DynamicCollider dynamicCollider { get; set; }
+    InputData inputData { get; } // getter lazy-activates behaviour
+    OutputData? outputData { get; set; } // last known output
+
+    void Init()
     {
-        DynamicCollider dynamicCollider { get; set; }
-        InputData inputData { get; } // getter lazy-activates behaviour
-        OutputData? outputData { get; set; } // last known output
+        This.OnFrameUpdate += (sender, args) => PhysicsUpdate();
+        dynamicCollider = new DynamicCollider(
+            Physics,
+            This.EntityData.Position,
+            COLLIDER_OFFSET(),
+            COLLIDER_SIZE(),
+            PHYSICS_PROPERTIES()
+            );
+    }
 
-        void Init()
-        {
-            This.OnFrameUpdate += (sender, args) => PhysicsUpdate();
-            dynamicCollider = new DynamicCollider(
-                Physics,
-                This.EntityData.Position,
-                COLLIDER_OFFSET(),
-                COLLIDER_SIZE(),
-                PHYSICS_PROPERTIES()
-                );
-        }
+    void IManagesTransform.ApplyTransformToSystem(Vec2 position, float rotation)
+    {
+        outputData = dynamicCollider.NoPhysicsUpdate(position);
+        This.EntityData.Position = ((OutputData)outputData).Position;
+    }
 
-        void IManagesTransform.ApplyTransformToSystem(Vec2 position, float rotation)
-        {
-            outputData = dynamicCollider.NoPhysicsUpdate(position);
-            This.EntityData.Position = ((OutputData)outputData).Position;
-        }
+    private void PhysicsUpdate()
+    {
+        InputData idata = inputData; // getter performs actions!
 
-        private void PhysicsUpdate()
-        {
-            InputData idata = inputData; // getter performs actions!
+        outputData = dynamicCollider.PhysicsUpdate(idata);
+        This.EntityData.Position = ((OutputData)outputData).Position;
 
-            outputData = dynamicCollider.PhysicsUpdate(idata);
-            This.EntityData.Position = ((OutputData)outputData).Position;
+        // head rotation perform
 
-            // head rotation perform
+        if (idata.Right && !idata.Left)
+            This.EntityData.Rotation = 0f;
 
-            if (idata.Right && !idata.Left)
-                This.EntityData.Rotation = 0f;
-
-            if (idata.Left && !idata.Right)
-                This.EntityData.Rotation = 180f;
-        }
+        if (idata.Left && !idata.Right)
+            This.EntityData.Rotation = 180f;
     }
 }

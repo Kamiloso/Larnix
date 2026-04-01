@@ -3,11 +3,10 @@ using System.Collections.Generic;
 using Larnix.Core.Vectors;
 using Larnix.GameCore.Physics;
 
-namespace Larnix.Entities.All
+namespace Larnix.Entities.All;
+
+public interface IHasCollider : IEntityInterface
 {
-    public interface IHasCollider : IEntityInterface
-    {
-        Vec2 COLLIDER_SIZE();
-        Vec2 COLLIDER_OFFSET();
-    }
+    Vec2 COLLIDER_SIZE();
+    Vec2 COLLIDER_OFFSET();
 }

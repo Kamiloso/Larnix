@@ -2,10 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using Larnix.Core.Vectors;
 
-namespace Larnix.Entities.All
+namespace Larnix.Entities.All;
+
+public interface IManagesTransform : IEntityInterface
 {
-    public interface IManagesTransform : IEntityInterface
-    {
-        void ApplyTransformToSystem(Vec2 position, float rotation);
-    }
+    void ApplyTransformToSystem(Vec2 position, float rotation);
 }

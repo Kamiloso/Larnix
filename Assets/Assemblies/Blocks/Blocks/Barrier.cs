@@ -4,12 +4,11 @@ using System.Collections.Generic;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
 
-namespace Larnix.Blocks.All
-{
-    public sealed class Barrier : Block, IUnbreakableSolid
-    {
-        public ITool.Type MATERIAL_TYPE() => ITool.Type.Normal;
+namespace Larnix.Blocks.All;
 
-        ContureType IHasConture.STATIC_DefinedAlphaEnum(byte variant) => ContureType.Disabled;
-    }
+public sealed class Barrier : Block, IUnbreakableSolid
+{
+    public ITool.Type MATERIAL_TYPE() => ITool.Type.Normal;
+
+    ContureType IHasConture.STATIC_DefinedAlphaEnum(byte variant) => ContureType.Disabled;
 }

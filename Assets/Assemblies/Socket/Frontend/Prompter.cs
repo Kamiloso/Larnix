@@ -8,93 +8,92 @@ using Larnix.Socket.Packets;
 using Larnix.Core.Misc;
 using Larnix.Core;
 
-namespace Larnix.Socket.Frontend
+namespace Larnix.Socket.Frontend;
+
+internal class Prompter : IDisposable
 {
-    internal class Prompter : IDisposable
+    private readonly UdpClient2 _udpClient;
+    private readonly IPEndPoint _target;
+
+    private bool _disposed;
+
+    private Prompter(IPEndPoint endPoint, UdpClient2 udpClient)
     {
-        private readonly UdpClient2 _udpClient;
-        private readonly IPEndPoint _target;
+        _target = endPoint;
+        _udpClient = udpClient;
+    }
 
-        private bool _disposed;
+    public static async Task<TAnswer> PromptAsync<TAnswer>(string address, Payload prompt, int timeoutMiliseconds = 3000, KeyRSA publicKey = null) where TAnswer : Payload
+    {
+        IPEndPoint target = await Resolver.ResolveStringAsync(address);
+        if (target == null) return null;
 
-        private Prompter(IPEndPoint endPoint, UdpClient2 udpClient)
+        using UdpClient2 udp = new UdpClient2(
+            port: 0,
+            isListener: false,
+            isLoopback: IPAddress.IsLoopback(target.Address),
+            isIPv6: target.AddressFamily == AddressFamily.InterNetworkV6,
+            recvBufferSize: 16 * 1024,
+            destination: target
+            );
+        var prompter = new Prompter(target, udp);
+
+        return await prompter.SendAndWaitAsync<TAnswer>(prompt, publicKey, timeoutMiliseconds);
+    }
+
+    private async Task<TAnswer> SendAndWaitAsync<TAnswer>(Payload prompt, KeyRSA publicKey, int timeoutMiliseconds) where TAnswer : Payload
+    {
+        int promptID = RandUtils.SecureInt();
+
+        PayloadBox payloadBox = new PayloadBox(
+            seqNum: promptID,
+            ackNum: 0,
+            flags: (byte)(PacketFlag.NCN | (publicKey != null ? PacketFlag.RSA : 0)),
+            payload: prompt
+            );
+
+        byte[] data = publicKey != null ?
+            payloadBox.Serialize(publicKey) :
+            payloadBox.Serialize(KeyEmpty.GetInstance());
+
+        try
         {
-            _target = endPoint;
-            _udpClient = udpClient;
+            _udpClient.Send(_target, data);
+        }
+        catch
+        {
+            Echo.LogWarning($"Cannot send prompt! CmdID = {prompt.ID}");
+            return null; // sending error
         }
 
-        public static async Task<TAnswer> PromptAsync<TAnswer>(string address, Payload prompt, int timeoutMiliseconds = 3000, KeyRSA publicKey = null) where TAnswer : Payload
+        long deadline = Timestamp.GetTimestamp() + timeoutMiliseconds;
+
+        while (Timestamp.GetTimestamp() < deadline)
         {
-            IPEndPoint target = await Resolver.ResolveStringAsync(address);
-            if (target == null) return null;
-
-            using UdpClient2 udp = new UdpClient2(
-                port: 0,
-                isListener: false,
-                isLoopback: IPAddress.IsLoopback(target.Address),
-                isIPv6: target.AddressFamily == AddressFamily.InterNetworkV6,
-                recvBufferSize: 16 * 1024,
-                destination: target
-                );
-            var prompter = new Prompter(target, udp);
-
-            return await prompter.SendAndWaitAsync<TAnswer>(prompt, publicKey, timeoutMiliseconds);
-        }
-
-        private async Task<TAnswer> SendAndWaitAsync<TAnswer>(Payload prompt, KeyRSA publicKey, int timeoutMiliseconds) where TAnswer : Payload
-        {
-            int promptID = RandUtils.SecureInt();
-
-            PayloadBox payloadBox = new PayloadBox(
-                seqNum: promptID,
-                ackNum: 0,
-                flags: (byte)(PacketFlag.NCN | (publicKey != null ? PacketFlag.RSA : 0)),
-                payload: prompt
-                );
-
-            byte[] data = publicKey != null ?
-                payloadBox.Serialize(publicKey) :
-                payloadBox.Serialize(KeyEmpty.GetInstance());
-
-            try
+            while (_udpClient.TryReceive(out var item))
             {
-                _udpClient.Send(_target, data);
-            }
-            catch
-            {
-                Echo.LogWarning($"Cannot send prompt! CmdID = {prompt.ID}");
-                return null; // sending error
-            }
+                byte[] networkBytes = item.data;
 
-            long deadline = Timestamp.GetTimestamp() + timeoutMiliseconds;
-
-            while (Timestamp.GetTimestamp() < deadline)
-            {
-                while (_udpClient.TryReceive(out var item))
+                if (PayloadBox.TryDeserialize(networkBytes, KeyEmpty.GetInstance(), out var incoming) && incoming.SeqNum == promptID)
                 {
-                    byte[] networkBytes = item.data;
-
-                    if (PayloadBox.TryDeserialize(networkBytes, KeyEmpty.GetInstance(), out var incoming) && incoming.SeqNum == promptID)
-                    {
-                        if (Payload.TryConstructPayload<TAnswer>(incoming.Bytes, out var answer))
-                            return answer;
-                    }
+                    if (Payload.TryConstructPayload<TAnswer>(incoming.Bytes, out var answer))
+                        return answer;
                 }
-
-                await Task.Delay(100);
             }
 
-            return null; // timeout
+            await Task.Delay(100);
         }
 
-        public void Dispose()
-        {
-            if (!_disposed)
-            {
-                _disposed = true;
+        return null; // timeout
+    }
 
-                _udpClient?.Dispose();
-            }
+    public void Dispose()
+    {
+        if (!_disposed)
+        {
+            _disposed = true;
+
+            _udpClient?.Dispose();
         }
     }
 }

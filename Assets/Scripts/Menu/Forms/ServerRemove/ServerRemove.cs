@@ -3,39 +3,38 @@ using UnityEngine;
 using Larnix.Menu.Worlds;
 using Larnix.Core;
 
-namespace Larnix.Menu.Forms
+namespace Larnix.Menu.Forms;
+
+public class ServerRemoveForm : BaseForm
 {
-    public class ServerRemoveForm : BaseForm
+    private Menu Menu => GlobRef.Get<Menu>();
+    private WorldSelect WorldSelect => GlobRef.Get<WorldSelect>();
+    [SerializeField] TMP_InputField IF_RemoveAddress;
+
+    private ServerSelect ServerSelect => GlobRef.Get<ServerSelect>();
+
+    public override void EnterForm(params string[] args)
     {
-        private Menu Menu => GlobRef.Get<Menu>();
-        private WorldSelect WorldSelect => GlobRef.Get<WorldSelect>();
-        [SerializeField] TMP_InputField IF_RemoveAddress;
+        IF_RemoveAddress.text = args[0];
 
-        private ServerSelect ServerSelect => GlobRef.Get<ServerSelect>();
+        TX_ErrorText.text = "";
 
-        public override void EnterForm(params string[] args)
-        {
-            IF_RemoveAddress.text = args[0];
+        Menu.SetScreen("RemoveServer");
+    }
 
-            TX_ErrorText.text = "";
+    protected override ErrorCode GetErrorCode()
+    {
+        return ErrorCode.SUCCESS;
+    }
 
-            Menu.SetScreen("RemoveServer");
-        }
+    protected override void RealSubmit()
+    {
+        ServerSelect.TrueRemoveServer();
+        Menu.SetScreen("Multiplayer");
+    }
 
-        protected override ErrorCode GetErrorCode()
-        {
-            return ErrorCode.SUCCESS;
-        }
-
-        protected override void RealSubmit()
-        {
-            ServerSelect.TrueRemoveServer();
-            Menu.SetScreen("Multiplayer");
-        }
-
-        public void Cancel()
-        {
-            Menu.GoBack();
-        }
+    public void Cancel()
+    {
+        Menu.GoBack();
     }
 }

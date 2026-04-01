@@ -2,23 +2,22 @@ using System.Collections;
 using System.Collections.Generic;
 using Larnix.GameCore;
 
-namespace Larnix.Socket.Security.Keys
+namespace Larnix.Socket.Security.Keys;
+
+internal class KeyEmpty : IEncryptionKey
 {
-    internal class KeyEmpty : IEncryptionKey
+    private static KeyEmpty _instance;
+
+    private KeyEmpty() { }
+
+    public static KeyEmpty GetInstance()
     {
-        private static KeyEmpty _instance;
+        if (_instance == null)
+            _instance = new KeyEmpty();
 
-        private KeyEmpty() { }
-
-        public static KeyEmpty GetInstance()
-        {
-            if (_instance == null)
-                _instance = new KeyEmpty();
-
-            return _instance;
-        }
-
-        public byte[] Encrypt(byte[] plaintext) => plaintext;
-        public byte[] Decrypt(byte[] ciphertext) => ciphertext;
+        return _instance;
     }
+
+    public byte[] Encrypt(byte[] plaintext) => plaintext;
+    public byte[] Decrypt(byte[] ciphertext) => ciphertext;
 }

@@ -4,79 +4,78 @@ using System.Reflection;
 using System.Collections.Generic;
 using Larnix.GameCore.Json;
 
-namespace Larnix.Server.Configuration
+namespace Larnix.Server.Configuration;
+
+internal class ServerConfig : Config
 {
-    internal class ServerConfig : Config
+    public int ConfigVersion { get; set; } = 14;
+
+    // --- Main ---
+    public ushort MaxPlayers { get; set; } = 10;
+    public ushort Port { get; set; } = Common.LARNIX_PORT;
+    public string Motd { get; set; } = "Welcome to Larnix server!";
+
+    // --- Administration ---
+    public bool ElevateHostToAdmin { get; set; } = false;
+    public List<string> Administration_Admins { get; init; } = new();
+    public List<string> Administration_Banned { get; init; } = new();
+
+    // --- Electric contraptions ---
+    public int Electricity_MaxContraptionChunks { get; set; } = 64;
+    public bool Electricity_SizeWarningSuppress { get; set; } = false;
+
+    // --- Periodic tasks ---
+    private int _periodicTasks_DataSavingPeriodFrames = 15 * Common.TargetTPS;
+    public int PeriodicTasks_DataSavingPeriodFrames
     {
-        public int ConfigVersion { get; set; } = 14;
+        get => _periodicTasks_DataSavingPeriodFrames;
+        set => _periodicTasks_DataSavingPeriodFrames = Math.Max(1, value);
+    }
 
-        // --- Main ---
-        public ushort MaxPlayers { get; set; } = 10;
-        public ushort Port { get; set; } = Common.LARNIX_PORT;
-        public string Motd { get; set; } = "Welcome to Larnix server!";
+    private int _periodicTasks_EntityBroadcastPeriodFrames = 2;
+    public int PeriodicTasks_EntityBroadcastPeriodFrames
+    {
+        get => _periodicTasks_EntityBroadcastPeriodFrames;
+        set => _periodicTasks_EntityBroadcastPeriodFrames = Math.Max(1, value);
+    }
 
-        // --- Administration ---
-        public bool ElevateHostToAdmin { get; set; } = false;
-        public List<string> Administration_Admins { get; init; } = new();
-        public List<string> Administration_Banned { get; init; } = new();
+    private int _periodicTasks_ChunkSendingPeriodFrames = 2;
+    public int PeriodicTasks_ChunkSendingPeriodFrames
+    {
+        get => _periodicTasks_ChunkSendingPeriodFrames;
+        set => _periodicTasks_ChunkSendingPeriodFrames = Math.Max(1, value);
+    }
 
-        // --- Electric contraptions ---
-        public int Electricity_MaxContraptionChunks { get; set; } = 64;
-        public bool Electricity_SizeWarningSuppress { get; set; } = false;
+    // --- Network ---
+    public int Network_ClientIdentityPrefixSizeIPv4 { get; set; } = 32;
+    public int Network_ClientIdentityPrefixSizeIPv6 { get; set; } = 56;
+    public bool Network_AllowRegistration { get; set; } = true;
+    public bool Network_UseRelay { get; set; } = false;
+    public string Network_RelayAddress { get; set; } = Common.DefaultRelayAddress;
 
-        // --- Periodic tasks ---
-        private int _periodicTasks_DataSavingPeriodFrames = 15 * Common.TargetTPS;
-        public int PeriodicTasks_DataSavingPeriodFrames
+    public override void Update()
+    {
+        ServerConfig defaults = new();
+
+        if (ConfigVersion < 12) // fundamental refactor
         {
-            get => _periodicTasks_DataSavingPeriodFrames;
-            set => _periodicTasks_DataSavingPeriodFrames = Math.Max(1, value);
-        }
-
-        private int _periodicTasks_EntityBroadcastPeriodFrames = 2;
-        public int PeriodicTasks_EntityBroadcastPeriodFrames
-        {
-            get => _periodicTasks_EntityBroadcastPeriodFrames;
-            set => _periodicTasks_EntityBroadcastPeriodFrames = Math.Max(1, value);
-        }
-
-        private int _periodicTasks_ChunkSendingPeriodFrames = 2;
-        public int PeriodicTasks_ChunkSendingPeriodFrames
-        {
-            get => _periodicTasks_ChunkSendingPeriodFrames;
-            set => _periodicTasks_ChunkSendingPeriodFrames = Math.Max(1, value);
-        }
-
-        // --- Network ---
-        public int Network_ClientIdentityPrefixSizeIPv4 { get; set; } = 32;
-        public int Network_ClientIdentityPrefixSizeIPv6 { get; set; } = 56;
-        public bool Network_AllowRegistration { get; set; } = true;
-        public bool Network_UseRelay { get; set; } = false;
-        public string Network_RelayAddress { get; set; } = Common.DefaultRelayAddress;
-
-        public override void Update()
-        {
-            ServerConfig defaults = new();
-            
-            if (ConfigVersion < 12) // fundamental refactor
+            List<PropertyInfo> props = AllProperties<ServerConfig>();
+            foreach (PropertyInfo prop in props)
             {
-                List<PropertyInfo> props = AllProperties<ServerConfig>();
-                foreach (PropertyInfo prop in props)
-                {
-                    prop.SetValue(this, prop.GetValue(defaults));
-                }
+                prop.SetValue(this, prop.GetValue(defaults));
             }
-
-            if (ConfigVersion < 13) // added: ElevateHostToAdmin
-            {
-                ElevateHostToAdmin = defaults.ElevateHostToAdmin;
-            }
-
-            if (ConfigVersion < 14) // updated: Electricity_MaxContraptionChunks: 128 -> 64
-            {
-                Electricity_MaxContraptionChunks = defaults.Electricity_MaxContraptionChunks;
-            }
-
-            ConfigVersion = defaults.ConfigVersion;
         }
+
+        if (ConfigVersion < 13) // added: ElevateHostToAdmin
+        {
+            ElevateHostToAdmin = defaults.ElevateHostToAdmin;
+        }
+
+        if (ConfigVersion < 14) // updated: Electricity_MaxContraptionChunks: 128 -> 64
+        {
+            Electricity_MaxContraptionChunks = defaults.Electricity_MaxContraptionChunks;
+        }
+
+        ConfigVersion = defaults.ConfigVersion;
     }
 }

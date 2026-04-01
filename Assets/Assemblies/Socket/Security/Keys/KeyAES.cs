@@ -4,94 +4,93 @@ using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Modes;
 using Org.BouncyCastle.Crypto.Parameters;
 
-namespace Larnix.Socket.Security.Keys
+namespace Larnix.Socket.Security.Keys;
+
+internal class KeyAES : IEncryptionKey
 {
-    internal class KeyAES : IEncryptionKey
+    private const int KeySize = 32;
+    private const int NonceSize = 12;
+    private const int TagSize = 16;
+
+    private readonly byte[] _key;
+
+    public KeyAES()
     {
-        private const int KeySize = 32;
-        private const int NonceSize = 12;
-        private const int TagSize = 16;
+        _key = RandUtils.SecureBytes(KeySize);
+    }
 
-        private readonly byte[] _key;
+    public KeyAES(byte[] keyBytes)
+    {
+        if (keyBytes.Length != KeySize)
+            throw new ArgumentException($"AES key length must be {KeySize} bytes (256-bit)!", nameof(keyBytes));
 
-        public KeyAES()
+        _key = keyBytes;
+    }
+
+    public byte[] ExportKey()
+    {
+        byte[] exported = new byte[_key.Length];
+        Array.Copy(_key, exported, _key.Length);
+        return exported;
+    }
+
+    public byte[] Encrypt(byte[] plaintext)
+    {
+        if (plaintext == null)
+            throw new ArgumentNullException(nameof(plaintext));
+
+        byte[] nonce = RandUtils.SecureBytes(NonceSize);
+
+        var cipher = new GcmBlockCipher(new AesEngine());
+        var parameters = new AeadParameters(
+            new KeyParameter(_key),
+            TagSize * 8,
+            nonce
+        );
+
+        cipher.Init(true, parameters);
+
+        byte[] output = new byte[cipher.GetOutputSize(plaintext.Length)];
+        int len = cipher.ProcessBytes(plaintext, 0, plaintext.Length, output, 0);
+        cipher.DoFinal(output, len);
+
+        return ArrayUtils.MegaConcat(nonce, output);
+    }
+
+    public byte[] Decrypt(byte[] ciphertext)
+    {
+        if (ciphertext == null)
+            throw new ArgumentNullException(nameof(ciphertext));
+
+        if (ciphertext.Length < NonceSize + TagSize)
+            return new byte[0];
+
+        byte[] nonce = new byte[NonceSize];
+        byte[] encrypted = new byte[ciphertext.Length - NonceSize];
+
+        Array.Copy(ciphertext, 0, nonce, 0, NonceSize);
+        Array.Copy(ciphertext, NonceSize, encrypted, 0, encrypted.Length);
+
+        var cipher = new GcmBlockCipher(new AesEngine());
+        var parameters = new AeadParameters(
+            new KeyParameter(_key),
+            TagSize * 8,
+            nonce
+        );
+
+        cipher.Init(false, parameters);
+
+        try
         {
-            _key = RandUtils.SecureBytes(KeySize);
-        }
-
-        public KeyAES(byte[] keyBytes)
-        {
-            if (keyBytes.Length != KeySize)
-                throw new ArgumentException($"AES key length must be {KeySize} bytes (256-bit)!", nameof(keyBytes));
-
-            _key = keyBytes;
-        }
-
-        public byte[] ExportKey()
-        {
-            byte[] exported = new byte[_key.Length];
-            Array.Copy(_key, exported, _key.Length);
-            return exported;
-        }
-
-        public byte[] Encrypt(byte[] plaintext)
-        {
-            if (plaintext == null)
-                throw new ArgumentNullException(nameof(plaintext));
-
-            byte[] nonce = RandUtils.SecureBytes(NonceSize);
-
-            var cipher = new GcmBlockCipher(new AesEngine());
-            var parameters = new AeadParameters(
-                new KeyParameter(_key),
-                TagSize * 8,
-                nonce
-            );
-
-            cipher.Init(true, parameters);
-
-            byte[] output = new byte[cipher.GetOutputSize(plaintext.Length)];
-            int len = cipher.ProcessBytes(plaintext, 0, plaintext.Length, output, 0);
+            byte[] output = new byte[cipher.GetOutputSize(encrypted.Length)];
+            int len = cipher.ProcessBytes(encrypted, 0, encrypted.Length, output, 0);
             cipher.DoFinal(output, len);
 
-            return ArrayUtils.MegaConcat(nonce, output);
+            return output;
         }
-
-        public byte[] Decrypt(byte[] ciphertext)
+        catch
         {
-            if (ciphertext == null)
-                throw new ArgumentNullException(nameof(ciphertext));
-
-            if (ciphertext.Length < NonceSize + TagSize)
-                return new byte[0];
-
-            byte[] nonce = new byte[NonceSize];
-            byte[] encrypted = new byte[ciphertext.Length - NonceSize];
-
-            Array.Copy(ciphertext, 0, nonce, 0, NonceSize);
-            Array.Copy(ciphertext, NonceSize, encrypted, 0, encrypted.Length);
-
-            var cipher = new GcmBlockCipher(new AesEngine());
-            var parameters = new AeadParameters(
-                new KeyParameter(_key),
-                TagSize * 8,
-                nonce
-            );
-
-            cipher.Init(false, parameters);
-
-            try
-            {
-                byte[] output = new byte[cipher.GetOutputSize(encrypted.Length)];
-                int len = cipher.ProcessBytes(encrypted, 0, encrypted.Length, output, 0);
-                cipher.DoFinal(output, len);
-
-                return output;
-            }
-            catch
-            {
-                return new byte[0];
-            }
+            return new byte[0];
         }
     }
 }

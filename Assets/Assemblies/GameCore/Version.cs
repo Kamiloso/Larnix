@@ -4,93 +4,92 @@ using System.Collections.Generic;
 using System.Linq;
 using Larnix.Core.Binary;
 
-namespace Larnix.GameCore
+namespace Larnix.GameCore;
+
+public readonly struct Version : IBinary<Version>
 {
-    public readonly struct Version : IBinary<Version>
+    public static readonly Version Current = new("0.0.45.1");
+
+    public const int SIZE = sizeof(uint);
+    public uint ID { get; }
+
+    public Version(uint id)
     {
-        public static readonly Version Current = new("0.0.45");
+        ID = id;
+    }
 
-        public const int SIZE = sizeof(uint);
-        public uint ID { get; }
-
-        public Version(uint id)
+    /// <summary>
+    /// Examples: "1", "1.2", "1.2.3", "1.2.3.4". Fourth number doesn't affect compatibility.
+    /// </summary>
+    public Version(string str)
+    {
+        try
         {
-            ID = id;
-        }
+            List<byte> segments = str
+                .Split('.')
+                .Select(s => byte.Parse(s))
+                .ToList();
 
-        /// <summary>
-        /// Examples: "1", "1.2", "1.2.3", "1.2.3.4". Fourth number doesn't affect compatibility.
-        /// </summary>
-        public Version(string str)
-        {
-            try
+            if (segments.Count > 4)
+                throw new Exception();
+
+            while (segments.Count < 4)
+                segments.Add(0);
+
+            uint constructID = 0;
+            foreach (byte b in segments)
             {
-                List<byte> segments = str
-                    .Split('.')
-                    .Select(s => byte.Parse(s))
-                    .ToList();
-
-                if (segments.Count > 4)
-                    throw new Exception();
-
-                while (segments.Count < 4)
-                    segments.Add(0);
-
-                uint constructID = 0;
-                foreach (byte b in segments)
-                {
-                    constructID <<= 8;
-                    constructID |= b;
-                }
-                ID = constructID;
+                constructID <<= 8;
+                constructID |= b;
             }
-            catch
-            {
-                throw new ArgumentException($"Version {str} is invalid!");
-            }
+            ID = constructID;
         }
-
-        public bool CompatibleWith(Version version)
+        catch
         {
-            return ID >> 8 == version.ID >> 8;
+            throw new ArgumentException($"Version {str} is invalid!");
         }
+    }
 
-        public byte[] Serialize()
+    public bool CompatibleWith(Version version)
+    {
+        return ID >> 8 == version.ID >> 8;
+    }
+
+    public byte[] Serialize()
+    {
+        return Primitives.GetBytes(ID);
+    }
+
+    public bool Deserialize(byte[] bytes, int offset, out Version result)
+    {
+        if (offset < 0 || offset + SIZE > bytes.Length)
         {
-            return Primitives.GetBytes(ID);
+            result = default;
+            return false;
         }
 
-        public bool Deserialize(byte[] bytes, int offset, out Version result)
+        result = new Version(Primitives.FromBytes<uint>(bytes, offset));
+        return true;
+    }
+
+    public static bool operator <(Version a, Version b) => a.ID < b.ID;
+    public static bool operator >(Version a, Version b) => a.ID > b.ID;
+    public static bool operator <=(Version a, Version b) => a.ID <= b.ID;
+    public static bool operator >=(Version a, Version b) => a.ID >= b.ID;
+
+    public override string ToString()
+    {
+        List<byte> segments = new()
         {
-            if (offset < 0 || offset + SIZE > bytes.Length)
-            {
-                result = default;
-                return false;
-            }
+            (byte)((0xFF_00_00_00 & ID) >> 24),
+            (byte)((0x00_FF_00_00 & ID) >> 16),
+            (byte)((0x00_00_FF_00 & ID) >> 8),
+            (byte)((0x00_00_00_FF & ID) >> 0),
+        };
 
-            result = new Version(Primitives.FromBytes<uint>(bytes, offset));
-            return true;
-        }
+        while (segments.Count > 2 && segments[segments.Count - 1] == 0)
+            segments.RemoveAt(segments.Count - 1);
 
-        public static bool operator <(Version a, Version b) => a.ID < b.ID;
-        public static bool operator >(Version a, Version b) => a.ID > b.ID;
-        public static bool operator <=(Version a, Version b) => a.ID <= b.ID;
-        public static bool operator >=(Version a, Version b) => a.ID >= b.ID;
-
-        public override string ToString()
-        {
-            List<byte> segments = new()
-            {
-                (byte)((0xFF_00_00_00 & ID) >> 24),
-                (byte)((0x00_FF_00_00 & ID) >> 16),
-                (byte)((0x00_00_FF_00 & ID) >> 8),
-                (byte)((0x00_00_00_FF & ID) >> 0),
-            };
-
-            while (segments.Count > 2 && segments[segments.Count - 1] == 0)
-                segments.RemoveAt(segments.Count - 1);
-
-            return string.Join(".", segments);
-        }
+        return string.Join(".", segments);
     }
 }

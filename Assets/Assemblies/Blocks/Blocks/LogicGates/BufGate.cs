@@ -5,14 +5,13 @@ using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
 using E = Larnix.Blocks.All.IElectricDevice;
 
-namespace Larnix.Blocks.All
+namespace Larnix.Blocks.All;
+
+public sealed class BufGate : Block, ISolidElectric, ILogicGate
 {
-    public sealed class BufGate : Block, ISolidElectric, ILogicGate
+    public byte LogicInToOut(byte input)
     {
-        public byte LogicInToOut(byte input)
-        {
-            bool down = (input & E.DOWN) != 0;
-            return (byte)(down ? E.UP : 0);
-        }
+        bool down = (input & E.DOWN) != 0;
+        return (byte)(down ? E.UP : 0);
     }
 }

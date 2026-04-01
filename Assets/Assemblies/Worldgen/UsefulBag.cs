@@ -2,33 +2,32 @@ using System;
 using System.Collections.Generic;
 using Larnix.Worldgen.Providers;
 
-namespace Larnix.Worldgen
+namespace Larnix.Worldgen;
+
+public class UsefulBag
 {
-    public class UsefulBag
+    public Seed Seed => Generator.Seed;
+    public Generator Generator { get; }
+    public Dictionary<string, ValueProvider> Providers { get; }
+
+    public UsefulBag(Generator generator)
     {
-        public Seed Seed => Generator.Seed;
-        public Generator Generator { get; }
-        public Dictionary<string, ValueProvider> Providers { get; }
+        Generator = generator ?? throw new ArgumentNullException(nameof(generator));
+        Providers = new();
+    }
 
-        public UsefulBag(Generator generator)
-        {
-            Generator = generator ?? throw new ArgumentNullException(nameof(generator));
-            Providers = new();
-        }
+    public T Get<T>(string key) where T : ValueProvider
+    {
+        return (T)Providers[key];
+    }
 
-        public T Get<T>(string key) where T : ValueProvider
+    public UsefulBag Copy()
+    {
+        var newBag = new UsefulBag(Generator);
+        foreach (var kvp in Providers)
         {
-            return (T)Providers[key];
+            newBag.Providers[kvp.Key] = kvp.Value;
         }
-
-        public UsefulBag Copy()
-        {
-            var newBag = new UsefulBag(Generator);
-            foreach (var kvp in Providers)
-            {
-                newBag.Providers[kvp.Key] = kvp.Value;
-            }
-            return newBag;
-        }
+        return newBag;
     }
 }

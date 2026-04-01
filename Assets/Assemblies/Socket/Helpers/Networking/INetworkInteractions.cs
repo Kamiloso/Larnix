@@ -1,13 +1,12 @@
 using Larnix.Socket.Packets;
 using System.Net;
 
-namespace Larnix.Socket.Helpers.Networking
-{
-    internal interface INetworkInteractions
-    {
-        void Send(IPEndPoint remoteEP, byte[] data);
-        bool TryReceive(out DataBox result);
+namespace Larnix.Socket.Helpers.Networking;
 
-        void Send(DataBox box) => Send(box.target, box.data);
-    }
+internal interface INetworkInteractions
+{
+    void Send(IPEndPoint remoteEP, byte[] data);
+    bool TryReceive(out DataBox result);
+
+    void Send(DataBox box) => Send(box.target, box.data);
 }

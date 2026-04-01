@@ -5,75 +5,74 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Larnix.Core;
 
-namespace Larnix.Patches
+namespace Larnix.Patches;
+
+public static class CrashHandler
 {
-    public static class CrashHandler
+    private static bool initialized = false;
+    private static readonly object logFileLock = new();
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    private static void Activate()
     {
-        private static bool initialized = false;
-        private static readonly object logFileLock = new();
+        if (initialized) return;
+        initialized = true;
 
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-        private static void Activate()
+        AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
+        Application.logMessageReceived += OnLogMessageReceived;
+    }
+
+    private static void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
+    {
+        Exception exception = e.ExceptionObject as Exception;
+        string log = "Exception:\n" + exception?.ToString();
+        UniversalExceptionHandle(log);
+    }
+
+    private static void OnLogMessageReceived(string condition, string stackTrace, LogType type)
+    {
+        if (type == LogType.Exception)
         {
-            if (initialized) return;
-            initialized = true;
-
-            AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
-            Application.logMessageReceived += OnLogMessageReceived;
-        }
-
-        private static void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
-        {
-            Exception exception = e.ExceptionObject as Exception;
-            string log = "Exception:\n" + exception?.ToString();
+            string log = "Unity exception:\n" + condition + "\n" + stackTrace;
             UniversalExceptionHandle(log);
         }
+    }
 
-        private static void OnLogMessageReceived(string condition, string stackTrace, LogType type)
+    private static void UniversalExceptionHandle(string log)
+    {
+        if (!Application.isEditor)
         {
-            if (type == LogType.Exception)
-            {
-                string log = "Unity exception:\n" + condition + "\n" + stackTrace;
-                UniversalExceptionHandle(log);
-            }
+            SaveCrashLog(log);
+            Process.GetCurrentProcess().Kill(); // brutal kill
         }
+    }
 
-        private static void UniversalExceptionHandle(string log)
+    private static void SaveCrashLog(string message)
+    {
+        string path = Path.Combine(Application.persistentDataPath, "crash.log");
+        try
         {
-            if (!Application.isEditor)
+            lock (logFileLock)
             {
-                SaveCrashLog(log);
-                Process.GetCurrentProcess().Kill(); // brutal kill
-            }
-        }
+                File.AppendAllText(path, $"[{DateTime.Now}]\n{message}\n");
 
-        private static void SaveCrashLog(string message)
-        {
-            string path = Path.Combine(Application.persistentDataPath, "crash.log");
-            try
-            {
-                lock (logFileLock)
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
-                    File.AppendAllText(path, $"[{DateTime.Now}]\n{message}\n");
-
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    {
-                        Process.Start(new ProcessStartInfo("notepad.exe", $"\"{path}\"") { UseShellExecute = false });
-                    }
-                    else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                    {
-                        Process.Start("xdg-open", $"\"{path}\"");
-                    }
-                    else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                    {
-                        Process.Start("open", $"\"{path}\"");
-                    }
+                    Process.Start(new ProcessStartInfo("notepad.exe", $"\"{path}\"") { UseShellExecute = false });
+                }
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                {
+                    Process.Start("xdg-open", $"\"{path}\"");
+                }
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                {
+                    Process.Start("open", $"\"{path}\"");
                 }
             }
-            catch
-            {
-                Echo.LogError("An error occurred while saving / openning file crash.log. Is it even possible?");
-            }
+        }
+        catch
+        {
+            Echo.LogError("An error occurred while saving / openning file crash.log. Is it even possible?");
         }
     }
 }

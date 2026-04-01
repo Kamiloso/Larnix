@@ -1,9 +1,8 @@
 using System;
 
-namespace Larnix.Core.Interfaces
+namespace Larnix.Core.Interfaces;
+
+public interface ITickable
 {
-    public interface ITickable
-    {
-        public void Tick(float deltaTime);
-    }
+    public void Tick(float deltaTime);
 }

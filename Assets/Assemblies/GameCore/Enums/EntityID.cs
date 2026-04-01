@@ -1,11 +1,10 @@
 using System;
 
-namespace Larnix.GameCore.Enums
+namespace Larnix.GameCore.Enums;
+
+public enum EntityID : ushort
 {
-    public enum EntityID : ushort
-    {
-        None = 0,
-        Player = 1,
-        Wildpig = 2,
-    }
+    None = 0,
+    Player = 1,
+    Wildpig = 2,
 }

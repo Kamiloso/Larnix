@@ -9,73 +9,72 @@ using Larnix.Core;
 using CmdResult = Larnix.GameCore.ICmdExecutor.CmdResult;
 using Larnix.GameCore.Enums;
 
-namespace Larnix.Server.Commands.All
+namespace Larnix.Server.Commands.All;
+
+internal class Spawn : BaseCmd
 {
-    internal class Spawn : BaseCmd
+    public override PrivilegeLevel PrivilegeLevel => PrivilegeLevel.Admin;
+    public override string Pattern => $"{Name} <type> <x> <y> [json]";
+    public override string ShortDescription => "Spawns a new entity.";
+
+    private EntityManager EntityManager => GlobRef.Get<EntityManager>();
+
+    private EntityID _entityID;
+    private Vec2 _position;
+    private string _json;
+
+    public override void Inject(string command)
     {
-        public override PrivilegeLevel PrivilegeLevel => PrivilegeLevel.Admin;
-        public override string Pattern => $"{Name} <type> <x> <y> [json]";
-        public override string ShortDescription => "Spawns a new entity.";
-
-        private EntityManager EntityManager => GlobRef.Get<EntityManager>();
-
-        private EntityID _entityID;
-        private Vec2 _position;
-        private string _json;
-
-        public override void Inject(string command)
+        if (TrySplit(command, 5, out string[] parts, lastJoin: true) ||
+            TrySplit(command, 4, out parts))
         {
-            if (TrySplit(command, 5, out string[] parts, lastJoin: true) ||
-                TrySplit(command, 4, out parts))
+            bool hasJson = parts.Length == 5;
+
+            if (!Enum.TryParse(parts[1], ignoreCase: true, out EntityID entityID) ||
+                !Enum.IsDefined(typeof(EntityID), entityID))
             {
-                bool hasJson = parts.Length == 5;
-
-                if (!Enum.TryParse(parts[1], ignoreCase: true, out EntityID entityID) ||
-                    !Enum.IsDefined(typeof(EntityID), entityID))
-                {
-                    throw FormatException("Invalid entity type.");
-                }
-
-                if (entityID == EntityID.Player)
-                {
-                    throw FormatException($"This entity cannot be spawned.");
-                }
-
-                if (!DoubleUtils.TryParse(parts[2], out double x) ||
-                    !DoubleUtils.TryParse(parts[3], out double y))
-                {
-                    throw FormatException("Cannot parse coordinates.");
-                }
-
-                _entityID = entityID;
-                _position = new Vec2(x, y);
-                _json = hasJson ? parts[4] : "{}";
+                throw FormatException("Invalid entity type.");
             }
-            else
+
+            if (entityID == EntityID.Player)
             {
-                throw FormatException(InvalidCmdFormat);
+                throw FormatException($"This entity cannot be spawned.");
             }
+
+            if (!DoubleUtils.TryParse(parts[2], out double x) ||
+                !DoubleUtils.TryParse(parts[3], out double y))
+            {
+                throw FormatException("Cannot parse coordinates.");
+            }
+
+            _entityID = entityID;
+            _position = new Vec2(x, y);
+            _json = hasJson ? parts[4] : "{}";
         }
-
-        public override (CmdResult, string) Execute(string sender, PrivilegeLevel privilege)
+        else
         {
-            bool success = EntityManager.SummonEntity(new EntityData(
-                id: _entityID,
-                position: _position,
-                rotation: 0.0f,
-                nbt: Storage.FromString(_json)
-            ));
+            throw FormatException(InvalidCmdFormat);
+        }
+    }
 
-            if (success)
-            {
-                return (CmdResult.Success,
-                    $"Spawned '{_entityID}' at position {_position}.");
-            }
-            else
-            {
-                return (CmdResult.Error,
-                    $"Position {_position} is not loaded.");
-            }
+    public override (CmdResult, string) Execute(string sender, PrivilegeLevel privilege)
+    {
+        bool success = EntityManager.SummonEntity(new EntityData(
+            id: _entityID,
+            position: _position,
+            rotation: 0.0f,
+            nbt: Storage.FromString(_json)
+        ));
+
+        if (success)
+        {
+            return (CmdResult.Success,
+                $"Spawned '{_entityID}' at position {_position}.");
+        }
+        else
+        {
+            return (CmdResult.Error,
+                $"Position {_position} is not loaded.");
         }
     }
 }

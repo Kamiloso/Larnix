@@ -3,12 +3,11 @@ using System.Collections.Generic;
 using Larnix.GameCore.Physics;
 using Larnix.GameCore.Json;
 
-namespace Larnix.Entities.All
+namespace Larnix.Entities.All;
+
+public interface IEntityInterface
 {
-    public interface IEntityInterface
-    {
-        Entity This => (Entity)this;
-        PhysicsManager Physics => This.Physics;
-        Storage Data => This.EntityData.NBT;
-    }
+    Entity This => (Entity)this;
+    PhysicsManager Physics => This.Physics;
+    Storage Data => This.EntityData.NBT;
 }

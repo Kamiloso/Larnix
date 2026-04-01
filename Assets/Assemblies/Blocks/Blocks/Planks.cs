@@ -4,13 +4,12 @@ using System.Collections.Generic;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
 
-namespace Larnix.Blocks.All
-{
-    public sealed class Planks : Block, ISolid
-    {
-        public bool ALLOW_PLACE_BACK() => true;
+namespace Larnix.Blocks.All;
 
-        public ITool.Type MATERIAL_TYPE() => ITool.Type.Normal;
-        public ITool.Tier MATERIAL_TIER() => ITool.Tier.None;
-    }
+public sealed class Planks : Block, ISolid
+{
+    public bool ALLOW_PLACE_BACK() => true;
+
+    public ITool.Type MATERIAL_TYPE() => ITool.Type.Normal;
+    public ITool.Tier MATERIAL_TIER() => ITool.Tier.None;
 }

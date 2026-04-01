@@ -1,36 +1,35 @@
 using Larnix.Core.Interfaces;
 
-namespace Larnix.Server
+namespace Larnix.Server;
+
+internal class Scripts : ITickable
 {
-    internal class Scripts : ITickable
+    private readonly IScript[] _scripts;
+    private bool _startExecuted = false;
+
+    public Scripts(params IScript[] scripts)
     {
-        private readonly IScript[] _scripts;
-        private bool _startExecuted = false;
+        _scripts = scripts[..];
+    }
 
-        public Scripts(params IScript[] scripts)
+    public void Tick(float deltaTime)
+    {
+        for (int i = 0; i <= 5; i++)
         {
-            _scripts = scripts[..];
-        }
-
-        public void Tick(float deltaTime)
-        {
-            for (int i = 0; i <= 5; i++)
+            foreach (IScript singleton in _scripts)
             {
-                foreach (IScript singleton in _scripts)
+                if (i == 0 && !_startExecuted)
                 {
-                    if (i == 0 && !_startExecuted)
-                    {
-                        singleton.Start();
-                    }
-
-                    if (i == 1) singleton.EarlyFrameUpdate();
-                    if (i == 2) singleton.PostEarlyFrameUpdate();
-                    if (i == 3) singleton.FrameUpdate();
-                    if (i == 4) singleton.LateFrameUpdate();
-                    if (i == 5) singleton.PostLateFrameUpdate();
+                    singleton.Start();
                 }
+
+                if (i == 1) singleton.EarlyFrameUpdate();
+                if (i == 2) singleton.PostEarlyFrameUpdate();
+                if (i == 3) singleton.FrameUpdate();
+                if (i == 4) singleton.LateFrameUpdate();
+                if (i == 5) singleton.PostLateFrameUpdate();
             }
-            _startExecuted = true;
         }
+        _startExecuted = true;
     }
 }

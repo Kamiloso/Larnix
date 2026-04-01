@@ -3,51 +3,50 @@ using Larnix.GameCore.Utils;
 using Larnix.Server.Entities;
 using CmdResult = Larnix.GameCore.ICmdExecutor.CmdResult;
 
-namespace Larnix.Server.Commands.All
+namespace Larnix.Server.Commands.All;
+
+internal class Kill : BaseCmd
 {
-    internal class Kill : BaseCmd
+    public override PrivilegeLevel PrivilegeLevel => PrivilegeLevel.Admin;
+    public override string Pattern => $"{Name} <nickname>";
+    public override string ShortDescription => "Kills a player.";
+
+    private EntityManager EntityManager => GlobRef.Get<EntityManager>();
+    private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
+
+    private string _nickname;
+
+    public override void Inject(string command)
     {
-        public override PrivilegeLevel PrivilegeLevel => PrivilegeLevel.Admin;
-        public override string Pattern => $"{Name} <nickname>";
-        public override string ShortDescription => "Kills a player.";
-
-        private EntityManager EntityManager => GlobRef.Get<EntityManager>();
-        private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
-
-        private string _nickname;
-
-        public override void Inject(string command)
+        if (TrySplit(command, 2, out string[] parts))
         {
-            if (TrySplit(command, 2, out string[] parts))
+            if (!Parsing.TryParseNickname(parts[1], out var nickname))
             {
-                if (!Parsing.TryParseNickname(parts[1], out var nickname))
-                {
-                    throw FormatException(Validation.WrongNicknameInfo);
-                }
+                throw FormatException(Validation.WrongNicknameInfo);
+            }
 
-                _nickname = nickname;
-            }
-            else
-            {
-                throw FormatException(InvalidCmdFormat);
-            }
+            _nickname = nickname;
         }
-
-        public override (CmdResult, string) Execute(string sender, PrivilegeLevel privilege)
+        else
         {
-            if (PlayerActions.IsAlive(_nickname))
-            {
-                ulong uid = PlayerActions.UidByNickname(_nickname);
-                EntityManager.KillEntity(uid);
+            throw FormatException(InvalidCmdFormat);
+        }
+    }
 
-                return (CmdResult.Success,
-                    $"Player {_nickname} has been killed.");
-            }
-            else
-            {
-                return (CmdResult.Error,
-                    $"Player {_nickname} is not alive.");
-            }
+    public override (CmdResult, string) Execute(string sender, PrivilegeLevel privilege)
+    {
+        if (PlayerActions.IsAlive(_nickname))
+        {
+            ulong uid = PlayerActions.UidByNickname(_nickname);
+            EntityManager.KillEntity(uid);
+
+            return (CmdResult.Success,
+                $"Player {_nickname} has been killed.");
+        }
+        else
+        {
+            return (CmdResult.Error,
+                $"Player {_nickname} is not alive.");
         }
     }
 }

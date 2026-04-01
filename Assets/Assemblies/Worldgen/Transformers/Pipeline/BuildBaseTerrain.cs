@@ -4,61 +4,60 @@ using Larnix.Worldgen.Noise;
 using Larnix.Worldgen.Providers;
 using Larnix.GameCore.Utils;
 
-namespace Larnix.Worldgen.Transformers.Pipeline
+namespace Larnix.Worldgen.Transformers.Pipeline;
+
+public class BuildBaseTerrain : Transformer<object, ProtoBlock>
 {
-    public class BuildBaseTerrain : Transformer<object, ProtoBlock>
+    const int WATER_LEVEL = -1;
+    const int SOIL_LAYER_SIZE = 3;
+
+    public BuildBaseTerrain(UsefulBag usefulBag) : base(usefulBag)
     {
-        const int WATER_LEVEL = -1;
-        const int SOIL_LAYER_SIZE = 3;
+        var surfaceNoise = ValueProvider.CreatePerlin(
+            new Perlin(seed: Seed.HashInt("noise_surface"))
+            {
+                Octaves = 4,
+                Frequency = 0.013,
+                Lacunarity = 2.0,
+                Persistence = 0.3,
+            },
+            min: -25.0, max: 40.0, dim: 1);
 
-        public BuildBaseTerrain(UsefulBag usefulBag) : base(usefulBag)
+        Providers["SURFACE"] = ValueProvider.CreateFunction((x, y, z) =>
         {
-            var surfaceNoise = ValueProvider.CreatePerlin(
-                new Perlin(seed: Seed.HashInt("noise_surface"))
-                {
-                    Octaves = 4,
-                    Frequency = 0.013,
-                    Lacunarity = 2.0,
-                    Persistence = 0.3,
-                },
-                min: -25.0, max: 40.0, dim: 1);
+            double val = surfaceNoise.GetValue(x, y, z);
+            return val > 0.0 ? val : val * 2.0 / 3.0;
+        });
 
-            Providers["SURFACE"] = ValueProvider.CreateFunction((x, y, z) =>
-            {
-                double val = surfaceNoise.GetValue(x, y, z);
-                return val > 0.0 ? val : val * 2.0 / 3.0;
-            });
-
-            Providers["RELATIVE_HEIGHT"] = ValueProvider.CreateFunction((x, y, z) =>
-            {
-                return y - Providers["SURFACE"].GetValue(x);
-            });
-        }
-
-        public override ProtoBlock[,] Rebuild(Vec2Int chunk, object[,] _)
+        Providers["RELATIVE_HEIGHT"] = ValueProvider.CreateFunction((x, y, z) =>
         {
-            ProtoBlock[,] blocks = ChunkIterator.Array2D<ProtoBlock>();
+            return y - Providers["SURFACE"].GetValue(x);
+        });
+    }
 
-            ChunkIterator.IterateWithPOS(chunk, (POS, x, y) =>
+    public override ProtoBlock[,] Rebuild(Vec2Int chunk, object[,] _)
+    {
+        ProtoBlock[,] blocks = ChunkIterator.Array2D<ProtoBlock>();
+
+        ChunkIterator.IterateWithPOS(chunk, (POS, x, y) =>
+        {
+            int surfaceLevel = (int)Math.Floor(Providers["SURFACE"].GetValue(POS.x));
+            int stoneLevel = surfaceLevel - SOIL_LAYER_SIZE;
+
+            blocks[x, y] = POS.y switch
             {
-                int surfaceLevel = (int)Math.Floor(Providers["SURFACE"].GetValue(POS.x));
-                int stoneLevel = surfaceLevel - SOIL_LAYER_SIZE;
+                var _ when POS.y > surfaceLevel => POS.y <= WATER_LEVEL
+                    ? ProtoBlock.Lake
+                    : ProtoBlock.Sky,
 
-                blocks[x, y] = POS.y switch
-                {
-                    var _ when POS.y > surfaceLevel => POS.y <= WATER_LEVEL
-                        ? ProtoBlock.Lake
-                        : ProtoBlock.Sky,
+                var _ when POS.y > stoneLevel => POS.y == surfaceLevel
+                    ? ProtoBlock.Surface
+                    : ProtoBlock.Dirt,
 
-                    var _ when POS.y > stoneLevel => POS.y == surfaceLevel
-                        ? ProtoBlock.Surface
-                        : ProtoBlock.Dirt,
+                _ => ProtoBlock.Stone
+            };
+        });
 
-                    _ => ProtoBlock.Stone
-                };
-            });
-
-            return blocks;
-        }
+        return blocks;
     }
 }

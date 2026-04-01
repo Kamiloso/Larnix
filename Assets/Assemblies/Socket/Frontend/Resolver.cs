@@ -8,172 +8,171 @@ using Larnix.Socket.Security.Keys;
 using Larnix.GameCore.Utils;
 using Larnix.Socket.Packets.Control;
 
-namespace Larnix.Socket.Frontend
+namespace Larnix.Socket.Frontend;
+
+public enum ResolverError
 {
-    public enum ResolverError
+    None,
+    ResolveFailed,
+    PromptFailed,
+    InvalidResponse,
+    PublicKeyInvalid,
+    LoginNotAllowed,
+    Exception
+}
+
+internal class EntryTicket
+{
+    private A_ServerInfo _serverInfo;
+    public long ChallengeID => _serverInfo.ChallengeID;
+    public long RunID => _serverInfo.RunID;
+
+    public EntryTicket(A_ServerInfo info)
     {
-        None,
-        ResolveFailed,
-        PromptFailed,
-        InvalidResponse,
-        PublicKeyInvalid,
-        LoginNotAllowed,
-        Exception
+        _serverInfo = info;
     }
 
-    internal class EntryTicket
+    public KeyRSA CreatePublicKey()
     {
-        private A_ServerInfo _serverInfo;
-        public long ChallengeID => _serverInfo.ChallengeID;
-        public long RunID => _serverInfo.RunID;
+        return new KeyRSA(_serverInfo.PublicKey);
+    }
+}
 
-        public EntryTicket(A_ServerInfo info)
+public static class Resolver
+{
+    public static async Task<IPEndPoint> ResolveStringAsync(string address, ushort defaultPort = Common.LARNIX_PORT)
+    {
+        if (address == null) return null;
+
+        if (address.EndsWith(']') || !address.Contains(':'))
+            address += ":" + defaultPort;
+
+        if (address.Count(c => c == ':') >= 2 && !address.StartsWith("[") && !address.EndsWith("]"))
+            address = '[' + address + "]:" + defaultPort;
+
+        string iface = null;
+        int p1 = address.IndexOf('%');
+        if (p1 != -1)
         {
-            _serverInfo = info;
+            int p2 = p1 + 1;
+            while (p2 < address.Length && char.IsDigit(address[p2])) p2++;
+            iface = address.Substring(p1 + 1, p2 - p1 - 1);
+            address = address.Remove(p1, p2 - p1);
         }
 
-        public KeyRSA CreatePublicKey()
+        try
         {
-            return new KeyRSA(_serverInfo.PublicKey);
+            var uri = new Uri($"udp://{address}");
+            var ipAddresses = await Dns.GetHostAddressesAsync(uri.Host);
+            if (iface != null) ipAddresses[0].ScopeId = int.Parse(iface);
+            return new IPEndPoint(ipAddresses[0], uri.Port);
+        }
+        catch
+        {
+            return null;
         }
     }
 
-    public static class Resolver
+    public static async Task<(ServerInfo info, ResolverError error)> DownloadServerInfoAsync(
+        string address, string authcode, string nickname, bool ignoreCache = false)
     {
-        public static async Task<IPEndPoint> ResolveStringAsync(string address, ushort defaultPort = Common.LARNIX_PORT)
+        (A_ServerInfo info, ResolverError error) recv = await _DownloadServerInfoAsync(address, authcode, nickname, ignoreCache);
+        return (recv.info != null ? new ServerInfo(recv.info) : null, recv.error);
+    }
+
+    private static async Task<(A_ServerInfo info, ResolverError error)> _DownloadServerInfoAsync(
+        string address, string authcode, string nickname, bool ignoreCache = false)
+    {
+        try
         {
-            if (address == null) return null;
+            if (!ignoreCache && Cacher.TryGetInfo(authcode, nickname, out var cached))
+                return (cached, ResolverError.None);
 
-            if (address.EndsWith(']') || !address.Contains(':'))
-                address += ":" + defaultPort;
+            var prompt = new P_ServerInfo((String32)nickname);
+            var packet = await Prompter.PromptAsync<A_ServerInfo>(address, prompt);
+            if (packet == null) return (null, ResolverError.PromptFailed);
 
-            if (address.Count(c => c == ':') >= 2 && !address.StartsWith("[") && !address.EndsWith("]"))
-                address = '[' + address + "]:" + defaultPort;
+            if (!Authcode.VerifyPublicKey(packet.PublicKey, authcode))
+                return (null, ResolverError.PublicKeyInvalid);
 
-            string iface = null;
-            int p1 = address.IndexOf('%');
-            if (p1 != -1)
-            {
-                int p2 = p1 + 1;
-                while (p2 < address.Length && char.IsDigit(address[p2])) p2++;
-                iface = address.Substring(p1 + 1, p2 - p1 - 1);
-                address = address.Remove(p1, p2 - p1);
-            }
+            Timestamp.SetServerTimestamp(address, packet.Timestamp);
+            Cacher.AddInfo(authcode, nickname, packet);
 
-            try
-            {
-                var uri = new Uri($"udp://{address}");
-                var ipAddresses = await Dns.GetHostAddressesAsync(uri.Host);
-                if (iface != null) ipAddresses[0].ScopeId = int.Parse(iface);
-                return new IPEndPoint(ipAddresses[0], uri.Port);
-            }
-            catch
-            {
-                return null;
-            }
+            return (packet, ResolverError.None);
         }
-
-        public static async Task<(ServerInfo info, ResolverError error)> DownloadServerInfoAsync(
-            string address, string authcode, string nickname, bool ignoreCache = false)
+        catch
         {
-            (A_ServerInfo info, ResolverError error) recv = await _DownloadServerInfoAsync(address, authcode, nickname, ignoreCache);
-            return (recv.info != null ? new ServerInfo(recv.info) : null, recv.error);
+            return (null, ResolverError.Exception);
         }
+    }
 
-        private static async Task<(A_ServerInfo info, ResolverError error)> _DownloadServerInfoAsync(
-            string address, string authcode, string nickname, bool ignoreCache = false)
+    public static async Task<(bool? hasAccount, ResolverError error)> HasAccountAsync(
+        string address, string authcode, string nickname)
+    {
+        var (info, error) = await _DownloadServerInfoAsync(address, authcode, nickname);
+        if (info == null) return (null, error);
+        return (info.ChallengeID != 0, ResolverError.None);
+    }
+
+    public static async Task<(bool? success, ResolverError error)> TryLoginAsync(
+        string address, string authcode, string nickname, string password)
+    {
+        return await _TryLoginUniversal(address, authcode, nickname, password, false);
+    }
+
+    public static async Task<(bool? success, ResolverError error)> TryRegisterAsync(
+        string address, string authcode, string nickname, string password)
+    {
+        return await _TryLoginUniversal(address, authcode, nickname, password, true);
+    }
+
+    public static async Task<(bool? success, ResolverError error)> TryChangePasswordAsync(
+        string address, string authcode, string nickname, string password, string newPassword)
+    {
+        return await _TryLoginUniversal(address, authcode, nickname, password, false, newPassword);
+    }
+
+    private static async Task<(bool? success, ResolverError error)> _TryLoginUniversal(
+        string address, string authcode, string nickname, string password, bool isRegistration, string newPassword = null)
+    {
+        try
         {
-            try
-            {
-                if (!ignoreCache && Cacher.TryGetInfo(authcode, nickname, out var cached))
-                    return (cached, ResolverError.None);
+            var (info, err) = await _DownloadServerInfoAsync(address, authcode, nickname);
+            if (info == null) return (null, err);
 
-                var prompt = new P_ServerInfo((String32)nickname);
-                var packet = await Prompter.PromptAsync<A_ServerInfo>(address, prompt);
-                if (packet == null) return (null, ResolverError.PromptFailed);
+            if (!isRegistration && info.ChallengeID == 0)
+                return (null, ResolverError.LoginNotAllowed);
 
-                if (!Authcode.VerifyPublicKey(packet.PublicKey, authcode))
-                    return (null, ResolverError.PublicKeyInvalid);
+            if (isRegistration && info.ChallengeID != 0)
+                return (null, ResolverError.LoginNotAllowed);
 
-                Timestamp.SetServerTimestamp(address, packet.Timestamp);
-                Cacher.AddInfo(authcode, nickname, packet);
+            using KeyRSA rsa = new KeyRSA(info.PublicKey);
+            long serverSecret = Authcode.GetSecretFromAuthCode(authcode);
+            long timestamp = Timestamp.GetServerTimestamp(address);
 
-                return (packet, ResolverError.None);
-            }
-            catch
-            {
-                return (null, ResolverError.Exception);
-            }
+            String64? newPassStruct = newPassword != null ? (String64)newPassword : null;
+            var prompt = new P_LoginTry((String32)nickname, (String64)password, serverSecret, info.ChallengeID, timestamp, info.RunID, newPassStruct);
+            var packet = await Prompter.PromptAsync<A_LoginTry>(address, prompt, publicKey: rsa);
+
+            if (packet == null) return (null, ResolverError.PromptFailed);
+
+            // ChallengeID may have changed, remove from cache
+            Cacher.RemoveRecord(authcode, nickname);
+
+            return (packet.Success, ResolverError.None);
         }
-
-        public static async Task<(bool? hasAccount, ResolverError error)> HasAccountAsync(
-            string address, string authcode, string nickname)
+        catch
         {
-            var (info, error) = await _DownloadServerInfoAsync(address, authcode, nickname);
-            if (info == null) return (null, error);
-            return (info.ChallengeID != 0, ResolverError.None);
+            return (null, ResolverError.Exception);
         }
+    }
 
-        public static async Task<(bool? success, ResolverError error)> TryLoginAsync(
-            string address, string authcode, string nickname, string password)
-        {
-            return await _TryLoginUniversal(address, authcode, nickname, password, false);
-        }
+    internal static async Task<(EntryTicket ticket, ResolverError error)> GetEntryTicketAsync(
+        string address, string authcode, string nickname)
+    {
+        var (info, error) = await _DownloadServerInfoAsync(address, authcode, nickname);
+        if (info == null) return (null, error);
 
-        public static async Task<(bool? success, ResolverError error)> TryRegisterAsync(
-            string address, string authcode, string nickname, string password)
-        {
-            return await _TryLoginUniversal(address, authcode, nickname, password, true);
-        }
-
-        public static async Task<(bool? success, ResolverError error)> TryChangePasswordAsync(
-            string address, string authcode, string nickname, string password, string newPassword)
-        {
-            return await _TryLoginUniversal(address, authcode, nickname, password, false, newPassword);
-        }
-
-        private static async Task<(bool? success, ResolverError error)> _TryLoginUniversal(
-            string address, string authcode, string nickname, string password, bool isRegistration, string newPassword = null)
-        {
-            try
-            {
-                var (info, err) = await _DownloadServerInfoAsync(address, authcode, nickname);
-                if (info == null) return (null, err);
-
-                if (!isRegistration && info.ChallengeID == 0)
-                    return (null, ResolverError.LoginNotAllowed);
-                
-                if (isRegistration && info.ChallengeID != 0)
-                    return (null, ResolverError.LoginNotAllowed);
-
-                using KeyRSA rsa = new KeyRSA(info.PublicKey);
-                long serverSecret = Authcode.GetSecretFromAuthCode(authcode);
-                long timestamp = Timestamp.GetServerTimestamp(address);
-
-                String64? newPassStruct = newPassword != null ? (String64)newPassword : null;
-                var prompt = new P_LoginTry((String32)nickname, (String64)password, serverSecret, info.ChallengeID, timestamp, info.RunID, newPassStruct);
-                var packet = await Prompter.PromptAsync<A_LoginTry>(address, prompt, publicKey: rsa);
-
-                if (packet == null) return (null, ResolverError.PromptFailed);
-
-                // ChallengeID may have changed, remove from cache
-                Cacher.RemoveRecord(authcode, nickname);
-
-                return (packet.Success, ResolverError.None);
-            }
-            catch
-            {
-                return (null, ResolverError.Exception);
-            }
-        }
-
-        internal static async Task<(EntryTicket ticket, ResolverError error)> GetEntryTicketAsync(
-            string address, string authcode, string nickname)
-        {
-            var (info, error) = await _DownloadServerInfoAsync(address, authcode, nickname);
-            if (info == null) return (null, error);
-
-            return (new EntryTicket(info), ResolverError.None);
-        }
+        return (new EntryTicket(info), ResolverError.None);
     }
 }

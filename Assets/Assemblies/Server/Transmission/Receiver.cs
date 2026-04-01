@@ -15,204 +15,203 @@ using LogType = Larnix.Core.Echo.LogType;
 using CmdResult = Larnix.GameCore.ICmdExecutor.CmdResult;
 using ChatCode = Larnix.Packets.ChatMessage.ChatCode;
 
-namespace Larnix.Server.Transmission
+namespace Larnix.Server.Transmission;
+
+internal class Receiver
 {
-    internal class Receiver
+    private record RateLimitID(string Owner, Type Type);
+    private readonly Dictionary<RateLimitID, int> _rateLimits = new();
+    private float _rateLimitTimer = 0f;
+
+    private IWorldAPI WorldAPI => GlobRef.Get<IWorldAPI>();
+    private QuickServer QuickServer => GlobRef.Get<QuickServer>();
+    private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
+    private BlockSender BlockSender => GlobRef.Get<BlockSender>();
+    private CmdManager CmdManager => GlobRef.Get<CmdManager>();
+
+    public Receiver()
     {
-        private record RateLimitID(string Owner, Type Type);
-        private readonly Dictionary<RateLimitID, int> _rateLimits = new();
-        private float _rateLimitTimer = 0f;
+        Subscribe<AllowConnection>(_AllowConnection); // START (server validated)
+        Subscribe<Stop>(_Stop); // STOP (server generated)
 
-        private IWorldAPI WorldAPI => GlobRef.Get<IWorldAPI>();
-        private QuickServer QuickServer => GlobRef.Get<QuickServer>();
-        private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
-        private BlockSender BlockSender => GlobRef.Get<BlockSender>();
-        private CmdManager CmdManager => GlobRef.Get<CmdManager>();
+        // Assumptions:
+        // - limit packets to ~2x expected max rate
+        // - make soft limit when packet is not necessary for game integrity
 
-        public Receiver()
+        Subscribe<PlayerUpdate>(_PlayerUpdate, maxPerSecond: 100, softLimit: true);
+        Subscribe<CodeInfo>(_CodeInfo, maxPerSecond: 10);
+        Subscribe<BlockChange>(_BlockChange, maxPerSecond: 500); // TODO: Limit for survival players
+        Subscribe<ChatMessage>(_ChatMessage, maxPerSecond: 10, softLimit: true);
+    }
+
+    private void Subscribe<T>(Action<T, string> callback, int maxPerSecond = 0,
+        bool softLimit = false) where T : Payload
+    {
+        QuickServer.Subscribe<T>((msg, owner) =>
         {
-            Subscribe<AllowConnection>(_AllowConnection); // START (server validated)
-            Subscribe<Stop>(_Stop); // STOP (server generated)
+            if (typeof(T) != typeof(Stop) && !QuickServer.IsActiveConnection(owner))
+                return; // discard packets from kicked clients
 
-            // Assumptions:
-            // - limit packets to ~2x expected max rate
-            // - make soft limit when packet is not necessary for game integrity
-
-            Subscribe<PlayerUpdate>(_PlayerUpdate, maxPerSecond: 100, softLimit: true);
-            Subscribe<CodeInfo>(_CodeInfo, maxPerSecond: 10);
-            Subscribe<BlockChange>(_BlockChange, maxPerSecond: 500); // TODO: Limit for survival players
-            Subscribe<ChatMessage>(_ChatMessage, maxPerSecond: 10, softLimit: true);
-        }
-
-        private void Subscribe<T>(Action<T, string> callback, int maxPerSecond = 0,
-            bool softLimit = false) where T : Payload
-        {
-            QuickServer.Subscribe<T>((msg, owner) =>
+            if (maxPerSecond > 0) // rate limit
             {
-                if (typeof(T) != typeof(Stop) && !QuickServer.IsActiveConnection(owner))
-                    return; // discard packets from kicked clients
+                var id = new RateLimitID(owner, typeof(T));
+                int current = _rateLimits.GetValueOrDefault(id, 0);
 
-                if (maxPerSecond > 0) // rate limit
+                if (current < maxPerSecond)
                 {
-                    var id = new RateLimitID(owner, typeof(T));
-                    int current = _rateLimits.GetValueOrDefault(id, 0);
-
-                    if (current < maxPerSecond)
-                    {
-                        _rateLimits[id] = current + 1;
-                        callback(msg, owner);
-                    }
-                    else
-                    {
-                        if (!softLimit) // hard limit - disconnect client
-                        {
-                            Echo.Log("Rate limit for packet " + typeof(T).Name + " from " + owner + " exceeded.");
-                            QuickServer.KickRequest(owner);
-                        }
-                    }
-                }
-                else // no rate limit
-                {
+                    _rateLimits[id] = current + 1;
                     callback(msg, owner);
                 }
-            });
-        }
-
-        public void Tick(float deltaTime)
-        {
-            _rateLimitTimer += deltaTime;
-            if (_rateLimitTimer >= 1f)
-            {
-                _rateLimitTimer %= 1f;
-                _rateLimits.Clear();
-            }
-        }
-
-        private void _AllowConnection(AllowConnection msg, string owner)
-        {
-            // WARNING:
-            // AllowConnection executes in a non-synchronized player context.
-            // No player data methods are reliable here.
-
-            PlayerActions.JoinPlayer(owner);
-            Echo.Log(owner + " joined the game.");
-        }
-
-        private void _Stop(Stop msg, string owner)
-        {
-            // WARNING:
-            // Stop executes in a non-synchronized player context.
-            // No player data methods are reliable here.
-
-            PlayerActions.DisconnectPlayer(owner);
-            Echo.Log(owner + " disconnected.");
-        }
-
-        private void _PlayerUpdate(PlayerUpdate msg, string owner)
-        {
-            PlayerUpdate lastPacket = PlayerActions.RecentPlayerUpdate(owner);
-            if (lastPacket == null || lastPacket.FixedFrame < msg.FixedFrame)
-            {
-                PlayerActions.UpdatePlayerDataIfHasController(owner, msg);
-            }
-        }
-
-        private void _CodeInfo(CodeInfo msg, string owner)
-        {
-            CodeInfo.Info code = msg.Code;
-
-            if (code == CodeInfo.Info.RespawnMe)
-            {
-                if (PlayerActions.StateOf(owner) == PlayerActions.PlayerState.Dead)
-                    PlayerActions.CreatePlayerInstance(owner);
-            }
-        }
-
-        private void _BlockChange(BlockChange msg, string owner)
-        {
-            Vec2Int POS = msg.BlockPosition;
-            Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
-            bool front = msg.Front;
-            byte code = msg.Code;
-
-            if (code == 0) // place item
-            {
-                bool has_item = true;
-                bool has_chunk = PlayerActions.PlayerHasChunk(owner, chunk);
-                bool can_place = WorldAPI.CanPlaceBlock(POS, front, new(msg.Item));
-
-                bool success = has_item && has_chunk && can_place;
-
-                if (success)
+                else
                 {
-                    WorldAPI.PlaceBlockWithEffects(POS, front, new(msg.Item));
-                }
-
-                BlockSender.AddRetBlockChange(new BlockChangeItem(owner, msg.Operation, POS, front, success));
-            }
-
-            else if (code == 1) // break using item
-            {
-                bool has_tool = true;
-                bool has_chunk = PlayerActions.PlayerHasChunk(owner, chunk);
-                bool can_break = WorldAPI.CanBreakBlock(POS, front, new(msg.Item), new(msg.Tool));
-
-                bool success = has_tool && has_chunk && can_break;
-
-                if (success)
-                {
-                    WorldAPI.BreakBlockWithEffects(POS, front, new(msg.Tool));
-                }
-
-                BlockSender.AddRetBlockChange(new BlockChangeItem(owner, msg.Operation, POS, front, success));
-            }
-        }
-
-        private void _ChatMessage(ChatMessage msg, string owner)
-        {
-            string message = msg.Message;
-
-            if (message.StartsWith("/")) // Command Execution
-            {
-                string command = message[1..];
-                var (result, answer) = CmdManager.ExecuteCommand(command, owner);
-
-                if (result != CmdResult.Ignore)
-                {
-                    LogType logType = ICmdExecutor.ConvertToLogType(result);
-
-                    String512[] answerParts = IStringStruct.Cut<String512>(answer, s => new(s));
-                    for (int i = 0; i < answerParts.Length; i++)
+                    if (!softLimit) // hard limit - disconnect client
                     {
-                        bool isLast = i == answerParts.Length - 1;
-                        ChatCode msgCode = isLast ?
-                            (result == CmdResult.Clear ? ChatCode.ClearChat : ChatCode.Default) :
-                            ChatCode.Incomplete;
-
-                        QuickServer.Send(owner, new ChatMessage(
-                            logType: logType,
-                            sender: (String64)"<Server>",
-                            message: answerParts[i],
-                            msgCode: msgCode
-                        ));
+                        Echo.Log("Rate limit for packet " + typeof(T).Name + " from " + owner + " exceeded.");
+                        QuickServer.KickRequest(owner);
                     }
                 }
             }
-            else // Chat Message
+            else // no rate limit
             {
-                ChatMessage packet = new ChatMessage(
-                    logType: LogType.Log,
-                    sender: (String64)$"[{owner}]",
-                    message: (String512)message
-                );
-
-                if (packet.TryGetMsgText(out string msgText))
-                {
-                    Echo.Log(msgText); // log to console
-                }
-
-                QuickServer.Broadcast(packet);
+                callback(msg, owner);
             }
+        });
+    }
+
+    public void Tick(float deltaTime)
+    {
+        _rateLimitTimer += deltaTime;
+        if (_rateLimitTimer >= 1f)
+        {
+            _rateLimitTimer %= 1f;
+            _rateLimits.Clear();
+        }
+    }
+
+    private void _AllowConnection(AllowConnection msg, string owner)
+    {
+        // WARNING:
+        // AllowConnection executes in a non-synchronized player context.
+        // No player data methods are reliable here.
+
+        PlayerActions.JoinPlayer(owner);
+        Echo.Log(owner + " joined the game.");
+    }
+
+    private void _Stop(Stop msg, string owner)
+    {
+        // WARNING:
+        // Stop executes in a non-synchronized player context.
+        // No player data methods are reliable here.
+
+        PlayerActions.DisconnectPlayer(owner);
+        Echo.Log(owner + " disconnected.");
+    }
+
+    private void _PlayerUpdate(PlayerUpdate msg, string owner)
+    {
+        PlayerUpdate lastPacket = PlayerActions.RecentPlayerUpdate(owner);
+        if (lastPacket == null || lastPacket.FixedFrame < msg.FixedFrame)
+        {
+            PlayerActions.UpdatePlayerDataIfHasController(owner, msg);
+        }
+    }
+
+    private void _CodeInfo(CodeInfo msg, string owner)
+    {
+        CodeInfo.Info code = msg.Code;
+
+        if (code == CodeInfo.Info.RespawnMe)
+        {
+            if (PlayerActions.StateOf(owner) == PlayerActions.PlayerState.Dead)
+                PlayerActions.CreatePlayerInstance(owner);
+        }
+    }
+
+    private void _BlockChange(BlockChange msg, string owner)
+    {
+        Vec2Int POS = msg.BlockPosition;
+        Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
+        bool front = msg.Front;
+        byte code = msg.Code;
+
+        if (code == 0) // place item
+        {
+            bool has_item = true;
+            bool has_chunk = PlayerActions.PlayerHasChunk(owner, chunk);
+            bool can_place = WorldAPI.CanPlaceBlock(POS, front, new(msg.Item));
+
+            bool success = has_item && has_chunk && can_place;
+
+            if (success)
+            {
+                WorldAPI.PlaceBlockWithEffects(POS, front, new(msg.Item));
+            }
+
+            BlockSender.AddRetBlockChange(new BlockChangeItem(owner, msg.Operation, POS, front, success));
+        }
+
+        else if (code == 1) // break using item
+        {
+            bool has_tool = true;
+            bool has_chunk = PlayerActions.PlayerHasChunk(owner, chunk);
+            bool can_break = WorldAPI.CanBreakBlock(POS, front, new(msg.Item), new(msg.Tool));
+
+            bool success = has_tool && has_chunk && can_break;
+
+            if (success)
+            {
+                WorldAPI.BreakBlockWithEffects(POS, front, new(msg.Tool));
+            }
+
+            BlockSender.AddRetBlockChange(new BlockChangeItem(owner, msg.Operation, POS, front, success));
+        }
+    }
+
+    private void _ChatMessage(ChatMessage msg, string owner)
+    {
+        string message = msg.Message;
+
+        if (message.StartsWith("/")) // Command Execution
+        {
+            string command = message[1..];
+            var (result, answer) = CmdManager.ExecuteCommand(command, owner);
+
+            if (result != CmdResult.Ignore)
+            {
+                LogType logType = ICmdExecutor.ConvertToLogType(result);
+
+                String512[] answerParts = IStringStruct.Cut<String512>(answer, s => new(s));
+                for (int i = 0; i < answerParts.Length; i++)
+                {
+                    bool isLast = i == answerParts.Length - 1;
+                    ChatCode msgCode = isLast ?
+                        (result == CmdResult.Clear ? ChatCode.ClearChat : ChatCode.Default) :
+                        ChatCode.Incomplete;
+
+                    QuickServer.Send(owner, new ChatMessage(
+                        logType: logType,
+                        sender: (String64)"<Server>",
+                        message: answerParts[i],
+                        msgCode: msgCode
+                    ));
+                }
+            }
+        }
+        else // Chat Message
+        {
+            ChatMessage packet = new ChatMessage(
+                logType: LogType.Log,
+                sender: (String64)$"[{owner}]",
+                message: (String512)message
+            );
+
+            if (packet.TryGetMsgText(out string msgText))
+            {
+                Echo.Log(msgText); // log to console
+            }
+
+            QuickServer.Broadcast(packet);
         }
     }
 }

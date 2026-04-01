@@ -4,10 +4,9 @@ using System.Collections.Generic;
 using Larnix.Core.Vectors;
 using Larnix.Blocks.Structs;
 
-namespace Larnix.Blocks.All
+namespace Larnix.Blocks.All;
+
+public sealed class Battery : Block, ISolidElectric, IElectricSource
 {
-    public sealed class Battery : Block, ISolidElectric, IElectricSource
-    {
-        public byte ElectricEmissionMask() => 0b1111;
-    }
+    public byte ElectricEmissionMask() => 0b1111;
 }

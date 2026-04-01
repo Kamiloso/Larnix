@@ -6,112 +6,111 @@ using System.Threading.Tasks;
 using Larnix.Socket.Frontend;
 using Larnix.Socket.Packets;
 
-namespace Larnix.Socket.Helpers.Networking
+namespace Larnix.Socket.Helpers.Networking;
+
+internal class RelayConnection : INetworkInteractions, IDisposable
 {
-    internal class RelayConnection : INetworkInteractions, IDisposable
+    public const ushort RELAY_PORT = 27681;
+
+    public ushort RemotePort { get; private set; } // relay port to connect to
+
+    private readonly UdpClient2 _udp;
+    private readonly IPEndPoint _endPoint;
+
+    private bool _disposed;
+
+    private enum RelayInfo : byte
     {
-        public const ushort RELAY_PORT = 27681;
+        KeepAlive = 0x00,
+        Start = 0x01,
+        Stop = 0x02
+    };
 
-        public ushort RemotePort { get; private set; } // relay port to connect to
-        
-        private readonly UdpClient2 _udp;
-        private readonly IPEndPoint _endPoint;
+    private RelayConnection(IPEndPoint endPoint, UdpClient2 udpClient)
+    {
+        _endPoint = endPoint;
+        _udp = udpClient;
+    }
 
-        private bool _disposed;
+    public static async Task<RelayConnection> EstablishRelayAsync(string address)
+    {
+        IPEndPoint endPoint = await Resolver.ResolveStringAsync(address, RELAY_PORT);
+        if (endPoint == null)
+            return null;
 
-        private enum RelayInfo : byte
+        UdpClient2 udpClient = new UdpClient2(
+            port: 0,
+            isListener: false,
+            isLoopback: IPAddress.IsLoopback(endPoint.Address),
+            isIPv6: endPoint.AddressFamily == AddressFamily.InterNetworkV6,
+            recvBufferSize: 1024 * 1024,
+            destination: endPoint
+            );
+        RelayConnection relay = new RelayConnection(endPoint, udpClient);
+
+        long timeNow = Timestamp.GetTimestamp();
+        long deadline = timeNow + 1500; // + 1500 miliseconds
+
+        relay.SendInfo(RelayInfo.Start); // send and wait for answer
+        while (Timestamp.GetTimestamp() < deadline)
         {
-            KeepAlive = 0x00,
-            Start = 0x01,
-            Stop = 0x02
-        };
-
-        private RelayConnection(IPEndPoint endPoint, UdpClient2 udpClient)
-        {
-            _endPoint = endPoint;
-            _udp = udpClient;
-        }
-
-        public static async Task<RelayConnection> EstablishRelayAsync(string address)
-        {
-            IPEndPoint endPoint = await Resolver.ResolveStringAsync(address, RELAY_PORT);
-            if (endPoint == null)
-                return null;
-
-            UdpClient2 udpClient = new UdpClient2(
-                port: 0,
-                isListener: false,
-                isLoopback: IPAddress.IsLoopback(endPoint.Address),
-                isIPv6: endPoint.AddressFamily == AddressFamily.InterNetworkV6,
-                recvBufferSize: 1024 * 1024,
-                destination: endPoint
-                );
-            RelayConnection relay = new RelayConnection(endPoint, udpClient);
-
-            long timeNow = Timestamp.GetTimestamp();
-            long deadline = timeNow + 1500; // + 1500 miliseconds
-
-            relay.SendInfo(RelayInfo.Start); // send and wait for answer
-            while (Timestamp.GetTimestamp() < deadline)
+            while (udpClient.TryReceive(out var item))
             {
-                while (udpClient.TryReceive(out var item))
+                IPEndPoint remoteEP = item.target;
+                byte[] bytes = item.data;
+
+                if (bytes.Length == 2)
                 {
-                    IPEndPoint remoteEP = item.target;
-                    byte[] bytes = item.data;
-
-                    if (bytes.Length == 2)
-                    {
-                        relay.RemotePort = (ushort)(bytes[0] << 8 | bytes[1]);
-                        return relay;
-                    }
-                }
-                await Task.Delay(100);
-            }
-
-            relay.Dispose();
-            return null; // timeout
-        }
-
-        public void KeepAlive()
-        {
-            SendInfo(RelayInfo.KeepAlive);
-        }
-
-        public void Send(IPEndPoint remoteEP, byte[] bytes)
-        {
-            bytes = new DataBox(remoteEP, bytes).SerializeV4();
-            _udp.Send(_endPoint, bytes);
-        }
-
-        public bool TryReceive(out DataBox result)
-        {
-            if (_udp.TryReceive(out DataBox wrapItem))
-            {
-                if (DataBox.TryDeserializeV4(wrapItem.data, out DataBox realItem))
-                {
-                    result = realItem;
-                    return true;
+                    relay.RemotePort = (ushort)(bytes[0] << 8 | bytes[1]);
+                    return relay;
                 }
             }
-
-            result = null;
-            return false;
+            await Task.Delay(100);
         }
 
-        private void SendInfo(RelayInfo info)
-        {
-            _udp.Send(_endPoint, new byte[] { (byte)info });
-        }
+        relay.Dispose();
+        return null; // timeout
+    }
 
-        public void Dispose()
+    public void KeepAlive()
+    {
+        SendInfo(RelayInfo.KeepAlive);
+    }
+
+    public void Send(IPEndPoint remoteEP, byte[] bytes)
+    {
+        bytes = new DataBox(remoteEP, bytes).SerializeV4();
+        _udp.Send(_endPoint, bytes);
+    }
+
+    public bool TryReceive(out DataBox result)
+    {
+        if (_udp.TryReceive(out DataBox wrapItem))
         {
-            if (!_disposed)
+            if (DataBox.TryDeserializeV4(wrapItem.data, out DataBox realItem))
             {
-                _disposed = true;
-
-                SendInfo(RelayInfo.Stop); // thread safe
-                _udp?.Dispose(); // thread safe
+                result = realItem;
+                return true;
             }
+        }
+
+        result = null;
+        return false;
+    }
+
+    private void SendInfo(RelayInfo info)
+    {
+        _udp.Send(_endPoint, new byte[] { (byte)info });
+    }
+
+    public void Dispose()
+    {
+        if (!_disposed)
+        {
+            _disposed = true;
+
+            SendInfo(RelayInfo.Stop); // thread safe
+            _udp?.Dispose(); // thread safe
         }
     }
 }

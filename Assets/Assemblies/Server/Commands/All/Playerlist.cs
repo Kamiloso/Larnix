@@ -7,49 +7,48 @@ using Larnix.Socket.Backend;
 using Larnix.Core;
 using CmdResult = Larnix.GameCore.ICmdExecutor.CmdResult;
 
-namespace Larnix.Server.Commands.All
+namespace Larnix.Server.Commands.All;
+
+internal class Playerlist : BaseCmd
 {
-    internal class Playerlist : BaseCmd
+    public override PrivilegeLevel PrivilegeLevel => PrivilegeLevel.Host;
+    public override string Pattern => $"{Name}";
+    public override string ShortDescription => "Displays a list of all connected players.";
+
+    private QuickServer QuickServer => GlobRef.Get<QuickServer>();
+    private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
+
+    public override void Inject(string command)
     {
-        public override PrivilegeLevel PrivilegeLevel => PrivilegeLevel.Host;
-        public override string Pattern => $"{Name}";
-        public override string ShortDescription => "Displays a list of all connected players.";
-
-        private QuickServer QuickServer => GlobRef.Get<QuickServer>();
-        private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
-
-        public override void Inject(string command)
+        if (!TrySplit(command, 1, out _))
         {
-            if (!TrySplit(command, 1, out _))
-            {
-                throw FormatException(InvalidCmdFormat);
-            }
+            throw FormatException(InvalidCmdFormat);
+        }
+    }
+
+    public override (CmdResult, string) Execute(string sender, PrivilegeLevel privilege)
+    {
+        IPEndPoint EndPointOf(string nick)
+        {
+            if (QuickServer.TryGetClientEndPoint(nick, out var endPoint))
+                return endPoint;
+
+            return null;
         }
 
-        public override (CmdResult, string) Execute(string sender, PrivilegeLevel privilege)
+        string StateOf(string nick)
         {
-            IPEndPoint EndPointOf(string nick)
-            {
-                if (QuickServer.TryGetClientEndPoint(nick, out var endPoint))
-                    return endPoint;
-                
-                return null;
-            }
-
-            string StateOf(string nick)
-            {
-                return PlayerActions
-                    .StateOf(nick)
-                    .ToString()
-                    .ToUpperInvariant();
-            }
-
-            IEnumerable<string> lines = PlayerActions.AllPlayers()
-                .Select(nick => $"{nick} from {EndPointOf(nick)} is {StateOf(nick)}.")
-                .OrderBy(line => line);
-
-            return (CmdResult.Raw,
-                MakeRobustList("PLAYER LIST", lines));
+            return PlayerActions
+                .StateOf(nick)
+                .ToString()
+                .ToUpperInvariant();
         }
+
+        IEnumerable<string> lines = PlayerActions.AllPlayers()
+            .Select(nick => $"{nick} from {EndPointOf(nick)} is {StateOf(nick)}.")
+            .OrderBy(line => line);
+
+        return (CmdResult.Raw,
+            MakeRobustList("PLAYER LIST", lines));
     }
 }

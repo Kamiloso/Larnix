@@ -8,67 +8,66 @@ using Larnix.Entities.All;
 using Larnix.Socket.Packets;
 using Larnix.Core;
 
-namespace Larnix.Server.Commands.All
+namespace Larnix.Server.Commands.All;
+
+internal class Tp : BaseCmd
 {
-    internal class Tp : BaseCmd
+    public override PrivilegeLevel PrivilegeLevel => PrivilegeLevel.Admin;
+    public override string Pattern => $"{Name} <nickname> <x> <y>";
+    public override string ShortDescription => "Teleports a player to a specific position.";
+
+    private QuickServer QuickServer => GlobRef.Get<QuickServer>();
+    private EntityManager EntityManager => GlobRef.Get<EntityManager>();
+    private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
+
+    private string _nickname;
+    private Vec2 _position;
+
+    public override void Inject(string command)
     {
-        public override PrivilegeLevel PrivilegeLevel => PrivilegeLevel.Admin;
-        public override string Pattern => $"{Name} <nickname> <x> <y>";
-        public override string ShortDescription => "Teleports a player to a specific position.";
-
-        private QuickServer QuickServer => GlobRef.Get<QuickServer>();
-        private EntityManager EntityManager => GlobRef.Get<EntityManager>();
-        private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
-
-        private string _nickname;
-        private Vec2 _position;
-
-        public override void Inject(string command)
+        if (TrySplit(command, 4, out string[] parts))
         {
-            if (TrySplit(command, 4, out string[] parts))
+            _nickname = parts[1];
+
+            if (!Validation.IsGoodNickname(_nickname))
             {
-                _nickname = parts[1];
-
-                if (!Validation.IsGoodNickname(_nickname))
-                {
-                    throw FormatException(Validation.WrongNicknameInfo);
-                }
-
-                if (!DoubleUtils.TryParse(parts[2], out double x) ||
-                    !DoubleUtils.TryParse(parts[3], out double y))
-                {
-                    throw FormatException("Cannot parse coordinates.");
-                }
-
-                _position = new Vec2(x, y);
+                throw FormatException(Validation.WrongNicknameInfo);
             }
-            else
+
+            if (!DoubleUtils.TryParse(parts[2], out double x) ||
+                !DoubleUtils.TryParse(parts[3], out double y))
             {
-                throw FormatException(InvalidCmdFormat);
+                throw FormatException("Cannot parse coordinates.");
             }
+
+            _position = new Vec2(x, y);
         }
-
-        public override (CmdResult, string) Execute(string sender, PrivilegeLevel privilege)
+        else
         {
-            if (PlayerActions.IsAlive(_nickname))
-            {
-                Vec2 _realPosition = _position + Common.UpEpsilon;
+            throw FormatException(InvalidCmdFormat);
+        }
+    }
 
-                Payload packet = new Teleport(_realPosition);
-                QuickServer.Send(_nickname, packet);
-                
-                EntityManager.TryGetPlayerController(_nickname, out var abstraction);
-                Player controller = (Player)abstraction.Controller;
-                controller.AcceptTeleport(_realPosition);
+    public override (CmdResult, string) Execute(string sender, PrivilegeLevel privilege)
+    {
+        if (PlayerActions.IsAlive(_nickname))
+        {
+            Vec2 _realPosition = _position + Common.UpEpsilon;
 
-                return (CmdResult.Success, // should show _position
-                    $"Player {_nickname} has been teleported to {_position}.");
-            }
-            else
-            {
-                return (CmdResult.Error,
-                    $"Player {_nickname} is not alive.");
-            }
+            Payload packet = new Teleport(_realPosition);
+            QuickServer.Send(_nickname, packet);
+
+            EntityManager.TryGetPlayerController(_nickname, out var abstraction);
+            Player controller = (Player)abstraction.Controller;
+            controller.AcceptTeleport(_realPosition);
+
+            return (CmdResult.Success, // should show _position
+                $"Player {_nickname} has been teleported to {_position}.");
+        }
+        else
+        {
+            return (CmdResult.Error,
+                $"Player {_nickname} is not alive.");
         }
     }
 }

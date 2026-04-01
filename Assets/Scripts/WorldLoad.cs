@@ -8,86 +8,85 @@ using ServerType = Larnix.Server.ServerType;
 using ServerAnswer = Larnix.Server.ServerRunner.ServerAnswer;
 using RunSuggestions = Larnix.Server.ServerRunner.RunSuggestions;
 
-namespace Larnix
+namespace Larnix;
+
+public static class WorldLoad
 {
-    public static class WorldLoad
+    // Client data
+    public static string ScreenLoad { get; private set; } = "MainMenu";
+    public static string WorldPath { get; private set; } = null;
+    public static bool IsMultiplayer { get; private set; } = false;
+    public static bool PlayedAlready { get; private set; } = false;
+
+    // Login data
+    public static string Address { get; private set; } = "";
+    public static string Authcode { get; private set; } = "";
+    public static string Nickname { get; private set; } = "";
+    public static string Password { get; private set; } = "";
+
+    public static void StartLocal(string world, string nickname, RunSuggestions suggestions = null)
     {
-        // Client data
-        public static string ScreenLoad { get; private set; } = "MainMenu";
-        public static string WorldPath { get; private set; } = null;
-        public static bool IsMultiplayer { get; private set; } = false;
-        public static bool PlayedAlready { get; private set; } = false;
+        if (suggestions == null)
+            suggestions = new RunSuggestions();
 
-        // Login data
-        public static string Address { get; private set; } = "";
-        public static string Authcode { get; private set; } = "";
-        public static string Nickname { get; private set; } = "";
-        public static string Password { get; private set; } = "";
+        ScreenLoad = "GameUI";
+        WorldPath = Path.Combine(WorldSelect.SavesPath, world);
+        IsMultiplayer = false;
+        PlayedAlready = true;
 
-        public static void StartLocal(string world, string nickname, RunSuggestions suggestions = null)
-        {
-            if (suggestions == null)
-                suggestions = new RunSuggestions();
+        // Load server
+        ServerAnswer answer = ServerRunner.Instance.Start(
+            ServerType.Local, WorldPath, suggestions);
 
-            ScreenLoad = "GameUI";
-            WorldPath = Path.Combine(WorldSelect.SavesPath, world);
-            IsMultiplayer = false;
-            PlayedAlready = true;
+        // Configure client
+        Address = answer.Address;
+        Authcode = answer.Authcode;
+        Nickname = nickname;
+        Password = Common.ReservedPassword;
 
-            // Load server
-            ServerAnswer answer = ServerRunner.Instance.Start(
-                ServerType.Local, WorldPath, suggestions);
+        // Load client
+        SceneManager.LoadScene("Client");
+    }
 
-            // Configure client
-            Address = answer.Address;
-            Authcode = answer.Authcode;
-            Nickname = nickname;
-            Password = Common.ReservedPassword;
+    public static void StartHost(string world, string nickname, ServerAnswer input)
+    {
+        ScreenLoad = "GameUI";
+        WorldPath = Path.Combine(WorldSelect.SavesPath, world);
+        IsMultiplayer = false;
+        PlayedAlready = true;
 
-            // Load client
-            SceneManager.LoadScene("Client");
-        }
+        // server is already running locally...
 
-        public static void StartHost(string world, string nickname, ServerAnswer input)
-        {
-            ScreenLoad = "GameUI";
-            WorldPath = Path.Combine(WorldSelect.SavesPath, world);
-            IsMultiplayer = false;
-            PlayedAlready = true;
+        // Configure client
+        Address = input.Address;
+        Authcode = input.Authcode;
+        Nickname = nickname;
+        Password = Common.ReservedPassword;
 
-            // server is already running locally...
+        // Load client
+        SceneManager.LoadScene("Client");
+    }
 
-            // Configure client
-            Address = input.Address;
-            Authcode = input.Authcode;
-            Nickname = nickname;
-            Password = Common.ReservedPassword;
+    public static void StartRemote(string address, string authcode, string nickname, string password)
+    {
+        ScreenLoad = "GameUI";
+        WorldPath = null;
+        IsMultiplayer = true;
+        PlayedAlready = true;
 
-            // Load client
-            SceneManager.LoadScene("Client");
-        }
+        // server is running remotely...
 
-        public static void StartRemote(string address, string authcode, string nickname, string password)
-        {
-            ScreenLoad = "GameUI";
-            WorldPath = null;
-            IsMultiplayer = true;
-            PlayedAlready = true;
+        Address = address;
+        Authcode = authcode;
+        Nickname = nickname;
+        Password = password;
 
-            // server is running remotely...
+        // Load client
+        SceneManager.LoadScene("Client");
+    }
 
-            Address = address;
-            Authcode = authcode;
-            Nickname = nickname;
-            Password = password;
-
-            // Load client
-            SceneManager.LoadScene("Client");
-        }
-
-        public static void SetStartingScreen(string screenName)
-        {
-            ScreenLoad = screenName;
-        }
+    public static void SetStartingScreen(string screenName)
+    {
+        ScreenLoad = screenName;
     }
 }

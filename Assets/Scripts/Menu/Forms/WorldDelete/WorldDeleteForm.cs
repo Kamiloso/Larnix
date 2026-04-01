@@ -4,45 +4,44 @@ using UnityEngine;
 using Larnix.Menu.Worlds;
 using Larnix.Core;
 
-namespace Larnix.Menu.Forms
+namespace Larnix.Menu.Forms;
+
+public class WorldDeleteForm : BaseForm
 {
-    public class WorldDeleteForm : BaseForm
+    private Menu Menu => GlobRef.Get<Menu>();
+    private WorldSelect WorldSelect => GlobRef.Get<WorldSelect>();
+    [SerializeField] TMP_InputField IF_DeleteName;
+
+    public override void EnterForm(params string[] args)
     {
-        private Menu Menu => GlobRef.Get<Menu>();
-        private WorldSelect WorldSelect => GlobRef.Get<WorldSelect>();
-        [SerializeField] TMP_InputField IF_DeleteName;
+        IF_DeleteName.text = args[0];
 
-        public override void EnterForm(params string[] args)
+        TX_ErrorText.text = "";
+
+        Menu.SetScreen("DeleteWorld");
+    }
+
+    protected override ErrorCode GetErrorCode()
+    {
+        return ErrorCode.SUCCESS;
+    }
+
+    protected override void RealSubmit()
+    {
+        string delName = IF_DeleteName.text;
+        string delDir = Path.Combine(WorldSelect.SavesPath, delName);
+
+        if (Directory.Exists(delDir))
         {
-            IF_DeleteName.text = args[0];
-
-            TX_ErrorText.text = "";
-
-            Menu.SetScreen("DeleteWorld");
+            Directory.Delete(delDir, true);
+            WorldSelect.ReloadWorldList();
         }
 
-        protected override ErrorCode GetErrorCode()
-        {
-            return ErrorCode.SUCCESS;
-        }
+        Menu.SetScreen("Singleplayer");
+    }
 
-        protected override void RealSubmit()
-        {
-            string delName = IF_DeleteName.text;
-            string delDir = Path.Combine(WorldSelect.SavesPath, delName);
-
-            if (Directory.Exists(delDir))
-            {
-                Directory.Delete(delDir, true);
-                WorldSelect.ReloadWorldList();
-            }
-            
-            Menu.SetScreen("Singleplayer");
-        }
-
-        public void Cancel()
-        {
-            Menu.GoBack();
-        }
+    public void Cancel()
+    {
+        Menu.GoBack();
     }
 }

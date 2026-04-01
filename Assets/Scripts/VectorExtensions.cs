@@ -3,65 +3,64 @@ using Larnix.Core.Vectors;
 using System;
 using Larnix.GameCore.Utils;
 
-namespace Larnix
+namespace Larnix;
+
+public static class VectorExtensions
 {
-    public static class VectorExtensions
+    // === Col32 extenstions ===
+    public static Col32 ToLarnix(this Color32 c) => new Col32(c.r, c.g, c.b, c.a);
+    public static Color32 ToUnity(this Col32 c) => new Color32(c.r, c.g, c.b, c.a);
+
+    // === Vec2Int extensions ===
+
+    public static Vec2Int ToLarnix(this Vector2Int v) => new Vec2Int(v.x, v.y);
+    public static Vector2Int ToUnity(this Vec2Int v) => new Vector2Int(v.x, v.y);
+    public static Vector3Int ToUnity3(this Vec2Int v) => new Vector3Int(v.x, v.y, 0);
+
+    // === Vec2 extensions ===
+
+    public const int ORIGIN_STEP = BlockUtils.CHUNK_SIZE * 64;
+
+    public static Vec2 ConstructVec2(Vector2 pos, Vec2 origin)
     {
-        // === Col32 extenstions ===
-        public static Col32 ToLarnix(this Color32 c) => new Col32(c.r, c.g, c.b, c.a);
-        public static Color32 ToUnity(this Col32 c) => new Color32(c.r, c.g, c.b, c.a);
+        double _x = origin.x + pos.x;
+        double _y = origin.y + pos.y;
 
-        // === Vec2Int extensions ===
+        return new Vec2(
+            double.IsFinite(_x) ? _x : 0.0,
+            double.IsFinite(_y) ? _y : 0.0
+        );
+    }
 
-        public static Vec2Int ToLarnix(this Vector2Int v) => new Vec2Int(v.x, v.y);
-        public static Vector2Int ToUnity(this Vec2Int v) => new Vector2Int(v.x, v.y);
-        public static Vector3Int ToUnity3(this Vec2Int v) => new Vector3Int(v.x, v.y, 0);
+    public static Vec2 ExtractOrigin(this Vec2 v)
+    {
+        Vec2Int middleblock = ORIGIN_STEP * v.ExtractSector() + ORIGIN_STEP / 2 * Vec2Int.One;
+        return new Vec2(
+            middleblock.x - 0.5,
+            middleblock.y - 0.5
+            );
+    }
 
-        // === Vec2 extensions ===
+    public static Vector2 ExtractPosition(this Vec2 v, Vec2 origin)
+    {
+        return new Vector2(
+            (float)(v.x - origin.x),
+            (float)(v.y - origin.y)
+        );
+    }
 
-        public const int ORIGIN_STEP = BlockUtils.CHUNK_SIZE * 64;
-
-        public static Vec2 ConstructVec2(Vector2 pos, Vec2 origin)
+    public static Vec2Int ExtractSector(this Vec2 v)
+    {
+        try
         {
-            double _x = origin.x + pos.x;
-            double _y = origin.y + pos.y;
-
-            return new Vec2(
-                double.IsFinite(_x) ? _x : 0.0,
-                double.IsFinite(_y) ? _y : 0.0
+            return new Vec2Int(
+                (int)Math.Floor((v.x + 0.5) / ORIGIN_STEP),
+                (int)Math.Floor((v.y + 0.5) / ORIGIN_STEP)
             );
         }
-
-        public static Vec2 ExtractOrigin(this Vec2 v)
+        catch (OverflowException)
         {
-            Vec2Int middleblock = ORIGIN_STEP * v.ExtractSector() + ORIGIN_STEP / 2 * Vec2Int.One;
-            return new Vec2(
-                middleblock.x - 0.5,
-                middleblock.y - 0.5
-                );
-        }
-
-        public static Vector2 ExtractPosition(this Vec2 v, Vec2 origin)
-        {
-            return new Vector2(
-                (float)(v.x - origin.x),
-                (float)(v.y - origin.y)
-            );
-        }
-
-        public static Vec2Int ExtractSector(this Vec2 v)
-        {
-            try
-            {
-                return new Vec2Int(
-                    (int)Math.Floor((v.x + 0.5) / ORIGIN_STEP),
-                    (int)Math.Floor((v.y + 0.5) / ORIGIN_STEP)
-                );
-            }
-            catch (OverflowException)
-            {
-                return default;
-            }
+            return default;
         }
     }
 }

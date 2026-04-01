@@ -9,112 +9,111 @@ using Larnix.Blocks.All;
 using BlockInits = Larnix.Blocks.Block.BlockInits;
 using Larnix.Core.Enums;
 
-namespace Larnix.Blocks
+namespace Larnix.Blocks;
+
+public static class BlockFactory
 {
-    public static class BlockFactory
+    private static Dictionary<BlockID, BlockInfo> BlockCache = new();
+    private static object _locker = new();
+
+    private static readonly string Namespace = typeof(Air).Namespace;
+    private static readonly string AsmName = typeof(Air).Assembly.GetName().Name;
+
+    private class BlockInfo
     {
-        private static Dictionary<BlockID, BlockInfo> BlockCache = new();
-        private static object _locker = new();
+        public string Name;
+        public Type Type;
+        public Func<BlockInits, Block> Constructor;
+        public List<Action<Block>> Inits = new();
 
-        private static readonly string Namespace = typeof(Air).Namespace;
-        private static readonly string AsmName = typeof(Air).Assembly.GetName().Name;
+        public Block SlaveInstance { get; init; }
 
-        private class BlockInfo
+        public BlockInfo(BlockID ID)
         {
-            public string Name;
-            public Type Type;
-            public Func<BlockInits, Block> Constructor;
-            public List<Action<Block>> Inits = new();
+            Name = ID.ToString();
+            Type = Type.GetType(Namespace + "." + Name + ", " + AsmName);
 
-            public Block SlaveInstance { get; init; }
+            var ctorInfo = Type?.GetConstructor(Array.Empty<Type>());
+            var ctor = Type != null ? RuntimeCompilation.CompileConstructor(ctorInfo) : null;
 
-            public BlockInfo(BlockID ID)
+            if (ctor != null && typeof(Block).IsAssignableFrom(Type))
             {
-                Name = ID.ToString();
-                Type = Type.GetType(Namespace + "." + Name + ", " + AsmName);
-
-                var ctorInfo = Type?.GetConstructor(Array.Empty<Type>());
-                var ctor = Type != null ? RuntimeCompilation.CompileConstructor(ctorInfo) : null;
-
-                if (ctor != null && typeof(Block).IsAssignableFrom(Type))
+                Constructor = inits =>
                 {
-                    Constructor = inits =>
-                    {
-                        var obj = (Block)ctor(Array.Empty<object>());
-                        obj.Construct(inits);
-                        return obj;
-                    };
-                    SlaveInstance = (Block)FormatterServices.GetUninitializedObject(Type);
+                    var obj = (Block)ctor(Array.Empty<object>());
+                    obj.Construct(inits);
+                    return obj;
+                };
+                SlaveInstance = (Block)FormatterServices.GetUninitializedObject(Type);
 
-                    var ifaces = Type?.GetInterfaces() ?? Array.Empty<Type>();
-                    foreach (var iface in ifaces)
-                    {
-                        if (iface.Namespace == null || !iface.Namespace.StartsWith(Namespace))
-                            continue;
+                var ifaces = Type?.GetInterfaces() ?? Array.Empty<Type>();
+                foreach (var iface in ifaces)
+                {
+                    if (iface.Namespace == null || !iface.Namespace.StartsWith(Namespace))
+                        continue;
 
-                        MethodInfo minfo = iface.GetMethod("Init", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                        if (minfo != null && minfo.GetParameters().Length == 0)
-                        {
-                            var mcompiled = RuntimeCompilation.CompileMethod(minfo);
-                            Inits.Add(b => mcompiled(b, Array.Empty<object>()));
-                        }
+                    MethodInfo minfo = iface.GetMethod("Init", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                    if (minfo != null && minfo.GetParameters().Length == 0)
+                    {
+                        var mcompiled = RuntimeCompilation.CompileMethod(minfo);
+                        Inits.Add(b => mcompiled(b, Array.Empty<object>()));
                     }
                 }
-                else
-                {
-                    Echo.LogWarning($"Class {Namespace}.{Name} must exist. Loading base class instead...");
-
-                    Constructor = inits =>
-                    {
-                        var obj = new Block();
-                        obj.Construct(inits);
-                        return obj;
-                    };
-                    SlaveInstance = (Block)FormatterServices.GetUninitializedObject(typeof(Block));
-                }
             }
-        }
-
-        private static BlockInfo GetBlockInfo(BlockID ID)
-        {
-            lock (_locker)
+            else
             {
-                if (BlockCache.ContainsKey(ID))
+                Echo.LogWarning($"Class {Namespace}.{Name} must exist. Loading base class instead...");
+
+                Constructor = inits =>
                 {
-                    return BlockCache[ID];
-                }
-                else
-                {
-                    BlockInfo info = new BlockInfo(ID);
-                    BlockCache[ID] = info;
-                    return info;
-                }
+                    var obj = new Block();
+                    obj.Construct(inits);
+                    return obj;
+                };
+                SlaveInstance = (Block)FormatterServices.GetUninitializedObject(typeof(Block));
             }
         }
+    }
 
-        public static Block ConstructBlockObject(BlockInits blockInits)
+    private static BlockInfo GetBlockInfo(BlockID ID)
+    {
+        lock (_locker)
         {
-            BlockID id = blockInits.BlockData.ID;
-            BlockInfo info = GetBlockInfo(id);
-            Block blockserv = info.Constructor(blockInits);
-
-            foreach (var init in info.Inits)
+            if (BlockCache.ContainsKey(ID))
             {
-                init(blockserv);
+                return BlockCache[ID];
             }
-
-            return blockserv;
+            else
+            {
+                BlockInfo info = new BlockInfo(ID);
+                BlockCache[ID] = info;
+                return info;
+            }
         }
+    }
 
-        public static bool HasInterface<TIface>(BlockID ID) where TIface : class, IBlockInterface
+    public static Block ConstructBlockObject(BlockInits blockInits)
+    {
+        BlockID id = blockInits.BlockData.ID;
+        BlockInfo info = GetBlockInfo(id);
+        Block blockserv = info.Constructor(blockInits);
+
+        foreach (var init in info.Inits)
         {
-            return GetSlaveInstance<TIface>(ID) != null;
+            init(blockserv);
         }
 
-        public static TIface GetSlaveInstance<TIface>(BlockID ID) where TIface : class, IBlockInterface
-        {
-            BlockInfo info = GetBlockInfo(ID);
-            return info.SlaveInstance as TIface;
-        }
+        return blockserv;
+    }
+
+    public static bool HasInterface<TIface>(BlockID ID) where TIface : class, IBlockInterface
+    {
+        return GetSlaveInstance<TIface>(ID) != null;
+    }
+
+    public static TIface GetSlaveInstance<TIface>(BlockID ID) where TIface : class, IBlockInterface
+    {
+        BlockInfo info = GetBlockInfo(ID);
+        return info.SlaveInstance as TIface;
     }
 }

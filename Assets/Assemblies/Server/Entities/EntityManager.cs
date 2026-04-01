@@ -17,243 +17,242 @@ using Larnix.Core.Misc;
 using Larnix.GameCore;
 using Larnix.GameCore.Structs;
 
-namespace Larnix.Server.Entities
+namespace Larnix.Server.Entities;
+
+internal enum EntityLoadState { Loading, Active, Unloaded }
+internal class EntityManager : IScript
 {
-    internal enum EntityLoadState { Loading, Active, Unloaded }
-    internal class EntityManager : IScript
+    private readonly Dictionary<string, EntityAbstraction> _playerControllers = new();
+    private readonly Dictionary<ulong, EntityAbstraction> _entityControllers = new();
+
+    private Clock Clock => GlobRef.Get<Clock>();
+    private ServerConfig ServerConfig => GlobRef.Get<ServerConfig>();
+    private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
+    private QuickServer QuickServer => GlobRef.Get<QuickServer>();
+    private EntityDataManager EntityDataManager => GlobRef.Get<EntityDataManager>();
+    private Chunks Chunks => GlobRef.Get<Chunks>();
+
+    private uint _updateCounter = 0; // just to check modulo when sending NearbyEntities packet
+
+    void IScript.EarlyFrameUpdate()
     {
-        private readonly Dictionary<string, EntityAbstraction> _playerControllers = new();
-        private readonly Dictionary<ulong, EntityAbstraction> _entityControllers = new();
+        // MUST EXECUTE AFTER Chunks.EarlyFrameUpdate() TO
+        // UNLOAD ENTITIES INSTANTLY AFTER CHUNK UNLOADING!!!
 
-        private Clock Clock => GlobRef.Get<Clock>();
-        private ServerConfig ServerConfig => GlobRef.Get<ServerConfig>();
-        private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
-        private QuickServer QuickServer => GlobRef.Get<QuickServer>();
-        private EntityDataManager EntityDataManager => GlobRef.Get<EntityDataManager>();
-        private Chunks Chunks => GlobRef.Get<Chunks>();
-
-        private uint _updateCounter = 0; // just to check modulo when sending NearbyEntities packet
-
-        void IScript.EarlyFrameUpdate()
+        // Unload entities that are in unloaded chunks
+        foreach (ulong uid in _entityControllers.Keys.ToList())
         {
-            // MUST EXECUTE AFTER Chunks.EarlyFrameUpdate() TO
-            // UNLOAD ENTITIES INSTANTLY AFTER CHUNK UNLOADING!!!
+            EntityAbstraction controller = _entityControllers[uid];
+            if (!controller.IsPlayer)
+            {
+                if (Chunks.IsEntityInZone(controller, ChunkLoadState.None))
+                    UnloadEntity(uid);
+            }
+        }
 
-            // Unload entities that are in unloaded chunks
+        // Activate entities that are in loaded chunks, but not active yet
+        Common.DoForSeconds(3.0, (timer, seconds) =>
+        {
             foreach (ulong uid in _entityControllers.Keys.ToList())
             {
                 EntityAbstraction controller = _entityControllers[uid];
-                if (!controller.IsPlayer)
+                if (!controller.IsActive && !controller.IsPlayer)
                 {
-                    if (Chunks.IsEntityInZone(controller, ChunkLoadState.None))
-                        UnloadEntity(uid);
-                }
-            }
-
-            // Activate entities that are in loaded chunks, but not active yet
-            Common.DoForSeconds(3.0, (timer, seconds) =>
-            {
-                foreach (ulong uid in _entityControllers.Keys.ToList())
-                {
-                    EntityAbstraction controller = _entityControllers[uid];
-                    if (!controller.IsActive && !controller.IsPlayer)
+                    if (Chunks.IsEntityInZone(controller, ChunkLoadState.Active))
                     {
-                        if (Chunks.IsEntityInZone(controller, ChunkLoadState.Active))
-                        {
-                            controller.Activate();
-                            
-                            double elapsed = timer.Elapsed.TotalSeconds;
-                            if (elapsed >= seconds) return;
-                        }
-                    }
-                }
-            });
-        }
+                        controller.Activate();
 
-        void IScript.FrameUpdate()
-        {
-            // Frame update for active entities
-            foreach (var controller in _entityControllers.Values.ToList())
-            {
-                if (controller.IsActive)
-                    controller.FrameUpdate();
-            }
-
-            // Kill entities when needed
-            foreach (var controller in _entityControllers.Values.ToList())
-            {
-                if (controller.IsActive)
-                {
-                    Storage storage = controller.ActiveData.NBT;
-                    if (Tags.TryConsume(storage, "tags", Tags.TO_BE_KILLED))
-                    {
-                        ulong uid = controller.UID;
-                        KillEntity(uid);
+                        double elapsed = timer.Elapsed.TotalSeconds;
+                        if (elapsed >= seconds) return;
                     }
                 }
             }
+        });
+    }
+
+    void IScript.FrameUpdate()
+    {
+        // Frame update for active entities
+        foreach (var controller in _entityControllers.Values.ToList())
+        {
+            if (controller.IsActive)
+                controller.FrameUpdate();
         }
 
-        void IScript.PostLateFrameUpdate()
+        // Kill entities when needed
+        foreach (var controller in _entityControllers.Values.ToList())
         {
-            if (Clock.FixedFrame % ServerConfig.PeriodicTasks_EntityBroadcastPeriodFrames == 0)
+            if (controller.IsActive)
             {
-                var broadcastsToSend = new List<(string Nickname, EntityBroadcast Packet)>();
-
-                foreach (string nickname in PlayerActions.AllPlayers())
+                Storage storage = controller.ActiveData.NBT;
+                if (Tags.TryConsume(storage, "tags", Tags.TO_BE_KILLED))
                 {
-                    ulong playerUID = PlayerActions.UidByNickname(nickname);
-                    Vec2 playerPos = PlayerActions.RenderingPosition(nickname);
+                    ulong uid = controller.UID;
+                    KillEntity(uid);
+                }
+            }
+        }
+    }
 
-                    var entityHeaders = new Dictionary<ulong, EntityHeader>();
-                    var playerFixedIndexes = new Dictionary<ulong, uint>();
-                    var entitiesWithInactive = new HashSet<ulong>(); // contains inactive entities too (not inactive players)
+    void IScript.PostLateFrameUpdate()
+    {
+        if (Clock.FixedFrame % ServerConfig.PeriodicTasks_EntityBroadcastPeriodFrames == 0)
+        {
+            var broadcastsToSend = new List<(string Nickname, EntityBroadcast Packet)>();
 
-                    foreach (ulong uid in _entityControllers.Keys)
+            foreach (string nickname in PlayerActions.AllPlayers())
+            {
+                ulong playerUID = PlayerActions.UidByNickname(nickname);
+                Vec2 playerPos = PlayerActions.RenderingPosition(nickname);
+
+                var entityHeaders = new Dictionary<ulong, EntityHeader>();
+                var playerFixedIndexes = new Dictionary<ulong, uint>();
+                var entitiesWithInactive = new HashSet<ulong>(); // contains inactive entities too (not inactive players)
+
+                foreach (ulong uid in _entityControllers.Keys)
+                {
+                    if (uid == playerUID)
+                        continue; // skip self
+
+                    // checking entities to add
+                    EntityAbstraction entity = _entityControllers[uid];
+                    Vec2 entityPos = entity.ActiveData.Position;
+
+                    const float MAX_DISTANCE = 50f;
+                    if (Vec2.Distance(playerPos, entityPos) < MAX_DISTANCE)
                     {
-                        if (uid == playerUID)
-                            continue; // skip self
-
-                        // checking entities to add
-                        EntityAbstraction entity = _entityControllers[uid];
-                        Vec2 entityPos = entity.ActiveData.Position;
-
-                        const float MAX_DISTANCE = 50f;
-                        if (Vec2.Distance(playerPos, entityPos) < MAX_DISTANCE)
+                        if (entity.IsActive)
                         {
-                            if (entity.IsActive)
+                            entityHeaders.Add(uid, entity.ActiveData.Header);
+                            entitiesWithInactive.Add(uid);
+
+                            // adding indexes
+                            if (entity.IsPlayer)
                             {
-                                entityHeaders.Add(uid, entity.ActiveData.Header);
+                                PlayerUpdate recentUpdate = PlayerActions.RecentPlayerUpdate(entity.Nickname);
+                                uint fixedFrame = recentUpdate.FixedFrame;
+
+                                playerFixedIndexes.Add(uid, fixedFrame);
+                            }
+                        }
+                        else
+                        {
+                            if (!entity.IsPlayer)
+                            {
                                 entitiesWithInactive.Add(uid);
-
-                                // adding indexes
-                                if (entity.IsPlayer)
-                                {
-                                    PlayerUpdate recentUpdate = PlayerActions.RecentPlayerUpdate(entity.Nickname);
-                                    uint fixedFrame = recentUpdate.FixedFrame;
-
-                                    playerFixedIndexes.Add(uid, fixedFrame);
-                                }
-                            }
-                            else
-                            {
-                                if (!entity.IsPlayer)
-                                {
-                                    entitiesWithInactive.Add(uid);
-                                }
                             }
                         }
                     }
-
-                    bool sendAtLeastOne = _updateCounter % 6 == 0;
-                    PlayerActions.UpdateNearbyUIDs(
-                        nickname, entitiesWithInactive, Clock.FixedFrame, sendAtLeastOne);
-
-                    var fragments = EntityBroadcast.CreateList(Clock.FixedFrame, entityHeaders, playerFixedIndexes);
-                    foreach (var brdcst in fragments)
-                    {
-                        broadcastsToSend.Add((nickname, brdcst));
-                    }
                 }
 
-                broadcastsToSend = broadcastsToSend
-                    .OrderBy(_ => RandUtils.NextInt())
-                    .ToList();
-                
-                foreach (var pair in broadcastsToSend)
+                bool sendAtLeastOne = _updateCounter % 6 == 0;
+                PlayerActions.UpdateNearbyUIDs(
+                    nickname, entitiesWithInactive, Clock.FixedFrame, sendAtLeastOne);
+
+                var fragments = EntityBroadcast.CreateList(Clock.FixedFrame, entityHeaders, playerFixedIndexes);
+                foreach (var brdcst in fragments)
                 {
-                    QuickServer.Send(pair.Nickname, pair.Packet, false); // fast mode (over raw UDP)
+                    broadcastsToSend.Add((nickname, brdcst));
                 }
-
-                _updateCounter++;
             }
-        }
 
-        public void CreatePlayerController(string nickname)
-        {
-            EntityAbstraction controller = EntityAbstraction.CreatePlayerController(nickname);
-            _playerControllers.Add(nickname, controller);
-            _entityControllers.Add(controller.UID, controller);
+            broadcastsToSend = broadcastsToSend
+                .OrderBy(_ => RandUtils.NextInt())
+                .ToList();
 
-            Payload packet = new PlayerInitialize(
-                position: controller.ActiveData.Position,
-                myUid: controller.UID,
-                lastFixedFrame: Clock.FixedFrame - 1
-            );
-            QuickServer.Send(nickname, packet);
-        }
-
-        public bool TryGetPlayerController(string nickname, out EntityAbstraction controller)
-        {
-            return _playerControllers.TryGetValue(nickname, out controller);
-        }
-
-        public bool TryUnloadPlayerController(string nickname)
-        {
-            bool success;
-            if (success = _playerControllers.TryGetValue(nickname, out var controller))
+            foreach (var pair in broadcastsToSend)
             {
+                QuickServer.Send(pair.Nickname, pair.Packet, false); // fast mode (over raw UDP)
+            }
+
+            _updateCounter++;
+        }
+    }
+
+    public void CreatePlayerController(string nickname)
+    {
+        EntityAbstraction controller = EntityAbstraction.CreatePlayerController(nickname);
+        _playerControllers.Add(nickname, controller);
+        _entityControllers.Add(controller.UID, controller);
+
+        Payload packet = new PlayerInitialize(
+            position: controller.ActiveData.Position,
+            myUid: controller.UID,
+            lastFixedFrame: Clock.FixedFrame - 1
+        );
+        QuickServer.Send(nickname, packet);
+    }
+
+    public bool TryGetPlayerController(string nickname, out EntityAbstraction controller)
+    {
+        return _playerControllers.TryGetValue(nickname, out controller);
+    }
+
+    public bool TryUnloadPlayerController(string nickname)
+    {
+        bool success;
+        if (success = _playerControllers.TryGetValue(nickname, out var controller))
+        {
+            _playerControllers.Remove(nickname);
+            _entityControllers.Remove(controller.UID);
+            controller.UnloadEntityInstant();
+        }
+        return success;
+    }
+
+    public bool SummonEntity(EntityData entityData)
+    {
+        if (!Chunks.IsLoadedPosition(entityData.Position))
+            return false;
+
+        ulong uid = EntityDataManager.NextUID(); // generate new
+
+        EntityAbstraction controller = EntityAbstraction.CreateEntityController(entityData, uid);
+        _entityControllers.Add(controller.UID, controller);
+        return true;
+    }
+
+    public void PrepareEntitiesByChunk(Vec2Int chunkCoords)
+    {
+        Dictionary<ulong, EntityData> entities = EntityDataManager.GetUnloadedEntitiesByChunk(chunkCoords);
+        foreach (var kvp in entities)
+        {
+            EntityAbstraction controller = EntityAbstraction.CreateEntityController(kvp.Value, kvp.Key);
+            _entityControllers.Add(controller.UID, controller);
+        }
+    }
+
+    public void KillEntity(ulong uid)
+    {
+        if (_entityControllers.TryGetValue(uid, out var controller))
+        {
+            if (controller.IsPlayer)
+            {
+                string nickname = controller.Nickname;
                 _playerControllers.Remove(nickname);
-                _entityControllers.Remove(controller.UID);
-                controller.UnloadEntityInstant();
+
+                CodeInfo packet = new CodeInfo(CodeInfo.Info.YouDie);
+                QuickServer.Send(nickname, packet);
             }
-            return success;
+
+            controller.DeleteEntityInstant();
+            _entityControllers.Remove(uid);
         }
+        else throw new InvalidOperationException("Entity with ID " + uid + " is not loaded!");
+    }
 
-        public bool SummonEntity(EntityData entityData)
+    private void UnloadEntity(ulong uid)
+    {
+        if (_entityControllers.TryGetValue(uid, out var controller))
         {
-            if (!Chunks.IsLoadedPosition(entityData.Position))
-                return false;
-
-            ulong uid = EntityDataManager.NextUID(); // generate new
-
-            EntityAbstraction controller = EntityAbstraction.CreateEntityController(entityData, uid);
-            _entityControllers.Add(controller.UID, controller);
-            return true;
-        }
-
-        public void PrepareEntitiesByChunk(Vec2Int chunkCoords)
-        {
-            Dictionary<ulong, EntityData> entities = EntityDataManager.GetUnloadedEntitiesByChunk(chunkCoords);
-            foreach (var kvp in entities)
+            if (controller.IsPlayer)
             {
-                EntityAbstraction controller = EntityAbstraction.CreateEntityController(kvp.Value, kvp.Key);
-                _entityControllers.Add(controller.UID, controller);
+                throw new InvalidOperationException("Trying to unload a player entity!");
             }
+
+            controller.UnloadEntityInstant();
+            _entityControllers.Remove(uid);
         }
-
-        public void KillEntity(ulong uid)
-        {
-            if (_entityControllers.TryGetValue(uid, out var controller))
-            {
-                if (controller.IsPlayer)
-                {
-                    string nickname = controller.Nickname;
-                    _playerControllers.Remove(nickname);
-
-                    CodeInfo packet = new CodeInfo(CodeInfo.Info.YouDie);
-                    QuickServer.Send(nickname, packet);
-                }
-
-                controller.DeleteEntityInstant();
-                _entityControllers.Remove(uid);
-            }
-            else throw new InvalidOperationException("Entity with ID " + uid + " is not loaded!");
-        }
-
-        private void UnloadEntity(ulong uid)
-        {
-            if (_entityControllers.TryGetValue(uid, out var controller))
-            {
-                if (controller.IsPlayer)
-                {
-                    throw new InvalidOperationException("Trying to unload a player entity!");
-                }
-
-                controller.UnloadEntityInstant();
-                _entityControllers.Remove(uid);
-            }
-            else throw new InvalidOperationException("Entity with ID " + uid + " is not loaded!");
-        }
+        else throw new InvalidOperationException("Entity with ID " + uid + " is not loaded!");
     }
 }

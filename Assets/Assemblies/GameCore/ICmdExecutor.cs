@@ -3,43 +3,42 @@ using System.Collections.Generic;
 using System.Linq;
 using LogType = Larnix.Core.Echo.LogType;
 
-namespace Larnix.GameCore
+namespace Larnix.GameCore;
+
+public interface ICmdExecutor
 {
-    public interface ICmdExecutor
+    public enum CmdResult { Raw, Info, Log, Success, Warning, Error, Ignore, Clear }
+
+    public (CmdResult, string) ExecuteCommand(string command, string? sender = null);
+    public bool TryExecuteCommand(string command, out string message)
     {
-        public enum CmdResult { Raw, Info, Log, Success, Warning, Error, Ignore, Clear }
+        var (result, msg) = ExecuteCommand(command);
+        message = msg;
+        return result != CmdResult.Error;
+    }
 
-        public (CmdResult, string) ExecuteCommand(string command, string? sender = null);
-        public bool TryExecuteCommand(string command, out string message)
-        {
-            var (result, msg) = ExecuteCommand(command);
-            message = msg;
-            return result != CmdResult.Error;
-        }
+    public static void InsertParameters(ref string command, Dictionary<string, string> parameters)
+    {
+        // Sort keys by length in descending order to prevent partial replacement
+        IEnumerable<string> keys = parameters.Keys
+            .OrderByDescending(k => k.Length);
 
-        public static void InsertParameters(ref string command, Dictionary<string, string> parameters)
+        foreach (var key in keys)
         {
-            // Sort keys by length in descending order to prevent partial replacement
-            IEnumerable<string> keys = parameters.Keys
-                .OrderByDescending(k => k.Length);
-            
-            foreach (var key in keys)
-            {
-                command = command.Replace(key, parameters[key]);
-            }
+            command = command.Replace(key, parameters[key]);
         }
+    }
 
-        public static LogType ConvertToLogType(CmdResult result)
+    public static LogType ConvertToLogType(CmdResult result)
+    {
+        return result switch
         {
-            return result switch
-            {
-                CmdResult.Log => LogType.Log,
-                CmdResult.Info => LogType.Info,
-                CmdResult.Success => LogType.Success,
-                CmdResult.Warning => LogType.Warning,
-                CmdResult.Error => LogType.Error,
-                _ => LogType.Raw
-            };
-        }
+            CmdResult.Log => LogType.Log,
+            CmdResult.Info => LogType.Info,
+            CmdResult.Success => LogType.Success,
+            CmdResult.Warning => LogType.Warning,
+            CmdResult.Error => LogType.Error,
+            _ => LogType.Raw
+        };
     }
 }

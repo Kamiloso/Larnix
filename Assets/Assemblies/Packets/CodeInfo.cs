@@ -3,28 +3,27 @@ using System.Collections;
 using System.Collections.Generic;
 using Larnix.Socket.Packets;
 
-namespace Larnix.Packets
+namespace Larnix.Packets;
+
+public sealed class CodeInfo : Payload
 {
-    public sealed class CodeInfo : Payload
+    private const int SIZE = 0;
+
+    public new Info Code => (Info)base.Code;
+
+    public enum Info : byte
     {
-        private const int SIZE = 0;
+        YouDie,
+        RespawnMe,
+    }
 
-        public new Info Code => (Info)base.Code;
+    public CodeInfo(Info code)
+    {
+        InitializePayload(new byte[0], (byte)code);
+    }
 
-        public enum Info : byte
-        {
-            YouDie,
-            RespawnMe,
-        }
-
-        public CodeInfo(Info code)
-        {
-            InitializePayload(new byte[0], (byte)code);
-        }
-
-        protected override bool IsValid()
-        {
-            return Bytes.Length == SIZE;
-        }
+    protected override bool IsValid()
+    {
+        return Bytes.Length == SIZE;
     }
 }

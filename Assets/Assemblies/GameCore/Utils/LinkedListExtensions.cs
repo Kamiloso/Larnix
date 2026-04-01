@@ -3,97 +3,96 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Larnix.GameCore.Utils
+namespace Larnix.GameCore.Utils;
+
+public static class LinkedListExtensions
 {
-    public static class LinkedListExtensions
+    public static void ForEachRemove<T>(this LinkedList<T> list, Predicate<T> predicate, Action<T>? onRemove = null)
     {
-        public static void ForEachRemove<T>(this LinkedList<T> list, Predicate<T> predicate, Action<T>? onRemove = null)
-        {
-            if (list == null)
-                throw new ArgumentNullException(nameof(list));
+        if (list == null)
+            throw new ArgumentNullException(nameof(list));
 
-            var node = list.First;
-            while (node != null)
+        var node = list.First;
+        while (node != null)
+        {
+            var next = node.Next;
+            if (predicate(node.Value))
             {
-                var next = node.Next;
-                if (predicate(node.Value))
-                {
-                    onRemove?.Invoke(node.Value);
-                    list.Remove(node);
-                }
-                node = next;
+                onRemove?.Invoke(node.Value);
+                list.Remove(node);
             }
+            node = next;
         }
+    }
 
-        public static T First<T>(this LinkedList<T> list)
+    public static T First<T>(this LinkedList<T> list)
+    {
+        if (list == null)
+            throw new ArgumentNullException(nameof(list));
+
+        return list.First.Value;
+    }
+
+    public static T Last<T>(this LinkedList<T> list)
+    {
+        if (list == null)
+            throw new ArgumentNullException(nameof(list));
+
+        return list.Last.Value;
+    }
+
+    public static bool TryPopFirst<T>(this LinkedList<T> list, out T? value)
+    {
+        if (list == null)
+            throw new ArgumentNullException(nameof(list));
+
+        if (list.Count == 0)
         {
-            if (list == null)
-                throw new ArgumentNullException(nameof(list));
-
-            return list.First.Value;
+            value = default;
+            return false;
         }
+        value = list.First.Value;
+        list.RemoveFirst();
+        return true;
+    }
 
-        public static T Last<T>(this LinkedList<T> list)
+    public static bool TryPopLast<T>(this LinkedList<T> list, out T? value)
+    {
+        if (list == null)
+            throw new ArgumentNullException(nameof(list));
+
+        if (list.Count == 0)
         {
-            if (list == null)
-                throw new ArgumentNullException(nameof(list));
-
-            return list.Last.Value;
+            value = default;
+            return false;
         }
+        value = list.Last.Value;
+        list.RemoveLast();
+        return true;
+    }
 
-        public static bool TryPopFirst<T>(this LinkedList<T> list, out T? value)
+    public static double Median(this LinkedList<long> list)
+    {
+        if (list == null)
+            throw new ArgumentNullException(nameof(list));
+
+        int count = list.Count;
+        if (count == 0)
+            throw new InvalidOperationException("Empty LinkedList");
+
+        var arr = list.ToArray();
+        Array.Sort(arr);
+
+        if (count % 2 == 0)
         {
-            if (list == null)
-                throw new ArgumentNullException(nameof(list));
-
-            if (list.Count == 0)
-            {
-                value = default;
-                return false;
-            }
-            value = list.First.Value;
-            list.RemoveFirst();
-            return true;
+            long mid1 = arr[count / 2 - 1];
+            long mid2 = arr[count / 2];
+            long diff = mid2 - mid1;
+            return mid1 + diff / 2.0;
         }
-
-        public static bool TryPopLast<T>(this LinkedList<T> list, out T? value)
+        else
         {
-            if (list == null)
-                throw new ArgumentNullException(nameof(list));
-
-            if (list.Count == 0)
-            {
-                value = default;
-                return false;
-            }
-            value = list.Last.Value;
-            list.RemoveLast();
-            return true;
-        }
-
-        public static double Median(this LinkedList<long> list)
-        {
-            if (list == null)
-                throw new ArgumentNullException(nameof(list));
-
-            int count = list.Count;
-            if (count == 0)
-                throw new InvalidOperationException("Empty LinkedList");
-
-            var arr = list.ToArray();
-            Array.Sort(arr);
-
-            if (count % 2 == 0)
-            {
-                long mid1 = arr[count / 2 - 1];
-                long mid2 = arr[count / 2];
-                long diff = mid2 - mid1;
-                return mid1 + diff / 2.0;
-            }
-            else
-            {
-                return arr[count / 2];
-            }
+            return arr[count / 2];
         }
     }
 }

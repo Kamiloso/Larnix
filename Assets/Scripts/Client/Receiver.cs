@@ -11,145 +11,144 @@ using Larnix.Blocks;
 using Larnix.Background;
 using Larnix.Client.Chat;
 
-namespace Larnix.Client
+namespace Larnix.Client;
+
+public class Receiver
 {
-    public class Receiver
+    private Loading Loading => GlobRef.Get<Loading>();
+    private MainPlayer MainPlayer => GlobRef.Get<MainPlayer>();
+    private GridManager GridManager => GlobRef.Get<GridManager>();
+    private EntityProjections EntityProjections => GlobRef.Get<EntityProjections>();
+    private ParticleManager ParticleManager => GlobRef.Get<ParticleManager>();
+    private ChatManager ChatManager => GlobRef.Get<ChatManager>();
+    private Sky Sky => GlobRef.Get<Sky>();
+    private Debugger Debugger => GlobRef.Get<Debugger>();
+
+    public Receiver(QuickClient client)
     {
-        private Loading Loading => GlobRef.Get<Loading>();
-        private MainPlayer MainPlayer => GlobRef.Get<MainPlayer>();
-        private GridManager GridManager => GlobRef.Get<GridManager>();
-        private EntityProjections EntityProjections => GlobRef.Get<EntityProjections>();
-        private ParticleManager ParticleManager => GlobRef.Get<ParticleManager>();
-        private ChatManager ChatManager => GlobRef.Get<ChatManager>();
-        private Sky Sky => GlobRef.Get<Sky>();
-        private Debugger Debugger => GlobRef.Get<Debugger>();
+        client.Subscribe<PlayerInitialize>(_PlayerInitialize);
+        client.Subscribe<EntityBroadcast>(_EntityBroadcast);
+        client.Subscribe<NearbyEntities>(_NearbyEntities);
+        client.Subscribe<CodeInfo>(_CodeInfo);
+        client.Subscribe<ChunkInfo>(_ChunkInfo);
+        client.Subscribe<BlockUpdate>(_BlockUpdate);
+        client.Subscribe<RetBlockChange>(_RetBlockChange);
+        client.Subscribe<Teleport>(_Teleport);
+        client.Subscribe<SpawnParticles>(_SpawnParticles);
+        client.Subscribe<FrameInfo>(_FrameInfo);
+        client.Subscribe<ChatMessage>(_ChatMessage);
+    }
 
-        public Receiver(QuickClient client)
+    private void _PlayerInitialize(PlayerInitialize msg)
+    {
+        MainPlayer.LoadPlayerData(msg.Position, msg.MyUid);
+        Loading.StartWaitingFrom(msg.LastFixedFrame);
+    }
+
+    private void _EntityBroadcast(EntityBroadcast msg)
+    {
+        EntityProjections.InterpretEntityBroadcast(msg);
+    }
+
+    private void _NearbyEntities(NearbyEntities msg)
+    {
+        EntityProjections.ChangeNearbyUIDs(msg);
+    }
+
+    private void _CodeInfo(CodeInfo msg)
+    {
+        switch (msg.Code)
         {
-            client.Subscribe<PlayerInitialize>(_PlayerInitialize);
-            client.Subscribe<EntityBroadcast>(_EntityBroadcast);
-            client.Subscribe<NearbyEntities>(_NearbyEntities);
-            client.Subscribe<CodeInfo>(_CodeInfo);
-            client.Subscribe<ChunkInfo>(_ChunkInfo);
-            client.Subscribe<BlockUpdate>(_BlockUpdate);
-            client.Subscribe<RetBlockChange>(_RetBlockChange);
-            client.Subscribe<Teleport>(_Teleport);
-            client.Subscribe<SpawnParticles>(_SpawnParticles);
-            client.Subscribe<FrameInfo>(_FrameInfo);
-            client.Subscribe<ChatMessage>(_ChatMessage);
+            case CodeInfo.Info.YouDie:
+                MainPlayer.Alive = false;
+                break;
         }
+    }
 
-        private void _PlayerInitialize(PlayerInitialize msg)
+    private void _ChunkInfo(ChunkInfo msg)
+    {
+        if (msg.Chunk != null) // activation packet
         {
-            MainPlayer.LoadPlayerData(msg.Position, msg.MyUid);
-            Loading.StartWaitingFrom(msg.LastFixedFrame);
+            GridManager.AddChunk(msg.Chunkpos, msg.Chunk);
         }
-
-        private void _EntityBroadcast(EntityBroadcast msg)
+        else // removal packet
         {
-            EntityProjections.InterpretEntityBroadcast(msg);
+            GridManager.RemoveChunk(msg.Chunkpos);
         }
+    }
 
-        private void _NearbyEntities(NearbyEntities msg)
+    private void _BlockUpdate(BlockUpdate msg)
+    {
+        BlockUpdateRecord[] records = msg.BlockUpdates;
+        foreach (var rec in records)
         {
-            EntityProjections.ChangeNearbyUIDs(msg);
+            GridManager.UpdateBlock(rec.Position, rec.Block, rec.BreakMode);
         }
+    }
 
-        private void _CodeInfo(CodeInfo msg)
+    private void _RetBlockChange(RetBlockChange msg)
+    {
+        GridManager.UpdateBlock(
+            POS: msg.BlockPosition,
+            data: msg.CurrentBlock,
+            breakMode: IWorldAPI.BreakMode.Replace,
+            unlock: msg.Operation
+        ); // unlock and update block
+    }
+
+    private void _Teleport(Teleport msg)
+    {
+        if (MainPlayer.Alive)
         {
-            switch (msg.Code)
-            {
-                case CodeInfo.Info.YouDie:
-                    MainPlayer.Alive = false;
-                    break;
-            }
+            Vec2 targetPos = msg.TargetPosition;
+            MainPlayer.Teleport(targetPos);
+            Echo.Log("Teleported");
         }
+    }
 
-        private void _ChunkInfo(ChunkInfo msg)
+    private void _SpawnParticles(SpawnParticles msg)
+    {
+        if (msg.IsEntityParticle)
         {
-            if (msg.Chunk != null) // activation packet
-            {
-                GridManager.AddChunk(msg.Chunkpos, msg.Chunk);
-            }
-            else // removal packet
-            {
-                GridManager.RemoveChunk(msg.Chunkpos);
-            }
+            ParticleManager.SpawnEntityParticles(
+                msg.ParticleID,
+                msg.EntityUid,
+                msg.Position
+            );
         }
-
-        private void _BlockUpdate(BlockUpdate msg)
+        else
         {
-            BlockUpdateRecord[] records = msg.BlockUpdates;
-            foreach (var rec in records)
-            {
-                GridManager.UpdateBlock(rec.Position, rec.Block, rec.BreakMode);
-            }
+            ParticleManager.SpawnGlobalParticles(
+                msg.ParticleID,
+                msg.Position
+            );
         }
+    }
 
-        private void _RetBlockChange(RetBlockChange msg)
+    private long _lastFrameTick = 0;
+    private void _FrameInfo(FrameInfo msg)
+    {
+        long frameTick = msg.ServerTick;
+        if (frameTick > _lastFrameTick)
         {
-            GridManager.UpdateBlock(
-                POS: msg.BlockPosition,
-                data: msg.CurrentBlock,
-                breakMode: IWorldAPI.BreakMode.Replace,
-                unlock: msg.Operation
-            ); // unlock and update block
-        }
+            _lastFrameTick = frameTick;
 
-        private void _Teleport(Teleport msg)
-        {
-            if (MainPlayer.Alive)
-            {
-                Vec2 targetPos = msg.TargetPosition;
-                MainPlayer.Teleport(targetPos);
-                Echo.Log("Teleported");
-            }
-        }
-
-        private void _SpawnParticles(SpawnParticles msg)
-        {
-            if (msg.IsEntityParticle)
-            {
-                ParticleManager.SpawnEntityParticles(
-                    msg.ParticleID,
-                    msg.EntityUid,
-                    msg.Position
+            Sky.UpdateSky(
+                biomeID: msg.BiomeID,
+                skyColor: msg.SkyColor,
+                weather: msg.Weather
                 );
-            }
-            else
-            {
-                ParticleManager.SpawnGlobalParticles(
-                    msg.ParticleID,
-                    msg.Position
-                );
-            }
+
+            Debugger.InfoUpdate(
+                serverTick: msg.ServerTick,
+                biomeID: msg.BiomeID,
+                tps: msg.Tps
+            );
         }
+    }
 
-        private long _lastFrameTick = 0;
-        private void _FrameInfo(FrameInfo msg)
-        {
-            long frameTick = msg.ServerTick;
-            if (frameTick > _lastFrameTick)
-            {
-                _lastFrameTick = frameTick;
-
-                Sky.UpdateSky(
-                    biomeID: msg.BiomeID,
-                    skyColor: msg.SkyColor,
-                    weather: msg.Weather
-                    );
-
-                Debugger.InfoUpdate(
-                    serverTick: msg.ServerTick,
-                    biomeID: msg.BiomeID,
-                    tps: msg.Tps
-                );
-            }
-        }
-
-        private void _ChatMessage(ChatMessage msg)
-        {
-            ChatManager.AddMessage(msg);
-        }
+    private void _ChatMessage(ChatMessage msg)
+    {
+        ChatManager.AddMessage(msg);
     }
 }

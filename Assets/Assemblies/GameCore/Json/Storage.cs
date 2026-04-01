@@ -1,71 +1,70 @@
 #nullable enable
 using SimpleJSON;
 
-namespace Larnix.GameCore.Json
+namespace Larnix.GameCore.Json;
+
+public class Storage
 {
-    public class Storage
+    private JSONObject? _root;
+    private JSONObject Root => _root ??= new JSONObject();
+
+    public Storage() {}
+    private Storage(JSONObject root) => _root = root;
+
+
+    public Node this[string key] => IterateNode(key);
+
+    private Node IterateNode(string key)
     {
-        private JSONObject? _root;
-        private JSONObject Root => _root ??= new JSONObject();
+        if (string.IsNullOrEmpty(key))
+            return new Node(Root);
 
-        public Storage() {}
-        private Storage(JSONObject root) => _root = root;
+        string[] parts = key.Split('.');
 
-
-        public Node this[string key] => IterateNode(key);
-
-        private Node IterateNode(string key)
+        JSONNode current = Root;
+        for (int i = 0; i < parts.Length; i++)
         {
-            if (string.IsNullOrEmpty(key))
-                return new Node(Root);
-            
-            string[] parts = key.Split('.');
+            string part = parts[i];
+            JSONNode next = current[part];
 
-            JSONNode current = Root;
-            for (int i = 0; i < parts.Length; i++)
+            if (i == parts.Length - 1) // last node
             {
-                string part = parts[i];
-                JSONNode next = current[part];
-
-                if (i == parts.Length - 1) // last node
-                {
-                    if (next is not JSONString)
-                        current[part] = new JSONString(string.Empty);
-                }
-                else // intermediate node
-                {
-                    if (next is not JSONObject)
-                        current[part] = new JSONObject();
-                }
-                current = current[part];
+                if (next is not JSONString)
+                    current[part] = new JSONString(string.Empty);
             }
-
-            return new Node(current);
-        }
-
-        public Storage DeepCopy()
-        {
-            if (_root != null)
+            else // intermediate node
             {
-                return new Storage(
-                    Root.Clone().AsObject
-                    );
+                if (next is not JSONObject)
+                    current[part] = new JSONObject();
             }
-            else
-            {
-                return new Storage();
-            }
+            current = current[part];
         }
 
-        public override string ToString()
-        {
-            return _root?.ToString() ?? "{}";
-        }
+        return new Node(current);
+    }
 
-        public static Storage FromString(string? json)
+    public Storage DeepCopy()
+    {
+        if (_root != null)
         {
-            JSONObject jsonObject = json?.AsJsonObject() ?? new();
-            return new Storage(jsonObject);
+            return new Storage(
+                Root.Clone().AsObject
+                );
         }
+        else
+        {
+            return new Storage();
+        }
+    }
+
+    public override string ToString()
+    {
+        return _root?.ToString() ?? "{}";
+    }
+
+    public static Storage FromString(string? json)
+    {
+        JSONObject jsonObject = json?.AsJsonObject() ?? new();
+        return new Storage(jsonObject);
     }
 }

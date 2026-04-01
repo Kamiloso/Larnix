@@ -3,20 +3,19 @@ using Larnix.Core.Vectors;
 using Larnix.GameCore.Structs;
 using Larnix.Worldgen.Biomes.All;
 
-namespace Larnix.Worldgen.Biomes
+namespace Larnix.Worldgen.Biomes;
+
+public abstract class Biome
 {
-    public abstract class Biome
+    public Seed Seed { get; private init; }
+
+    public Col32 SkyColor => (this as ISkyColor)?.SKY_COLOR() ?? ISkyColor.Temperate;
+    public Col32 NightSkyColor => (this as ISkyColor)?.NIGHT_SKY_COLOR() ?? ISkyColor.Night;
+
+    public abstract BlockHeader2 TranslateProtoBlock(ProtoBlock protoBlock);
+
+    protected Biome(Seed seed)
     {
-        public Seed Seed { get; private init; }
-        
-        public Col32 SkyColor => (this as ISkyColor)?.SKY_COLOR() ?? ISkyColor.Temperate;
-        public Col32 NightSkyColor => (this as ISkyColor)?.NIGHT_SKY_COLOR() ?? ISkyColor.Night;
-
-        public abstract BlockHeader2 TranslateProtoBlock(ProtoBlock protoBlock);
-
-        protected Biome(Seed seed)
-        {
-            Seed = seed;
-        }
+        Seed = seed;
     }
 }

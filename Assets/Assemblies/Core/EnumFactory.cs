@@ -4,62 +4,61 @@ using System.Reflection;
 using System.Linq;
 using System.Collections.ObjectModel;
 
-namespace Larnix.GameCore
+namespace Larnix.GameCore;
+
+public static class EnumFactory<TEnum, TClass> where TEnum : struct, IConvertible where TClass : class
 {
-    public static class EnumFactory<TEnum, TClass> where TEnum : struct, IConvertible where TClass : class
+    public static ReadOnlyDictionary<TEnum, TClass> CreateDictionary(params (Type Type, object Object)[] args)
     {
-        public static ReadOnlyDictionary<TEnum, TClass> CreateDictionary(params (Type Type, object Object)[] args)
-        {
-            if (args.Any(elm => elm.Type is null || elm.Object is null))
-                throw new ArgumentNullException("Arguments cannot be null!");
-            
-            var type = typeof(TClass);
-            var assembly = Assembly.GetAssembly(type);
+        if (args.Any(elm => elm.Type is null || elm.Object is null))
+            throw new ArgumentNullException("Arguments cannot be null!");
 
-            List<TEnum> enumValues = Enum.GetValues(typeof(TEnum))
-                .Cast<TEnum>()
-                .ToList();
+        var type = typeof(TClass);
+        var assembly = Assembly.GetAssembly(type);
 
-            List<TClass> objInstances = assembly.GetTypes()
-            .Where(t =>
-                t.IsClass &&
-                !t.IsAbstract &&
-                type.IsAssignableFrom(t)
-            )
-            .Where(t => t.GetConstructor(
-                bindingAttr:
-                    BindingFlags.Instance |
-                    BindingFlags.Public |
-                    BindingFlags.NonPublic,
-                binder: null,
-                types: args.Select(a => a.Type).ToArray(),
-                modifiers: null) != null
-            )
-            .Select(t =>
-            {
-                object[] parameters = args.Select(a => a.Object).ToArray();
-                return (TClass)Activator.CreateInstance(t, parameters);
-            })
+        List<TEnum> enumValues = Enum.GetValues(typeof(TEnum))
+            .Cast<TEnum>()
             .ToList();
 
-            Dictionary<TEnum, TClass> enumDict = enumValues
-                .Select(id =>
-                {
-                    IEnumerable<TClass> matchInsts = objInstances
-                        .Where(inst => Enum.TryParse<TEnum>(inst.GetType().Name, out var parsed) &&
-                            parsed.Equals(id));
-                    
-                    if (matchInsts.Count() == 0)
-                        throw new InvalidOperationException($"No class found for enum value {id}!");
+        List<TClass> objInstances = assembly.GetTypes()
+        .Where(t =>
+            t.IsClass &&
+            !t.IsAbstract &&
+            type.IsAssignableFrom(t)
+        )
+        .Where(t => t.GetConstructor(
+            bindingAttr:
+                BindingFlags.Instance |
+                BindingFlags.Public |
+                BindingFlags.NonPublic,
+            binder: null,
+            types: args.Select(a => a.Type).ToArray(),
+            modifiers: null) != null
+        )
+        .Select(t =>
+        {
+            object[] parameters = args.Select(a => a.Object).ToArray();
+            return (TClass)Activator.CreateInstance(t, parameters);
+        })
+        .ToList();
 
-                    if (matchInsts.Count() > 1)
-                        throw new InvalidOperationException($"Multiple classes found for enum value {id}!");
+        Dictionary<TEnum, TClass> enumDict = enumValues
+            .Select(id =>
+            {
+                IEnumerable<TClass> matchInsts = objInstances
+                    .Where(inst => Enum.TryParse<TEnum>(inst.GetType().Name, out var parsed) &&
+                        parsed.Equals(id));
 
-                    return ((TEnum Enum, TClass Class))(id, matchInsts.First());
-                })
-                .ToDictionary(kvp => kvp.Enum, kvp => kvp.Class);
+                if (matchInsts.Count() == 0)
+                    throw new InvalidOperationException($"No class found for enum value {id}!");
 
-            return new ReadOnlyDictionary<TEnum, TClass>(enumDict);
-        }
+                if (matchInsts.Count() > 1)
+                    throw new InvalidOperationException($"Multiple classes found for enum value {id}!");
+
+                return ((TEnum Enum, TClass Class))(id, matchInsts.First());
+            })
+            .ToDictionary(kvp => kvp.Enum, kvp => kvp.Class);
+
+        return new ReadOnlyDictionary<TEnum, TClass>(enumDict);
     }
 }

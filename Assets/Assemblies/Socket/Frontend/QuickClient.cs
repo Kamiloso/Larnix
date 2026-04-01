@@ -12,113 +12,112 @@ using Larnix.Core.Interfaces;
 using Larnix.GameCore.Utils;
 using Larnix.Core;
 
-namespace Larnix.Socket.Frontend
+namespace Larnix.Socket.Frontend;
+
+public class QuickClient : IDisposable, ITickable
 {
-    public class QuickClient : IDisposable, ITickable
+    private readonly UdpClient2 _udpClient;
+    private readonly Connection _connection;
+    private readonly IPEndPoint _target;
+    private readonly KeyRSA _rsaKey;
+
+    private readonly Dictionary<CmdID, Action<HeaderSpan>> Subscriptions = new();
+
+    public static async Task<QuickClient> CreateClientAsync(string address, string authcode, string nickname, string password)
     {
-        private readonly UdpClient2 _udpClient;
-        private readonly Connection _connection;
-        private readonly IPEndPoint _target;
-        private readonly KeyRSA _rsaKey;
+        IPEndPoint endPoint = await Resolver.ResolveStringAsync(address);
+        if (endPoint == null) return null;
 
-        private readonly Dictionary<CmdID, Action<HeaderSpan>> Subscriptions = new();
+        EntryTicket ticket = (await Resolver.GetEntryTicketAsync(address, authcode, nickname)).ticket;
+        if (ticket == null) return null;
 
-        public static async Task<QuickClient> CreateClientAsync(string address, string authcode, string nickname, string password)
+        Cacher.RemoveRecord(authcode, nickname);
+
+        try
         {
-            IPEndPoint endPoint = await Resolver.ResolveStringAsync(address);
-            if (endPoint == null) return null;
+            return new QuickClient(endPoint, ticket, address, authcode, nickname, password);
+        }
+        catch (Exception ex)
+        {
+            Echo.LogError(ex.Message);
+            return null;
+        }
+    }
 
-            EntryTicket ticket = (await Resolver.GetEntryTicketAsync(address, authcode, nickname)).ticket;
-            if (ticket == null) return null;
+    private QuickClient(IPEndPoint target, EntryTicket ticket, string address, string authcode, string nickname, string password)
+    {
+        _target = target;
+        _udpClient = new UdpClient2(
+            port: 0,
+            isListener: false,
+            isLoopback: IPAddress.IsLoopback(target.Address),
+            isIPv6: target.AddressFamily == AddressFamily.InterNetworkV6,
+            recvBufferSize: 256 * 1024,
+            destination: target
+            );
 
-            Cacher.RemoveRecord(authcode, nickname);
+        _rsaKey = ticket.CreatePublicKey();
 
-            try
-            {
-                return new QuickClient(endPoint, ticket, address, authcode, nickname, password);
-            }
-            catch (Exception ex)
-            {
-                Echo.LogError(ex.Message);
-                return null;
-            }
+        long serverSecret = Authcode.GetSecretFromAuthCode(authcode);
+        long challengeID = ticket.ChallengeID;
+        long runID = ticket.RunID;
+        long timestamp = Timestamp.GetServerTimestamp(address);
+
+        KeyAES keyAES = new(); // auto-generate
+        byte[] aesBytes = keyAES.ExportKey();
+
+        Payload synPacket = new AllowConnection((String32)nickname, (String64)password, aesBytes, serverSecret, challengeID, timestamp, runID);
+        _connection = Connection.CreateClient(_udpClient, _target, keyAES, _rsaKey, synPacket);
+    }
+
+    public void Tick(float deltaTime)
+    {
+        // Get packets from UDP client
+        while (_udpClient.TryReceive(out var pair))
+        {
+            _connection.PushFromWeb(pair.data, false);
         }
 
-        private QuickClient(IPEndPoint target, EntryTicket ticket, string address, string authcode, string nickname, string password)
+        // Process received packets
+        _connection.Tick(deltaTime);
+        if (!_connection.IsDead)
         {
-            _target = target;
-            _udpClient = new UdpClient2(
-                port: 0,
-                isListener: false,
-                isLoopback: IPAddress.IsLoopback(target.Address),
-                isIPv6: target.AddressFamily == AddressFamily.InterNetworkV6,
-                recvBufferSize: 256 * 1024,
-                destination: target
-                );
-
-            _rsaKey = ticket.CreatePublicKey();
-
-            long serverSecret = Authcode.GetSecretFromAuthCode(authcode);
-            long challengeID = ticket.ChallengeID;
-            long runID = ticket.RunID;
-            long timestamp = Timestamp.GetServerTimestamp(address);
-
-            KeyAES keyAES = new(); // auto-generate
-            byte[] aesBytes = keyAES.ExportKey();
-
-            Payload synPacket = new AllowConnection((String32)nickname, (String64)password, aesBytes, serverSecret, challengeID, timestamp, runID);
-            _connection = Connection.CreateClient(_udpClient, _target, keyAES, _rsaKey, synPacket);
-        }
-
-        public void Tick(float deltaTime)
-        {
-            // Get packets from UDP client
-            while (_udpClient.TryReceive(out var pair))
+            while (_connection.TryReceive(out var headerSpan, out bool stopSignal))
             {
-                _connection.PushFromWeb(pair.data, false);
-            }
-
-            // Process received packets
-            _connection.Tick(deltaTime);
-            if (!_connection.IsDead)
-            {
-                while (_connection.TryReceive(out var headerSpan, out bool stopSignal))
+                CmdID cmdID = headerSpan.ID;
+                if (Subscriptions.TryGetValue(cmdID, out var Execute))
                 {
-                    CmdID cmdID = headerSpan.ID;
-                    if (Subscriptions.TryGetValue(cmdID, out var Execute))
-                    {
-                        Execute(headerSpan);
-                    }
+                    Execute(headerSpan);
+                }
 
-                    if (stopSignal)
-                    {
-                        break;
-                    }
+                if (stopSignal)
+                {
+                    break;
                 }
             }
         }
+    }
 
-        public void Subscribe<T>(Action<T> InterpretPacket) where T : Payload
+    public void Subscribe<T>(Action<T> InterpretPacket) where T : Payload
+    {
+        CmdID ID = Payload.CmdID<T>();
+        Subscriptions[ID] = (HeaderSpan packetBytes) =>
         {
-            CmdID ID = Payload.CmdID<T>();
-            Subscriptions[ID] = (HeaderSpan packetBytes) =>
+            if (Payload.TryConstructPayload<T>(packetBytes, out var message))
             {
-                if (Payload.TryConstructPayload<T>(packetBytes, out var message))
-                {
-                    InterpretPacket(message);
-                }
-            };
-        }
+                InterpretPacket(message);
+            }
+        };
+    }
 
-        public void Send(Payload packet, bool safemode = true) => _connection.Send(packet, safemode);
-        public bool IsDead() => _connection.IsDead;
-        public float GetPing() => _connection.AvgRTT * 1000f; // ms
+    public void Send(Payload packet, bool safemode = true) => _connection.Send(packet, safemode);
+    public bool IsDead() => _connection.IsDead;
+    public float GetPing() => _connection.AvgRTT * 1000f; // ms
 
-        public void Dispose()
-        {
-            _connection?.Dispose();
-            _udpClient?.Dispose();
-            _rsaKey?.Dispose();
-        }
+    public void Dispose()
+    {
+        _connection?.Dispose();
+        _udpClient?.Dispose();
+        _rsaKey?.Dispose();
     }
 }

@@ -1,25 +1,24 @@
 using Larnix;
 using Larnix.Core.Vectors;
 
-namespace Larnix.GameCore.Physics
+namespace Larnix.GameCore.Physics;
+
+public class StaticCollider
 {
-    public class StaticCollider
+    public readonly Vec2 Center;
+    public readonly Vec2 Size;
+
+    public StaticCollider(Vec2 center, Vec2 size)
     {
-        public readonly Vec2 Center;
-        public readonly Vec2 Size;
+        Center = center;
+        Size = size;
+    }
 
-        public StaticCollider(Vec2 center, Vec2 size)
-        {
-            Center = center;
-            Size = size;
-        }
-
-        public static StaticCollider Create(Vec2 size, Vec2 offset, Vec2Int POS)
-        {
-            return new StaticCollider(
-                new Vec2(POS.x + offset.x, POS.y + offset.y),
-                new Vec2(size.x, size.y)
-                );
-        }
+    public static StaticCollider Create(Vec2 size, Vec2 offset, Vec2Int POS)
+    {
+        return new StaticCollider(
+            new Vec2(POS.x + offset.x, POS.y + offset.y),
+            new Vec2(size.x, size.y)
+            );
     }
 }

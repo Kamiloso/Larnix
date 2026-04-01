@@ -3,49 +3,48 @@ using System;
 using System.Collections.Generic;
 using Larnix.Core;
 
-namespace Larnix.Server.Terrain
+namespace Larnix.Server.Terrain;
+
+internal class ChunkContainer
 {
-    internal class ChunkContainer
+    public Vec2Int Chunkpos { get; init; }
+    public ChunkLoadState State { get; private set; }
+    public Chunk Instance { get; private set; }
+
+    private AtomicChunks AtomicChunks => GlobRef.Get<AtomicChunks>();
+
+    private float _unloadTime;
+    private float UNLOADING_TIME => 1f;
+
+    public ChunkContainer(Vec2Int chunkpos)
     {
-        public Vec2Int Chunkpos { get; init; }
-        public ChunkLoadState State { get; private set; }
-        public Chunk Instance { get; private set; }
+        Chunkpos = chunkpos;
+        State = ChunkLoadState.Loading;
+        _unloadTime = UNLOADING_TIME;
+    }
 
-        private AtomicChunks AtomicChunks => GlobRef.Get<AtomicChunks>();
-        
-        private float _unloadTime;
-        private float UNLOADING_TIME => 1f;
+    public void Activate(Chunk instance)
+    {
+        if (Instance != null)
+            throw new InvalidOperationException($"Chunk {Chunkpos} already initialized.");
 
-        public ChunkContainer(Vec2Int chunkpos)
+        State = ChunkLoadState.Active;
+        Instance = instance;
+    }
+
+    public void Tick(float deltaTime) => _unloadTime -= deltaTime;
+    public void Stimulate() => _unloadTime = UNLOADING_TIME;
+
+    public bool ShouldUnload(Func<Vec2Int, ChunkContainer> chunkViewup)
+    {
+        IEnumerable<Vec2Int> atomicGroup = AtomicChunks.GetAtomicSet(Chunkpos) ??
+            new[] { Chunkpos };
+
+        foreach (var chunk in atomicGroup)
         {
-            Chunkpos = chunkpos;
-            State = ChunkLoadState.Loading;
-            _unloadTime = UNLOADING_TIME;
+            if (chunkViewup(chunk)._unloadTime > 0f)
+                return false;
         }
-
-        public void Activate(Chunk instance)
-        {
-            if (Instance != null)
-                throw new InvalidOperationException($"Chunk {Chunkpos} already initialized.");
-
-            State = ChunkLoadState.Active;
-            Instance = instance;
-        }
-
-        public void Tick(float deltaTime) => _unloadTime -= deltaTime;
-        public void Stimulate() => _unloadTime = UNLOADING_TIME;
-
-        public bool ShouldUnload(Func<Vec2Int, ChunkContainer> chunkViewup)
-        {
-            IEnumerable<Vec2Int> atomicGroup = AtomicChunks.GetAtomicSet(Chunkpos) ??
-                new[] { Chunkpos };
-            
-            foreach (var chunk in atomicGroup)
-            {
-                if (chunkViewup(chunk)._unloadTime > 0f)
-                    return false;
-            }
-            return true;
-        }
+        return true;
     }
 }

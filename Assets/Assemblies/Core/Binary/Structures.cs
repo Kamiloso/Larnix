@@ -1,53 +1,52 @@
 using System;
 
-namespace Larnix.Core.Binary
+namespace Larnix.Core.Binary;
+
+public static class Structures
 {
-    public static class Structures
+    public static byte[] GetBytes<T>(in IBinary<T> structure) where T : struct, IBinary<T>
     {
-        public static byte[] GetBytes<T>(in IBinary<T> structure) where T : struct, IBinary<T>
+        return structure.Serialize();
+    }
+
+    public static T FromBytes<T>(byte[] bytes, int startIndex = 0) where T : struct, IBinary<T>
+    {
+        return IBinary<T>.Create(bytes, startIndex);
+    }
+
+    public static byte[] ArrayGetBytes<T>(T[] values, int SIZE) where T : struct, IBinary<T>
+    {
+        if (values == null)
+            throw new ArgumentNullException(nameof(values));
+
+        byte[] result = new byte[SIZE * values.Length];
+
+        for (int i = 0; i < values.Length; i++)
         {
-            return structure.Serialize();
+            byte[] elementBytes = GetBytes(values[i]);
+            Buffer.BlockCopy(elementBytes, 0, result, i * SIZE, SIZE);
         }
 
-        public static T FromBytes<T>(byte[] bytes, int startIndex = 0) where T : struct, IBinary<T>
+        return result;
+    }
+
+    public static T[] ArrayFromBytes<T>(byte[] bytes, int count, int SIZE, int startIndex = 0) where T : struct, IBinary<T>
+    {
+        if (bytes == null)
+            throw new ArgumentNullException(nameof(bytes));
+
+        int needed = count * SIZE;
+
+        if (bytes.Length < startIndex + needed)
+            throw new ArgumentException($"Array too short to read {count} elements of type {typeof(T).Name}");
+
+        T[] result = new T[count];
+
+        for (int i = 0; i < count; i++)
         {
-            return IBinary<T>.Create(bytes, startIndex);
+            result[i] = FromBytes<T>(bytes, startIndex + i * SIZE);
         }
 
-        public static byte[] ArrayGetBytes<T>(T[] values, int SIZE) where T : struct, IBinary<T>
-        {
-            if (values == null)
-                throw new ArgumentNullException(nameof(values));
-
-            byte[] result = new byte[SIZE * values.Length];
-
-            for (int i = 0; i < values.Length; i++)
-            {
-                byte[] elementBytes = GetBytes(values[i]);
-                Buffer.BlockCopy(elementBytes, 0, result, i * SIZE, SIZE);
-            }
-
-            return result;
-        }
-
-        public static T[] ArrayFromBytes<T>(byte[] bytes, int count, int SIZE, int startIndex = 0) where T : struct, IBinary<T>
-        {
-            if (bytes == null)
-                throw new ArgumentNullException(nameof(bytes));
-
-            int needed = count * SIZE;
-
-            if (bytes.Length < startIndex + needed)
-                throw new ArgumentException($"Array too short to read {count} elements of type {typeof(T).Name}");
-
-            T[] result = new T[count];
-
-            for (int i = 0; i < count; i++)
-            {
-                result[i] = FromBytes<T>(bytes, startIndex + i * SIZE);
-            }
-
-            return result;
-        }
+        return result;
     }
 }

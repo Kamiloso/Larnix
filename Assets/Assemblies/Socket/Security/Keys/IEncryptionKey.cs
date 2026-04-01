@@ -1,11 +1,10 @@
 using System.Collections;
 using System.Collections.Generic;
 
-namespace Larnix.Socket.Security.Keys
+namespace Larnix.Socket.Security.Keys;
+
+public interface IEncryptionKey
 {
-    public interface IEncryptionKey
-    {
-        byte[] Encrypt(byte[] plaintext);
-        byte[] Decrypt(byte[] ciphertext);
-    }
+    byte[] Encrypt(byte[] plaintext);
+    byte[] Decrypt(byte[] ciphertext);
 }

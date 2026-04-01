@@ -3,55 +3,54 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace Larnix.Socket
+namespace Larnix.Socket;
+
+internal static class Timestamp
 {
-    internal static class Timestamp
+    private static Dictionary<string, long> TimestampDifferences = new();
+    private static object _lock1 = new();
+
+    private static bool _initialized = false;
+    private static long startingTimestamp = 0;
+    private static Stopwatch stopwatch = new();
+    private static object _lock2 = new();
+
+    public static long GetTimestamp()
     {
-        private static Dictionary<string, long> TimestampDifferences = new();
-        private static object _lock1 = new();
-
-        private static bool _initialized = false;
-        private static long startingTimestamp = 0;
-        private static Stopwatch stopwatch = new();
-        private static object _lock2 = new();
-
-        public static long GetTimestamp()
+        lock (_lock2)
         {
-            lock (_lock2)
+            long timestampNow = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeMilliseconds();
+            if (!_initialized)
             {
-                long timestampNow = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeMilliseconds();
-                if (!_initialized)
-                {
-                    startingTimestamp = timestampNow;
-                    stopwatch.Start();
-                    _initialized = true;
-                }
-                return startingTimestamp + (long)stopwatch.Elapsed.TotalMilliseconds;
+                startingTimestamp = timestampNow;
+                stopwatch.Start();
+                _initialized = true;
             }
+            return startingTimestamp + (long)stopwatch.Elapsed.TotalMilliseconds;
         }
+    }
 
-        public static bool InTimestamp(long timestamp, long window = 6000)
-        {
-            long localTimestamp = GetTimestamp();
-            return timestamp >= localTimestamp - window && timestamp <= localTimestamp;
-        }
+    public static bool InTimestamp(long timestamp, long window = 6000)
+    {
+        long localTimestamp = GetTimestamp();
+        return timestamp >= localTimestamp - window && timestamp <= localTimestamp;
+    }
 
-        public static void SetServerTimestamp(string address, long timestamp)
+    public static void SetServerTimestamp(string address, long timestamp)
+    {
+        lock (_lock1)
         {
-            lock (_lock1)
-            {
-                TimestampDifferences[address] = timestamp - GetTimestamp();
-            }
+            TimestampDifferences[address] = timestamp - GetTimestamp();
         }
+    }
 
-        public static long GetServerTimestamp(string address)
+    public static long GetServerTimestamp(string address)
+    {
+        lock (_lock1)
         {
-            lock (_lock1)
-            {
-                if (TimestampDifferences.TryGetValue(address, out long difference))
-                    return difference + GetTimestamp();
-            }
-            throw new InvalidOperationException($"Cannot get server timestamp since it was never declared.");
+            if (TimestampDifferences.TryGetValue(address, out long difference))
+                return difference + GetTimestamp();
         }
+        throw new InvalidOperationException($"Cannot get server timestamp since it was never declared.");
     }
 }
