@@ -37,8 +37,8 @@ internal class ChunkContainer
 
     public bool ShouldUnload(Func<Vec2Int, ChunkContainer> chunkViewup)
     {
-        IEnumerable<Vec2Int> atomicGroup = AtomicChunks.GetAtomicSet(Chunkpos) ??
-            new[] { Chunkpos };
+        List<Vec2Int> atomicGroup = AtomicChunks.GetAtomicSet(Chunkpos) ??
+            new List<Vec2Int> { Chunkpos };
 
         foreach (var chunk in atomicGroup)
         {

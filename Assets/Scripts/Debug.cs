@@ -19,7 +19,7 @@ namespace Larnix
             UnityThread = Thread.CurrentThread;
 
             Echo.RedirectLogs(_LogOrEnqueue);
-            GameCore.GamePath.InitPath(Application.persistentDataPath);
+            Model.GamePath.InitPath(Application.persistentDataPath);
         }
 
         private void Update()

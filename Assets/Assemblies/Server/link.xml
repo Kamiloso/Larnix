@@ -1,5 +1,6 @@
 <linker>
 	<assembly fullname="Larnix.Server">
-		<namespace fullname="Larnix.Server.Configuration" preserve="all"/>
+		<namespace fullname="Larnix.Server.Data" preserve="all"/>
+		<namespace fullname="Larnix.Server.Packets.All" preserve="all"/>
 	</assembly>
 </linker>

@@ -2,12 +2,11 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Client.Entities.Body;
-using Larnix.GameCore.Utils;
-using Larnix.Entities.Structs;
+using Larnix.Model.Utils;
+using Larnix.Model.Entities.Structs;
 using Larnix.Client.Relativity;
-using Larnix.Core.Misc;
-using Larnix.GameCore;
-using Larnix.GameCore.Structs;
+using Larnix.Model;
+using Larnix.Core.Utils;
 
 namespace Larnix.Client.Entities
 {

@@ -1,5 +1,5 @@
 #nullable enable
-using Larnix.GameCore.DbStructs;
+using Larnix.Model;
 using Larnix.Server.Data.Database;
 using System.Collections.Generic;
 using System.Linq;

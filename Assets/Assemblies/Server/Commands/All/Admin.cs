@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using Larnix.Core;
-using Larnix.GameCore.Utils;
-using Larnix.Server.Configuration;
-using Larnix.GameCore.Json;
-using CmdResult = Larnix.GameCore.ICmdExecutor.CmdResult;
+using Larnix.Model.Utils;
+using Larnix.Server.Data;
+using Larnix.Model.Json;
+using CmdResult = Larnix.Model.ICmdExecutor.CmdResult;
 
 namespace Larnix.Server.Commands.All;
 

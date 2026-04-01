@@ -2,24 +2,21 @@ using System;
 using Larnix.Server.Data;
 using Larnix.Core;
 using System.IO;
-using Larnix.GameCore.Physics;
+using Larnix.Model.Physics;
 using Larnix.Server.Entities;
 using Larnix.Server.Terrain;
 using System.Threading.Tasks;
 using Larnix.Core.Files;
 using Larnix.Socket.Backend;
-using Larnix.Worldgen;
+using Larnix.Model.Worldgen;
 using Larnix.Server.Commands;
-using Larnix.Blocks;
-using Larnix.Server.APIs;
+using Larnix.Model.Blocks;
 using Larnix.Server.Transmission;
-using Larnix.Server.Configuration;
-using Larnix.Core.Interfaces;
-using Version = Larnix.GameCore.Version;
+using Version = Larnix.Model.Version;
 using RunSuggestions = Larnix.Server.ServerRunner.RunSuggestions;
 using ServerAnswer = Larnix.Server.ServerRunner.ServerAnswer;
-using Larnix.Core.Misc;
-using Larnix.GameCore.DbStructs;
+using Larnix.Model;
+using Larnix.Core.Utils;
 
 namespace Larnix.Server;
 
@@ -58,10 +55,8 @@ internal class Server : IDisposable, ITickable
             Echo.LogRaw("Starting the server...\n");
         }
 
-        IOException MakeLockException() =>
-            new($"Trying to access world at {WorldPath} that is already open.");
-
-        _locker = Locker.LockOrException(WorldPath, "world_locker.lock", MakeLockException);
+        _locker = Locker.LockOrException(WorldPath, "world_locker.lock", () =>
+            new IOException($"Trying to access world at {WorldPath} that is already open."));
 
         // --- Main singletons ---
         GlobRef.Set(this);

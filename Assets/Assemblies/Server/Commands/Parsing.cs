@@ -1,9 +1,7 @@
 using System;
-using Larnix.Blocks;
-using Larnix.Blocks.Structs;
-using Larnix.Core.Enums;
-using Larnix.GameCore.Structs;
-using Larnix.GameCore.Utils;
+using Larnix.Model.Blocks;
+using Larnix.Model.Blocks.Structs;
+using Larnix.Model.Utils;
 
 namespace Larnix.Server.Commands;
 

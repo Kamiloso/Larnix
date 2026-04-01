@@ -1,7 +1,6 @@
+#nullable enable
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using Larnix.Core.Interfaces;
 
 namespace Larnix.Core.Coroutines;
 
@@ -9,17 +8,20 @@ public class CoroutineRunner : ITickable, IDisposable
 {
     private class Coroutine : IDisposable
     {
-        private readonly IEnumerator _routine;
+        private readonly IEnumerator<object> _routine;
         private readonly Action<object> _onResult;
         private bool _ended = false; // obtained result
         private bool _disposed = false;
 
-        public static Coroutine Create<T>(IEnumerator<Box<T>> routine, Action<T> onResult = null)
+        public static Coroutine Create<T>(IEnumerator<Box<T>> routine, Action<T>? onResult = null) where T : struct
         {
-            return new Coroutine(routine, obj => onResult?.Invoke((T)obj));
+            return new Coroutine(routine, obj =>
+            {
+                onResult?.Invoke((T)obj);
+            });
         }
 
-        private Coroutine(IEnumerator routine, Action<object> onResult)
+        private Coroutine(IEnumerator<object> routine, Action<object>? onResult)
         {
             if (routine is null || onResult is null)
                 throw new ArgumentNullException(routine is null ? nameof(routine) : nameof(onResult));
@@ -39,7 +41,7 @@ public class CoroutineRunner : ITickable, IDisposable
             bool crAlive = _routine.MoveNext();
             if (crAlive)
             {
-                Box<object> result = ((IBox)_routine.Current)?.AsObject();
+                Box<object>? result = ((IBox)_routine.Current)?.AsObject();
                 if (result is null)
                 {
                     return true;
@@ -66,7 +68,7 @@ public class CoroutineRunner : ITickable, IDisposable
     private readonly List<Coroutine> _routines = new();
     private bool _disposed = false;
 
-    public void Start<T>(IEnumerator<Box<T>> routine, Action<T> onResult = null)
+    public void Start<T>(IEnumerator<Box<T>> routine, Action<T>? onResult = null) where T : struct
     {
         if (routine == null)
             throw new ArgumentNullException(nameof(routine));

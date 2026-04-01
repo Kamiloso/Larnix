@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
 using Larnix.Core;
-using Larnix.Server.Configuration;
+using Larnix.Server.Data;
 using Larnix.Server.Entities;
 using Larnix.Socket.Backend;
-using Larnix.GameCore.Json;
-using CmdResult = Larnix.GameCore.ICmdExecutor.CmdResult;
+using Larnix.Model.Json;
+using CmdResult = Larnix.Model.ICmdExecutor.CmdResult;
 
 namespace Larnix.Server.Commands.All;
 

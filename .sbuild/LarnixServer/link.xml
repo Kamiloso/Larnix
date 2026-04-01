@@ -1,25 +1,16 @@
 <linker>
-  <assembly fullname="Larnix.Worldgen">
-    <type fullname="Larnix.Worldgen.Biomes.All.*" />
-  </assembly>
-	
-  <assembly fullname="Larnix.Entities">
-    <type fullname="Larnix.Entities.All.*" />
-  </assembly>
-  
-  <assembly fullname="Larnix.Blocks">
-    <type fullname="Larnix.Blocks.All.*" />
+  <assembly fullname="Larnix.Model">
+    <type fullname="Larnix.Model.Worldgen.Biomes.All.*" />
+    <type fullname="Larnix.Model.Entities.All.*" />
+    <type fullname="Larnix.Model.Blocks.All.*" />
   </assembly>
 
-  <assembly fullname="Larnix.Packets">
-    <type fullname="Larnix.Packets.*" />
+  <assembly fullname="Larnix.Server">
+    <type fullname="Larnix.Server.Data.*" />
+    <type fullname="Larnix.Server.Packets.*" />
   </assembly>
 
   <assembly fullname="Larnix.Socket">
     <type fullname="Larnix.Socket.Packets.Control.*" />
-  </assembly>
-
-  <assembly fullname="Larnix.Server">
-    <type fullname="Larnix.Server.Configuration.*" />
   </assembly>
 </linker>

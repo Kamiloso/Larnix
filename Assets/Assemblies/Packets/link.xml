@@ -1,5 +1,0 @@
-<linker>
-	<assembly fullname="Larnix.Packets">
-		<namespace fullname="Larnix.Packets" preserve="all"/>
-	</assembly>
-</linker>

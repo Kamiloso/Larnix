@@ -1,13 +1,13 @@
 using Larnix.Core.Vectors;
 using Larnix.Socket.Frontend;
-using Larnix.Packets;
-using Larnix.Packets.Structs;
+using Larnix.Server.Packets;
+using Larnix.Server.Packets.Structs;
 using Larnix.Client.Entities;
 using Larnix.Client.Terrain;
 using Larnix.Client.UI;
 using Larnix.Client.Particles;
 using Larnix.Core;
-using Larnix.Blocks;
+using Larnix.Model.Blocks;
 using Larnix.Background;
 using Larnix.Client.Chat;
 

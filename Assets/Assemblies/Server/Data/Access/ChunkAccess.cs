@@ -1,5 +1,5 @@
 #nullable enable
-using Larnix.Blocks.Structs;
+using Larnix.Model.Blocks.Structs;
 using Larnix.Server.Data.Database;
 
 namespace Larnix.Server.Data.Access;

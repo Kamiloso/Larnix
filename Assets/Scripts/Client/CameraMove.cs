@@ -1,10 +1,9 @@
-using Larnix.Entities;
+using Larnix.Model.Entities;
 using Larnix.Scoping;
 using UnityEngine;
 using Larnix.Core.Vectors;
 using Larnix.Core;
-using Larnix.GameCore.Enums;
-using IHasCollider = Larnix.Entities.All.IHasCollider;
+using IHasCollider = Larnix.Model.Entities.All.IHasCollider;
 
 namespace Larnix.Client
 {

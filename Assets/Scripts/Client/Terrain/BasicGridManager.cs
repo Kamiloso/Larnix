@@ -2,13 +2,12 @@ using System;
 using UnityEngine;
 using System.Collections.Generic;
 using Larnix.Core.Vectors;
-using Larnix.Blocks.Structs;
+using Larnix.Model.Blocks.Structs;
 using System.Linq;
-using Larnix.GameCore.Utils;
-using Larnix.Blocks;
-using Larnix.Blocks.All;
+using Larnix.Model.Utils;
+using Larnix.Model.Blocks;
+using Larnix.Model.Blocks.All;
 using Larnix.Core;
-using Larnix.GameCore.Structs;
 
 namespace Larnix.Client.Terrain
 {

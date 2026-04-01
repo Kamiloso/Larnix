@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -6,7 +7,7 @@ namespace Larnix.Core;
 
 public static class RuntimeCompilation
 {
-    public static Func<object[], object> CompileConstructor(ConstructorInfo constructor)
+    public static Func<object[], object> CompileConstructor(ConstructorInfo? constructor)
     {
         if (constructor == null)
             throw new ArgumentNullException(nameof(constructor));
@@ -47,7 +48,7 @@ public static class RuntimeCompilation
             paramExpressions[i] = Expression.Convert(paramAccess, parameters[i].ParameterType);
         }
 
-        Expression instanceExpr = method.IsStatic ? null : Expression.Convert(instanceParam, method.DeclaringType);
+        Expression? instanceExpr = method.IsStatic ? null : Expression.Convert(instanceParam, method.DeclaringType);
 
         MethodCallExpression callExpr = Expression.Call(instanceExpr, method, paramExpressions);
 

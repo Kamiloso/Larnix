@@ -10,12 +10,11 @@ using Larnix.Socket.Packets.Control;
 using Larnix.Socket.Helpers.Networking;
 using Larnix.Socket.Helpers;
 using Larnix.Socket.Helpers.Limiters;
-using Larnix.Core.Interfaces;
-using Larnix.Core.Misc;
 using Larnix.Core;
-using Larnix.GameCore.Utils;
-using Larnix.GameCore.DbStructs;
+using Larnix.Model.Utils;
 using LoginMode = Larnix.Socket.Backend.UserManager.LoginMode;
+using Larnix.Model;
+using Larnix.Core.Utils;
 
 namespace Larnix.Socket.Backend;
 
@@ -211,7 +210,7 @@ public class QuickServer : ITickable, IDisposable
                 publicKey: _keyRSA.ExportPublicKey(),
                 currentPlayers: PlayerCount,
                 maxPlayers: PlayerLimit,
-                gameVersion: GameCore.Version.Current,
+                gameVersion: Model.Version.Current,
                 challengeID: UserManager.GetChallengeID(nickname),
                 timestamp: Timestamp.GetTimestamp(),
                 runID: RunID,

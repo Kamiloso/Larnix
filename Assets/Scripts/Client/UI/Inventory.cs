@@ -1,9 +1,9 @@
 using System;
 using Larnix.Scoping;
 using UnityEngine;
-using Larnix.Blocks.Structs;
+using Larnix.Model.Blocks.Structs;
 using Larnix.Core;
-using Larnix.Core.Enums;
+using Larnix.Model.Blocks;
 
 namespace Larnix.Client.UI
 {

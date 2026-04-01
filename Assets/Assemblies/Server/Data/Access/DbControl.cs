@@ -23,11 +23,10 @@ internal class DbControl : IDbControl
 
     public IDbHandle Handle => _db;
 
-    public IChunkAccess Chunks => GetAccessor<ChunkAccess>();
-    public IEntityAccess Entities => GetAccessor<EntityAccess>();
-    public IUserAccess Users => GetAccessor<UserAccess>();
-    public IValueAccess Values => GetAccessor<ValueAccess>();
-
+    public IChunkAccess Chunks => GetAccessor<IChunkAccess>();
+    public IEntityAccess Entities => GetAccessor<IEntityAccess>();
+    public IUserAccess Users => GetAccessor<IUserAccess>();
+    public IValueAccess Values => GetAccessor<IValueAccess>();
     private static string FORMAT(string cmd) => cmd.Replace("#", "NOT NULL");
 
     public DbControl(IDbHandle db)
@@ -81,17 +80,18 @@ internal class DbControl : IDbControl
         "));
 
         try { _db.Execute(FORMAT(@"ALTER TABLE chunks ADD COLUMN nbt TEXT # DEFAULT '';")); } catch { }
+
+        _accessors[typeof(IChunkAccess)] = new ChunkAccess(_db);
+        _accessors[typeof(IEntityAccess)] = new EntityAccess(_db);
+        _accessors[typeof(IUserAccess)] = new UserAccess(_db);
+        _accessors[typeof(IValueAccess)] = new ValueAccess(_db);
     }
 
     private T GetAccessor<T>()
     {
-        if (_accessors.TryGetValue(typeof(T), out object? accessor))
-            return (T)accessor;
+        if (!_accessors.TryGetValue(typeof(T), out object? accessor))
+            throw new InvalidCastException($"Accessor of type {typeof(T)} is not registered in the database control.");
 
-        accessor = Activator.CreateInstance(typeof(T), _db) ??
-            throw new InvalidOperationException($"Failed to create an instance of {typeof(T).FullName}");
-
-        _accessors[typeof(T)] = accessor;
         return (T)accessor;
     }
 }

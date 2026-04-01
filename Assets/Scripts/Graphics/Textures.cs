@@ -1,9 +1,8 @@
 using UnityEngine;
 using UnityEngine.Tilemaps;
-using Larnix.Blocks;
+using Larnix.Model.Blocks;
 using Larnix.Core.Vectors;
-using Larnix.Blocks.All;
-using Larnix.Core.Enums;
+using Larnix.Model.Blocks.All;
 
 namespace Larnix.Graphics;
 

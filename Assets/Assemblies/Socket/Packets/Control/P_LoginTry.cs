@@ -1,6 +1,6 @@
-using Larnix.GameCore.Utils;
+using Larnix.Model.Utils;
 using Larnix.Core.Binary;
-using Larnix.Core.Misc;
+using Larnix.Core.Utils;
 
 namespace Larnix.Socket.Packets.Control;
 

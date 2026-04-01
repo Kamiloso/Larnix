@@ -7,9 +7,9 @@ using System.IO;
 using UnityEngine.UI;
 using TMPro;
 using Larnix.Menu.Forms;
-using Larnix.GameCore;
-using Version = Larnix.GameCore.Version;
-using Larnix.GameCore.Utils;
+using Larnix.Model;
+using Version = Larnix.Model.Version;
+using Larnix.Model.Utils;
 using ServerAnswer = Larnix.Server.ServerRunner.ServerAnswer;
 using RunSuggestions = Larnix.Server.ServerRunner.RunSuggestions;
 

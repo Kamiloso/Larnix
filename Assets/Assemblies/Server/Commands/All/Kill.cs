@@ -1,7 +1,7 @@
 using Larnix.Core;
-using Larnix.GameCore.Utils;
+using Larnix.Model.Utils;
 using Larnix.Server.Entities;
-using CmdResult = Larnix.GameCore.ICmdExecutor.CmdResult;
+using CmdResult = Larnix.Model.ICmdExecutor.CmdResult;
 
 namespace Larnix.Server.Commands.All;
 

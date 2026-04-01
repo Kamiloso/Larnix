@@ -9,7 +9,7 @@ using Org.BouncyCastle.Security;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.OpenSsl;
 using System.IO;
-using Larnix.Core.Misc;
+using Larnix.Core.Utils;
 
 namespace Larnix.Socket.Security.Keys;
 

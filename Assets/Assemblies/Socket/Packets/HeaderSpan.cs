@@ -1,4 +1,4 @@
-using Larnix.GameCore;
+using Larnix.Model;
 using System.Collections;
 using System.Collections.Generic;
 using Larnix.Core.Binary;

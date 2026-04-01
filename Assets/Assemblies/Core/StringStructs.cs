@@ -1,9 +1,10 @@
+#nullable enable
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
 using Larnix.Core.Binary;
 
-namespace Larnix.GameCore.Utils;
+namespace Larnix.Model.Utils;
 
 public interface IStringStruct : IEndianSafe
 {

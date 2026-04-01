@@ -1,0 +1,8 @@
+namespace Larnix.Model.Blocks.All;
+
+public sealed class ElectricPipeLit : Block, IElectricPipe
+{
+    public string ELECTRIC_PIPE_ID() => typeof(ElectricPipe).Name;
+    public BlockID ID_UNLIT() => BlockID.ElectricPipe;
+    public BlockID ID_LIT() => BlockID.ElectricPipeLit;
+}

@@ -1,17 +1,16 @@
 using System.Collections.Generic;
-using Larnix.Blocks;
+using Larnix.Model.Blocks;
 using Larnix.Socket.Packets;
 using System.Linq;
-using Larnix.GameCore.Utils;
-using Larnix.Blocks.Structs;
+using Larnix.Model.Utils;
+using Larnix.Model.Blocks.Structs;
 using Larnix.Server.Entities;
 using Larnix.Socket.Backend;
-using Larnix.Packets;
+using Larnix.Server.Packets;
 using Larnix.Core.Vectors;
-using Larnix.Packets.Structs;
+using Larnix.Server.Packets.Structs;
 using Larnix.Core;
 using Larnix.Server.Terrain;
-using Larnix.GameCore.Structs;
 
 namespace Larnix.Server.Transmission;
 

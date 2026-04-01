@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Larnix.GameCore.Utils;
+using Larnix.Model.Utils;
 using Larnix.Core;
 
 namespace Larnix.Server;

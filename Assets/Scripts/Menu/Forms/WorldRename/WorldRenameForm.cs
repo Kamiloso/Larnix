@@ -3,7 +3,7 @@ using TMPro;
 using UnityEngine;
 using Larnix.Core;
 using Larnix.Menu.Worlds;
-using Larnix.GameCore.Utils;
+using Larnix.Model.Utils;
 
 namespace Larnix.Menu.Forms
 {

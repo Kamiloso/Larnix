@@ -1,11 +1,11 @@
 using Larnix.Core.Files;
-using Larnix.GameCore.Utils;
+using Larnix.Model.Utils;
 using System.Collections;
 using System.Collections.Generic;
 using Org.BouncyCastle.Crypto.Generators;
 using System.Text;
 using Larnix.Core.Binary;
-using Larnix.Core.Misc;
+using Larnix.Core.Utils;
 
 namespace Larnix.Socket.Security;
 

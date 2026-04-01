@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using Larnix.Core;
-using Larnix.GameCore.Utils;
+using Larnix.Model.Utils;
 using Larnix.Server.Entities;
 using Larnix.Socket.Backend;
-using CmdResult = Larnix.GameCore.ICmdExecutor.CmdResult;
+using CmdResult = Larnix.Model.ICmdExecutor.CmdResult;
 
 namespace Larnix.Server.Commands.All;
 

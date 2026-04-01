@@ -1,8 +1,8 @@
 #nullable enable
 using System.Collections.Generic;
-using Larnix.Blocks.Structs;
+using Larnix.Model.Blocks.Structs;
 using System.Linq;
-using Larnix.Worldgen;
+using Larnix.Model.Worldgen;
 using Larnix.Core.Vectors;
 using System;
 using Larnix.Core;

@@ -4,9 +4,9 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
 using Larnix.Socket.Packets.Control;
-using Larnix.Core.Misc;
 using Larnix.Core.Binary;
 using System.Runtime.Serialization;
+using Larnix.Core.Utils;
 
 namespace Larnix.Socket.Packets;
 

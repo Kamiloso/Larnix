@@ -1,20 +1,18 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Larnix.Blocks;
+using Larnix.Model.Blocks;
 using System.Linq;
 using System;
-using Larnix.GameCore.Utils;
-using Larnix.GameCore.Physics;
+using Larnix.Model.Utils;
+using Larnix.Model.Physics;
 using Larnix.Core;
 using Larnix.Core.Vectors;
-using Larnix.Blocks.Structs;
+using Larnix.Model.Blocks.Structs;
 using Larnix.Client.Particles;
-using Larnix.GameCore.Enums;
-using Larnix.Core.Misc;
-using IHasCollider = Larnix.Blocks.All.IHasCollider;
-using Larnix.Core.Enums;
-using Larnix.GameCore.Structs;
+using Larnix.Model.Enums;
+using IHasCollider = Larnix.Model.Blocks.All.IHasCollider;
+using Larnix.Core.Utils;
 
 namespace Larnix.Client.Terrain
 {

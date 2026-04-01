@@ -1,0 +1,11 @@
+using Larnix.Model.Blocks;
+
+namespace Larnix.Model.Blocks.All;
+
+public sealed class Sandstone : Block, ISolid, IOreReplaceable
+{
+    public bool ALLOW_PLACE_BACK() => true;
+
+    public ITool.Type MATERIAL_TYPE() => ITool.Type.Normal;
+    public ITool.Tier MATERIAL_TIER() => ITool.Tier.Wood;
+}

@@ -8,8 +8,7 @@ using Larnix.Socket.Security;
 using Larnix.Socket.Security.Keys;
 using Larnix.Socket.Packets.Control;
 using Larnix.Socket.Helpers.Networking;
-using Larnix.Core.Interfaces;
-using Larnix.GameCore.Utils;
+using Larnix.Model.Utils;
 using Larnix.Core;
 
 namespace Larnix.Socket.Frontend;

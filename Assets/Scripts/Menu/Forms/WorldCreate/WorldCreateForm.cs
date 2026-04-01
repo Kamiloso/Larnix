@@ -5,10 +5,10 @@ using TMPro;
 using UnityEngine;
 using Larnix.Menu.Worlds;
 using Larnix.Core;
-using Larnix.GameCore;
-using Larnix.GameCore.Utils;
+using Larnix.Model;
+using Larnix.Model.Utils;
 using Larnix.Socket;
-using Larnix.Core.Misc;
+using Larnix.Core.Utils;
 
 namespace Larnix.Menu.Forms
 {

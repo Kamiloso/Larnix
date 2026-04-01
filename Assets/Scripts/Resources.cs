@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Core;
-using Larnix.GameCore.Enums;
+using Larnix.Model.Entities;
 
 namespace Larnix;
 

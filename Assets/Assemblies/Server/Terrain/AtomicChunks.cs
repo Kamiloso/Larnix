@@ -1,12 +1,13 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
-using Larnix.GameCore.Utils;
+using Larnix.Model.Utils;
 using Larnix.Core.Vectors;
-using Larnix.Blocks.All;
-using Larnix.Blocks;
+using Larnix.Model.Blocks.All;
+using Larnix.Model.Blocks;
 using System.Collections.ObjectModel;
 using Larnix.Core.Collections;
-using Larnix.Server.Configuration;
+using Larnix.Server.Data;
 using Larnix.Core;
 
 namespace Larnix.Server.Terrain;
@@ -73,8 +74,7 @@ internal class AtomicChunks : IScript
     /// List of all chunks that should be unloaded along with the given chunk.
     /// Null if no atomic set is associated with the chunk.
     /// </returns>
-    /// <exception cref="InvalidOperationException"></exception>
-    public IEnumerable<Vec2Int> GetAtomicSet(Vec2Int chunk)
+    public List<Vec2Int>? GetAtomicSet(Vec2Int chunk)
     {
         if (_atomicSets.TryGetGroup(chunk, out var group))
         {
@@ -90,18 +90,20 @@ internal class AtomicChunks : IScript
     /// True if the whole ISecureAtomic area is loaded.
     /// False if it's possible to make contact with unloaded ISecureAtomic blocks.
     /// </returns>
-    public bool IsAtomicLoaded(Vec2Int chunk, HashSet<Vec2Int> wentThrough = null)
+    public bool IsAtomicLoaded(Vec2Int chunk, HashSet<Vec2Int>? wentThrough = null)
     {
         if (!DiscoversChunks)
         {
             throw new InvalidOperationException("Atomic checks cannot be executed in this context!");
         }
 
-        bool rootCall = wentThrough == null;
+        bool rootCall = wentThrough is null;
         if (rootCall)
         {
             if (_atomicLoadedCache.TryGetValue(chunk, out bool cache))
+            {
                 return cache; // already computed
+            }
 
             wentThrough = new HashSet<Vec2Int>();
         }
@@ -112,7 +114,7 @@ internal class AtomicChunks : IScript
             return false; // unloaded -> false
         }
 
-        bool limitReached = wentThrough.Count >= MAX_ATOMIC_AREA;
+        bool limitReached = wentThrough!.Count >= MAX_ATOMIC_AREA;
         if (limitReached)
         {
             wentThrough.Add(WARN_CHUNK);
@@ -201,11 +203,10 @@ internal class AtomicChunks : IScript
         {
             Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, pos);
 
-            Block frontBlock = WorldAPI.GetBlock(POS, true);
-            Block backBlock = WorldAPI.GetBlock(POS, false);
+            Block? frontBlock = WorldAPI.GetBlock(POS, true);
+            Block? backBlock = WorldAPI.GetBlock(POS, false);
 
-            return frontBlock is ISecureAtomic ||
-                backBlock is ISecureAtomic;
+            return frontBlock is ISecureAtomic || backBlock is ISecureAtomic;
         }
         return null;
     }

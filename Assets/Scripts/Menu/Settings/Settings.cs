@@ -5,7 +5,7 @@ using UnityEngine;
 using System.Text;
 using System.Linq;
 using Larnix.Core.Files;
-using Larnix.GameCore.Utils;
+using Larnix.Model.Utils;
 using System;
 
 namespace Larnix.Menu.Settings

@@ -1,4 +1,4 @@
-using Larnix.Core.Interfaces;
+using Larnix.Core;
 
 namespace Larnix.Server;
 

@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Larnix.Socket.Packets;
 using System.Collections.Generic;
-using Larnix.GameCore.Utils;
+using Larnix.Model.Utils;
 
 namespace Larnix.Socket.Helpers.Networking;
 

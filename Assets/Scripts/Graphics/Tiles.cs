@@ -2,12 +2,12 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 using Larnix.Core.Vectors;
-using Larnix.Blocks;
-using Larnix.Blocks.All;
+using Larnix.Model.Blocks;
+using Larnix.Model.Blocks.All;
 using Larnix.Core;
 using Larnix.Graphics;
-using Larnix.GameCore.Structs;
 using Larnix.Client.Terrain;
+using Larnix.Model.Blocks.Structs;
 
 namespace Larnix.Client.Graphics;
 

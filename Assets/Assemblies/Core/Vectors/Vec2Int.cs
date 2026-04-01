@@ -1,6 +1,7 @@
+#nullable enable
 using System;
 using Larnix.Core.Binary;
-using Larnix.Core.Misc;
+using Larnix.Core.Utils;
 
 namespace Larnix.Core.Vectors;
 

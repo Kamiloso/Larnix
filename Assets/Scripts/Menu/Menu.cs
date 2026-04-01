@@ -5,7 +5,7 @@ using TMPro;
 using Larnix.Server;
 using Larnix.Core;
 using Larnix.Scoping;
-using Ver = Larnix.GameCore.Version;
+using Ver = Larnix.Model.Version;
 
 namespace Larnix.Menu
 {

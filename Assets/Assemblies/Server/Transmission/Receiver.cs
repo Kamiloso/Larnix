@@ -1,19 +1,15 @@
 using System.Collections.Generic;
-using Larnix.Packets;
+using Larnix.Server.Packets;
 using Larnix.Server.Entities;
-using Larnix.GameCore.Utils;
+using Larnix.Model.Utils;
 using Larnix.Socket.Backend;
 using Larnix.Socket.Packets.Control;
 using Larnix.Core.Vectors;
 using System;
 using Larnix.Socket.Packets;
-using Larnix.Blocks;
-using Larnix.GameCore;
-using Larnix.Server.Commands;
+using Larnix.Model.Blocks;
 using Larnix.Core;
-using LogType = Larnix.Core.Echo.LogType;
-using CmdResult = Larnix.GameCore.ICmdExecutor.CmdResult;
-using ChatCode = Larnix.Packets.ChatMessage.ChatCode;
+using PlayerState = Larnix.Server.Entities.PlayerActions.PlayerState;
 
 namespace Larnix.Server.Transmission;
 
@@ -27,7 +23,7 @@ internal class Receiver
     private QuickServer QuickServer => GlobRef.Get<QuickServer>();
     private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
     private BlockSender BlockSender => GlobRef.Get<BlockSender>();
-    private CmdManager CmdManager => GlobRef.Get<CmdManager>();
+    private Chat Chat => GlobRef.Get<Chat>();
 
     public Receiver()
     {
@@ -123,7 +119,7 @@ internal class Receiver
 
         if (code == CodeInfo.Info.RespawnMe)
         {
-            if (PlayerActions.StateOf(owner) == PlayerActions.PlayerState.Dead)
+            if (PlayerActions.StateOf(owner) == PlayerState.Dead)
                 PlayerActions.CreatePlayerInstance(owner);
         }
     }
@@ -171,47 +167,6 @@ internal class Receiver
     private void _ChatMessage(ChatMessage msg, string owner)
     {
         string message = msg.Message;
-
-        if (message.StartsWith("/")) // Command Execution
-        {
-            string command = message[1..];
-            var (result, answer) = CmdManager.ExecuteCommand(command, owner);
-
-            if (result != CmdResult.Ignore)
-            {
-                LogType logType = ICmdExecutor.ConvertToLogType(result);
-
-                String512[] answerParts = IStringStruct.Cut<String512>(answer, s => new(s));
-                for (int i = 0; i < answerParts.Length; i++)
-                {
-                    bool isLast = i == answerParts.Length - 1;
-                    ChatCode msgCode = isLast ?
-                        (result == CmdResult.Clear ? ChatCode.ClearChat : ChatCode.Default) :
-                        ChatCode.Incomplete;
-
-                    QuickServer.Send(owner, new ChatMessage(
-                        logType: logType,
-                        sender: (String64)"<Server>",
-                        message: answerParts[i],
-                        msgCode: msgCode
-                    ));
-                }
-            }
-        }
-        else // Chat Message
-        {
-            ChatMessage packet = new ChatMessage(
-                logType: LogType.Log,
-                sender: (String64)$"[{owner}]",
-                message: (String512)message
-            );
-
-            if (packet.TryGetMsgText(out string msgText))
-            {
-                Echo.Log(msgText); // log to console
-            }
-
-            QuickServer.Broadcast(packet);
-        }
+        Chat.OnArrive(owner, message);
     }
 }

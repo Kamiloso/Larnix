@@ -6,9 +6,9 @@ using System.Linq;
 using UnityEngine.Profiling;
 using Larnix.Core.Vectors;
 using Larnix.Core;
-using Larnix.GameCore.Utils;
+using Larnix.Model.Utils;
 using Larnix.Scoping;
-using Larnix.GameCore.Enums;
+using Larnix.Model.Worldgen.Biomes;
 
 namespace Larnix.Client
 {

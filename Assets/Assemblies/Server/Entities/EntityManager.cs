@@ -5,17 +5,14 @@ using Larnix.Socket.Packets;
 using Larnix.Server.Terrain;
 using Larnix.Core.Vectors;
 using System;
-using Larnix.GameCore.Utils;
+using Larnix.Model.Utils;
 using Larnix.Core;
-using Larnix.Entities.Structs;
+using Larnix.Model.Entities.Structs;
 using Larnix.Socket.Backend;
 using Larnix.Server.Data;
-using Larnix.Server.Configuration;
-using Larnix.Packets;
-using Larnix.GameCore.Json;
-using Larnix.Core.Misc;
-using Larnix.GameCore;
-using Larnix.GameCore.Structs;
+using Larnix.Server.Packets;
+using Larnix.Model.Json;
+using Larnix.Core.Utils;
 
 namespace Larnix.Server.Entities;
 

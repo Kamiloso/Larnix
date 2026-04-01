@@ -1,6 +1,5 @@
 using Larnix.Core.Coroutines;
-using Larnix.GameCore.DbStructs;
-using Larnix.GameCore.Utils;
+using Larnix.Model.Utils;
 using Larnix.Socket.Helpers;
 using Larnix.Socket.Helpers.Limiters;
 using Larnix.Socket.Packets.Control;
@@ -9,8 +8,8 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
-using Larnix.Core.Interfaces;
 using Larnix.Core;
+using Larnix.Model;
 
 namespace Larnix.Socket.Backend;
 

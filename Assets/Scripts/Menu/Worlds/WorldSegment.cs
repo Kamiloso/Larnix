@@ -3,8 +3,8 @@ using Larnix.Core;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using Larnix.GameCore;
-using Version = Larnix.GameCore.Version;
+using Larnix.Model;
+using Version = Larnix.Model.Version;
 
 namespace Larnix.Menu.Worlds
 {

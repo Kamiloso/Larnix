@@ -1,6 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
-using Larnix.GameCore;
+using Larnix.Model;
 
 namespace Larnix.Socket.Security.Keys;
 

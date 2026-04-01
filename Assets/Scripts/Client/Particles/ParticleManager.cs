@@ -4,11 +4,11 @@ using Larnix.Client.Entities;
 using Larnix.Client.Relativity;
 using UnityEngine;
 using System.Linq;
-using Larnix.Blocks;
-using Larnix.Blocks.All;
+using Larnix.Model.Blocks;
+using Larnix.Model.Blocks.All;
 using Larnix.Core;
-using Larnix.GameCore.Enums;
-using Larnix.GameCore.Structs;
+using Larnix.Model.Enums;
+using Larnix.Model.Blocks.Structs;
 
 namespace Larnix.Client.Particles
 {

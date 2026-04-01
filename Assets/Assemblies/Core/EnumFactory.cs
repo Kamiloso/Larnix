@@ -1,10 +1,11 @@
+#nullable enable
 using System.Collections.Generic;
 using System;
 using System.Reflection;
 using System.Linq;
 using System.Collections.ObjectModel;
 
-namespace Larnix.GameCore;
+namespace Larnix.Model;
 
 public static class EnumFactory<TEnum, TClass> where TEnum : struct, IConvertible where TClass : class
 {

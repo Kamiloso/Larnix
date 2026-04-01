@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Larnix.Socket.Backend;
-using Larnix.Worldgen;
-using CmdResult = Larnix.GameCore.ICmdExecutor.CmdResult;
+using Larnix.Model.Worldgen;
+using CmdResult = Larnix.Model.ICmdExecutor.CmdResult;
 
 namespace Larnix.Server.Commands.All;
 

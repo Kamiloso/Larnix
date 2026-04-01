@@ -2,8 +2,8 @@ using Larnix.Client.Relativity;
 using Larnix.Core.Vectors;
 using UnityEngine;
 using UnityEngine.Tilemaps;
-using Larnix.GameCore.Structs;
 using Larnix.Client.Graphics;
+using Larnix.Model.Blocks.Structs;
 
 namespace Larnix.Client.Terrain.Selector
 {

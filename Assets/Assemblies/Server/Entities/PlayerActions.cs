@@ -1,17 +1,17 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using Larnix.Entities.All;
+using Larnix.Model.Entities.All;
 using Larnix.Socket.Packets;
 using Larnix.Core.Vectors;
 using Larnix.Socket.Backend;
-using Larnix.Packets;
-using Larnix.Server.Configuration;
+using Larnix.Server.Packets;
+using Larnix.Server.Data;
 using System;
-using Larnix.Worldgen;
-using Larnix.GameCore;
+using Larnix.Model.Worldgen;
+using Larnix.Model;
 using Larnix.Core;
-using Larnix.GameCore.Enums;
+using Larnix.Model.Enums;
 
 namespace Larnix.Server.Entities;
 

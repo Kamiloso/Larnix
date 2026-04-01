@@ -9,7 +9,7 @@ using TMPro;
 using Unity.VisualScripting;
 using Larnix.Core.Files;
 using Larnix.Menu.Forms;
-using Larnix.GameCore.Utils;
+using Larnix.Model.Utils;
 using Larnix.Core;
 
 namespace Larnix.Menu.Worlds

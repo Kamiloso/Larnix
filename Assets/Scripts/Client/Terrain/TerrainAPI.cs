@@ -1,10 +1,10 @@
-using Larnix.Blocks;
+using Larnix.Model.Blocks;
 using Larnix.Socket.Packets;
-using Larnix.Packets;
+using Larnix.Server.Packets;
 using Larnix.Core.Vectors;
 using Larnix.Core;
-using Larnix.GameCore.Structs;
 using System;
+using Larnix.Model.Blocks.Structs;
 
 namespace Larnix.Client.Terrain;
 

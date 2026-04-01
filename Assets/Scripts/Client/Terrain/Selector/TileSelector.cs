@@ -1,4 +1,4 @@
-using Larnix.Blocks;
+using Larnix.Model.Blocks;
 using Larnix.Scoping;
 using System.Collections.Generic;
 using UnityEngine;
@@ -6,12 +6,12 @@ using UnityEngine.Tilemaps;
 using System;
 using System.Linq;
 using Larnix.Core.Vectors;
-using Larnix.GameCore.Utils;
+using Larnix.Model.Utils;
 using Larnix.Client.UI;
-using Larnix.Blocks.All;
+using Larnix.Model.Blocks.All;
 using Larnix.Core;
-using Larnix.GameCore.Structs;
 using Larnix.Client.Graphics;
+using Larnix.Model.Blocks.Structs;
 
 namespace Larnix.Client.Terrain.Selector
 {

@@ -1,10 +1,10 @@
-using Larnix.Packets;
-using Larnix.GameCore.Utils;
+using Larnix.Server.Packets;
+using Larnix.Model.Utils;
 using Larnix.Core.Vectors;
-using CmdResult = Larnix.GameCore.ICmdExecutor.CmdResult;
+using CmdResult = Larnix.Model.ICmdExecutor.CmdResult;
 using Larnix.Socket.Backend;
 using Larnix.Server.Entities;
-using Larnix.Entities.All;
+using Larnix.Model.Entities.All;
 using Larnix.Socket.Packets;
 using Larnix.Core;
 

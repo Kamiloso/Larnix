@@ -1,20 +1,19 @@
 using UnityEngine;
 using Larnix.Socket.Packets;
 using Larnix.Client.Entities;
-using Larnix.Entities;
-using Larnix.GameCore.Physics;
+using Larnix.Model.Entities;
+using Larnix.Model.Physics;
 using Larnix.Core.Vectors;
-using Larnix.GameCore.Utils;
-using Larnix.Packets;
+using Larnix.Model.Utils;
+using Larnix.Server.Packets;
 using Larnix.Client.Terrain;
 using System;
-using Larnix.Entities.All;
+using Larnix.Model.Entities.All;
 using Larnix.Scoping;
 using Larnix.Core;
-using Larnix.GameCore.Enums;
-using Larnix.GameCore.Structs;
-using Larnix.GameCore.Physics.Structs;
+using Larnix.Model.Physics.Structs;
 using Larnix.Client.Relativity;
+using Larnix.Model.Entities.Structs;
 
 namespace Larnix.Client
 {

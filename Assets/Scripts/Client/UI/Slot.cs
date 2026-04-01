@@ -1,11 +1,10 @@
-using Larnix.Blocks;
+using Larnix.Model.Blocks;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using Larnix.Blocks.Structs;
-using Larnix.Blocks.All;
+using Larnix.Model.Blocks.Structs;
+using Larnix.Model.Blocks.All;
 using Larnix.Core;
-using Larnix.GameCore.Structs;
 using Larnix.Client.Graphics;
 
 namespace Larnix.Client.UI

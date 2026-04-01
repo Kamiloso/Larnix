@@ -1,5 +1,5 @@
 using System;
-using Larnix.Core.Misc;
+using Larnix.Core.Utils;
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Modes;
 using Org.BouncyCastle.Crypto.Parameters;

@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
-using Larnix.Core.Misc;
-using Larnix.GameCore.Utils;
+using Larnix.Core.Utils;
+using Larnix.Model.Utils;
 
 namespace Larnix.Socket.Security;
 

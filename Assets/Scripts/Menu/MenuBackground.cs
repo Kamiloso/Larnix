@@ -1,18 +1,14 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Larnix.Worldgen;
+using Larnix.Model.Worldgen;
 using Larnix.Client.Terrain;
-using Larnix.GameCore.Utils;
+using Larnix.Model.Utils;
 using Larnix.Core;
 using Larnix.Core.Vectors;
 using Larnix.Background;
-using Larnix.GameCore;
-using Larnix.Core.Misc;
-using Larnix.GameCore.Enums;
-using Larnix.Blocks;
-using Larnix.Blocks.Structs;
-using Larnix.GameCore.Structs;
+using Larnix.Model.Enums;
+using Larnix.Model.Blocks.Structs;
+using Larnix.Core.Utils;
 
 namespace Larnix.Menu
 {

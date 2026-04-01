@@ -1,9 +1,9 @@
 #nullable enable
 using Larnix.Core.Vectors;
-using Larnix.Entities.Structs;
-using Larnix.GameCore.Enums;
-using Larnix.GameCore.Json;
-using Larnix.GameCore.Utils;
+using Larnix.Model.Entities;
+using Larnix.Model.Entities.Structs;
+using Larnix.Model.Json;
+using Larnix.Model.Utils;
 using Larnix.Server.Data.Database;
 using System;
 using System.Collections.Generic;

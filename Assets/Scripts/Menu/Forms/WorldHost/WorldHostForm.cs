@@ -6,7 +6,7 @@ using UnityEngine.UI;
 using Larnix.Menu.Worlds;
 using Larnix.Server;
 using System.Threading.Tasks;
-using Larnix.GameCore;
+using Larnix.Model;
 using ServerAnswer = Larnix.Server.ServerRunner.ServerAnswer;
 using RunSuggestions = Larnix.Server.ServerRunner.RunSuggestions;
 

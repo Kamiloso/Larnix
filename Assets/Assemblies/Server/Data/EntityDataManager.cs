@@ -1,11 +1,11 @@
 #nullable enable
 using System.Collections.Generic;
-using Larnix.GameCore.Utils;
-using Larnix.Entities.Structs;
+using Larnix.Model.Utils;
+using Larnix.Model.Entities.Structs;
 using Larnix.Core.Vectors;
 using Larnix.Core;
 using System;
-using Larnix.GameCore.Enums;
+using Larnix.Model.Entities;
 
 namespace Larnix.Server.Data;
 

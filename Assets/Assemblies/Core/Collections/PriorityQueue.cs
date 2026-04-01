@@ -1,7 +1,8 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Larnix.Core.Misc;
+using Larnix.Core.Utils;
 
 namespace Larnix.Core.Collections;
 
@@ -37,12 +38,12 @@ public class PriorityQueue<TElement, TPriority>
     }
 
     // Snapshot cache
-    private List<TElement> _orderedSnapshot;
+    private List<TElement>? _orderedSnapshot;
     private bool _snapshotDirty = true;
 
     public int Count => _heap.Count;
 
-    public PriorityQueue(Func<TPriority, TPriority, int> compare = null)
+    public PriorityQueue(Func<TPriority, TPriority, int>? compare = null)
     {
         _comparer = compare != null
             ? Comparer<TPriority>.Create((a, b) => compare(a, b))
@@ -65,7 +66,7 @@ public class PriorityQueue<TElement, TPriority>
         MarkDirty();
     }
 
-    public bool TryDequeue(out TElement element)
+    public bool TryDequeue(out TElement? element)
     {
         if (_heap.Count == 0)
         {
@@ -82,7 +83,7 @@ public class PriorityQueue<TElement, TPriority>
         if (!TryDequeue(out var element))
             throw new InvalidOperationException("Queue is empty.");
 
-        return element;
+        return element!;
     }
 
     public bool Remove(TElement element)
@@ -110,7 +111,7 @@ public class PriorityQueue<TElement, TPriority>
 
     public IReadOnlyList<TElement> OrderedSnapshot(bool shuffle = false)
     {
-        if (_snapshotDirty || _orderedSnapshot == null)
+        if (_snapshotDirty || _orderedSnapshot is null)
         {
             // create a temporary list of nodes and sort by priority then insertion index
             var nodes = new List<Node>(_heap);

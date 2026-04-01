@@ -2,9 +2,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 using System.Diagnostics;
-using Larnix.Packets;
+using Larnix.Server.Packets;
 using Larnix.Core;
-using Larnix.GameCore.Structs;
+using Larnix.Model.Entities.Structs;
 
 namespace Larnix.Client.Entities
 {

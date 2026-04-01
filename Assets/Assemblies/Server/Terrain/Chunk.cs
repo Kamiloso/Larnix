@@ -1,26 +1,23 @@
 using System.Collections;
 using System.Collections.Generic;
-using Larnix.Blocks;
+using Larnix.Model.Blocks;
 using System;
 using System.Linq;
-using Larnix.GameCore.Utils;
-using Larnix.GameCore.Physics;
+using Larnix.Model.Utils;
+using Larnix.Model.Physics;
 using Larnix.Core.Vectors;
-using Larnix.Blocks.Structs;
-using Larnix.Packets.Structs;
-using Larnix.Blocks.All;
+using Larnix.Model.Blocks.Structs;
+using Larnix.Server.Packets.Structs;
+using Larnix.Model.Blocks.All;
 using Larnix.Core;
 using Larnix.Server.Data;
 using Larnix.Server.Transmission;
-using BlockInits = Larnix.Blocks.Block.BlockInits;
-using Larnix.GameCore.Structs;
+using BlockInits = Larnix.Model.Blocks.Block.BlockInits;
 
 namespace Larnix.Server.Terrain;
 
 internal class Chunk : IDisposable
 {
-    private const int CHUNK_SIZE = BlockUtils.CHUNK_SIZE;
-
     private readonly Vec2Int _chunkpos;
     private readonly BlockEvents _blockEvents;
     private readonly Block[,] _blocksFront = ChunkIterator.Array2D<Block>();

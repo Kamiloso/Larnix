@@ -1,5 +1,0 @@
-<linker>
-	<assembly fullname="Larnix.Blocks">
-		<namespace fullname="Larnix.Blocks.All" preserve="all"/>
-	</assembly>
-</linker>

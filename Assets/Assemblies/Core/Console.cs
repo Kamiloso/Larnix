@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -9,7 +10,7 @@ internal static class Console
 {
     private const int INPUT_MAX_QUEUE_LENGTH = 64;
 
-    private static Thread _inputThread;
+    private static Thread? _inputThread;
     private static ConcurrentQueue<string> _cmdQueue = new();
     private static readonly object _outputLock = new();
     private static readonly object _inputLock = new();
@@ -96,18 +97,18 @@ internal static class Console
 #endregion
 #region Input
 
-    public static string GetInputSync()
+    public static string? GetInputSync()
     {
         while (true)
         {
-            if (TryPopInput(out string input))
+            if (TryPopInput(out string? input))
                 return input;
 
             Thread.Sleep(10);
         }
     }
 
-    public static bool TryPopInput(out string input)
+    public static bool TryPopInput(out string? input)
     {
         EnsureInputThread();
 

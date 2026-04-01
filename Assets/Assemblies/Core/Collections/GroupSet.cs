@@ -1,5 +1,7 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Larnix.Core.Collections;
 
@@ -36,16 +38,16 @@ public class GroupSet<T>
         }
     }
 
-    public bool TryGetGroup(T item, out IEnumerable<T> group)
+    public bool TryGetGroup(T item, out List<T>? group)
     {
         if (_groups.TryGetValue(item, out var group1))
         {
-            group = group1;
+            group = group1.ToList();
             return true;
         }
         else
         {
-            group = default;
+            group = null;
             return false;
         }
     }

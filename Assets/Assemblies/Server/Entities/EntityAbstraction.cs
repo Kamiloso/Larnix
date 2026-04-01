@@ -1,14 +1,13 @@
-using Larnix.Entities;
-using Larnix.Entities.Structs;
+using Larnix.Model.Entities;
+using Larnix.Model.Entities.Structs;
 using Larnix.Core;
-using Larnix.GameCore.Physics;
+using Larnix.Model.Physics;
 using Larnix.Core.Vectors;
 using System;
-using Larnix.GameCore.Utils;
+using Larnix.Model.Utils;
 using Larnix.Server.Data;
-using EntityInits = Larnix.Entities.Entity.EntityInits;
-using Larnix.GameCore.Enums;
-using Larnix.GameCore.Json;
+using EntityInits = Larnix.Model.Entities.Entity.EntityInits;
+using Larnix.Model.Json;
 
 namespace Larnix.Server.Entities;
 

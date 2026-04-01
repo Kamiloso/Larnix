@@ -2,11 +2,11 @@ using UnityEngine;
 using TMPro;
 using System.Text;
 using Larnix.Core;
-using Larnix.Packets;
-using Larnix.GameCore.Utils;
+using Larnix.Server.Packets;
+using Larnix.Model.Utils;
 using System.Collections.Generic;
 using Larnix.Scoping;
-using ChatCode = Larnix.Packets.ChatMessage.ChatCode;
+using ChatCode = Larnix.Server.Packets.ChatMessage.ChatCode;
 
 namespace Larnix.Client.Chat
 {

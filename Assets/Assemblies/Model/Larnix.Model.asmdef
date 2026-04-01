@@ -1,0 +1,16 @@
+{
+    "name": "Larnix.Model",
+    "rootNamespace": "Larnix.Model",
+    "references": [
+        "GUID:b9668968ef3fc7d40adac0aa4237498e"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": true
+}

@@ -1,5 +1,0 @@
-<linker>
-	<assembly fullname="Larnix.Entities">
-		<namespace fullname="Larnix.Entities.All" preserve="all"/>
-	</assembly>
-</linker>
