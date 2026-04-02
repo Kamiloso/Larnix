@@ -4,9 +4,9 @@ using Larnix.Model.Utils;
 using Larnix.Model.Entities.Structs;
 using Larnix.Core.Vectors;
 using Larnix.Core;
-using System;
 using Larnix.Model.Entities;
 using Larnix.Model.Database;
+using System.Linq;
 
 namespace Larnix.Server.Data;
 
@@ -31,7 +31,7 @@ internal class EntityDataManager
         if (_unloadedEntityData.ContainsKey(uid))
             return _unloadedEntityData[uid];
 
-        if(_entityData.ContainsKey(uid))
+        if (_entityData.ContainsKey(uid))
             return _entityData[uid];
 
         return Db.Entities.FindEntity(uid);
@@ -39,40 +39,39 @@ internal class EntityDataManager
 
     public Dictionary<ulong, EntityData> GetUnloadedEntitiesByChunk(Vec2Int chunkCoords)
     {
-        Dictionary<ulong, EntityData> entityList = Db.Entities.GetEntitiesByChunkNoPlayers(chunkCoords);
+        var entityList = Db.Entities.GetEntitiesByChunkNoPlayers(chunkCoords);
 
-        foreach(var kvp in _entityData)
+        foreach (var uid in _entityData.Keys)
         {
-            if(entityList.ContainsKey(kvp.Key)) // already loaded entity
-                entityList.Remove(kvp.Key);
+            entityList.Remove(uid); // already loaded entity
         }
 
-        foreach (var kvp in _deletedEntityData)
+        foreach (var uid in _deletedEntityData.Keys)
         {
-            if (entityList.ContainsKey(kvp.Key)) // entity already removed
-                entityList.Remove(kvp.Key);
+            entityList.Remove(uid); // entity already removed
         }
 
-        foreach (var kvp in _unloadedEntityData)
+        foreach (var uid in _unloadedEntityData.Keys)
         {
-            EntityData newData = kvp.Value;
+            EntityData newData = _unloadedEntityData[uid];
+
             Vec2Int newChunkCoords = BlockUtils.CoordsToChunk(newData.Position);
-            bool in_the_chunk = newChunkCoords == chunkCoords;
+            bool inChunk = newChunkCoords == chunkCoords;
 
-            if (entityList.ContainsKey(kvp.Key))
+            if (entityList.ContainsKey(uid))
             {
-                if (in_the_chunk)
-                    entityList[kvp.Key] = newData; // update existing data
+                if (inChunk)
+                    entityList[uid] = newData; // update existing data
 
-                if (!in_the_chunk)
-                    entityList.Remove(kvp.Key); // no longer in this chunk
+                if (!inChunk)
+                    entityList.Remove(uid); // no longer in this chunk
             }
             else
             {
-                if (in_the_chunk)
+                if (inChunk)
                 {
-                    if(newData.ID != EntityID.Player)
-                        entityList.Add(kvp.Key, newData); // additional data found
+                    if (newData.ID != EntityID.Player)
+                        entityList.Add(uid, newData); // additional data found
                 }
             }
         }
@@ -82,11 +81,8 @@ internal class EntityDataManager
 
     public void SetEntityData(ulong uid, EntityData entityData)
     {
-        if (_unloadedEntityData.ContainsKey(uid))
-            _unloadedEntityData.Remove(uid);
-
-        if (_deletedEntityData.ContainsKey(uid))
-            _deletedEntityData.Remove(uid);
+        _unloadedEntityData.Remove(uid);
+        _deletedEntityData.Remove(uid);
 
         _entityData[uid] = entityData;
     }
@@ -113,41 +109,12 @@ internal class EntityDataManager
     {
         Db.Handle.AsTransaction(() =>
         {
-            Db.Entities.DeleteEntities(GetKeyList(_deletedEntityData));
+            Db.Entities.DeleteEntities(_deletedEntityData.Keys.ToList());
             _deletedEntityData.Clear();
 
-            Db.Entities.FlushEntities(MergeDictionaries(_entityData, _unloadedEntityData));
+            Db.Entities.FlushEntities(_entityData);
+            Db.Entities.FlushEntities(_unloadedEntityData);
             _unloadedEntityData.Clear();
         });
-    }
-
-    private static Dictionary<ulong, EntityData> MergeDictionaries(
-        Dictionary<ulong, EntityData> first,
-        Dictionary<ulong, EntityData> second
-        )
-    {
-        Dictionary<ulong, EntityData> result = new();
-        foreach(var kvp in first)
-        {
-            result[kvp.Key] = kvp.Value;
-        }
-        foreach (var kvp in second)
-        {
-            if (!result.ContainsKey(kvp.Key))
-                result[kvp.Key] = kvp.Value;
-            else
-                throw new InvalidOperationException("Dictionaries are not distinct!");
-        }
-        return result;
-    }
-
-    private static List<ulong> GetKeyList(Dictionary<ulong, EntityData> dict)
-    {
-        var result = new List<ulong>();
-        foreach (var kvp in dict)
-        {
-            result.Add(kvp.Key);
-        }
-        return result;
     }
 }

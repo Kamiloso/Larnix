@@ -1,19 +1,19 @@
+using Larnix.Core;
+using Larnix.Core.Vectors;
 using Larnix.Model.Entities;
 using Larnix.Model.Entities.Structs;
-using Larnix.Core;
+using Larnix.Model.Json;
 using Larnix.Model.Physics;
-using Larnix.Core.Vectors;
-using System;
 using Larnix.Model.Utils;
 using Larnix.Server.Data;
+using System;
 using EntityInits = Larnix.Model.Entities.Entity.EntityInits;
-using Larnix.Model.Json;
 
 namespace Larnix.Server.Entities;
 
 internal class EntityAbstraction
 {
-    public ulong UID { get; init; }
+    public ulong Uid { get; init; }
     public EntityData ActiveData { get; init; }
     public bool IsPlayer => ActiveData.ID == EntityID.Player;
 
@@ -37,8 +37,8 @@ internal class EntityAbstraction
     public static EntityAbstraction CreatePlayerController(string nickname) => new(nickname);
     private EntityAbstraction(string nickname)
     {
-        UID = PlayerActions.UidByNickname(nickname);
-        ActiveData = EntityDataManager.TryFindEntityData(UID) ?? new EntityData(
+        Uid = PlayerActions.UidByNickname(nickname);
+        ActiveData = EntityDataManager.TryFindEntityData(Uid) ?? new EntityData(
             id: EntityID.Player,
             position: new Vec2(0, 0),
             rotation: 0.0f,
@@ -47,7 +47,7 @@ internal class EntityAbstraction
         ActiveData.Position += Common.UpEpsilon;
         _nickname = nickname;
 
-        EntityDataManager.SetEntityData(UID, ActiveData);
+        EntityDataManager.SetEntityData(Uid, ActiveData);
     }
 
     public static EntityAbstraction CreateEntityController(EntityData entityData, ulong uid) => new(entityData, uid);
@@ -56,11 +56,11 @@ internal class EntityAbstraction
         if (entityData.ID == EntityID.Player)
             throw new ArgumentException("Cannot create player instance as a generic entity!");
 
-        UID = uid;
+        Uid = uid;
         ActiveData = entityData;
         ActiveData.Position += Common.UpEpsilon;
 
-        EntityDataManager.SetEntityData(UID, ActiveData);
+        EntityDataManager.SetEntityData(Uid, ActiveData);
     }
 
     public void Activate()
@@ -69,7 +69,7 @@ internal class EntityAbstraction
             throw new InvalidOperationException("Only entities in loading state can be activated!");
 
         _controller = EntityFactory.ConstructEntityObject(
-            new EntityInits(UID, ActiveData, PhysicsManager));
+            new EntityInits(Uid, ActiveData, PhysicsManager));
 
         LoadState = EntityLoadState.Active;
     }
@@ -86,7 +86,7 @@ internal class EntityAbstraction
     {
         if (!IsUnloaded)
         {
-            EntityDataManager.DeleteEntityData(UID);
+            EntityDataManager.DeleteEntityData(Uid);
             LoadState = EntityLoadState.Unloaded;
         }
     }
@@ -95,7 +95,7 @@ internal class EntityAbstraction
     {
         if (!IsUnloaded)
         {
-            EntityDataManager.UnloadEntityData(UID);
+            EntityDataManager.UnloadEntityData(Uid);
             LoadState = EntityLoadState.Unloaded;
         }
     }

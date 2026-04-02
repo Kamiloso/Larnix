@@ -10,8 +10,8 @@ public class VersionModifier : EditorWindow
     private string status = "";
     private string targetFilePath = "";
 
-    private static readonly Regex VersionRegex = new Regex(@"^\d{1,3}(\.\d{1,3}){0,3}$");
-    private static readonly Regex CurrentLineRegex = new Regex(@"public static readonly Version Current = new\(""([^""]+)""\);");
+    private static readonly Regex VersionRegex = new(@"^\d{1,3}(\.\d{1,3}){0,3}$");
+    private static readonly Regex CurrentLineRegex = new(@"public static readonly Version Current = new\(""([^""]+)""\);");
 
     [MenuItem("Automation/Tools/Version Updater")]
     public static void ShowWindow()

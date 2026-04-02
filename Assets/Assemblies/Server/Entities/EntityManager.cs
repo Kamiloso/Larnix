@@ -100,7 +100,7 @@ internal class EntityManager : IEntityManager
                 Storage storage = controller.ActiveData.NBT;
                 if (Tags.TryConsume(storage, "tags", Tags.TO_BE_KILLED))
                 {
-                    ulong uid = controller.UID;
+                    ulong uid = controller.Uid;
                     KillEntity(uid);
                 }
             }
@@ -175,7 +175,10 @@ internal class EntityManager : IEntityManager
 
             foreach (var pair in broadcastsToSend)
             {
-                QuickServer.Send(pair.Nickname, pair.Packet, false); // fast mode (over raw UDP)
+                string nickname = pair.Nickname;
+                Payload packet = pair.Packet;
+
+                QuickServer.Send(nickname, packet, false); // fast mode (over raw UDP)
             }
 
             _updateCounter++;
@@ -186,13 +189,14 @@ internal class EntityManager : IEntityManager
     {
         EntityAbstraction controller = EntityAbstraction.CreatePlayerController(nickname);
         _playerControllers.Add(nickname, controller);
-        _entityControllers.Add(controller.UID, controller);
+        _entityControllers.Add(controller.Uid, controller);
 
         Payload packet = new PlayerInitialize(
             position: controller.ActiveData.Position,
-            myUid: controller.UID,
+            myUid: controller.Uid,
             lastFixedFrame: Clock.FixedFrame - 1
         );
+
         QuickServer.Send(nickname, packet);
     }
 
@@ -203,14 +207,14 @@ internal class EntityManager : IEntityManager
 
     public bool TryUnloadPlayerController(string nickname)
     {
-        bool success;
-        if (success = _playerControllers.TryGetValue(nickname, out var controller))
-        {
-            _playerControllers.Remove(nickname);
-            _entityControllers.Remove(controller.UID);
-            controller.UnloadEntityInstant();
-        }
-        return success;
+        if (!_playerControllers.TryGetValue(nickname, out var controller))
+            return false;
+
+        _playerControllers.Remove(nickname);
+        _entityControllers.Remove(controller.Uid);
+        controller.UnloadEntityInstant();
+
+        return true;
     }
 
     public bool SummonEntity(EntityData entityData)
@@ -221,51 +225,51 @@ internal class EntityManager : IEntityManager
         ulong uid = EntityDataManager.NextUID(); // generate new
 
         EntityAbstraction controller = EntityAbstraction.CreateEntityController(entityData, uid);
-        _entityControllers.Add(controller.UID, controller);
+        _entityControllers.Add(controller.Uid, controller);
+
         return true;
     }
 
     public void PrepareEntitiesByChunk(Vec2Int chunkCoords)
     {
-        Dictionary<ulong, EntityData> entities = EntityDataManager.GetUnloadedEntitiesByChunk(chunkCoords);
-        foreach (var kvp in entities)
+        Dictionary<ulong, EntityData> entitiesToActivate = EntityDataManager.GetUnloadedEntitiesByChunk(chunkCoords);
+        foreach (var kvp in entitiesToActivate)
         {
-            EntityAbstraction controller = EntityAbstraction.CreateEntityController(kvp.Value, kvp.Key);
-            _entityControllers.Add(controller.UID, controller);
+            ulong uid = kvp.Key;
+            EntityData entityData = kvp.Value;
+
+            EntityAbstraction controller = EntityAbstraction.CreateEntityController(entityData, uid);
+            _entityControllers.Add(controller.Uid, controller);
         }
     }
 
     public void KillEntity(ulong uid)
     {
-        if (_entityControllers.TryGetValue(uid, out var controller))
+        if (!_entityControllers.TryGetValue(uid, out var controller))
+            throw new InvalidOperationException("Entity with ID = " + uid + " is not loaded!");
+        
+        if (controller.IsPlayer)
         {
-            if (controller.IsPlayer)
-            {
-                string nickname = controller.Nickname;
-                _playerControllers.Remove(nickname);
+            string nickname = controller.Nickname;
+            _playerControllers.Remove(nickname);
 
-                CodeInfo packet = new CodeInfo(CodeInfo.Info.YouDie);
-                QuickServer.Send(nickname, packet);
-            }
-
-            controller.DeleteEntityInstant();
-            _entityControllers.Remove(uid);
+            CodeInfo packet = new CodeInfo(CodeInfo.Info.YouDie);
+            QuickServer.Send(nickname, packet);
         }
-        else throw new InvalidOperationException("Entity with ID " + uid + " is not loaded!");
+
+        controller.DeleteEntityInstant();
+        _entityControllers.Remove(uid);
     }
 
     private void UnloadEntity(ulong uid)
     {
-        if (_entityControllers.TryGetValue(uid, out var controller))
-        {
-            if (controller.IsPlayer)
-            {
-                throw new InvalidOperationException("Trying to unload a player entity!");
-            }
+        if (!_entityControllers.TryGetValue(uid, out var controller))
+            throw new InvalidOperationException("Entity with ID = " + uid + " is not loaded!");
 
-            controller.UnloadEntityInstant();
-            _entityControllers.Remove(uid);
-        }
-        else throw new InvalidOperationException("Entity with ID " + uid + " is not loaded!");
+        if (controller.IsPlayer)
+            throw new InvalidOperationException("Trying to unload a player entity!");
+
+        controller.UnloadEntityInstant();
+        _entityControllers.Remove(uid);
     }
 }
