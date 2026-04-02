@@ -7,6 +7,7 @@ using Larnix.Model.Utils;
 using System.Collections.Generic;
 using Larnix.Scoping;
 using ChatCode = Larnix.Server.Packets.ChatMessage.ChatCode;
+using Larnix.Core.Binary;
 
 namespace Larnix.Client.Chat
 {
@@ -20,7 +21,7 @@ namespace Larnix.Client.Chat
 
         public bool IsChatOpen => Scopes.Matches(ScopeID.Chat);
 
-        private Queue<string> _incompleteMsgs = new();
+        private readonly Queue<String512> _incompleteMsgs = new();
 
         private void Awake()
         {
@@ -74,28 +75,29 @@ namespace Larnix.Client.Chat
 
         private string UncacheText()
         {
-            StringBuilder sb = new();
-            while (_incompleteMsgs.TryDequeue(out string part))
+            List<byte> byteList = new();
+            while (_incompleteMsgs.TryDequeue(out String512 part))
             {
-                sb.Append(part);
+                byte[] bytes = Primitives.GetBytes(part);
+                byteList.AddRange(bytes);
             }
-            return sb.ToString();
+            return Encoding.Unicode.GetString(byteList.ToArray()).TrimEnd('\0');
         }
 
         public void AddMessage(ChatMessage message)
         {
-            if (message.MsgCode == ChatCode.Incomplete)
-            {
-                _incompleteMsgs.Enqueue(message.Message);
-            }
-            else
+            _incompleteMsgs.Enqueue(message.Message);
+
+            if (message.MsgCode != ChatCode.Incomplete)
             {
                 if (message.MsgCode == ChatCode.ClearChat)
                 {
                     ChatOrigin.Clear();
                 }
 
-                if (message.TryGetMsgText(UncacheText(), out string msgText))
+                string fullMsg = UncacheText();
+
+                if (message.TryAppendPrefix(fullMsg, out string msgText))
                 {
                     ChatOrigin.AddMessage(msgText, message.LogType);
                 }

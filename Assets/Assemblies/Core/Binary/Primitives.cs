@@ -37,6 +37,10 @@ public static unsafe class Primitives
             throw new NotSupportedException(typeof(T).Name);
 
         int size = sizeof(T);
+
+        if (startIndex < 0)
+            throw new ArgumentOutOfRangeException(nameof(startIndex), "Start index cannot be negative.");
+
         if (bytes.Length < startIndex + size)
             throw new ArgumentException("Array too short to read type " + typeof(T).Name);
 

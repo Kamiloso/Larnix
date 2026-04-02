@@ -57,13 +57,13 @@ public interface IStringStruct : IEndianSafe
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public unsafe struct String32 : IStringStruct
 {
-    public int BinarySize => BYTE_SIZE;
+    public readonly int BinarySize => BYTE_SIZE;
     public const int BYTE_SIZE = 32;
     public const int STR_SIZE = BYTE_SIZE / 2;
     fixed byte buffer[BYTE_SIZE];
 
     public String32(string value) => this = (String32)value;
-    public override string ToString() => (string)this;
+    public override readonly string ToString() => (string)this;
 
     public static explicit operator String32(string value)
     {
@@ -80,13 +80,13 @@ public unsafe struct String32 : IStringStruct
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public unsafe struct String64 : IStringStruct
 {
-    public int BinarySize => BYTE_SIZE;
+    public readonly int BinarySize => BYTE_SIZE;
     public const int BYTE_SIZE = 64;
     public const int STR_SIZE = BYTE_SIZE / 2;
     fixed byte buffer[BYTE_SIZE];
 
     public String64(string value) => this = (String64)value;
-    public override string ToString() => (string)this;
+    public override readonly string ToString() => (string)this;
 
     public static explicit operator String64(string value)
     {
@@ -103,13 +103,13 @@ public unsafe struct String64 : IStringStruct
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public unsafe struct String128 : IStringStruct
 {
-    public int BinarySize => BYTE_SIZE;
+    public readonly int BinarySize => BYTE_SIZE;
     public const int BYTE_SIZE = 128;
     public const int STR_SIZE = BYTE_SIZE / 2;
     fixed byte buffer[BYTE_SIZE];
 
     public String128(string value) => this = (String128)value;
-    public override string ToString() => (string)this;
+    public override readonly string ToString() => (string)this;
 
     public static explicit operator String128(string value)
     {
@@ -126,13 +126,13 @@ public unsafe struct String128 : IStringStruct
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public unsafe struct String256 : IStringStruct
 {
-    public int BinarySize => BYTE_SIZE;
+    public readonly int BinarySize => BYTE_SIZE;
     public const int BYTE_SIZE = 256;
     public const int STR_SIZE = BYTE_SIZE / 2;
     fixed byte buffer[BYTE_SIZE];
 
     public String256(string value) => this = (String256)value;
-    public override string ToString() => (string)this;
+    public override readonly string ToString() => (string)this;
 
     public static explicit operator String256(string value)
     {
@@ -149,13 +149,13 @@ public unsafe struct String256 : IStringStruct
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public unsafe struct String512 : IStringStruct
 {
-    public int BinarySize => BYTE_SIZE;
+    public readonly int BinarySize => BYTE_SIZE;
     public const int BYTE_SIZE = 512;
     public const int STR_SIZE = BYTE_SIZE / 2;
     fixed byte buffer[BYTE_SIZE];
 
     public String512(string value) => this = (String512)value;
-    public override string ToString() => (string)this;
+    public override readonly string ToString() => (string)this;
 
     public static explicit operator String512(string value)
     {
@@ -172,13 +172,13 @@ public unsafe struct String512 : IStringStruct
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public unsafe struct String1024 : IStringStruct
 {
-    public int BinarySize => BYTE_SIZE;
+    public readonly int BinarySize => BYTE_SIZE;
     public const int BYTE_SIZE = 1024;
     public const int STR_SIZE = BYTE_SIZE / 2;
     fixed byte buffer[BYTE_SIZE];
 
     public String1024(string value) => this = (String1024)value;
-    public override string ToString() => (string)this;
+    public override readonly string ToString() => (string)this;
 
     public static explicit operator String1024(string value)
     {

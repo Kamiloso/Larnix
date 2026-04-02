@@ -37,8 +37,8 @@ public sealed class ChatMessage : Payload
     public ChatMessage(in String512 message, ChatCode msgCode) :
         this(LogType.Raw, default, message, msgCode) { }
 
-    public bool TryGetMsgText(out string msgText) => TryGetMsgText(string.Empty, out msgText);
-    public bool TryGetMsgText(string uncached, out string msgText)
+    public bool TryGetMsgText(out string msgText) => TryAppendPrefix(Message, out msgText);
+    public bool TryAppendPrefix(string raw, out string msgText)
     {
         if (MsgCode == ChatCode.ClearChat || MsgCode == ChatCode.PlayerToServer)
         {
@@ -46,20 +46,17 @@ public sealed class ChatMessage : Payload
             return false;
         }
 
-        string fullMsg = string.IsNullOrEmpty(uncached) ?
-            Message : uncached + Message;
-
         if (LogType == LogType.Raw)
         {
-            msgText = fullMsg;
+            msgText = raw;
             return true;
         }
 
         string sender = Sender;
 
         msgText = sender.All(char.IsWhiteSpace) ?
-            $"{fullMsg}" :
-            $"{sender} {fullMsg}";
+            $"{raw}" :
+            $"{sender} {raw}";
 
         return true;
     }
