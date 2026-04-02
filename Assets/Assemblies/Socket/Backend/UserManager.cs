@@ -10,6 +10,7 @@ using System.Net;
 using System.Threading.Tasks;
 using Larnix.Core;
 using Larnix.Model;
+using Larnix.Model.Database;
 
 namespace Larnix.Socket.Backend;
 
@@ -34,7 +35,7 @@ public interface IUserManager
 internal class UserManager : IUserManager, ITickable, IDisposable
 {
     private readonly QuickServer _server;
-    private readonly IDbUserAccess _userAccess;
+    private readonly IUserAccess _userAccess;
     private readonly CoroutineRunner _coroutines;
 
     private readonly Limiter<InternetID> _hashLimiter;
@@ -46,7 +47,7 @@ internal class UserManager : IUserManager, ITickable, IDisposable
 
     private bool _disposed = false;
 
-    public UserManager(QuickServer server, IDbUserAccess userAccess)
+    public UserManager(QuickServer server, IUserAccess userAccess)
     {
         _server = server;
         _userAccess = userAccess;

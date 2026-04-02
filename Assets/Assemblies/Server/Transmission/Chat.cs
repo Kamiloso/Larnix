@@ -1,13 +1,12 @@
 #nullable enable
 using Larnix.Core;
+using Larnix.Model;
 using Larnix.Model.Utils;
 using Larnix.Server.Commands;
 using Larnix.Server.Packets;
 using Larnix.Socket.Backend;
-using CmdResult = Larnix.Model.ICmdExecutor.CmdResult;
 using LogType = Larnix.Core.Echo.LogType;
 using ChatCode = Larnix.Server.Packets.ChatMessage.ChatCode;
-using Larnix.Model;
 
 namespace Larnix.Server.Transmission;
 

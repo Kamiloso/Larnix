@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using Larnix.Socket.Backend;
 using Larnix.Model.Worldgen;
 using Larnix.Core;
-using CmdResult = Larnix.Model.ICmdExecutor.CmdResult;
+using Larnix.Model;
 
 namespace Larnix.Server.Commands.All;
 
@@ -13,7 +13,7 @@ internal class Info : BaseCmd
     public override string ShortDescription => "Displays the server information.";
 
     private QuickServer QuickServer => GlobRef.Get<QuickServer>();
-    private Server Server => GlobRef.Get<Server>();
+    private IServer Server => GlobRef.Get<IServer>();
     private Generator Generator => GlobRef.Get<Generator>();
 
     public override void Inject(string command)

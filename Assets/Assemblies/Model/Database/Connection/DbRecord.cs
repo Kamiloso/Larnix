@@ -2,9 +2,9 @@
 using System;
 using System.Collections.Generic;
 
-namespace Larnix.Server.Data.Database;
+namespace Larnix.Model.Database.Connection;
 
-internal class DbRecord
+public class DbRecord
 {
     private readonly Dictionary<string, object?> _data = new();
 

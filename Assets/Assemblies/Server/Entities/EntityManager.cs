@@ -16,15 +16,31 @@ using Larnix.Core.Utils;
 
 namespace Larnix.Server.Entities;
 
-internal enum EntityLoadState { Loading, Active, Unloaded }
-internal class EntityManager : IScript
+internal enum EntityLoadState
+{
+    Loading,
+    Active,
+    Unloaded
+}
+
+internal interface IEntityManager : IScript
+{
+    void CreatePlayerController(string nickname);
+    bool TryGetPlayerController(string nickname, out EntityAbstraction controller);
+    bool TryUnloadPlayerController(string nickname);
+    bool SummonEntity(EntityData entityData);
+    void PrepareEntitiesByChunk(Vec2Int chunkCoords);
+    void KillEntity(ulong uid);
+}
+
+internal class EntityManager : IEntityManager
 {
     private readonly Dictionary<string, EntityAbstraction> _playerControllers = new();
     private readonly Dictionary<ulong, EntityAbstraction> _entityControllers = new();
 
-    private Clock Clock => GlobRef.Get<Clock>();
+    private IClock Clock => GlobRef.Get<IClock>();
     private ServerConfig ServerConfig => GlobRef.Get<ServerConfig>();
-    private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
+    private IPlayerActions PlayerActions => GlobRef.Get<IPlayerActions>();
     private QuickServer QuickServer => GlobRef.Get<QuickServer>();
     private EntityDataManager EntityDataManager => GlobRef.Get<EntityDataManager>();
     private Chunks Chunks => GlobRef.Get<Chunks>();

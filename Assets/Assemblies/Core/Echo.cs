@@ -29,10 +29,11 @@ public static class Echo
     // Console methods (console only)
     public static void SetTitle(string title) => Console.SetTitle(title);
     public static void Cls() => Console.Clear();
+    public static void PrintBorder() => LogRaw($"{new string('-', 60)}\n");
 
     // Input methods
     public static bool TryPopLine(out string? line) => Console.TryPopInput(out line);
-    public static string? ReadLineSync() => Console.GetInputSync();
+    public static string ReadLineSync() => Console.GetInputSync();
 
     // Log methods
     public static void Log(object? message, LogType logType) => _Log(STR(message), logType);

@@ -1,5 +1,4 @@
-using System.Collections;
-using System.Collections.Generic;
+#nullable enable
 using System;
 using Larnix.Model.Utils;
 using Larnix.Core.Vectors;
@@ -115,9 +114,6 @@ public class DynamicCollider
 
     private OutputData RemoveOffset(OutputData odata)
     {
-        return new OutputData(odata)
-        {
-            Position = odata.Position - Offset
-        };
+        return odata with { Position = odata.Position - Offset };
     }
 }

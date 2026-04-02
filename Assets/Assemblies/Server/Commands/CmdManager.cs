@@ -4,7 +4,7 @@ using Larnix.Model;
 using System;
 using Larnix.Server.Data;
 using Larnix.Model.Json;
-using CmdResult = Larnix.Model.ICmdExecutor.CmdResult;
+using Larnix.Model.Utils;
 
 namespace Larnix.Server.Commands;
 
@@ -18,10 +18,10 @@ internal enum PrivilegeLevel
 
 internal class CmdManager : IScript, ICmdExecutor
 {
-    private Server Server => GlobRef.Get<Server>();
+    private IServer Server => GlobRef.Get<IServer>();
+    private IWorldMetaManager WorldMetaManager => GlobRef.Get<IWorldMetaManager>();
     private ServerConfig ServerConfig => GlobRef.Get<ServerConfig>();
-    private DataSaver DataSaver => GlobRef.Get<DataSaver>();
-    private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
+    private IPlayerActions PlayerActions => GlobRef.Get<IPlayerActions>();
 
     void IScript.PostEarlyFrameUpdate()
     {
@@ -61,7 +61,7 @@ internal class CmdManager : IScript, ICmdExecutor
         {
             if (PlayerActions.IsConnected(sender))
             {
-                bool player_host = DataSaver.HostNickname == sender;
+                bool player_host = WorldMetaManager.HostNickname == sender;
                 bool player_admin = ServerConfig.Administration_Admins.Contains(sender);
 
                 PrivilegeLevel privileges = PrivilegeLevel.User;
@@ -115,7 +115,7 @@ internal class CmdManager : IScript, ICmdExecutor
 
     private bool TryActivateSecretCode(string cmd, string sender, PrivilegeLevel privilege, out (CmdResult, string) result)
     {
-        if (DataSaver.HostNickname != sender)
+        if (WorldMetaManager.HostNickname != sender)
         {
             result = default;
             return false;
@@ -128,7 +128,7 @@ internal class CmdManager : IScript, ICmdExecutor
             case "UNL0CKC0NS0L3":
 
                 ServerConfig.ElevateHostToAdmin = true;
-                Config.ToDirectory(Server.WorldPath, ServerConfig);
+                Config.ToFile(Server.WorldPath, Common.ConfigFile, ServerConfig);
 
                 result = (CmdResult.Success,
                     "Developer access granted. All commands unlocked.");

@@ -4,9 +4,9 @@ using System.Collections.Generic;
 using System.IO;
 using Microsoft.Data.Sqlite;
 
-namespace Larnix.Server.Data.Database;
+namespace Larnix.Model.Database.Connection;
 
-internal class SqliteHandle : IDbHandle
+public class SqliteHandle : IDbHandle
 {
     private SqliteConnection Connection { get; init; }
     private SqliteTransaction? Transaction { get; set; }

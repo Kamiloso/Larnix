@@ -1,4 +1,4 @@
-using System.Collections;
+#nullable enable
 using System.Collections.Generic;
 using Larnix.Core.Vectors;
 using Larnix.Model.Utils;
@@ -10,10 +10,10 @@ public class PhysicsManager
 {
     private const int CHUNK_SIZE = BlockUtils.CHUNK_SIZE;
 
+    public long ColliderCount { get; private set; }
+
     private readonly SpatialDictionary<StaticCollider> _staticColliders = new(3f);
     private readonly HashSet<Vec2Int> _activeChunks = new();
-
-    private long _colliderCount = 0;
 
     public void SetChunkActive(Vec2Int chunk, bool active)
     {
@@ -24,19 +24,19 @@ public class PhysicsManager
     public void AddCollider(StaticCollider collider)
     {
         _staticColliders.Add(collider.Center, collider);
-        _colliderCount++;
+        ColliderCount++;
     }
 
     public void RemoveColliderByReference(StaticCollider collider)
     {
         _staticColliders.RemoveByReference(collider.Center, collider);
-        _colliderCount--;
+        ColliderCount--;
     }
 
     public OutputData MoveCollider(DynamicCollider dynCollider)
     {
         OutputData totalReport = new OutputData { Position = dynCollider.Center };
-        var list = _staticColliders.Get3x3SectorList(dynCollider.Center);
+        List<StaticCollider?> list = _staticColliders.Get3x3SectorList(dynCollider.Center)!;
 
         Vec2Int middleChunk = BlockUtils.CoordsToBlock(dynCollider.Center, CHUNK_SIZE);
         for (int dx = -1; dx <= 1 ; dx++)
@@ -59,7 +59,7 @@ public class PhysicsManager
 
             for (int i = 0; i < list.Count; i++)
             {
-                StaticCollider statCollider = list[i];
+                StaticCollider? statCollider = list[i];
                 if (statCollider == null) continue;
 
                 OutputData report = CalculateCollision(
@@ -127,8 +127,8 @@ public class PhysicsManager
             double tx_min = (minCorner.x - startCenter.x) / moved.x;
             double tx_max = (maxCorner.x - startCenter.x) / moved.x;
 
-            Vec2 point1 = new Vec2(minCorner.x, startCenter.y + tx_min * moved.y);
-            Vec2 point2 = new Vec2(maxCorner.x, startCenter.y + tx_max * moved.y);
+            Vec2 point1 = new(minCorner.x, startCenter.y + tx_min * moved.y);
+            Vec2 point2 = new(maxCorner.x, startCenter.y + tx_max * moved.y);
 
             if (tx_min >= 0.0 && tx_min <= 1.0 && point1.y > minCorner.y && point1.y < maxCorner.y)
             {
@@ -148,8 +148,8 @@ public class PhysicsManager
             double ty_min = (minCorner.y - startCenter.y) / moved.y;
             double ty_max = (maxCorner.y - startCenter.y) / moved.y;
 
-            Vec2 point1 = new Vec2(startCenter.x + ty_min * moved.x, minCorner.y);
-            Vec2 point2 = new Vec2(startCenter.x + ty_max * moved.x, maxCorner.y);
+            Vec2 point1 = new(startCenter.x + ty_min * moved.x, minCorner.y);
+            Vec2 point2 = new(startCenter.x + ty_max * moved.x, maxCorner.y);
 
             if (ty_min >= 0.0 && ty_min <= 1.0 && point1.x > minCorner.x && point1.x < maxCorner.x)
             {

@@ -1,19 +1,18 @@
 #nullable enable
-using Larnix.Model;
-using Larnix.Server.Data.Database;
+using Larnix.Model.Database.Connection;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Larnix.Server.Data.Access;
+namespace Larnix.Model.Database;
 
-internal interface IUserAccess
+public interface IUserAccess
 {
     List<string> AllUsernames();
     void SaveUserData(UserData userData);
     bool TryGetUserData(string username, out UserData? userData);
 }
 
-internal class UserAccess : IUserAccess, IDbUserAccess
+internal class UserAccess : IUserAccess
 {
     private readonly IDbHandle _db;
     public UserAccess(IDbHandle db) => _db = db;

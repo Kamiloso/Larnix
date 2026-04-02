@@ -23,7 +23,7 @@ internal class BlockSender : IScript
     private readonly Queue<BlockChangeItem> _blockChanges = new();
 
     private IWorldAPI WorldAPI => GlobRef.Get<IWorldAPI>();
-    private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
+    private IPlayerActions PlayerActions => GlobRef.Get<IPlayerActions>();
     private QuickServer QuickServer => GlobRef.Get<QuickServer>();
     private Chunks Chunks => GlobRef.Get<Chunks>();
 
@@ -94,7 +94,7 @@ internal class BlockSender : IScript
             BlockData1 blockBack = WorldAPI.GetBlock(POS, false)?.BlockData;
 
             if (
-                PlayerActions.StateOf(nickname) != Entities.PlayerActions.PlayerState.None &&
+                PlayerActions.StateOf(nickname) != PlayerState.None &&
                 PlayerActions.PlayerHasChunk(nickname, chunk) &&
                 blockFront != null && blockBack != null
                 )

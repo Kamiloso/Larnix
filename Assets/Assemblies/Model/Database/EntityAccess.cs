@@ -4,14 +4,14 @@ using Larnix.Model.Entities;
 using Larnix.Model.Entities.Structs;
 using Larnix.Model.Json;
 using Larnix.Model.Utils;
-using Larnix.Server.Data.Database;
+using Larnix.Model.Database.Connection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Larnix.Server.Data.Access;
+namespace Larnix.Model.Database;
 
-internal interface IEntityAccess
+public interface IEntityAccess
 {
     ulong NextEntityUid();
     EntityData? FindEntity(ulong uid);

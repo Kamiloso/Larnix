@@ -1,4 +1,4 @@
-using System.Collections;
+#nullable enable
 using System.Collections.Generic;
 using System.Linq;
 using Larnix.Model.Entities.All;
@@ -9,39 +9,64 @@ using Larnix.Server.Packets;
 using Larnix.Server.Data;
 using System;
 using Larnix.Model.Worldgen;
-using Larnix.Model;
 using Larnix.Core;
 using Larnix.Model.Enums;
 
 namespace Larnix.Server.Entities;
 
-internal class PlayerActions : IScript
+internal enum PlayerState : byte
 {
-    // private representation aggregating all per-player state
+    None, // non-existent or disconnected
+    Inactive, // spawned but not activated yet
+    Alive, // alive and somewhere in the world
+    Dead // player entity doesn't exist, but player is connected
+}
+
+internal interface IPlayerActions : IScript
+{
+    // ----- Player Connection Manager -----
+    void JoinPlayer(string nickname);
+    void CreatePlayerInstance(string nickname);
+    void DisconnectPlayer(string nickname);
+    void UpdatePlayerDataIfHasController(string nickname, PlayerUpdate msg);
+    PlayerUpdate? RecentPlayerUpdate(string nickname);
+
+    // ----- ??? -----
+    ulong UidByNickname(string nickname);
+    void UpdateNearbyUIDs(string nickname, HashSet<ulong> newUIDs, uint fixedFrame, bool sendAtLeastOne);
+    bool PlayerHasChunk(string nickname, Vec2Int chunk);
+    void UpdateClientChunks(string nickname, HashSet<Vec2Int> chunks);
+    HashSet<Vec2Int> LoadedChunksCopy(string nickname);
+
+
+    // ----- Queries -----
+    PlayerState StateOf(string nickname);
+    bool IsConnected(string nickname);
+    bool IsAlive(string nickname);
+    Vec2 RenderingPosition(string nickname);
+    IEnumerable<string> AllPlayers();
+    IEnumerable<string> AllPlayersThatAre(PlayerState state);
+    IEnumerable<string> AllPlayersInRange(Vec2 position, double range);
+}
+
+internal class PlayerActions : IPlayerActions
+{
     private class ConnectedPlayer
     {
         public ulong Uid;
-        public PlayerUpdate RecentUpdate; // null while inactive
+        public PlayerUpdate? RecentUpdate; // null while inactive
         public HashSet<ulong> NearbyUIDs = new();
         public HashSet<Vec2Int> ClientChunks = new();
     }
 
     private readonly Dictionary<string, ConnectedPlayer> _players = new();
 
-    private Clock Clock => GlobRef.Get<Clock>();
+    private IClock Clock => GlobRef.Get<IClock>();
     private ServerConfig ServerConfig => GlobRef.Get<ServerConfig>();
     private QuickServer QuickServer => GlobRef.Get<QuickServer>();
     private IUserManager UserManager => GlobRef.Get<IUserManager>();
     private EntityManager EntityManager => GlobRef.Get<EntityManager>();
     private Generator Worldgen => GlobRef.Get<Generator>();
-
-    public enum PlayerState : byte
-    {
-        None, // non-existent or disconnected
-        Inactive, // spawned but not activated yet
-        Alive, // alive and somewhere in the world
-        Dead // player entity doesn't exist, but player is connected
-    }
 
     public void JoinPlayer(string nickname)
     {
@@ -56,11 +81,17 @@ internal class PlayerActions : IScript
     {
         EntityManager.CreatePlayerController(nickname);
 
-        // Set to PlayerState.Inactive by clearing any previous update
         if (_players.TryGetValue(nickname, out var cp))
         {
+            // Set to PlayerState.Inactive
             cp.RecentUpdate = null;
         }
+    }
+
+    public void DisconnectPlayer(string nickname)
+    {
+        EntityManager.TryUnloadPlayerController(nickname);
+        _players.Remove(nickname);
     }
 
     public void UpdatePlayerDataIfHasController(string nickname, PlayerUpdate msg)
@@ -92,18 +123,12 @@ internal class PlayerActions : IScript
         throw new KeyNotFoundException("Player " + nickname + " is not connected!");
     }
 
-    public PlayerUpdate RecentPlayerUpdate(string nickname)
+    public PlayerUpdate? RecentPlayerUpdate(string nickname)
     {
         if (_players.TryGetValue(nickname, out var cp))
             return cp.RecentUpdate;
 
         return null;
-    }
-
-    public void DisconnectPlayer(string nickname)
-    {
-        EntityManager.TryUnloadPlayerController(nickname);
-        _players.Remove(nickname);
     }
 
     public void UpdateNearbyUIDs(string nickname, HashSet<ulong> newUIDs, uint fixedFrame, bool sendAtLeastOne)
@@ -218,7 +243,7 @@ internal class PlayerActions : IScript
                 return controller.ActiveData.Position;
 
             case PlayerState.Dead:
-                return _players[nickname].RecentUpdate.Position;
+                return _players[nickname].RecentUpdate!.Position;
 
             default:
                 throw new InvalidOperationException("Player " + nickname + " is not connected!");
@@ -230,7 +255,7 @@ internal class PlayerActions : IScript
         if (!_players.ContainsKey(nickname))
             return PlayerState.None;
 
-        if (_players[nickname].RecentUpdate == null)
+        if (_players[nickname].RecentUpdate is null)
             return PlayerState.Inactive;
 
         if (EntityManager.TryGetPlayerController(nickname, out _))

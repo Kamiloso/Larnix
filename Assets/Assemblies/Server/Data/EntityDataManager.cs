@@ -6,6 +6,7 @@ using Larnix.Core.Vectors;
 using Larnix.Core;
 using System;
 using Larnix.Model.Entities;
+using Larnix.Model.Database;
 
 namespace Larnix.Server.Data;
 

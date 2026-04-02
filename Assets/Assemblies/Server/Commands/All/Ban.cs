@@ -5,7 +5,8 @@ using Larnix.Server.Data;
 using Larnix.Server.Entities;
 using Larnix.Socket.Backend;
 using Larnix.Model.Json;
-using CmdResult = Larnix.Model.ICmdExecutor.CmdResult;
+using Larnix.Model;
+using Larnix.Model.Utils;
 
 namespace Larnix.Server.Commands.All;
 
@@ -22,10 +23,10 @@ internal class Ban : BaseCmd
         "ban list - Lists all ban entries.\n" +
         "ban clear - Clears the ban list.";
 
-    private Server Server => GlobRef.Get<Server>();
+    private IServer Server => GlobRef.Get<IServer>();
     private ServerConfig ServerConfig => GlobRef.Get<ServerConfig>();
     private QuickServer QuickServer => GlobRef.Get<QuickServer>();
-    private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
+    private IPlayerActions PlayerActions => GlobRef.Get<IPlayerActions>();
 
     private string _subname;
     private string _target;
@@ -94,7 +95,7 @@ internal class Ban : BaseCmd
         if (!ServerConfig.Administration_Banned.Contains(_target))
         {
             ServerConfig.Administration_Banned.Add(_target);
-            Config.ToDirectory(Server.WorldPath, ServerConfig);
+            Config.ToFile(Server.WorldPath, Common.ConfigFile, ServerConfig);
 
             if (PlayerActions.IsConnected(_target))
             {
@@ -115,7 +116,7 @@ internal class Ban : BaseCmd
         if (ServerConfig.Administration_Banned.Contains(_target))
         {
             ServerConfig.Administration_Banned.Remove(_target);
-            Config.ToDirectory(Server.WorldPath, ServerConfig);
+            Config.ToFile(Server.WorldPath, Common.ConfigFile, ServerConfig);
 
             return (CmdResult.Success,
                 $"Successfully removed '{_target}' from the ban list.");
@@ -134,7 +135,7 @@ internal class Ban : BaseCmd
     private (CmdResult, string) ExecuteClear()
     {
         ServerConfig.Administration_Banned.Clear();
-        Config.ToDirectory(Server.WorldPath, ServerConfig);
+        Config.ToFile(Server.WorldPath, Common.ConfigFile, ServerConfig);
 
         return (CmdResult.Success,
             "Successfully cleared the ban list.");

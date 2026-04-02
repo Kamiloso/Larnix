@@ -4,13 +4,6 @@ using System.Collections.Generic;
 
 namespace Larnix.Model;
 
-public interface IDbUserAccess
-{
-    void SaveUserData(UserData userData);
-    bool TryGetUserData(string username, out UserData? userData);
-    List<string> AllUsernames();
-}
-
 public class UserData
 {
     public long UID { get; }

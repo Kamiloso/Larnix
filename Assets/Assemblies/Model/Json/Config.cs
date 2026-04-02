@@ -11,7 +11,6 @@ namespace Larnix.Model.Json;
 
 public abstract class Config
 {
-    public const string DEFAULT_FILE = "config.json";
     public virtual void Update() { }
 
     public static T FromString<T>(string str) where T : Config, new()
@@ -74,16 +73,6 @@ public abstract class Config
     {
         string data = AsString(config);
         FileManager.Write(path, file, data);
-    }
-
-    public static T FromDirectory<T>(string path) where T : Config, new()
-    {
-        return FromFile<T>(path, DEFAULT_FILE);
-    }
-
-    public static void ToDirectory<T>(string path, T config) where T : Config
-    {
-        ToFile(path, DEFAULT_FILE, config);
     }
 
     protected static List<PropertyInfo> AllProperties<T>() where T : Config

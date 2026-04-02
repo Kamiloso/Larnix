@@ -1,4 +1,4 @@
-using Larnix;
+#nullable enable
 using Larnix.Core.Vectors;
 
 namespace Larnix.Model.Physics;

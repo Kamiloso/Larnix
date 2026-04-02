@@ -9,7 +9,6 @@ using System;
 using Larnix.Socket.Packets;
 using Larnix.Model.Blocks;
 using Larnix.Core;
-using PlayerState = Larnix.Server.Entities.PlayerActions.PlayerState;
 
 namespace Larnix.Server.Transmission;
 
@@ -21,7 +20,7 @@ internal class Receiver
 
     private IWorldAPI WorldAPI => GlobRef.Get<IWorldAPI>();
     private QuickServer QuickServer => GlobRef.Get<QuickServer>();
-    private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
+    private IPlayerActions PlayerActions => GlobRef.Get<IPlayerActions>();
     private BlockSender BlockSender => GlobRef.Get<BlockSender>();
     private Chat Chat => GlobRef.Get<Chat>();
 
@@ -62,7 +61,7 @@ internal class Receiver
                 {
                     if (!softLimit) // hard limit - disconnect client
                     {
-                        Echo.Log("Rate limit for packet " + typeof(T).Name + " from " + owner + " exceeded.");
+                        Echo.Log($"Rate limit for packet {typeof(T).Name} from {owner} exceeded.");
                         QuickServer.KickRequest(owner);
                     }
                 }
@@ -91,7 +90,7 @@ internal class Receiver
         // No player data methods are reliable here.
 
         PlayerActions.JoinPlayer(owner);
-        Echo.Log(owner + " joined the game.");
+        Echo.Log($"{owner} joined the game.");
     }
 
     private void _Stop(Stop msg, string owner)
@@ -101,7 +100,7 @@ internal class Receiver
         // No player data methods are reliable here.
 
         PlayerActions.DisconnectPlayer(owner);
-        Echo.Log(owner + " disconnected.");
+        Echo.Log($"{owner} disconnected.");
     }
 
     private void _PlayerUpdate(PlayerUpdate msg, string owner)

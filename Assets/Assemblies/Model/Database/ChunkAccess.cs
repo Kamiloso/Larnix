@@ -1,10 +1,10 @@
 #nullable enable
 using Larnix.Model.Blocks.Structs;
-using Larnix.Server.Data.Database;
+using Larnix.Model.Database.Connection;
 
-namespace Larnix.Server.Data.Access;
+namespace Larnix.Model.Database;
 
-internal interface IChunkAccess
+public interface IChunkAccess
 {
     void SetChunk(int x, int y, ChunkData chunk);
     bool TryGetChunk(int x, int y, out ChunkData? chunk);

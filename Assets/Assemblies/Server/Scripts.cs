@@ -1,15 +1,31 @@
+#nullable enable
 using Larnix.Core;
+using System.Linq;
 
 namespace Larnix.Server;
+
+internal interface IScript
+{
+    void Start() { }
+
+    void EarlyFrameUpdate() { }
+    void PostEarlyFrameUpdate() { }
+    void FrameUpdate() { }
+    void LateFrameUpdate() { }
+    void PostLateFrameUpdate() { }
+}
 
 internal class Scripts : ITickable
 {
     private readonly IScript[] _scripts;
     private bool _startExecuted = false;
 
-    public Scripts(params IScript[] scripts)
+    public Scripts(params (int order, IScript[] scripts)[] allScripts)
     {
-        _scripts = scripts[..];
+        _scripts = allScripts
+            .OrderBy(t => t.order)
+            .SelectMany(t => t.scripts)
+            .ToArray();
     }
 
     public void Tick(float deltaTime)

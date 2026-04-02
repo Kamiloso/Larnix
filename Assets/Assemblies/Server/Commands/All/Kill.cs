@@ -1,7 +1,7 @@
 using Larnix.Core;
 using Larnix.Model.Utils;
 using Larnix.Server.Entities;
-using CmdResult = Larnix.Model.ICmdExecutor.CmdResult;
+using Larnix.Model;
 
 namespace Larnix.Server.Commands.All;
 
@@ -12,7 +12,7 @@ internal class Kill : BaseCmd
     public override string ShortDescription => "Kills a player.";
 
     private EntityManager EntityManager => GlobRef.Get<EntityManager>();
-    private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
+    private IPlayerActions PlayerActions => GlobRef.Get<IPlayerActions>();
 
     private string _nickname;
 

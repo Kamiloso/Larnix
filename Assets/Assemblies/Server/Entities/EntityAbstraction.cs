@@ -28,7 +28,7 @@ internal class EntityAbstraction
     public bool IsLoading => LoadState == EntityLoadState.Loading;
     public bool IsUnloaded => LoadState == EntityLoadState.Unloaded;
 
-    private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
+    private IPlayerActions PlayerActions => GlobRef.Get<IPlayerActions>();
     private EntityDataManager EntityDataManager => GlobRef.Get<EntityDataManager>();
     private PhysicsManager PhysicsManager => GlobRef.Get<PhysicsManager>();
 

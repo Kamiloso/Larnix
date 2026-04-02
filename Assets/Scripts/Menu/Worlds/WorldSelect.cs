@@ -8,8 +8,8 @@ using UnityEngine.UI;
 using TMPro;
 using Larnix.Menu.Forms;
 using Larnix.Model;
-using Version = Larnix.Model.Version;
 using Larnix.Model.Utils;
+using Version = Larnix.Model.Version;
 using ServerAnswer = Larnix.Server.ServerRunner.ServerAnswer;
 using RunSuggestions = Larnix.Server.ServerRunner.RunSuggestions;
 
@@ -90,7 +90,7 @@ namespace Larnix.Menu.Worlds
             _metadatas.Clear();
 
             // World Segments
-            List<string> availableWorldPaths = GetSortedWorldPaths(SavesPath, "database.sqlite");
+            List<string> availableWorldPaths = GetSortedWorldPaths(SavesPath, Common.DatabaseFile);
             foreach (string worldPath in availableWorldPaths)
             {
                 RectTransform rt = Instantiate(WorldSegmentPrefab).transform as RectTransform;
@@ -148,8 +148,8 @@ namespace Larnix.Menu.Worlds
 
                 if (tex.LoadImage(imageData))
                 {
-                    Rect rect = new Rect(0, 0, tex.width, tex.height);
-                    Vector2 pivot = new Vector2(0.5f, 0.5f);
+                    Rect rect = new(0, 0, tex.width, tex.height);
+                    Vector2 pivot = new(0.5f, 0.5f);
                     Sprite sprite = Sprite.Create(tex, rect, pivot);
                     CleanSprite(targetImage.sprite);
                     targetImage.sprite = sprite;
@@ -163,8 +163,8 @@ namespace Larnix.Menu.Worlds
                 blackTex.SetPixel(0, 0, new Color(0f, 0f, 0f, 0f));
                 blackTex.Apply();
 
-                Rect rect = new Rect(0, 0, 1, 1);
-                Vector2 pivot = new Vector2(0.5f, 0.5f);
+                Rect rect = new(0, 0, 1, 1);
+                Vector2 pivot = new(0.5f, 0.5f);
                 Sprite blackSprite = Sprite.Create(blackTex, rect, pivot);
                 CleanSprite(targetImage.sprite);
                 targetImage.sprite = blackSprite;
@@ -176,8 +176,8 @@ namespace Larnix.Menu.Worlds
             if (sprite != null)
             {
                 Texture2D tex = sprite.texture;
-                UnityEngine.Object.Destroy(sprite);
-                UnityEngine.Object.Destroy(tex);
+                Destroy(sprite);
+                Destroy(tex);
             }
         }
 

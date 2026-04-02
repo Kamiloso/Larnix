@@ -5,8 +5,8 @@ using Larnix.Core.Vectors;
 using Larnix.Model.Blocks.Structs;
 using Larnix.Server.Commands;
 using Larnix.Core;
+using Larnix.Model;
 using BreakMode = Larnix.Model.Blocks.IWorldAPI.BreakMode;
-using ResultType = Larnix.Model.ICmdExecutor.CmdResult;
 
 namespace Larnix.Server.Terrain;
 
@@ -15,7 +15,7 @@ internal class WorldAPI : IWorldAPI
     private Chunks Chunks => GlobRef.Get<Chunks>();
     private AtomicChunks AtomicChunks => GlobRef.Get<AtomicChunks>();
     private CmdManager Commands => GlobRef.Get<CmdManager>();
-    private Clock Clock => GlobRef.Get<Clock>();
+    private IClock Clock => GlobRef.Get<IClock>();
 
     public long ServerTick => Clock.ServerTick;
 
@@ -109,7 +109,7 @@ internal class WorldAPI : IWorldAPI
         ReplaceBlock(POS, front, BlockData1.Air, BreakMode.Effects);
     }
 
-    public (ResultType, string) ExecuteCommand(string command, string? sender = null)
+    public (CmdResult, string) ExecuteCommand(string command, string? sender = null)
     {
         return Commands.ExecuteCommand(command, sender);
     }

@@ -15,6 +15,7 @@ using Larnix.Model.Utils;
 using LoginMode = Larnix.Socket.Backend.UserManager.LoginMode;
 using Larnix.Model;
 using Larnix.Core.Utils;
+using Larnix.Model.Database;
 
 namespace Larnix.Socket.Backend;
 
@@ -47,7 +48,7 @@ public class QuickServer : ITickable, IDisposable
     private readonly Dictionary<CmdID, Action<HeaderSpan, string>> Subscriptions = new();
     private bool _disposed;
 
-    public QuickServer(ushort port, IDbUserAccess userAccess, IQuickConfig config)
+    public QuickServer(ushort port, IUserAccess userAccess, IQuickConfig config)
     {
         Config = config;
 

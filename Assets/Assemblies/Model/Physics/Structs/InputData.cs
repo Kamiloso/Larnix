@@ -1,4 +1,4 @@
-using Larnix.Core.Vectors;
+#nullable enable
 
 namespace Larnix.Model.Physics.Structs;
 

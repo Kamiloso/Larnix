@@ -1,7 +1,7 @@
 using Larnix.Server.Packets;
 using Larnix.Model.Utils;
 using Larnix.Core.Vectors;
-using CmdResult = Larnix.Model.ICmdExecutor.CmdResult;
+using Larnix.Model;
 using Larnix.Socket.Backend;
 using Larnix.Server.Entities;
 using Larnix.Model.Entities.All;
@@ -18,7 +18,7 @@ internal class Tp : BaseCmd
 
     private QuickServer QuickServer => GlobRef.Get<QuickServer>();
     private EntityManager EntityManager => GlobRef.Get<EntityManager>();
-    private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
+    private IPlayerActions PlayerActions => GlobRef.Get<IPlayerActions>();
 
     private string _nickname;
     private Vec2 _position;

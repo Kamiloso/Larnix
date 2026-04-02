@@ -1,7 +1,7 @@
 using Larnix.Core.Files;
 using Larnix.Socket.Backend;
 using Larnix.Core;
-using CmdResult = Larnix.Model.ICmdExecutor.CmdResult;
+using Larnix.Model;
 
 namespace Larnix.Server.Commands.All;
 
@@ -11,7 +11,7 @@ internal class Authcoderegen : BaseCmd
     public override string Pattern => $"{Name}";
     public override string ShortDescription => "Regenerates the authcode and stops the server.";
 
-    private Server Server => GlobRef.Get<Server>();
+    private IServer Server => GlobRef.Get<IServer>();
 
     public override void Inject(string command)
     {
@@ -26,7 +26,7 @@ internal class Authcoderegen : BaseCmd
         FileManager.Delete(Server.SocketPath,
             QuickServer.PRIVATE_KEY_FILENAME, QuickServer.SERVER_SECRET_FILENAME);
 
-        Server.CloseServer();
+        Server.Close();
 
         return (CmdResult.Info,
             "Server is shutting down...");

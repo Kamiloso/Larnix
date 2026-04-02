@@ -1,12 +1,11 @@
 #nullable enable
-using Larnix.Server.Data.Access;
-using Larnix.Server.Data.Database;
+using Larnix.Model.Database.Connection;
 using System;
 using System.Collections.Generic;
 
-namespace Larnix.Server;
+namespace Larnix.Model.Database;
 
-internal interface IDbControl
+public interface IDbControl
 {
     public IDbHandle Handle { get; }
 
@@ -16,7 +15,7 @@ internal interface IDbControl
     public IValueAccess Values { get; }
 }
 
-internal class DbControl : IDbControl
+public class DbControl : IDbControl
 {
     private readonly IDbHandle _db;
     private readonly Dictionary<Type, object> _accessors = new();

@@ -1,3 +1,4 @@
+#nullable enable
 using Larnix.Core.Vectors;
 
 namespace Larnix.Model.Physics.Structs;
@@ -10,18 +11,9 @@ public readonly struct OutputData
     public bool OnLeftWall { get; init; }
     public bool OnRightWall { get; init; }
 
-    public OutputData(in OutputData original)
+    public OutputData Merge(in OutputData other)
     {
-        Position = original.Position;
-        OnGround = original.OnGround;
-        OnCeil = original.OnCeil;
-        OnLeftWall = original.OnLeftWall;
-        OnRightWall = original.OnRightWall;
-    }
-
-    public OutputData Merge(OutputData other)
-    {
-        return new(other)
+        return other with
         {
             OnGround = OnGround || other.OnGround,
             OnCeil = OnCeil || other.OnCeil,

@@ -2,7 +2,7 @@ using Larnix.Model.Utils;
 using Larnix.Server.Entities;
 using Larnix.Socket.Backend;
 using Larnix.Core;
-using CmdResult = Larnix.Model.ICmdExecutor.CmdResult;
+using Larnix.Model;
 
 namespace Larnix.Server.Commands.All;
 
@@ -13,7 +13,7 @@ internal class Kick : BaseCmd
     public override string ShortDescription => "Kicks a player.";
 
     private QuickServer QuickServer => GlobRef.Get<QuickServer>();
-    private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
+    private IPlayerActions PlayerActions => GlobRef.Get<IPlayerActions>();
 
     private string _nickname;
 

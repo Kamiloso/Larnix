@@ -97,12 +97,12 @@ internal static class Console
 #endregion
 #region Input
 
-    public static string? GetInputSync()
+    public static string GetInputSync()
     {
         while (true)
         {
             if (TryPopInput(out string? input))
-                return input;
+                return input!;
 
             Thread.Sleep(10);
         }

@@ -2,9 +2,9 @@
 using System;
 using System.Collections.Generic;
 
-namespace Larnix.Server.Data.Database;
+namespace Larnix.Model.Database.Connection;
 
-internal interface IDbHandle : IDisposable
+public interface IDbHandle : IDisposable
 {
     void Execute(string query, params object[] parameters);
     DbRecord? QuerySingle(string query, params object[] parameters);

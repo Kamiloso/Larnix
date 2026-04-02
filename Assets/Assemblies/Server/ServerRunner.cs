@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Diagnostics;
 using System.Runtime.ExceptionServices;
@@ -23,20 +24,20 @@ public sealed class ServerRunner : IDisposable
     public record ServerAnswer(
         string Address,
         string Authcode,
-        Task<string> RelayEstablishment = null
+        Task<string>? RelayEstablishment = null
     );
 
     public record RunSuggestions(
         long? Seed = null,
-        string RelayAddress = null
+        string? RelayAddress = null
     );
 
     public bool HasServer => _server != null;
-    public bool IsRunning => HasServer && _thread.IsAlive;
+    public bool IsRunning => _thread?.IsAlive ?? false;
 
-    private Server _server;
-    private Thread _thread;
-    private Exception _threadException;
+    private IServerHandle? _server;
+    private Thread? _thread;
+    private Exception? _threadException;
 
     private volatile bool _stopFlag;
 
@@ -56,8 +57,10 @@ public sealed class ServerRunner : IDisposable
         {
             void StopSignal() => _stopFlag = true;
 
-            _server = new Server(
-                type, worldPath, suggestions, StopSignal, out answer);
+            _server = new ServerHandle(
+                type, worldPath, suggestions, StopSignal);
+
+            answer = _server.Answer;
         }
         finally
         {
@@ -100,7 +103,7 @@ public sealed class ServerRunner : IDisposable
                 double currentTime = sw.Elapsed.TotalSeconds;
                 double deltaTime = currentTime - lastTime;
 
-                _server.Tick((float)deltaTime + float.Epsilon);
+                _server!.Tick((float)deltaTime + float.Epsilon);
                 frame++;
 
                 while (sw.Elapsed.TotalSeconds > (frame + MAX_FRAME_DELAY) * PERIOD)
@@ -132,7 +135,7 @@ public sealed class ServerRunner : IDisposable
         finally
         {
             sw.Stop();
-            _server.Dispose(crashed);
+            _server!.Dispose(crashed);
         }
     }
 
@@ -143,7 +146,7 @@ public sealed class ServerRunner : IDisposable
             try
             {
                 _stopFlag = true;
-                _thread.Join();
+                _thread!.Join();
 
                 if (_threadException != null)
                     ExceptionDispatchInfo.Capture(_threadException).Throw();

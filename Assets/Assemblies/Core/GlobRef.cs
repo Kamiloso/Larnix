@@ -29,10 +29,10 @@ public static class GlobRef
         return instance;
     }
 
-    public static T New<T>() where T : class, new()
+    public static T New<T, U>() where U : T, new() where T : class
     {
-        var instance = new T();
-        return Set(instance);
+        var instance = new U();
+        return Set<T>(instance);
     }
 
     public static T Get<T>() where T : class
@@ -44,6 +44,11 @@ public static class GlobRef
             return (T)instance;
         }
         return null;
+    }
+
+    public static bool Has<T>() where T : class
+    {
+        return Get<T>() != null;
     }
 
     public static void Clear()

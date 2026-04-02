@@ -6,7 +6,7 @@ using Larnix.Core;
 using Larnix.Model.Utils;
 using Larnix.Server.Entities;
 using Larnix.Socket.Backend;
-using CmdResult = Larnix.Model.ICmdExecutor.CmdResult;
+using Larnix.Model;
 
 namespace Larnix.Server.Commands.All;
 
@@ -27,7 +27,7 @@ internal class User : BaseCmd
         $"user deleteall - Deletes all users except host and '{Common.ReservedNickname}'.";
 
     private QuickServer QuickServer => GlobRef.Get<QuickServer>();
-    private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
+    private IPlayerActions PlayerActions => GlobRef.Get<IPlayerActions>();
     private IUserManager UserManager => GlobRef.Get<IUserManager>();
 
     private string _subname;
@@ -201,7 +201,7 @@ internal class User : BaseCmd
                 .ToUpperInvariant();
         }
 
-        string NONE = PlayerActions.PlayerState.None
+        string NONE = PlayerState.None
             .ToString().ToUpperInvariant();
 
         IEnumerable<string> lines = UserManager.AllUsernames()

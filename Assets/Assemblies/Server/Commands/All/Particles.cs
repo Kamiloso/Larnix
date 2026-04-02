@@ -8,7 +8,7 @@ using Larnix.Server.Entities;
 using Larnix.Socket.Backend;
 using Larnix.Socket.Packets;
 using Larnix.Core;
-using CmdResult = Larnix.Model.ICmdExecutor.CmdResult;
+using Larnix.Model;
 
 namespace Larnix.Server.Commands.All;
 
@@ -19,7 +19,7 @@ internal class Particles : BaseCmd
     public override string ShortDescription => "Spawns particles, optionally connected to entity.";
 
     private QuickServer QuickServer => GlobRef.Get<QuickServer>();
-    private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
+    private IPlayerActions PlayerActions => GlobRef.Get<IPlayerActions>();
 
     private ParticleID _particleID;
     private Vec2 _position;

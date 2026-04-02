@@ -15,12 +15,12 @@ namespace Larnix.Server.Terrain;
 internal enum ChunkLoadState { None, Loading, Active }
 internal class Chunks : IScript
 {
-    private PlayerActions PlayerActions => GlobRef.Get<PlayerActions>();
+    private IPlayerActions PlayerActions => GlobRef.Get<IPlayerActions>();
     private EntityManager EntityManager => GlobRef.Get<EntityManager>();
     private BlockSender BlockSender => GlobRef.Get<BlockSender>();
     private AtomicChunks AtomicChunks => GlobRef.Get<AtomicChunks>();
     private ServerConfig ServerConfig => GlobRef.Get<ServerConfig>();
-    private Clock Clock => GlobRef.Get<Clock>();
+    private IClock Clock => GlobRef.Get<IClock>();
 
     private readonly Dictionary<Vec2Int, ChunkContainer> _chunks = new();
 

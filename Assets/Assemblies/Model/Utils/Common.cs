@@ -18,6 +18,9 @@ public static class Common
     public static string ReservedNickname => "Player";
     public static string ReservedPassword => "SGP_PASSWORD\x01";
 
+    public static string ConfigFile => "config.json";
+    public static string DatabaseFile => "database.sqlite";
+
     public static int TargetTPS => 50;
     public static float FixedTime => 1f / TargetTPS;
     public static double ParticleViewDistance => 128.0;
@@ -33,18 +36,6 @@ public static class Common
         return Regex.Replace(step1, @"(?<=[a-z])(?=[A-Z])", " ");
     }
 
-    public static string FormatAddress(string address, ushort port)
-    {
-        UriBuilder uri = new("udp://" + address)
-        {
-            Port = port
-        };
-
-        return uri.ToString()
-            .Replace("udp://", "")
-            .Replace("/", "");
-    }
-
     public static bool AreSameDirectory(string dir1, string dir2)
     {
         if (string.IsNullOrWhiteSpace(dir1) || string.IsNullOrWhiteSpace(dir2))
@@ -57,6 +48,18 @@ public static class Common
             return string.Equals(full1, full2, StringComparison.OrdinalIgnoreCase);
         else
             return string.Equals(full1, full2, StringComparison.Ordinal);
+    }
+
+    public static string FormatAddress(string address, ushort port)
+    {
+        UriBuilder uri = new("udp://" + address)
+        {
+            Port = port
+        };
+
+        return uri.ToString()
+            .Replace("udp://", "")
+            .Replace("/", "");
     }
 
     public static bool IsInNetworkString(IPAddress address, string networkString)

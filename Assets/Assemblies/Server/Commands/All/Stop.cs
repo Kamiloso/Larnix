@@ -1,5 +1,5 @@
 using Larnix.Core;
-using CmdResult = Larnix.Model.ICmdExecutor.CmdResult;
+using Larnix.Model;
 
 namespace Larnix.Server.Commands.All;
 
@@ -9,7 +9,7 @@ internal class Stop : BaseCmd
     public override string Pattern => $"{Name}";
     public override string ShortDescription => "Turns off the server.";
 
-    private Server Server => GlobRef.Get<Server>();
+    private IServer Server => GlobRef.Get<IServer>();
 
     public override void Inject(string command)
     {
@@ -21,7 +21,7 @@ internal class Stop : BaseCmd
 
     public override (CmdResult, string) Execute(string sender, PrivilegeLevel privilege)
     {
-        Server.CloseServer();
+        Server.Close();
 
         return (CmdResult.Info,
             "Server is shutting down...");

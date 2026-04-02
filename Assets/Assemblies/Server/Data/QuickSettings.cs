@@ -9,16 +9,16 @@ namespace Larnix.Server.Data;
 
 internal class QuickSettings : IQuickConfig
 {
-    private Server Server => GlobRef.Get<Server>();
-    private DataSaver DataSaver => GlobRef.Get<DataSaver>();
+    private IServer Server => GlobRef.Get<IServer>();
+    private IWorldMetaManager WorldMetaManager => GlobRef.Get<IWorldMetaManager>();
     private ServerConfig ServerConfig => GlobRef.Get<ServerConfig>();
 
     // Dynamic settings
     public ushort MaxClients => ServerConfig.MaxPlayers;
     public String256 Motd => (String256)ServerConfig.Motd;
-    public String32 HostUser => Server.Type == ServerType.Remote ?
+    public String32 HostUser => Server.ServerType == ServerType.Remote ?
         (String32)Common.ReservedNickname :
-        DataSaver.HostNickname;
+        WorldMetaManager.HostNickname;
 
     // Static settings
     public bool IsLoopback { get; init; }
@@ -29,7 +29,7 @@ internal class QuickSettings : IQuickConfig
 
     public QuickSettings()
     {
-        IsLoopback = Server.Type == ServerType.Local;
+        IsLoopback = Server.ServerType == ServerType.Local;
         DataPath = Path.Combine(Server.WorldPath, "Socket");
 
         MaskIPv4 = ServerConfig.Network_ClientIdentityPrefixSizeIPv4;

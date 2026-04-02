@@ -1,10 +1,10 @@
 #nullable enable
-using Larnix.Server.Data.Database;
+using Larnix.Model.Database.Connection;
 using System;
 
-namespace Larnix.Server.Data.Access;
+namespace Larnix.Model.Database;
 
-internal interface IValueAccess
+public interface IValueAccess
 {
     void Put(string key, long value);
     long? Get(string key);
