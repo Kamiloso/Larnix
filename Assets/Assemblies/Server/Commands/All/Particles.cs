@@ -4,11 +4,12 @@ using Larnix.Model.Enums;
 using Larnix.Model.Utils;
 using Larnix.Core.Vectors;
 using Larnix.Server.Packets;
-using Larnix.Server.Entities;
 using Larnix.Socket.Backend;
 using Larnix.Socket.Packets;
 using Larnix.Core;
 using Larnix.Model;
+using Larnix.Server.Entities;
+using System.Linq;
 
 namespace Larnix.Server.Commands.All;
 
@@ -19,7 +20,7 @@ internal class Particles : BaseCmd
     public override string ShortDescription => "Spawns particles, optionally connected to entity.";
 
     private QuickServer QuickServer => GlobRef.Get<QuickServer>();
-    private IPlayerActions PlayerActions => GlobRef.Get<IPlayerActions>();
+    private IConnectedPlayers ConnectedPlayers => GlobRef.Get<IConnectedPlayers>();
 
     private ParticleID _particleID;
     private Vec2 _position;
@@ -67,8 +68,9 @@ internal class Particles : BaseCmd
     {
         Payload packet = new SpawnParticles(_position, _particleID, _uid);
 
-        IEnumerable<string> nearbyPlayers = PlayerActions
-            .AllPlayersInRange(_position, Common.ParticleViewDistance);
+        List<string> nearbyPlayers = ConnectedPlayers.AllPlayers
+            .Where(nickname => Vec2.Distance(ConnectedPlayers[nickname].RenderPosition, _position) <= Common.ViewDistance)
+            .ToList();
 
         foreach (string nickname in nearbyPlayers)
         {

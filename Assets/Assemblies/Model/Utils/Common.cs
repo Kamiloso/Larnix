@@ -23,7 +23,7 @@ public static class Common
 
     public static int TargetTPS => 50;
     public static float FixedTime => 1f / TargetTPS;
-    public static double ParticleViewDistance => 128.0;
+    public static double ViewDistance => 50.0;
 
     public static Vec2 UpEpsilon => new(0.00, 0.01);
 

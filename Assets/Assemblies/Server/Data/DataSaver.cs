@@ -1,21 +1,23 @@
 #nullable enable
 using Larnix.Core;
 using Larnix.Model.Database;
+using System;
 
 namespace Larnix.Server.Data;
 
 internal interface IDataSaver : ITickable
 {
+    public event Action? SavingAll;
     void SaveAll();
 }
 
 internal class DataSaver : IDataSaver
 {
+    public event Action? SavingAll;
+
     private IDbControl Db => GlobRef.Get<IDbControl>();
     private IClock Clock => GlobRef.Get<IClock>();
     private ServerConfig ServerConfig => GlobRef.Get<ServerConfig>();
-    private EntityDataManager EntityDataManager => GlobRef.Get<EntityDataManager>();
-    private BlockDataManager BlockDataManager => GlobRef.Get<BlockDataManager>();
 
     public void Tick(float deltaTime)
     {
@@ -27,13 +29,6 @@ internal class DataSaver : IDataSaver
 
     public void SaveAll()
     {
-        if (Db == null) return;
-
-        Db.Handle.AsTransaction(() =>
-        {
-            EntityDataManager.FlushIntoDatabase();
-            BlockDataManager.FlushIntoDatabase();
-            Db.Values.Put("server_tick", Clock.ServerTick);
-        });
+        Db?.Handle.AsTransaction(() => SavingAll?.Invoke());
     }
 }

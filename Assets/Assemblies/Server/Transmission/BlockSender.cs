@@ -1,16 +1,17 @@
+#nullable enable
 using System.Collections.Generic;
 using Larnix.Model.Blocks;
 using Larnix.Socket.Packets;
 using System.Linq;
 using Larnix.Model.Utils;
 using Larnix.Model.Blocks.Structs;
-using Larnix.Server.Entities;
 using Larnix.Socket.Backend;
 using Larnix.Server.Packets;
 using Larnix.Core.Vectors;
 using Larnix.Server.Packets.Structs;
 using Larnix.Core;
 using Larnix.Server.Terrain;
+using Larnix.Server.Entities;
 
 namespace Larnix.Server.Transmission;
 
@@ -23,7 +24,7 @@ internal class BlockSender : IScript
     private readonly Queue<BlockChangeItem> _blockChanges = new();
 
     private IWorldAPI WorldAPI => GlobRef.Get<IWorldAPI>();
-    private IPlayerActions PlayerActions => GlobRef.Get<IPlayerActions>();
+    private IConnectedPlayers ConnectedPlayers => GlobRef.Get<IConnectedPlayers>();
     private QuickServer QuickServer => GlobRef.Get<QuickServer>();
     private Chunks Chunks => GlobRef.Get<Chunks>();
 
@@ -47,7 +48,7 @@ internal class BlockSender : IScript
     {
         Dictionary<string, Queue<BlockUpdateRecord>> IndividualUpdates = new();
 
-        foreach (string nickname in PlayerActions.AllPlayers())
+        foreach (string nickname in ConnectedPlayers.AllPlayers)
         {
             IndividualUpdates[nickname] = new();
         }
@@ -57,14 +58,16 @@ internal class BlockSender : IScript
             var element = _blockUpdates.Dequeue();
             Vec2Int chunk = BlockUtils.CoordsToChunk(element.Position);
 
-            foreach (string nickname in PlayerActions.AllPlayers())
+            foreach (string nickname in ConnectedPlayers.AllPlayers)
             {
-                if (PlayerActions.PlayerHasChunk(nickname, chunk))
+                if (ConnectedPlayers[nickname].LoadedChunks.Contains(chunk))
+                {
                     IndividualUpdates[nickname].Enqueue(element);
+                }
             }
         }
 
-        foreach (string nickname in PlayerActions.AllPlayers())
+        foreach (string nickname in ConnectedPlayers.AllPlayers)
         {
             Queue<BlockUpdateRecord> changes = IndividualUpdates[nickname];
             BlockUpdateRecord[] records = changes.ToArray();
@@ -79,7 +82,7 @@ internal class BlockSender : IScript
 
     private void SendBlockChanges()
     {
-        while(_blockChanges.Count > 0)
+        while (_blockChanges.Count > 0)
         {
             BlockChangeItem element = _blockChanges.Dequeue();
 
@@ -90,12 +93,11 @@ internal class BlockSender : IScript
             bool success = element.Success;
             long operation = element.Operation;
 
-            BlockData1 blockFront = WorldAPI.GetBlock(POS, true)?.BlockData;
-            BlockData1 blockBack = WorldAPI.GetBlock(POS, false)?.BlockData;
+            BlockData1? blockFront = WorldAPI.GetBlock(POS, true)?.BlockData;
+            BlockData1? blockBack = WorldAPI.GetBlock(POS, false)?.BlockData;
 
             if (
-                PlayerActions.StateOf(nickname) != PlayerState.None &&
-                PlayerActions.PlayerHasChunk(nickname, chunk) &&
+                ConnectedPlayers[nickname].LoadedChunks.Contains(chunk) &&
                 blockFront != null && blockBack != null
                 )
             {
@@ -111,12 +113,11 @@ internal class BlockSender : IScript
 
     public void BroadcastChunkChanges()
     {
-        foreach (string nickname in PlayerActions.AllPlayers())
+        foreach (string nickname in ConnectedPlayers.AllPlayers)
         {
-            Vec2Int chunkpos = BlockUtils.CoordsToChunk(PlayerActions.RenderingPosition(nickname));
-            var player_state = PlayerActions.StateOf(nickname);
+            Vec2Int chunkpos = BlockUtils.CoordsToChunk(ConnectedPlayers[nickname].RenderPosition);
 
-            HashSet<Vec2Int> chunksMemory = PlayerActions.LoadedChunksCopy(nickname);
+            HashSet<Vec2Int> chunksMemory = ConnectedPlayers[nickname].LoadedChunks;
             HashSet<Vec2Int> chunksNearby = BlockUtils.GetNearbyChunks(chunkpos, BlockUtils.LOADING_DISTANCE)
                 .Where(c => Chunks.IsChunkLoaded(c))
                 .ToHashSet();
@@ -130,7 +131,7 @@ internal class BlockSender : IScript
             // Send added
             foreach (var chunk in added)
             {
-                ChunkView chunkData = Chunks.GetChunk(chunk).ActiveChunkReference.HeaderView;
+                ChunkView chunkData = Chunks.GetChunk(chunk)!.ActiveChunkReference.HeaderView;
                 Payload packet = new ChunkInfo(chunk, chunkData);
                 QuickServer.Send(nickname, packet);
             }
@@ -142,7 +143,7 @@ internal class BlockSender : IScript
                 QuickServer.Send(nickname, packet);
             }
 
-            PlayerActions.UpdateClientChunks(nickname, chunksNearby);
+            ConnectedPlayers[nickname].LoadedChunks = chunksNearby;
         }
     }
 }

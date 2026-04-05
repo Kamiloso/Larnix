@@ -1,3 +1,4 @@
+#nullable enable
 using System.Collections;
 using System.Collections.Generic;
 using Larnix.Model.Blocks;
@@ -12,7 +13,8 @@ using Larnix.Model.Blocks.All;
 using Larnix.Core;
 using Larnix.Server.Data;
 using Larnix.Server.Transmission;
-using BlockInits = Larnix.Model.Blocks.Block.BlockInits;
+using static Larnix.Model.Blocks.Block;
+using static Larnix.Model.Blocks.IWorldAPI;
 
 namespace Larnix.Server.Terrain;
 
@@ -25,7 +27,7 @@ internal class Chunk : IDisposable
     private readonly Dictionary<Vec2Int, StaticCollider[]> _colliderCollections = new();
 
     private IWorldAPI WorldAPI => GlobRef.Get<IWorldAPI>();
-    private BlockDataManager BlockDataManager => GlobRef.Get<BlockDataManager>();
+    private IChunkRepository ChunkRepository => GlobRef.Get<IChunkRepository>();
     private PhysicsManager PhysicsManager => GlobRef.Get<PhysicsManager>();
     private BlockSender BlockSender => GlobRef.Get<BlockSender>();
 
@@ -39,11 +41,11 @@ internal class Chunk : IDisposable
         _chunkpos = chunkpos;
         _blockEvents = new BlockEvents(_chunkpos, WorldAPI, _blocksFront, _blocksBack);
 
-        ActiveChunkReference = BlockDataManager.ObtainChunkReference(_chunkpos);
+        ActiveChunkReference = ChunkRepository.TakeActiveChunk(_chunkpos);
 
         ChunkIterator.Iterate((x, y) =>
         {
-            var pos = new Vec2Int(x, y);
+            Vec2Int pos = new(x, y);
             BlockCreate(pos);
             RefreshCollider(pos);
         });
@@ -73,7 +75,7 @@ internal class Chunk : IDisposable
         return isFront ? _blocksFront[pos.x, pos.y] : _blocksBack[pos.x, pos.y];
     }
 
-    public Block UpdateBlock(Vec2Int pos, bool isFront, BlockData1 newBlock, IWorldAPI.BreakMode breakMode)
+    public Block UpdateBlock(Vec2Int pos, bool isFront, BlockData1 newBlock, BreakMode breakMode)
     {
         // --- Chunk changes ---
 
@@ -84,7 +86,7 @@ internal class Chunk : IDisposable
 
         // --- Rearm EventFlag ---
 
-        if (breakMode == IWorldAPI.BreakMode.Weak)
+        if (breakMode == BreakMode.Weak)
             result.EventFlag = true;
 
         // --- Push send update ---
@@ -113,8 +115,7 @@ internal class Chunk : IDisposable
 
         Vec2Int POS = BlockUtils.GlobalBlockCoords(_chunkpos, pos);
         BlockSender.AddBlockUpdate(new BlockUpdateRecord(
-            POS, newHeader,
-            IWorldAPI.BreakMode.Replace
+            POS, newHeader, BreakMode.Replace
             ));
 
         return result;
@@ -122,38 +123,27 @@ internal class Chunk : IDisposable
 
     private Block RefreshBlock(Vec2Int pos, BlockData1 block, bool isFront)
     {
-        if (isFront)
-        {
-            ActiveChunkReference[pos.x, pos.y] = new(
-                front: block,
-                back: ActiveChunkReference[pos.x, pos.y].Back
-            );
+        BlockData2 chunkRef = ActiveChunkReference[pos.x, pos.y];
 
-            _blocksFront[pos.x, pos.y].Detach();
+        chunkRef = isFront
+            ? new BlockData2(block, chunkRef.Back)
+            : new BlockData2(chunkRef.Front, block);
 
-            _blocksFront[pos.x, pos.y] = BlockFactory.ConstructBlockObject(
-                new BlockInits(_blocksFront[pos.x, pos.y].Position, true, block, WorldAPI));
+        ActiveChunkReference[pos.x, pos.y] = chunkRef;
 
-            _blocksFront[pos.x, pos.y].AttachTo(_blockEvents);
+        var blocks = isFront ? _blocksFront : _blocksBack;
 
-            return _blocksFront[pos.x, pos.y];
-        }
-        else
-        {
-            ActiveChunkReference[pos.x, pos.y] = new(
-                front: ActiveChunkReference[pos.x, pos.y].Front,
-                back: block
-            );
+        Block oldBlock = blocks[pos.x, pos.y];
+        oldBlock.Detach();
 
-            _blocksBack[pos.x, pos.y].Detach();
+        Block newBlock = BlockFactory.ConstructBlockObject(
+            new BlockInits(oldBlock.Position, isFront, block, WorldAPI)
+        );
 
-            _blocksBack[pos.x, pos.y] = BlockFactory.ConstructBlockObject(
-                new BlockInits(_blocksBack[pos.x, pos.y].Position, false, block, WorldAPI));
+        newBlock.AttachTo(_blockEvents);
+        blocks[pos.x, pos.y] = newBlock;
 
-            _blocksBack[pos.x, pos.y].AttachTo(_blockEvents);
-
-            return _blocksBack[pos.x, pos.y];
-        }
+        return newBlock;
     }
 
     private void RefreshCollider(Vec2Int pos)
@@ -172,8 +162,8 @@ internal class Chunk : IDisposable
         Block blockServer = _blocksFront[pos.x, pos.y];
         BlockData1 blockData = blockServer.BlockData;
 
-        IHasCollider iface = blockServer as IHasCollider;
-        if (iface != null)
+        IHasCollider? iface = blockServer as IHasCollider;
+        if (iface is not null)
         {
             Vec2Int POS = BlockUtils.GlobalBlockCoords(_chunkpos, pos);
             StaticCollider[] staticColliders = iface
@@ -199,6 +189,7 @@ internal class Chunk : IDisposable
             {
                 block?.Detach();
             }
+
             foreach (var block in _blocksBack)
             {
                 block?.Detach();
@@ -210,7 +201,7 @@ internal class Chunk : IDisposable
             }
 
             PhysicsManager.SetChunkActive(_chunkpos, false);
-            BlockDataManager.ReturnChunkReference(_chunkpos);
+            ChunkRepository.ReturnActiveChunk(_chunkpos);
         }
     }
 }

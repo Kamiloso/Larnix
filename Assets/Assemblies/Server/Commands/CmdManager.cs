@@ -1,10 +1,10 @@
 using Larnix.Core;
-using Larnix.Server.Entities;
 using Larnix.Model;
 using System;
 using Larnix.Server.Data;
 using Larnix.Model.Json;
 using Larnix.Model.Utils;
+using Larnix.Server.Entities;
 
 namespace Larnix.Server.Commands;
 
@@ -16,12 +16,14 @@ internal enum PrivilegeLevel
     Console = 4, // full access, only from console
 }
 
-internal class CmdManager : IScript, ICmdExecutor
+internal interface ICmdManager : IScript, ICmdExecutor { }
+
+internal class CmdManager : ICmdManager
 {
     private IServer Server => GlobRef.Get<IServer>();
     private IWorldMetaManager WorldMetaManager => GlobRef.Get<IWorldMetaManager>();
+    private IConnectedPlayers ConnectedPlayers => GlobRef.Get<IConnectedPlayers>();
     private ServerConfig ServerConfig => GlobRef.Get<ServerConfig>();
-    private IPlayerActions PlayerActions => GlobRef.Get<IPlayerActions>();
 
     void IScript.PostEarlyFrameUpdate()
     {
@@ -59,7 +61,7 @@ internal class CmdManager : IScript, ICmdExecutor
         }
         else // from player
         {
-            if (PlayerActions.IsConnected(sender))
+            if (ConnectedPlayers.IsConnected(sender))
             {
                 bool player_host = WorldMetaManager.HostNickname == sender;
                 bool player_admin = ServerConfig.Administration_Admins.Contains(sender);

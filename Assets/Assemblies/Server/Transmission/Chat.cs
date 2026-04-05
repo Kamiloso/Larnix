@@ -13,7 +13,7 @@ namespace Larnix.Server.Transmission;
 internal class Chat
 {
     private QuickServer QuickServer => GlobRef.Get<QuickServer>();
-    private CmdManager CmdManager => GlobRef.Get<CmdManager>();
+    private ICmdManager CmdManager => GlobRef.Get<ICmdManager>();
 
     public void OnArrive(string nickname, string message)
     {

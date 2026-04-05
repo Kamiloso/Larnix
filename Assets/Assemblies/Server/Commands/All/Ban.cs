@@ -24,9 +24,9 @@ internal class Ban : BaseCmd
         "ban clear - Clears the ban list.";
 
     private IServer Server => GlobRef.Get<IServer>();
+    private IConnectedPlayers ConnectedPlayers => GlobRef.Get<IConnectedPlayers>();
     private ServerConfig ServerConfig => GlobRef.Get<ServerConfig>();
     private QuickServer QuickServer => GlobRef.Get<QuickServer>();
-    private IPlayerActions PlayerActions => GlobRef.Get<IPlayerActions>();
 
     private string _subname;
     private string _target;
@@ -97,7 +97,7 @@ internal class Ban : BaseCmd
             ServerConfig.Administration_Banned.Add(_target);
             Config.ToFile(Server.WorldPath, Common.ConfigFile, ServerConfig);
 
-            if (PlayerActions.IsConnected(_target))
+            if (ConnectedPlayers.IsConnected(_target))
             {
                 // banning a player -> kick them immediately
                 QuickServer.KickRequest(_target);

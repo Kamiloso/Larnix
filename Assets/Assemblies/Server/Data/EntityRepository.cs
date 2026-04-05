@@ -10,20 +10,36 @@ using System.Linq;
 
 namespace Larnix.Server.Data;
 
-internal class EntityDataManager
+internal interface IEntityRepository
+{
+    ulong NextUid();
+    EntityData? FindEntityData(ulong uid);
+    Dictionary<ulong, EntityData> EntitiesToLoadByChunk(Vec2Int chunkCoords);
+    void SetEntityData(ulong uid, EntityData entityData);
+    void UnloadEntityData(ulong uid);
+    void DeleteEntityData(ulong uid);
+}
+
+internal class EntityRepository : IEntityRepository
 {
     private readonly Dictionary<ulong, EntityData> _entityData = new();
     private readonly Dictionary<ulong, EntityData> _unloadedEntityData = new();
     private readonly Dictionary<ulong, EntityData> _deletedEntityData = new();
 
     private IDbControl Db => GlobRef.Get<IDbControl>();
+    private IDataSaver DataSaver => GlobRef.Get<IDataSaver>();
 
-    public ulong NextUID()
+    public EntityRepository()
+    {
+        DataSaver.SavingAll += FlushIntoDatabase;
+    }
+
+    public ulong NextUid()
     {
         return Db.Entities.NextEntityUid();
     }
 
-    public EntityData? TryFindEntityData(ulong uid)
+    public EntityData? FindEntityData(ulong uid)
     {
         if (_deletedEntityData.ContainsKey(uid))
             return null;
@@ -37,18 +53,18 @@ internal class EntityDataManager
         return Db.Entities.FindEntity(uid);
     }
 
-    public Dictionary<ulong, EntityData> GetUnloadedEntitiesByChunk(Vec2Int chunkCoords)
+    public Dictionary<ulong, EntityData> EntitiesToLoadByChunk(Vec2Int chunkCoords)
     {
-        var entityList = Db.Entities.GetEntitiesByChunkNoPlayers(chunkCoords);
+        Dictionary<ulong, EntityData> dbEntities = Db.Entities.GetEntitiesByChunkNoPlayers(chunkCoords);
 
         foreach (var uid in _entityData.Keys)
         {
-            entityList.Remove(uid); // already loaded entity
+            dbEntities.Remove(uid); // already loaded entity
         }
 
         foreach (var uid in _deletedEntityData.Keys)
         {
-            entityList.Remove(uid); // entity already removed
+            dbEntities.Remove(uid); // entity already removed
         }
 
         foreach (var uid in _unloadedEntityData.Keys)
@@ -58,25 +74,25 @@ internal class EntityDataManager
             Vec2Int newChunkCoords = BlockUtils.CoordsToChunk(newData.Position);
             bool inChunk = newChunkCoords == chunkCoords;
 
-            if (entityList.ContainsKey(uid))
+            if (dbEntities.ContainsKey(uid))
             {
                 if (inChunk)
-                    entityList[uid] = newData; // update existing data
+                    dbEntities[uid] = newData; // update existing data
 
                 if (!inChunk)
-                    entityList.Remove(uid); // no longer in this chunk
+                    dbEntities.Remove(uid); // no longer in this chunk
             }
             else
             {
                 if (inChunk)
                 {
                     if (newData.ID != EntityID.Player)
-                        entityList.Add(uid, newData); // additional data found
+                        dbEntities.Add(uid, newData); // additional data found
                 }
             }
         }
 
-        return entityList;
+        return dbEntities;
     }
 
     public void SetEntityData(ulong uid, EntityData entityData)
@@ -89,23 +105,23 @@ internal class EntityDataManager
 
     public void UnloadEntityData(ulong uid)
     {
-        if (_entityData.ContainsKey(uid))
+        if (_entityData.TryGetValue(uid, out var entity))
         {
-            _unloadedEntityData.Add(uid, _entityData[uid]);
+            _unloadedEntityData.Add(uid, entity);
             _entityData.Remove(uid);
         }
     }
 
     public void DeleteEntityData(ulong uid)
     {
-        if (_entityData.ContainsKey(uid))
+        if (_entityData.TryGetValue(uid, out var entity))
         {
-            _deletedEntityData.Add(uid, _entityData[uid]);
+            _deletedEntityData.Add(uid, entity);
             _entityData.Remove(uid);
         }
     }
 
-    public void FlushIntoDatabase()
+    private void FlushIntoDatabase()
     {
         Db.Handle.AsTransaction(() =>
         {

@@ -58,29 +58,29 @@ public readonly struct Vec2Int : IEquatable<Vec2Int>, IBinary<Vec2Int>
     public double Magnitude => ToVec2().Magnitude;
     public double SqrMagnitude => ToVec2().SqrMagnitude;
 
-    public static Vec2Int Zero => new Vec2Int(0, 0);
-    public static Vec2Int One => new Vec2Int(1, 1);
+    public static Vec2Int Zero => new(0, 0);
+    public static Vec2Int One => new(1, 1);
 
-    public static Vec2Int Up => new Vec2Int(0, 1);
-    public static Vec2Int Down => new Vec2Int(0, -1);
-    public static Vec2Int Left => new Vec2Int(-1, 0);
-    public static Vec2Int Right => new Vec2Int(1, 0);
+    public static Vec2Int Up => new(0, 1);
+    public static Vec2Int Down => new(0, -1);
+    public static Vec2Int Left => new(-1, 0);
+    public static Vec2Int Right => new(1, 0);
 
     public static Vec2Int[] CardinalDirections => new[] { Up, Right, Down, Left };
 
-    public static Vec2Int MinCorner(Vec2Int a, Vec2Int b) => new Vec2Int(Math.Min(a.x, b.x), Math.Min(a.y, b.y));
-    public static Vec2Int MaxCorner(Vec2Int a, Vec2Int b) => new Vec2Int(Math.Max(a.x, b.x), Math.Max(a.y, b.y));
+    public static Vec2Int MinCorner(Vec2Int a, Vec2Int b) => new(Math.Min(a.x, b.x), Math.Min(a.y, b.y));
+    public static Vec2Int MaxCorner(Vec2Int a, Vec2Int b) => new(Math.Max(a.x, b.x), Math.Max(a.y, b.y));
 
     public override string ToString() => $"({x}, {y})";
     public static explicit operator string(Vec2Int value) => value.ToString();
     public static implicit operator Vec2(Vec2Int value) => value.ToVec2();
 
-    public static Vec2Int operator +(Vec2Int a, Vec2Int b) => new Vec2Int(a.x + b.x, a.y + b.y);
-    public static Vec2Int operator -(Vec2Int a, Vec2Int b) => new Vec2Int(a.x - b.x, a.y - b.y);
-    public static Vec2Int operator *(Vec2Int a, int scalar) => new Vec2Int(a.x * scalar, a.y * scalar);
-    public static Vec2Int operator *(int scalar, Vec2Int a) => new Vec2Int(a.x * scalar, a.y * scalar);
-    public static Vec2Int operator /(Vec2Int a, int scalar) => new Vec2Int(a.x / scalar, a.y / scalar);
-    public static Vec2Int operator -(Vec2Int a) => new Vec2Int(-a.x, -a.y);
+    public static Vec2Int operator +(Vec2Int a, Vec2Int b) => new(a.x + b.x, a.y + b.y);
+    public static Vec2Int operator -(Vec2Int a, Vec2Int b) => new(a.x - b.x, a.y - b.y);
+    public static Vec2Int operator *(Vec2Int a, int scalar) => new(a.x * scalar, a.y * scalar);
+    public static Vec2Int operator *(int scalar, Vec2Int a) => new(a.x * scalar, a.y * scalar);
+    public static Vec2Int operator /(Vec2Int a, int scalar) => new(a.x / scalar, a.y / scalar);
+    public static Vec2Int operator -(Vec2Int a) => new(-a.x, -a.y);
     public static bool operator ==(Vec2Int lhs, Vec2Int rhs) => lhs.x == rhs.x && lhs.y == rhs.y;
     public static bool operator !=(Vec2Int lhs, Vec2Int rhs) => !(lhs == rhs);
 

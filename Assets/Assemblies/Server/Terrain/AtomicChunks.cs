@@ -12,7 +12,15 @@ using Larnix.Core;
 
 namespace Larnix.Server.Terrain;
 
-internal class AtomicChunks : IScript
+internal interface IAtomicChunks : IScript
+{
+    Vec2Int? WishChunk { get; }
+    bool DiscoversChunks { get; set; }
+    List<Vec2Int>? GetAtomicSet(Vec2Int chunk);
+    bool IsAtomicLoaded(Vec2Int chunk, HashSet<Vec2Int>? wentThrough = null);
+}
+
+internal class AtomicChunks : IAtomicChunks
 {
     private const int CHUNK_SIZE = BlockUtils.CHUNK_SIZE;
     private static readonly Vec2Int WARN_CHUNK = new Vec2Int(int.MinValue, int.MinValue);
@@ -76,11 +84,7 @@ internal class AtomicChunks : IScript
     /// </returns>
     public List<Vec2Int>? GetAtomicSet(Vec2Int chunk)
     {
-        if (_atomicSets.TryGetGroup(chunk, out var group))
-        {
-            return group;
-        }
-        return null;
+        return _atomicSets.TryGetGroup(chunk, out var group) ? group : null;
     }
 
     /// <summary>

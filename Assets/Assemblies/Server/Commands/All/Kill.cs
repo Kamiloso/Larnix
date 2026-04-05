@@ -1,7 +1,7 @@
 using Larnix.Core;
 using Larnix.Model.Utils;
-using Larnix.Server.Entities;
 using Larnix.Model;
+using Larnix.Server.Entities;
 
 namespace Larnix.Server.Commands.All;
 
@@ -11,8 +11,8 @@ internal class Kill : BaseCmd
     public override string Pattern => $"{Name} <nickname>";
     public override string ShortDescription => "Kills a player.";
 
-    private EntityManager EntityManager => GlobRef.Get<EntityManager>();
-    private IPlayerActions PlayerActions => GlobRef.Get<IPlayerActions>();
+    private IConnectedPlayers ConnectedPlayers => GlobRef.Get<IConnectedPlayers>();
+    private IEntityControllers EntityControllers => GlobRef.Get<IEntityControllers>();
 
     private string _nickname;
 
@@ -35,10 +35,10 @@ internal class Kill : BaseCmd
 
     public override (CmdResult, string) Execute(string sender, PrivilegeLevel privilege)
     {
-        if (PlayerActions.IsAlive(_nickname))
+        if (ConnectedPlayers.IsAlive(_nickname))
         {
-            ulong uid = PlayerActions.UidByNickname(_nickname);
-            EntityManager.KillEntity(uid);
+            ulong uid = ConnectedPlayers.UidByNickname(_nickname);
+            EntityControllers.KillController(uid);
 
             return (CmdResult.Success,
                 $"Player {_nickname} has been killed.");

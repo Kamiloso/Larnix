@@ -1,6 +1,8 @@
 #nullable enable
 using System;
 using Larnix.Core;
+using Larnix.Model.Database;
+using Larnix.Server.Data;
 
 namespace Larnix.Server;
 
@@ -18,17 +20,17 @@ internal class Clock : IClock
     public uint FixedFrame { get; private set; }
 
     private float? _deltaTime = null;
-    private InvalidOperationException NoDeltaTimeException => new("Delta time uninitialized.");
+    public float DeltaTime => _deltaTime ?? throw new InvalidOperationException("Delta time uninitialized.");
+    public float TPS => 1f / DeltaTime;
 
-    public float DeltaTime => _deltaTime != null ?
-        _deltaTime.Value : throw NoDeltaTimeException;
-    public float TPS => _deltaTime != null ?
-        1f / _deltaTime.Value : throw NoDeltaTimeException;
+    private IDbControl Db => GlobRef.Get<IDbControl>();
+    private IDataSaver DataSaver => GlobRef.Get<IDataSaver>();
 
-    public Clock(long serverTick)
+    public Clock()
     {
-        ServerTick = serverTick;
         FixedFrame = 1;
+        ServerTick = Db.Values.Get("server_tick") ?? 0L;
+        DataSaver.SavingAll += SaveServerTick;
     }
 
     public void Tick(float deltaTime)
@@ -36,5 +38,10 @@ internal class Clock : IClock
         _deltaTime = deltaTime;
         FixedFrame++;
         ServerTick++;
+    }
+
+    private void SaveServerTick()
+    {
+        Db.Values.Put("server_tick", ServerTick);
     }
 }

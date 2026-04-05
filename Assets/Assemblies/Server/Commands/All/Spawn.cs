@@ -16,7 +16,7 @@ internal class Spawn : BaseCmd
     public override string Pattern => $"{Name} <type> <x> <y> [json]";
     public override string ShortDescription => "Spawns a new entity.";
 
-    private EntityManager EntityManager => GlobRef.Get<EntityManager>();
+    private IEntityControllers EntityControllers => GlobRef.Get<IEntityControllers>();
 
     private EntityID _entityID;
     private Vec2 _position;
@@ -58,7 +58,7 @@ internal class Spawn : BaseCmd
 
     public override (CmdResult, string) Execute(string sender, PrivilegeLevel privilege)
     {
-        bool success = EntityManager.SummonEntity(new EntityData(
+        bool success = EntityControllers.CreateEntityController(new EntityData(
             id: _entityID,
             position: _position,
             rotation: 0.0f,

@@ -20,7 +20,7 @@ public sealed class ChunkInfo : Payload
         ChunkView.Deserialize(Bytes, Vec2Int.SIZE) : null; // 0B - 1280B
 
     /// <summary>
-    /// Chunk load / unload packet constructor.
+    /// Chunk load / unload packet constructor. Unload when chunk is null, load otherwise.
     /// </summary>
     public ChunkInfo(Vec2Int chunkpos, ChunkView? chunk, byte code = 0)
     {

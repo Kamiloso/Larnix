@@ -1,28 +1,34 @@
-using System;
+#nullable enable
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using Larnix.Server.Entities;
 using Larnix.Model.Utils;
 using Larnix.Core.Vectors;
 using Larnix.Server.Transmission;
 using Larnix.Server.Data;
 using Larnix.Core;
 using Larnix.Core.Utils;
+using Larnix.Server.Entities;
 
 namespace Larnix.Server.Terrain;
 
-internal enum ChunkLoadState { None, Loading, Active }
+internal enum ChunkLoadState
+{
+    None, // not loaded at all, no container
+    Loading, // container exists, but chunk instance is not created yet
+    Active // chunk instance exists and is being updated, block events are being invoked, etc.
+}
+
 internal class Chunks : IScript
 {
-    private IPlayerActions PlayerActions => GlobRef.Get<IPlayerActions>();
-    private EntityManager EntityManager => GlobRef.Get<EntityManager>();
-    private BlockSender BlockSender => GlobRef.Get<BlockSender>();
-    private AtomicChunks AtomicChunks => GlobRef.Get<AtomicChunks>();
-    private ServerConfig ServerConfig => GlobRef.Get<ServerConfig>();
-    private IClock Clock => GlobRef.Get<IClock>();
-
     private readonly Dictionary<Vec2Int, ChunkContainer> _chunks = new();
+
+    private IClock Clock => GlobRef.Get<IClock>();
+    private IEntityControllers EntityControllers => GlobRef.Get<IEntityControllers>();
+    private IConnectedPlayers ConnectedPlayers => GlobRef.Get<IConnectedPlayers>();
+    private BlockSender BlockSender => GlobRef.Get<BlockSender>();
+    private IAtomicChunks AtomicChunks => GlobRef.Get<IAtomicChunks>();
+    private ServerConfig ServerConfig => GlobRef.Get<ServerConfig>();
 
     void IScript.EarlyFrameUpdate()
     {
@@ -68,11 +74,11 @@ internal class Chunks : IScript
     private void ChunkStimulate(Vec2Int chunk)
     {
         ChunkLoadState state = ChunkState(chunk);
-        switch(state)
+        switch (state)
         {
             case ChunkLoadState.None:
                 _chunks[chunk] = new ChunkContainer(chunk);
-                EntityManager.PrepareEntitiesByChunk(chunk);
+                EntityControllers.LoadEntityControllersByChunk(chunk);
                 return;
 
             case ChunkLoadState.Loading:
@@ -158,30 +164,38 @@ internal class Chunks : IScript
         }
     }
 
-    public bool IsChunkLoaded(Vec2Int chunk) =>
-        ChunkState(chunk) == ChunkLoadState.Active;
+    public bool IsChunkUnloaded(Vec2Int chunk) =>
+        ChunkState(chunk) == ChunkLoadState.None;
 
     public bool IsChunkLoading(Vec2Int chunk) =>
         ChunkState(chunk) == ChunkLoadState.Loading;
 
-    public bool TryGetChunk(Vec2Int chunk, out Chunk result)
-    {
-        if (IsChunkLoaded(chunk))
-        {
-            result = _chunks[chunk].Instance;
-            return true;
-        }
+    public bool IsChunkLoaded(Vec2Int chunk) =>
+        ChunkState(chunk) == ChunkLoadState.Active;
 
-        result = null;
-        return false;
+    public bool IsLoadedPosition(Vec2 position)
+    {
+        Vec2Int chunk = BlockUtils.CoordsToChunk(position);
+        return IsChunkLoaded(chunk);
     }
 
-    public Chunk GetChunk(Vec2Int chunk)
+    public bool IsLoadingPosition(Vec2 position)
     {
-        if (TryGetChunk(chunk, out var result))
-            return result;
+        Vec2Int chunk = BlockUtils.CoordsToChunk(position);
+        return IsChunkLoading(chunk);
+    }
 
-        return null;
+    public bool IsUnloadedPosition(Vec2 position)
+    {
+        Vec2Int chunk = BlockUtils.CoordsToChunk(position);
+        return IsChunkUnloaded(chunk);
+    }
+
+    public Chunk? GetChunk(Vec2Int chunk)
+    {
+        return IsChunkLoaded(chunk)
+            ? _chunks[chunk].Instance
+            : null;
     }
 
     public ChunkLoadState ChunkState(Vec2Int chunk)
@@ -192,25 +206,14 @@ internal class Chunks : IScript
         return ChunkLoadState.None;
     }
 
-    public bool IsLoadedPosition(Vec2 position)
-    {
-        Vec2Int chunk = BlockUtils.CoordsToChunk(position);
-        return IsChunkLoaded(chunk);
-    }
-
-    public bool IsEntityInZone(EntityAbstraction entity, ChunkLoadState state)
-    {
-        Vec2Int chunk = BlockUtils.CoordsToChunk(entity.ActiveData.Position);
-        return ChunkState(chunk) == state;
-    }
-
     private HashSet<Vec2Int> GetStimulatedChunks()
     {
         HashSet<Vec2Int> targetLoads = new();
 
-        IEnumerable<Vec2Int> centers = PlayerActions.AllPlayers()
-            .Select(nickname => PlayerActions.RenderingPosition(nickname))
-            .Select(pos => BlockUtils.CoordsToChunk(pos));
+        HashSet<Vec2Int> centers = ConnectedPlayers.AllPlayers
+            .Select(nickname => ConnectedPlayers[nickname].RenderPosition)
+            .Select(pos => BlockUtils.CoordsToChunk(pos))
+            .ToHashSet();
 
         foreach (Vec2Int center in centers)
         {
@@ -231,8 +234,9 @@ internal class Chunks : IScript
     {
         bestChunk = default;
 
-        List<Vec2Int> playerChunks = PlayerActions.AllPlayers()
-            .Select(n => BlockUtils.CoordsToChunk(PlayerActions.RenderingPosition(n)))
+        List<Vec2Int> playerChunks = ConnectedPlayers.AllPlayers
+            .Select(nickname => ConnectedPlayers[nickname].RenderPosition)
+            .Select(pos => BlockUtils.CoordsToChunk(pos))
             .ToList();
 
         if (RandUtils.NextBool()) // prevent loading deadlocks

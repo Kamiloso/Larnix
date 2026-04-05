@@ -13,8 +13,8 @@ namespace Larnix.Server.Terrain;
 internal class WorldAPI : IWorldAPI
 {
     private Chunks Chunks => GlobRef.Get<Chunks>();
-    private AtomicChunks AtomicChunks => GlobRef.Get<AtomicChunks>();
-    private CmdManager Commands => GlobRef.Get<CmdManager>();
+    private IAtomicChunks AtomicChunks => GlobRef.Get<IAtomicChunks>();
+    private ICmdManager CmdManager => GlobRef.Get<ICmdManager>();
     private IClock Clock => GlobRef.Get<IClock>();
 
     public long ServerTick => Clock.ServerTick;
@@ -29,38 +29,29 @@ internal class WorldAPI : IWorldAPI
     public Block? GetBlock(Vec2Int POS, bool isFront)
     {
         Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
-        if (Chunks.TryGetChunk(chunk, out var chunkObject))
-        {
-            Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
-            return chunkObject.GetBlock(pos, isFront);
-        }
-        return null;
+        Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
+
+        return Chunks.GetChunk(chunk)?.GetBlock(pos, isFront);
     }
 
     public Block? ReplaceBlock(Vec2Int POS, bool isFront, BlockData1 blockTemplate,
         BreakMode breakMode = BreakMode.Replace)
     {
         Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
-        if (Chunks.TryGetChunk(chunk, out var chunkObject))
-        {
-            Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
-            BlockData1 blockDeepCopy = blockTemplate.DeepCopy();
-            return chunkObject.UpdateBlock(pos, isFront, blockDeepCopy, breakMode);
-        }
-        return null;
+        Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
+
+        BlockData1 blockDeepCopy = blockTemplate.DeepCopy();
+        return Chunks.GetChunk(chunk)?.UpdateBlock(pos, isFront, blockDeepCopy, breakMode);
     }
 
     public Block? MutateBlockVariant(Vec2Int POS, bool isFront, byte variant)
     {
         Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
-        if (Chunks.TryGetChunk(chunk, out var chunkObject))
-        {
-            Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
-            BlockData1 blockData = GetBlock(POS, isFront)!.BlockData;
-            blockData.Variant = variant;
-            return chunkObject.UpdateBlockMutated(pos, isFront);
-        }
-        return null;
+        Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
+
+        BlockData1 blockData = GetBlock(POS, isFront)!.BlockData;
+        blockData.Variant = variant;
+        return Chunks.GetChunk(chunk)?.UpdateBlockMutated(pos, isFront);
     }
 
     public bool CanPlaceBlock(Vec2Int POS, bool front, BlockData1 item)
@@ -68,14 +59,12 @@ internal class WorldAPI : IWorldAPI
         BlockData1? frontBlock = GetBlock(POS, true)?.BlockData;
         BlockData1? backBlock = GetBlock(POS, false)?.BlockData;
 
-        if (frontBlock is not null && backBlock is not null)
-        {
-            BlockHeader2 h_blockPair = new(frontBlock.Header, backBlock.Header);
-            BlockHeader1 h_item = item.Header;
+        if (frontBlock is null || backBlock is null) return false;
 
-            return BlockInteractions.CanBePlaced(h_blockPair, h_item, front);
-        }
-        return false;
+        BlockHeader2 h_blockPair = new(frontBlock.Header, backBlock.Header);
+        BlockHeader1 h_item = item.Header;
+
+        return BlockInteractions.CanBePlaced(h_blockPair, h_item, front);
     }
 
     public bool CanBreakBlock(Vec2Int POS, bool front, BlockData1 item, BlockData1 tool)
@@ -83,15 +72,13 @@ internal class WorldAPI : IWorldAPI
         BlockData1? frontBlock = GetBlock(POS, true)?.BlockData;
         BlockData1? backBlock = GetBlock(POS, false)?.BlockData;
 
-        if (frontBlock is not null && backBlock is not null)
-        {
-            BlockHeader2 h_blockPair = new(frontBlock.Header, backBlock.Header);
-            BlockHeader1 h_item = item.Header;
-            BlockHeader1 h_tool = tool.Header;
+        if (frontBlock is null || backBlock is null) return false;
 
-            return BlockInteractions.CanBeBroken(h_blockPair, h_item, h_tool, front);
-        }
-        return false;
+        BlockHeader2 h_blockPair = new(frontBlock.Header, backBlock.Header);
+        BlockHeader1 h_item = item.Header;
+        BlockHeader1 h_tool = tool.Header;
+
+        return BlockInteractions.CanBeBroken(h_blockPair, h_item, h_tool, front);
     }
 
     public void PlaceBlockWithEffects(Vec2Int POS, bool front, BlockData1 item)
@@ -111,6 +98,6 @@ internal class WorldAPI : IWorldAPI
 
     public (CmdResult, string) ExecuteCommand(string command, string? sender = null)
     {
-        return Commands.ExecuteCommand(command, sender);
+        return CmdManager.ExecuteCommand(command, sender);
     }
 }

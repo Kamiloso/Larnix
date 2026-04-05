@@ -1,4 +1,4 @@
-using System;
+#nullable enable
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -16,7 +16,7 @@ internal class Playerlist : BaseCmd
     public override string ShortDescription => "Displays a list of all connected players.";
 
     private QuickServer QuickServer => GlobRef.Get<QuickServer>();
-    private IPlayerActions PlayerActions => GlobRef.Get<IPlayerActions>();
+    private IConnectedPlayers ConnectedPlayers => GlobRef.Get<IConnectedPlayers>();
 
     public override void Inject(string command)
     {
@@ -28,7 +28,7 @@ internal class Playerlist : BaseCmd
 
     public override (CmdResult, string) Execute(string sender, PrivilegeLevel privilege)
     {
-        IPEndPoint EndPointOf(string nick)
+        IPEndPoint? EndPointOf(string nick)
         {
             if (QuickServer.TryGetClientEndPoint(nick, out var endPoint))
                 return endPoint;
@@ -38,13 +38,12 @@ internal class Playerlist : BaseCmd
 
         string StateOf(string nick)
         {
-            return PlayerActions
-                .StateOf(nick)
+            return ConnectedPlayers.StateOf(nick)
                 .ToString()
                 .ToUpperInvariant();
         }
 
-        IEnumerable<string> lines = PlayerActions.AllPlayers()
+        IEnumerable<string> lines = ConnectedPlayers.AllPlayers
             .Select(nick => $"{nick} from {EndPointOf(nick)} is {StateOf(nick)}.")
             .OrderBy(line => line);
 

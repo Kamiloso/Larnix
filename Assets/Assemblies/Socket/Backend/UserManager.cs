@@ -139,7 +139,7 @@ internal class UserManager : IUserManager, ITickable, IDisposable
     {
         // WARNING: Fallback to default
         return TryGetUser(username, out UserData userData) ?
-            userData.UID : 0; // 0 --> no user
+            userData.Uid : 0; // 0 --> no user
     }
 
     public string GetPasswordHash(string username)

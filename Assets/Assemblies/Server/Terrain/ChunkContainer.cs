@@ -11,10 +11,10 @@ internal class ChunkContainer
     public ChunkLoadState State { get; private set; }
     public Chunk Instance { get; private set; }
 
-    private AtomicChunks AtomicChunks => GlobRef.Get<AtomicChunks>();
+    private IAtomicChunks AtomicChunks => GlobRef.Get<IAtomicChunks>();
 
+    private const float UNLOADING_TIME = 1f;
     private float _unloadTime;
-    private float UNLOADING_TIME => 1f;
 
     public ChunkContainer(Vec2Int chunkpos)
     {

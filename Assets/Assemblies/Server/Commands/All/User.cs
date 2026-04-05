@@ -4,9 +4,9 @@ using System.Linq;
 using System.Net;
 using Larnix.Core;
 using Larnix.Model.Utils;
-using Larnix.Server.Entities;
 using Larnix.Socket.Backend;
 using Larnix.Model;
+using Larnix.Server.Entities;
 
 namespace Larnix.Server.Commands.All;
 
@@ -27,7 +27,7 @@ internal class User : BaseCmd
         $"user deleteall - Deletes all users except host and '{Common.ReservedNickname}'.";
 
     private QuickServer QuickServer => GlobRef.Get<QuickServer>();
-    private IPlayerActions PlayerActions => GlobRef.Get<IPlayerActions>();
+    private IConnectedPlayers ConnectedPlayers => GlobRef.Get<IConnectedPlayers>();
     private IUserManager UserManager => GlobRef.Get<IUserManager>();
 
     private string _subname;
@@ -195,7 +195,7 @@ internal class User : BaseCmd
 
         string StateOf(string nick)
         {
-            return PlayerActions
+            return ConnectedPlayers
                 .StateOf(nick)
                 .ToString()
                 .ToUpperInvariant();

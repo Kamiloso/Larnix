@@ -22,8 +22,8 @@ public sealed class NearbyEntities : Payload
 
     private NearbyEntities(uint fixedFrame, ulong[] addEntities, ulong[] removeEntities, byte code = 0)
     {
-        addEntities = addEntities ?? Array.Empty<ulong>();
-        removeEntities = removeEntities ?? Array.Empty<ulong>();
+        addEntities ??= Array.Empty<ulong>();
+        removeEntities ??= Array.Empty<ulong>();
 
         InitializePayload(ArrayUtils.MegaConcat(
             Primitives.GetBytes(fixedFrame),

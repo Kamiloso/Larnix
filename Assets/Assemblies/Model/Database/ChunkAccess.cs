@@ -1,4 +1,5 @@
 #nullable enable
+using Larnix.Core.Vectors;
 using Larnix.Model.Blocks.Structs;
 using Larnix.Model.Database.Connection;
 
@@ -6,8 +7,8 @@ namespace Larnix.Model.Database;
 
 public interface IChunkAccess
 {
-    void SetChunk(int x, int y, ChunkData chunk);
-    bool TryGetChunk(int x, int y, out ChunkData? chunk);
+    void SetChunk(Vec2Int chunk, ChunkData chunkData);
+    bool TryGetChunk(Vec2Int chunk, out ChunkData? chunkData);
 }
 
 internal class ChunkAccess : IChunkAccess
@@ -15,7 +16,7 @@ internal class ChunkAccess : IChunkAccess
     private readonly IDbHandle _db;
     public ChunkAccess(IDbHandle db) => _db = db;
 
-    public void SetChunk(int x, int y, ChunkData chunk)
+    public void SetChunk(Vec2Int chunk, ChunkData chunkData)
     {
         string cmd = @"
             INSERT OR REPLACE INTO chunks
@@ -23,10 +24,10 @@ internal class ChunkAccess : IChunkAccess
                 VALUES ($p1, $p2, $p3, $p4);
         ";
 
-        _db.Execute(cmd, x, y, chunk.Serialize(), chunk.ExportData());
+        _db.Execute(cmd, chunk.x, chunk.y, chunkData.Serialize(), chunkData.ExportData());
     }
 
-    public bool TryGetChunk(int x, int y, out ChunkData? chunk)
+    public bool TryGetChunk(Vec2Int chunk, out ChunkData? chunkData)
     {
         string cmd = @"
             SELECT block_bytes, nbt
@@ -34,7 +35,7 @@ internal class ChunkAccess : IChunkAccess
                 WHERE chunk_x = $p1 AND chunk_y = $p2;
         ";
 
-        DbRecord? record = _db.QuerySingle(cmd, x, y);
+        DbRecord? record = _db.QuerySingle(cmd, chunk.x, chunk.y);
         if (record is not null)
         {
             byte[]? bytes = record.Get<byte[]>("block_bytes");
@@ -42,13 +43,13 @@ internal class ChunkAccess : IChunkAccess
 
             if (bytes is not null && nbt is not null)
             {
-                chunk = ChunkData.Deserialize(bytes);
-                chunk.ImportData(nbt);
+                chunkData = ChunkData.Deserialize(bytes);
+                chunkData.ImportData(nbt);
                 return true;
             }
         }
 
-        chunk = default;
+        chunkData = default;
         return false;
     }
 }

@@ -6,16 +6,16 @@ namespace Larnix.Model;
 
 public class UserData
 {
-    public long UID { get; }
+    public long Uid { get; }
     public string Username { get; }
     public string PasswordHash { get; }
     public long ChallengeID { get; }
 
-    public bool HasUID => UID != 0;
+    public bool HasUID => Uid != 0;
 
     private UserData(long uid, string username, string passwordHash, long challengeID)
     {
-        UID = uid;
+        Uid = uid;
         Username = username;
         PasswordHash = passwordHash;
         ChallengeID = challengeID;
@@ -39,24 +39,24 @@ public class UserData
     public UserData AfterLogin()
     {
         return new UserData(
-            UID, Username, PasswordHash, ChallengeID + 1);
+            Uid, Username, PasswordHash, ChallengeID + 1);
     }
 
     public UserData AfterPasswordChange(string newPasswordHash)
     {
         return new UserData(
-            UID, Username, newPasswordHash, ChallengeID);
+            Uid, Username, newPasswordHash, ChallengeID);
     }
 
     public UserData AfterUsernameChange(string newUsername)
     {
         return new UserData(
-            UID, newUsername, PasswordHash, ChallengeID);
+            Uid, newUsername, PasswordHash, ChallengeID);
     }
 
     public UserData WithoutUsername()
     {
         return new UserData(
-            UID, string.Empty, string.Empty, ChallengeID);
+            Uid, string.Empty, string.Empty, ChallengeID);
     }
 }

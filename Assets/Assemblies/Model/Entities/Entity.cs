@@ -8,19 +8,19 @@ namespace Larnix.Model.Entities;
 
 public class Entity
 {
-    public ulong UID { get; private set; }
+    public ulong Uid { get; private set; }
     public EntityData EntityData { get; private set; } // connected to entity-saving system
     public PhysicsManager Physics { get; private set; }
 
     private bool _constructed = false;
 
     internal Entity() {}
-    public record EntityInits(ulong UID, EntityData EntityData, PhysicsManager Physics);
+    public record EntityInits(ulong Uid, EntityData EntityData, PhysicsManager Physics);
     internal void Construct(EntityInits entityInits)
     {
         if (!_constructed)
         {
-            UID = entityInits.UID;
+            Uid = entityInits.Uid;
             EntityData = entityInits.EntityData; // should consume a given object
             Physics = entityInits.Physics;
 

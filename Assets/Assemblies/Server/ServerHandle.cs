@@ -10,7 +10,6 @@ using Larnix.Model.Worldgen;
 using Larnix.Server.Commands;
 using Larnix.Server.Data;
 using Larnix.Model.Database.Connection;
-using Larnix.Server.Entities;
 using Larnix.Server.Terrain;
 using Larnix.Server.Transmission;
 using Larnix.Socket.Backend;
@@ -20,6 +19,7 @@ using System.Threading.Tasks;
 using Larnix.Model.Database;
 using RunSuggestions = Larnix.Server.ServerRunner.RunSuggestions;
 using ServerAnswer = Larnix.Server.ServerRunner.ServerAnswer;
+using Larnix.Server.Entities;
 
 namespace Larnix.Server;
 
@@ -106,38 +106,40 @@ internal class ServerHandle : IServerHandle
                 )
             );
 
-        GlobRef.New<IWorldMetaManager, WorldMetaManager>();
-        GlobRef.New<BlockDataManager, BlockDataManager>();
-        GlobRef.New<EntityDataManager, EntityDataManager>();
-
         GlobRef.New<IDataSaver, DataSaver>();
 
+        GlobRef.New<IWorldMetaManager, WorldMetaManager>();
+        GlobRef.New<IChunkRepository, ChunkRepository>();
+        GlobRef.New<IEntityRepository, EntityRepository>();
+        GlobRef.New<IUserRepository, UserRepository>();
+
+        GlobRef.New<IClock, Clock>();
+
+        GlobRef.New<IEntityControllers, EntityControllers>();
+        GlobRef.New<IConnectedPlayers, ConnectedPlayers>();
+
         long MakeSeed() => Suggestions.Seed ?? RandUtils.SecureLong();
-        long MakeServerTick() => 0L;
 
         GlobRef.Set<Generator>(new Generator(Db.Values.GetOrPut("seed", MakeSeed)));
-        GlobRef.Set<IClock>(new Clock(Db.Values.GetOrPut("server_tick", MakeServerTick)));
-
         GlobRef.New<IWorldAPI, WorldAPI>();
 
         Scripts = new Scripts(
             (0, new IScript[] {
-                GlobRef.New<AtomicChunks, AtomicChunks>(),
+                GlobRef.New<IAtomicChunks, AtomicChunks>(),
             }),
             (1, new IScript[] {
                 GlobRef.New<Chunks, Chunks>(), // 1st
-                GlobRef.New<EntityManager, EntityManager>() // 2nd
+                GlobRef.New<IEntityManager, EntityManager>() // 2nd
             }),
             (2, new IScript[] {
-                GlobRef.New<IPlayerActions, PlayerActions>(),
                 GlobRef.New<BlockSender, BlockSender>(),
-                GlobRef.New<CmdManager, CmdManager>()
+                GlobRef.New<ICmdManager, CmdManager>()
             }));
 
         GlobRef.Set<QuickServer>(
             new QuickServer(
                 port: ServerType == ServerType.Remote ? ServerConfig.Port : (ushort)0,
-                userAccess: (IUserAccess)Db.Users,
+                userAccess: Db.Users,
                 config: new QuickSettings()
             ));
 

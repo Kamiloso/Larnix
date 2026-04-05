@@ -13,7 +13,7 @@ internal class Kick : BaseCmd
     public override string ShortDescription => "Kicks a player.";
 
     private QuickServer QuickServer => GlobRef.Get<QuickServer>();
-    private IPlayerActions PlayerActions => GlobRef.Get<IPlayerActions>();
+    private IConnectedPlayers ConnectedPlayers => GlobRef.Get<IConnectedPlayers>();
 
     private string _nickname;
 
@@ -36,7 +36,7 @@ internal class Kick : BaseCmd
 
     public override (CmdResult, string) Execute(string sender, PrivilegeLevel privilege)
     {
-        if (PlayerActions.IsConnected(_nickname))
+        if (ConnectedPlayers.IsConnected(_nickname))
         {
             QuickServer.KickRequest(_nickname);
 

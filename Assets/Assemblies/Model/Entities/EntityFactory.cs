@@ -1,5 +1,5 @@
+#nullable enable
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.Serialization;
@@ -11,8 +11,8 @@ namespace Larnix.Model.Entities;
 
 public static class EntityFactory
 {
-    private static Dictionary<EntityID, EntityInfo> EntityCache = new();
-    private static object _locker = new();
+    private static readonly Dictionary<EntityID, EntityInfo> EntityCache = new();
+    private static readonly object _locker = new();
 
     private static readonly string Namespace = typeof(None).Namespace;
     private static readonly string AsmName = typeof(None).Assembly.GetName().Name;
@@ -20,7 +20,7 @@ public static class EntityFactory
     private class EntityInfo
     {
         public string Name;
-        public Type Type;
+        public Type? Type;
         public Func<EntityInits, Entity> Constructor;
         public List<Action<Entity>> Inits = new();
 
@@ -109,7 +109,7 @@ public static class EntityFactory
         return GetSlaveInstance<TIface>(ID) != null;
     }
 
-    public static TIface GetSlaveInstance<TIface>(EntityID ID) where TIface : class, IEntityInterface
+    public static TIface? GetSlaveInstance<TIface>(EntityID ID) where TIface : class, IEntityInterface
     {
         EntityInfo info = GetEntityInfo(ID);
         return info.SlaveInstance as TIface;

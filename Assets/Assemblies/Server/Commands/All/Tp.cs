@@ -1,12 +1,14 @@
+#nullable enable
 using Larnix.Server.Packets;
 using Larnix.Model.Utils;
 using Larnix.Core.Vectors;
 using Larnix.Model;
 using Larnix.Socket.Backend;
-using Larnix.Server.Entities;
 using Larnix.Model.Entities.All;
 using Larnix.Socket.Packets;
 using Larnix.Core;
+using Larnix.Server.Entities;
+using Larnix.Server.Entities.Controllers;
 
 namespace Larnix.Server.Commands.All;
 
@@ -17,10 +19,10 @@ internal class Tp : BaseCmd
     public override string ShortDescription => "Teleports a player to a specific position.";
 
     private QuickServer QuickServer => GlobRef.Get<QuickServer>();
-    private EntityManager EntityManager => GlobRef.Get<EntityManager>();
-    private IPlayerActions PlayerActions => GlobRef.Get<IPlayerActions>();
+    private IEntityControllers EntityControllers => GlobRef.Get<IEntityControllers>();
+    private IConnectedPlayers ConnectedPlayers => GlobRef.Get<IConnectedPlayers>();
 
-    private string _nickname;
+    private string _nickname = "";
     private Vec2 _position;
 
     public override void Inject(string command)
@@ -50,15 +52,15 @@ internal class Tp : BaseCmd
 
     public override (CmdResult, string) Execute(string sender, PrivilegeLevel privilege)
     {
-        if (PlayerActions.IsAlive(_nickname))
+        if (ConnectedPlayers.IsAlive(_nickname))
         {
             Vec2 _realPosition = _position + Common.UpEpsilon;
 
             Payload packet = new Teleport(_realPosition);
             QuickServer.Send(_nickname, packet);
 
-            EntityManager.TryGetPlayerController(_nickname, out var abstraction);
-            Player controller = (Player)abstraction.Controller;
+            ulong uid = ConnectedPlayers.UidByNickname(_nickname);
+            PlayerController controller = EntityControllers.GetPlayerController(uid)!;
             controller.AcceptTeleport(_realPosition);
 
             return (CmdResult.Success, // should show _position

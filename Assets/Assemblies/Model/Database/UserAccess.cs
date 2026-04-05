@@ -42,7 +42,7 @@ internal class UserAccess : IUserAccess
             ";
 
             _db.Execute(cmd,
-                userData.UID,
+                userData.Uid,
                 userData.Username,
                 userData.PasswordHash,
                 userData.ChallengeID

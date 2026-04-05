@@ -10,21 +10,34 @@ using Larnix.Model.Database;
 
 namespace Larnix.Server.Data;
 
-internal class BlockDataManager
+internal interface IChunkRepository
 {
-    private readonly Dictionary<Vec2Int, ChunkData> _chunkCache = new();
-    private readonly HashSet<Vec2Int> _referencedChunks = new();
-
-    private IDbControl Db => GlobRef.Get<IDbControl>();
-    private Generator Generator => GlobRef.Get<Generator>();
-
-    private static readonly bool debugUnlinkDatabase = false;
-
     /// <summary>
     /// Modify this reference during FixedUpdate time and it will automatically update in this script.
     /// Don't forget to DisableChunkReference(...) when unloading chunk!
     /// </summary>
-    public ChunkData ObtainChunkReference(Vec2Int chunk)
+    ChunkData TakeActiveChunk(Vec2Int chunk);
+    void ReturnActiveChunk(Vec2Int chunk);
+    void FlushIntoDatabase();
+}
+
+internal class ChunkRepository : IChunkRepository
+{
+    private static bool DebugUnlinkDatabase => false;
+
+    private readonly Dictionary<Vec2Int, ChunkData> _chunkCache = new();
+    private readonly HashSet<Vec2Int> _referencedChunks = new();
+
+    private IDbControl Db => GlobRef.Get<IDbControl>();
+    private IDataSaver DataSaver => GlobRef.Get<IDataSaver>();
+    private Generator Generator => GlobRef.Get<Generator>();
+
+    public ChunkRepository()
+    {
+        DataSaver.SavingAll += FlushIntoDatabase;
+    }
+
+    public ChunkData TakeActiveChunk(Vec2Int chunk)
     {
         if (_referencedChunks.Contains(chunk))
             throw new InvalidOperationException($"Cannot get more than one reference to chunk {chunk}!");
@@ -33,25 +46,27 @@ internal class BlockDataManager
 
         ChunkData? blocks;
 
-        if (_chunkCache.ContainsKey(chunk)) // Get from cache
+        // Get from cache
+        if (_chunkCache.ContainsKey(chunk))
         {
             blocks = _chunkCache[chunk];
             return blocks;
         }
-        else if(!debugUnlinkDatabase && Db.Chunks.TryGetChunk(chunk.x, chunk.y, out blocks)) // Get from database
+
+        // Get from database
+        if (!DebugUnlinkDatabase && Db.Chunks.TryGetChunk(chunk, out blocks))
         {
             _chunkCache[chunk] = blocks!;
             return blocks!;
         }
-        else // Generate a new chunk
-        {
-            blocks = Generator.GenerateChunk(chunk);
-            _chunkCache[chunk] = blocks;
-            return blocks;
-        }
+
+        // Generate new chunk
+        blocks = Generator.GenerateChunk(chunk);
+        _chunkCache[chunk] = blocks;
+        return blocks;
     }
 
-    public void ReturnChunkReference(Vec2Int chunk)
+    public void ReturnActiveChunk(Vec2Int chunk)
     {
         if (!_referencedChunks.Contains(chunk))
             throw new InvalidOperationException($"Reference to chunk {chunk} is not marked as active!");
@@ -61,7 +76,7 @@ internal class BlockDataManager
 
     public void FlushIntoDatabase()
     {
-        if (debugUnlinkDatabase) return;
+        if (DebugUnlinkDatabase) return;
 
         Db.Handle.AsTransaction(() =>
         {
@@ -70,10 +85,8 @@ internal class BlockDataManager
                 Vec2Int chunk = kvp.Key;
                 ChunkData data = kvp.Value;
 
-                // flush data
-                Db.Chunks.SetChunk(chunk.x, chunk.y, data);
+                Db.Chunks.SetChunk(chunk, data);
 
-                // remove disabled chunks from cache
                 if (!_referencedChunks.Contains(chunk))
                 {
                     _chunkCache.Remove(chunk);

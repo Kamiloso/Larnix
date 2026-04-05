@@ -1,14 +1,16 @@
-using System.Collections.Generic;
-using Larnix.Server.Packets;
-using Larnix.Server.Entities;
-using Larnix.Model.Utils;
-using Larnix.Socket.Backend;
-using Larnix.Socket.Packets.Control;
-using Larnix.Core.Vectors;
-using System;
-using Larnix.Socket.Packets;
-using Larnix.Model.Blocks;
+#nullable enable
 using Larnix.Core;
+using Larnix.Core.Vectors;
+using Larnix.Model.Blocks;
+using Larnix.Model.Utils;
+using Larnix.Server.Entities;
+using Larnix.Server.Packets;
+using Larnix.Socket.Backend;
+using Larnix.Socket.Packets;
+using Larnix.Socket.Packets.Control;
+using System;
+using System.Collections.Generic;
+using static Larnix.Server.Packets.CodeInfo;
 
 namespace Larnix.Server.Transmission;
 
@@ -16,11 +18,12 @@ internal class Receiver
 {
     private record RateLimitID(string Owner, Type Type);
     private readonly Dictionary<RateLimitID, int> _rateLimits = new();
+    private readonly HashSet<string> _limitedBlacklist = new();
     private float _rateLimitTimer = 0f;
 
     private IWorldAPI WorldAPI => GlobRef.Get<IWorldAPI>();
     private QuickServer QuickServer => GlobRef.Get<QuickServer>();
-    private IPlayerActions PlayerActions => GlobRef.Get<IPlayerActions>();
+    private IConnectedPlayers ConnectedPlayers => GlobRef.Get<IConnectedPlayers>();
     private BlockSender BlockSender => GlobRef.Get<BlockSender>();
     private Chat Chat => GlobRef.Get<Chat>();
 
@@ -30,13 +33,13 @@ internal class Receiver
         Subscribe<Stop>(_Stop); // STOP (server generated)
 
         // Assumptions:
-        // - limit packets to ~2x expected max rate
+        // - limit packets to ~4x expected max rate
         // - make soft limit when packet is not necessary for game integrity
 
-        Subscribe<PlayerUpdate>(_PlayerUpdate, maxPerSecond: 100, softLimit: true);
-        Subscribe<CodeInfo>(_CodeInfo, maxPerSecond: 10);
-        Subscribe<BlockChange>(_BlockChange, maxPerSecond: 500); // TODO: Limit for survival players
-        Subscribe<ChatMessage>(_ChatMessage, maxPerSecond: 10, softLimit: true);
+        Subscribe<PlayerUpdate>(_PlayerUpdate, maxPerSecond: 200, softLimit: true);
+        Subscribe<CodeInfo>(_CodeInfo, maxPerSecond: 20);
+        Subscribe<BlockChange>(_BlockChange, maxPerSecond: 1000); // TODO: Limit for survival players
+        Subscribe<ChatMessage>(_ChatMessage, maxPerSecond: 20, softLimit: true);
     }
 
     private void Subscribe<T>(Action<T, string> callback, int maxPerSecond = 0,
@@ -44,7 +47,7 @@ internal class Receiver
     {
         QuickServer.Subscribe<T>((msg, owner) =>
         {
-            if (typeof(T) != typeof(Stop) && !QuickServer.IsActiveConnection(owner))
+            if (typeof(T) != typeof(Stop) && _limitedBlacklist.Contains(owner))
                 return; // discard packets from kicked clients
 
             if (maxPerSecond > 0) // rate limit
@@ -62,6 +65,7 @@ internal class Receiver
                     if (!softLimit) // hard limit - disconnect client
                     {
                         Echo.Log($"Rate limit for packet {typeof(T).Name} from {owner} exceeded.");
+                        _limitedBlacklist.Add(owner);
                         QuickServer.KickRequest(owner);
                     }
                 }
@@ -89,7 +93,7 @@ internal class Receiver
         // AllowConnection executes in a non-synchronized player context.
         // No player data methods are reliable here.
 
-        PlayerActions.JoinPlayer(owner);
+        ConnectedPlayers.JoinPlayer(owner);
         Echo.Log($"{owner} joined the game.");
     }
 
@@ -99,27 +103,30 @@ internal class Receiver
         // Stop executes in a non-synchronized player context.
         // No player data methods are reliable here.
 
-        PlayerActions.DisconnectPlayer(owner);
+        ConnectedPlayers.DisconnectPlayer(owner);
+        _limitedBlacklist.Remove(owner);
         Echo.Log($"{owner} disconnected.");
     }
 
     private void _PlayerUpdate(PlayerUpdate msg, string owner)
     {
-        PlayerUpdate lastPacket = PlayerActions.RecentPlayerUpdate(owner);
-        if (lastPacket == null || lastPacket.FixedFrame < msg.FixedFrame)
+        JoinedPlayer player = ConnectedPlayers[owner];
+        if (player.LastUpdate is null || msg.FixedFrame > player.LastUpdate.FixedFrame)
         {
-            PlayerActions.UpdatePlayerDataIfHasController(owner, msg);
+            ConnectedPlayers.UpdatePlayer(owner, msg);
         }
     }
 
     private void _CodeInfo(CodeInfo msg, string owner)
     {
-        CodeInfo.Info code = msg.Code;
-
-        if (code == CodeInfo.Info.RespawnMe)
+        switch (msg.Code)
         {
-            if (PlayerActions.StateOf(owner) == PlayerState.Dead)
-                PlayerActions.CreatePlayerInstance(owner);
+            case Info.RespawnMe:
+                if (ConnectedPlayers.StateOf(owner) == PlayerState.Dead)
+                {
+                    ConnectedPlayers.RespawnPlayer(owner);
+                }
+                break;
         }
     }
 
@@ -132,11 +139,11 @@ internal class Receiver
 
         if (code == 0) // place item
         {
-            bool has_item = true;
-            bool has_chunk = PlayerActions.PlayerHasChunk(owner, chunk);
-            bool can_place = WorldAPI.CanPlaceBlock(POS, front, new(msg.Item));
+            bool hasItem = true;
+            bool hasChunk = ConnectedPlayers[owner].LoadedChunks.Contains(chunk);
+            bool canPlace = WorldAPI.CanPlaceBlock(POS, front, new(msg.Item));
 
-            bool success = has_item && has_chunk && can_place;
+            bool success = hasItem && hasChunk && canPlace;
 
             if (success)
             {
@@ -148,11 +155,11 @@ internal class Receiver
 
         else if (code == 1) // break using item
         {
-            bool has_tool = true;
-            bool has_chunk = PlayerActions.PlayerHasChunk(owner, chunk);
-            bool can_break = WorldAPI.CanBreakBlock(POS, front, new(msg.Item), new(msg.Tool));
+            bool hasTool = true;
+            bool hasChunk = ConnectedPlayers[owner].LoadedChunks.Contains(chunk);
+            bool canBreak = WorldAPI.CanBreakBlock(POS, front, new(msg.Item), new(msg.Tool));
 
-            bool success = has_tool && has_chunk && can_break;
+            bool success = hasTool && hasChunk && canBreak;
 
             if (success)
             {
@@ -165,7 +172,6 @@ internal class Receiver
 
     private void _ChatMessage(ChatMessage msg, string owner)
     {
-        string message = msg.Message;
-        Chat.OnArrive(owner, message);
+        Chat.OnArrive(owner, msg.Message);
     }
 }
