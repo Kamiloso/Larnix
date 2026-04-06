@@ -1,5 +1,4 @@
-using System.Collections;
-using System.Collections.Generic;
+#nullable enable
 using Larnix.Model.Physics;
 using Larnix.Core.Vectors;
 using Larnix.Model.Physics.Structs;
@@ -16,11 +15,10 @@ public interface IPhysics : IManagesTransform, IHasCollider, IPhysicsProperties
     {
         This.OnFrameUpdate += (sender, args) => PhysicsUpdate();
         dynamicCollider = new DynamicCollider(
-            Physics,
-            This.EntityData.Position,
-            COLLIDER_OFFSET(),
-            COLLIDER_SIZE(),
-            PHYSICS_PROPERTIES()
+            center: This.EntityData.Position,
+            offset: COLLIDER_OFFSET(),
+            size: COLLIDER_SIZE(),
+            properties: PHYSICS_PROPERTIES()
             );
     }
 
@@ -34,7 +32,7 @@ public interface IPhysics : IManagesTransform, IHasCollider, IPhysicsProperties
     {
         InputData idata = inputData; // getter performs actions!
 
-        outputData = dynamicCollider.PhysicsUpdate(idata);
+        outputData = Physics.TickPhysics(dynamicCollider, idata);
         This.EntityData.Position = ((OutputData)outputData).Position;
 
         // head rotation perform

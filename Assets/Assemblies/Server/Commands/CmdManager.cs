@@ -1,10 +1,10 @@
 using Larnix.Core;
-using Larnix.Model;
 using System;
 using Larnix.Server.Data;
 using Larnix.Model.Json;
 using Larnix.Model.Utils;
 using Larnix.Server.Entities;
+using Larnix.Model.Interfaces;
 
 namespace Larnix.Server.Commands;
 

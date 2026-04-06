@@ -5,8 +5,8 @@ using System.Net;
 using Larnix.Core;
 using Larnix.Model.Utils;
 using Larnix.Socket.Backend;
-using Larnix.Model;
 using Larnix.Server.Entities;
+using Larnix.Model.Interfaces;
 
 namespace Larnix.Server.Commands.All;
 
@@ -18,12 +18,12 @@ internal class User : BaseCmd
     public override string ShortDescription => "Manages user accounts.";
 
     public override string LongDescription => ShortDescription + " Usage:\n" +
-        "user add <username> <password> - Registers a new user.\n" +
-        "user rename <oldusername> <newusername> - Renames a user.\n" +
-        "user changepass <username> <newpassword> - Changes a user's password.\n" +
-        "user delete <username> - Deletes a user.\n" +
-        "user resetlimits - Resets all hashing and registration user limits.\n" +
-        "user list - Lists all registered users.\n" +
+        $"user add <username> <password> - Registers a new user.\n" +
+        $"user rename <oldusername> <newusername> - Renames a user.\n" +
+        $"user changepass <username> <newpassword> - Changes a user's password.\n" +
+        $"user delete <username> - Deletes a user.\n" +
+        $"user resetlimits - Resets all hashing and registration user limits.\n" +
+        $"user list - Lists all registered users.\n" +
         $"user deleteall - Deletes all users except host and '{Common.ReservedNickname}'.";
 
     private QuickServer QuickServer => GlobRef.Get<QuickServer>();

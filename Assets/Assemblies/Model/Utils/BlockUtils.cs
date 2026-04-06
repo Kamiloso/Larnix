@@ -66,6 +66,12 @@ public static class BlockUtils
                (POS.y >> 4) == chunkpos.y;
     }
 
+    public static bool InChunk(Vec2Int chunkpos, Vec2 position)
+    {
+        Vec2Int positionChunk = CoordsToChunk(position);
+        return positionChunk == chunkpos;
+    }
+
     public static bool ChunkExists(Vec2Int chunkpos)
     {
         return chunkpos.x >= MIN_CHUNK && chunkpos.x <= MAX_CHUNK &&

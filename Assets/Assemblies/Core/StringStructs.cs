@@ -1,8 +1,9 @@
 #nullable enable
+using Larnix.Core.Binary;
+using System.Collections.Generic;
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
-using Larnix.Core.Binary;
 
 namespace Larnix.Model.Utils;
 
@@ -12,37 +13,48 @@ public interface IStringStruct : IEndianSafe
 
     public static T[] Cut<T>(string str, Func<string, T> constructor) where T : IStringStruct, new()
     {
-        str = str.TrimEnd('\0');
-
         int binSize = new T().BinarySize;
-        int strSize = binSize / 2;
+        int strSize = binSize / sizeof(char);
 
-        int count = str.Length / strSize;
-        if (str.Length % strSize != 0 || count == 0)
+        List<T> parts = new();
+        for (int i = 0; i < str.Length; i += strSize)
         {
-            count++;
+            string part = str[i..Math.Min(i + strSize, str.Length)];
+            parts.Add(constructor(part));
         }
 
-        T[] result = new T[count];
-        for (int i = 0; i < count; i++)
+        if (parts.Count == 0)
         {
-            int maxRem = str.Length - i * strSize;
-            string substr = str.Substring(i * strSize, Math.Min(maxRem, strSize));
-            result[i] = (T)(IStringStruct)constructor(substr);
+            parts.Add(new T());
         }
-        return result;
+
+        return parts.ToArray();
+    }
+
+    public static string Join<T>(T[] parts) where T : IStringStruct
+    {
+        StringBuilder sb = new();
+        foreach (T part in parts)
+        {
+            sb.Append(part.ToString());
+        }
+        return sb.ToString();
     }
 
     protected static byte[] StringToFixedBinary(string str, int stringSize)
     {
+        if (!BitConverter.IsLittleEndian)
+            throw new PlatformNotSupportedException("Big Endian platforms are not supported.");
+
         int bytesSize = sizeof(char) * stringSize;
         byte[] bytes = new byte[bytesSize];
+        Span<byte> target = new(bytes);
 
-        Span<byte> target = new Span<byte>(bytes);
-        Span<byte> source = Encoding.Unicode.GetBytes(str);
-
+        ReadOnlySpan<byte> source = MemoryMarshal.AsBytes(str.AsSpan());
         if (source.Length > bytesSize)
+        {
             source = source[..bytesSize];
+        }
 
         source.CopyTo(target);
         return bytes;
@@ -50,17 +62,22 @@ public interface IStringStruct : IEndianSafe
 
     protected static string FixedBinaryToString(ReadOnlySpan<byte> span)
     {
-        return Encoding.Unicode.GetString(span).TrimEnd('\0');
+        if (!BitConverter.IsLittleEndian)
+            throw new PlatformNotSupportedException("Big Endian platforms are not supported.");
+
+        ReadOnlySpan<char> chars = MemoryMarshal.Cast<byte, char>(span);
+        chars = chars.TrimEnd('\0');
+        return new string(chars);
     }
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public unsafe struct String32 : IStringStruct
 {
+    private fixed byte buffer[BYTE_SIZE];
     public readonly int BinarySize => BYTE_SIZE;
     public const int BYTE_SIZE = 32;
     public const int STR_SIZE = BYTE_SIZE / 2;
-    fixed byte buffer[BYTE_SIZE];
 
     public String32(string value) => this = (String32)value;
     public override readonly string ToString() => (string)this;
@@ -80,10 +97,10 @@ public unsafe struct String32 : IStringStruct
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public unsafe struct String64 : IStringStruct
 {
+    private fixed byte buffer[BYTE_SIZE];
     public readonly int BinarySize => BYTE_SIZE;
     public const int BYTE_SIZE = 64;
     public const int STR_SIZE = BYTE_SIZE / 2;
-    fixed byte buffer[BYTE_SIZE];
 
     public String64(string value) => this = (String64)value;
     public override readonly string ToString() => (string)this;
@@ -103,10 +120,10 @@ public unsafe struct String64 : IStringStruct
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public unsafe struct String128 : IStringStruct
 {
+    private fixed byte buffer[BYTE_SIZE];
     public readonly int BinarySize => BYTE_SIZE;
     public const int BYTE_SIZE = 128;
     public const int STR_SIZE = BYTE_SIZE / 2;
-    fixed byte buffer[BYTE_SIZE];
 
     public String128(string value) => this = (String128)value;
     public override readonly string ToString() => (string)this;
@@ -126,10 +143,10 @@ public unsafe struct String128 : IStringStruct
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public unsafe struct String256 : IStringStruct
 {
+    private fixed byte buffer[BYTE_SIZE];
     public readonly int BinarySize => BYTE_SIZE;
     public const int BYTE_SIZE = 256;
     public const int STR_SIZE = BYTE_SIZE / 2;
-    fixed byte buffer[BYTE_SIZE];
 
     public String256(string value) => this = (String256)value;
     public override readonly string ToString() => (string)this;
@@ -149,10 +166,10 @@ public unsafe struct String256 : IStringStruct
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public unsafe struct String512 : IStringStruct
 {
+    private fixed byte buffer[BYTE_SIZE];
     public readonly int BinarySize => BYTE_SIZE;
     public const int BYTE_SIZE = 512;
     public const int STR_SIZE = BYTE_SIZE / 2;
-    fixed byte buffer[BYTE_SIZE];
 
     public String512(string value) => this = (String512)value;
     public override readonly string ToString() => (string)this;
@@ -172,10 +189,10 @@ public unsafe struct String512 : IStringStruct
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public unsafe struct String1024 : IStringStruct
 {
+    private fixed byte buffer[BYTE_SIZE];
     public readonly int BinarySize => BYTE_SIZE;
     public const int BYTE_SIZE = 1024;
     public const int STR_SIZE = BYTE_SIZE / 2;
-    fixed byte buffer[BYTE_SIZE];
 
     public String1024(string value) => this = (String1024)value;
     public override readonly string ToString() => (string)this;

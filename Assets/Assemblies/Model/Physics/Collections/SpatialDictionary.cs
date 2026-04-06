@@ -4,16 +4,16 @@ using System.Linq;
 using Larnix.Core.Vectors;
 using Larnix.Model.Utils;
 
-namespace Larnix.Model.Physics;
+namespace Larnix.Model.Physics.Collections;
 
-public class SpatialDictionary<T> where T : class
+internal class SpatialDictionary<T> where T : class
 {
-    public readonly double SectorSize;
-    private readonly Dictionary<Vec2Int, List<(Vec2, T)>> InternalDictionary = new();
+    private readonly Dictionary<Vec2Int, List<(Vec2, T)>> _dict = new();
+    private readonly double _sectorSize;
 
     public SpatialDictionary(double sectorSize)
     {
-        SectorSize = sectorSize;
+        _sectorSize = sectorSize;
     }
 
     public void Add(Vec2 pos, T item)
@@ -28,7 +28,7 @@ public class SpatialDictionary<T> where T : class
         list.RemoveAll(pair => ReferenceEquals(pair.Item2, item));
 
         if (list.Count == 0)
-            InternalDictionary.Remove(sector);
+            _dict.Remove(sector);
     }
 
     public void Move(Vec2 oldPos, Vec2 newPos, T item)
@@ -41,12 +41,12 @@ public class SpatialDictionary<T> where T : class
     {
         List<T> returns = new();
 
-        var center = ConvertToSector(pos);
+        var center = BlockUtils.CoordsToBlock(pos, _sectorSize);
         for (int dx = -1; dx <= 1; dx++)
             for (int dy = -1; dy <= 1; dy++)
             {
                 var sector = center + new Vec2Int(dx, dy);
-                if (InternalDictionary.TryGetValue(sector, out var list))
+                if (_dict.TryGetValue(sector, out var list))
                 {
                     returns.AddRange(list.Select(p => p.Item2));
                 }
@@ -57,19 +57,14 @@ public class SpatialDictionary<T> where T : class
 
     private List<(Vec2, T)> GetSectorList(Vec2 pos, out Vec2Int sector)
     {
-        var _sector = ConvertToSector(pos);
-        if (!InternalDictionary.TryGetValue(_sector, out var list))
+        var _sector = BlockUtils.CoordsToBlock(pos, _sectorSize);
+        if (!_dict.TryGetValue(_sector, out var list))
         {
             list = new();
-            InternalDictionary[_sector] = list;
+            _dict[_sector] = list;
         }
 
         sector = _sector;
         return list;
-    }
-
-    private Vec2Int ConvertToSector(Vec2 pos)
-    {
-        return BlockUtils.CoordsToBlock(pos, SectorSize);
     }
 }

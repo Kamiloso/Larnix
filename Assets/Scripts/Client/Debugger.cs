@@ -109,8 +109,8 @@ namespace Larnix.Client
                 $"FPS: {_lastFPS}\n" +
                 $"Ping: {_lastPing} ms\n" +
                 $"Memory: {allocations}\n" +
-                $"X: {playerPos.x}\n" +
-                $"Y: {playerPos.y}\n" +
+                $"X: {playerPos.x:F3}\n" +
+                $"Y: {playerPos.y:F3}\n" +
                 $"Biome: {_currentBiome}\n" +
                 $"World Age: {TextAge(_serverTick)}\n" +
                 $"TPS: {_lastTPS ?? _tps:F1} / {Common.TargetTPS:F1}\n";

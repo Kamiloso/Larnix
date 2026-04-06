@@ -4,8 +4,9 @@ using Larnix.Core;
 using Larnix.Core.Vectors;
 using Larnix.Model.Entities;
 using Larnix.Model.Entities.Structs;
+using Larnix.Model.Interfaces;
 using Larnix.Model.Physics;
-using Larnix.Server.Data;
+using Larnix.Server.Entities.Data;
 using static Larnix.Model.Entities.Entity;
 
 namespace Larnix.Server.Entities.Controllers;
@@ -21,7 +22,7 @@ internal abstract class BaseController
     public bool IsActive => RealInstance is not null;
 
     private IEntityRepository EntityRepository => GlobRef.Get<IEntityRepository>();
-    private PhysicsManager PhysicsManager => GlobRef.Get<PhysicsManager>();
+    private IPhysicsManager PhysicsManager => GlobRef.Get<IPhysicsManager>();
 
     private bool _deactivated = false;
 

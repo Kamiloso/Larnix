@@ -1,119 +1,267 @@
 #nullable enable
-using System;
-using Larnix.Model.Utils;
 using Larnix.Core.Vectors;
 using Larnix.Model.Physics.Structs;
+using Larnix.Model.Utils;
+using System;
+using System.Collections.Generic;
 
 namespace Larnix.Model.Physics;
 
 public class DynamicCollider
 {
-    private const double MAX_TOUCH_VELOCITY = 0.1f;
+    private enum Side { Left, Right, Top, Bottom }
+    private record struct CollisionReport(OutputData Report, Vec2 HitPosition, double HitTime);
+    private record struct CollisionInfo(Vec2 CollisionPoint, Vec2 FinalPoint, double CollisionTime, Side Side);
+    private record struct HitInfo(Vec2 HitPosition, double HitTime, Side Side);
 
-    internal Vec2? OldCenter;
-    internal Vec2 Center;
-    internal readonly Vec2 Offset;
-    internal readonly Vec2 Size;
+    public PhysicsProperties Properties { get; }
+    public Vec2 Offset { get; }
+    public Vec2 Size { get; }
 
-    private readonly PhysicsManager _physics;
-    private readonly PhysicsProperties _properties;
+    internal Vec2? OldCenter { get; private set; }
+    internal Vec2 Center { get; private set; }
+    internal Vec2 Velocity { get; private set; }
+    internal OutputData Report { get; private set; }
 
-    private Vec2 _velocity;
-    private OutputData _report;
-
-    public DynamicCollider(PhysicsManager physics, Vec2 center, Vec2 offset, Vec2 size, PhysicsProperties properties)
+    public DynamicCollider(Vec2 center, Vec2 offset, Vec2 size, PhysicsProperties properties)
     {
-        _physics = physics;
-        _properties = properties;
-
-        OldCenter = null;
-        Center = center + offset;
+        Properties = properties;
         Offset = offset;
         Size = size;
 
-        _velocity = Vec2.Zero;
-        _report = new OutputData { Position = Center };
+        OldCenter = null;
+        Center = center + offset;
+
+        Velocity = Vec2.Zero;
+        Report = new OutputData { Position = Center };
     }
 
-    public OutputData PhysicsUpdate(InputData inputData)
+    internal OutputData PhysicsUpdate(InputData inputData, List<StaticCollider?> staticColliders)
     {
-        // Horizontal physics
-
-        int wantSide = (inputData.Left ? -1 : 0) + (inputData.Right ? 1 : 0);
-
-        if (wantSide != 0)
-            _velocity += wantSide * new Vec2(_properties.ControlForce, 0f);
-        else
+        void HorizontalPhysics()
         {
-            int sgn1 = Math.Sign(_velocity.x);
-            _velocity -= sgn1 * new Vec2(_properties.HorizontalDrag, 0f);
-            int sgn2 = Math.Sign(_velocity.x);
+            int wantSide = (inputData.Left ? -1 : 0) + (inputData.Right ? 1 : 0);
 
-            if (sgn1 != sgn2)
-                _velocity = new Vec2(0f, _velocity.y);
-        }
-
-        // Vertical physics
-
-        _velocity -= new Vec2(0, _properties.Gravity);
-
-        if (_report.OnGround)
-        {
-            if (inputData.Jump)
+            if (wantSide != 0)
             {
-                _velocity = new Vec2(_velocity.x, _properties.JumpSize);
+                Velocity += wantSide * new Vec2(Properties.ControlForce, 0f);
+            }
+            else
+            {
+                int sgn1 = Math.Sign(Velocity.x);
+                Velocity -= sgn1 * new Vec2(Properties.HorizontalDrag, 0f);
+                int sgn2 = Math.Sign(Velocity.x);
+
+                if (sgn1 != sgn2)
+                    Velocity = new Vec2(0f, Velocity.y);
             }
         }
 
-        // Velocity clamp
+        void VerticalPhysics()
+        {
+            Velocity -= new Vec2(0, Properties.Gravity);
 
-        if (Math.Abs(_velocity.x) > _properties.MaxHorizontalVelocity)
-            _velocity = new Vec2(Math.Sign(_velocity.x) * _properties.MaxHorizontalVelocity, _velocity.y);
+            if (Report.OnGround)
+            {
+                if (inputData.Jump)
+                {
+                    Velocity = new Vec2(Velocity.x, Properties.JumpSize);
+                }
+            }
+        }
 
-        if (Math.Abs(_velocity.y) > _properties.MaxVerticalVelocity)
-            _velocity = new Vec2(_velocity.x, Math.Sign(_velocity.y) * _properties.MaxVerticalVelocity);
+        void VelocityClamp()
+        {
+            if (Math.Abs(Velocity.x) > Properties.MaxHorizontalVelocity)
+                Velocity = new Vec2(Math.Sign(Velocity.x) * Properties.MaxHorizontalVelocity, Velocity.y);
 
-        // Velocity wall reset
+            if (Math.Abs(Velocity.y) > Properties.MaxVerticalVelocity)
+                Velocity = new Vec2(Velocity.x, Math.Sign(Velocity.y) * Properties.MaxVerticalVelocity);
+        }
 
-        const double MTV = MAX_TOUCH_VELOCITY;
+        void VelocityWallReset()
+        {
+            const double MAX_TOUCH_VEL = 0.1;
 
-        if (_report.OnGround && _velocity.y < -MTV)
-            _velocity = new Vec2(_velocity.x, -MTV);
+            if (Report.OnGround && Velocity.y < -MAX_TOUCH_VEL)
+                Velocity = new Vec2(Velocity.x, -MAX_TOUCH_VEL);
 
-        if (_report.OnCeil && _velocity.y > MTV)
-            _velocity = new Vec2(_velocity.x, MTV);
+            if (Report.OnCeil && Velocity.y > MAX_TOUCH_VEL)
+                Velocity = new Vec2(Velocity.x, MAX_TOUCH_VEL);
 
-        if (_report.OnLeftWall && _velocity.x < -MTV)
-            _velocity = new Vec2(-MTV, _velocity.y);
+            if (Report.OnLeftWall && Velocity.x < -MAX_TOUCH_VEL)
+                Velocity = new Vec2(-MAX_TOUCH_VEL, Velocity.y);
 
-        if (_report.OnRightWall && _velocity.x > MTV)
-            _velocity = new Vec2(MTV, _velocity.y);
+            if (Report.OnRightWall && Velocity.x > MAX_TOUCH_VEL)
+                Velocity = new Vec2(MAX_TOUCH_VEL, Velocity.y);
+        }
 
-        // Generate report & update position
+        HorizontalPhysics();
+        VerticalPhysics();
+        VelocityClamp();
+        VelocityWallReset();
 
-        SetWill(Center, Center + _velocity * Common.FixedTime);
-        _report = _physics.MoveCollider(this);
-        return RemoveOffset(_report);
+        OldCenter = Center;
+        Center += Velocity * Common.FixedTime;
+
+        Report = MoveCollider(staticColliders);
+        return Report with { Position = Report.Position - Offset };
     }
 
-    public OutputData NoPhysicsUpdate(Vec2 targetPos)
+    internal OutputData NoPhysicsUpdate(Vec2 targetPos)
     {
         Vec2 colliderPos = targetPos + Offset;
-        _velocity = Vec2.Zero;
+        Velocity = Vec2.Zero;
 
-        SetWill(Center, colliderPos);
-        _report = new OutputData { Position = colliderPos };
-        return RemoveOffset(_report);
+        OldCenter = Center;
+        Center = colliderPos;
+
+        Report = new OutputData { Position = colliderPos };
+        return Report with { Position = Report.Position - Offset };
     }
 
-    internal void SetWill(Vec2 oldCenter, Vec2 newCenter)
+    private OutputData MoveCollider(List<StaticCollider?> staticColliders)
     {
-        OldCenter = oldCenter;
-        Center = newCenter;
+        OutputData totalReport = new() { Position = Center };
+
+        while (true)
+        {
+            int lowestIndex = -1;
+            CollisionReport? bestReport = null;
+
+            for (int i = 0; i < staticColliders.Count; i++)
+            {
+                StaticCollider? statCollider = staticColliders[i];
+                if (statCollider is null) continue;
+
+                OutputData report = CalculateCollision(
+                    startCenter: OldCenter ?? Center,
+                    endCenter: Center,
+                    movingSize: Size,
+                    staticCenter: statCollider.Center,
+                    staticSize: statCollider.Size,
+                    out HitInfo? hitInfo
+                );
+
+                double bestTime = bestReport?.HitTime ?? double.MaxValue;
+                if (hitInfo is not null && hitInfo.Value.HitTime < bestTime)
+                {
+                    lowestIndex = i;
+                    bestReport = new CollisionReport
+                    {
+                        Report = report,
+                        HitPosition = hitInfo.Value.HitPosition,
+                        HitTime = hitInfo.Value.HitTime 
+                    };
+                }
+            }
+
+            if (bestReport is not null)
+            {
+                OldCenter = bestReport.Value.HitPosition;
+                Center = bestReport.Value.Report.Position;
+
+                totalReport = totalReport.Merge(bestReport.Value.Report);
+                staticColliders[lowestIndex] = null; // removing inside list is expansive --> nulling elements instead
+            }
+            else break;
+        }
+
+        return totalReport;
     }
 
-    private OutputData RemoveOffset(OutputData odata)
+    private static OutputData CalculateCollision(
+        Vec2 startCenter, Vec2 endCenter, Vec2 movingSize, Vec2 staticCenter, Vec2 staticSize, out HitInfo? hitInfo
+        )
     {
-        return odata with { Position = odata.Position - Offset };
+        hitInfo = null;
+
+        Vec2 moved = endCenter - startCenter;
+        Vec2 inflatedSize = movingSize + staticSize;
+
+        Vec2 minCorner = staticCenter - inflatedSize / 2;
+        Vec2 maxCorner = staticCenter + inflatedSize / 2;
+
+        if ( // start pos inside rect
+            startCenter.x >= minCorner.x && startCenter.x <= maxCorner.x &&
+            startCenter.y >= minCorner.y && startCenter.y <= maxCorner.y
+            )
+            return new();
+
+        CollisionInfo? bestCollision = null;
+
+        if (moved.x != 0.0)
+        {
+            double tx_min = (minCorner.x - startCenter.x) / moved.x;
+            double tx_max = (maxCorner.x - startCenter.x) / moved.x;
+
+            Vec2 point1 = new(minCorner.x, startCenter.y + tx_min * moved.y);
+            Vec2 point2 = new(maxCorner.x, startCenter.y + tx_max * moved.y);
+
+            if (tx_min >= 0.0 && tx_min <= 1.0 && point1.y > minCorner.y && point1.y < maxCorner.y)
+            {
+                if (tx_min < (bestCollision?.CollisionTime ?? double.MaxValue))
+                    bestCollision = new CollisionInfo(point1, new Vec2(point1.x, endCenter.y), tx_min, Side.Left);
+            }
+
+            if (tx_max >= 0.0 && tx_max <= 1.0 && point2.y > minCorner.y && point2.y < maxCorner.y)
+            {
+                if (tx_max < (bestCollision?.CollisionTime ?? double.MaxValue))
+                    bestCollision = new CollisionInfo(point2, new Vec2(point2.x, endCenter.y), tx_max, Side.Right);
+            }
+        }
+
+        if (moved.y != 0.0)
+        {
+            double ty_min = (minCorner.y - startCenter.y) / moved.y;
+            double ty_max = (maxCorner.y - startCenter.y) / moved.y;
+
+            Vec2 point1 = new(startCenter.x + ty_min * moved.x, minCorner.y);
+            Vec2 point2 = new(startCenter.x + ty_max * moved.x, maxCorner.y);
+
+            if (ty_min >= 0.0 && ty_min <= 1.0 && point1.x > minCorner.x && point1.x < maxCorner.x)
+            {
+                if (ty_min < (bestCollision?.CollisionTime ?? double.MaxValue))
+                    bestCollision = new CollisionInfo(point1, new Vec2(endCenter.x, point1.y), ty_min, Side.Bottom);
+            }
+
+            if (ty_max >= 0.0 && ty_max <= 1.0 && point2.x > minCorner.x && point2.x < maxCorner.x)
+            {
+                if (ty_max < (bestCollision?.CollisionTime ?? double.MaxValue))
+                    bestCollision = new CollisionInfo(point2, new Vec2(endCenter.x, point2.y), ty_max, Side.Top);
+            }
+        }
+
+        OutputData report = default;
+        if (bestCollision is not null)
+        {
+            Vec2 endPoint = BitChangeVector(bestCollision.Value.FinalPoint, moved);
+            Vec2 colPoint = BitChangeVector(bestCollision.Value.CollisionPoint, moved);
+
+            report = new OutputData
+            {
+                Position = endPoint,
+                OnGround = bestCollision.Value.Side == Side.Top,
+                OnCeil = bestCollision.Value.Side == Side.Bottom,
+                OnLeftWall = bestCollision.Value.Side == Side.Right,
+                OnRightWall = bestCollision.Value.Side == Side.Left,
+            };
+
+            hitInfo = new HitInfo
+            {
+                HitPosition = colPoint,
+                HitTime = bestCollision.Value.CollisionTime,
+                Side = bestCollision.Value.Side
+            };
+        }
+        return report;
+    }
+
+    private static Vec2 BitChangeVector(Vec2 vect, Vec2 moved)
+    {
+        return new Vec2(
+            moved.x > 0.0 ? DoubleUtils.BitDecrement(vect.x, 1) : (moved.x < 0.0 ? DoubleUtils.BitIncrement(vect.x, 1) : vect.x),
+            moved.y > 0.0 ? DoubleUtils.BitDecrement(vect.y, 1) : (moved.y < 0.0 ? DoubleUtils.BitIncrement(vect.y, 1) : vect.y)
+            );
     }
 }

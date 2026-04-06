@@ -5,7 +5,7 @@ using System.Reflection;
 using System.Runtime.Serialization;
 using Larnix.Core;
 using Larnix.Model.Entities.All;
-using EntityInits = Larnix.Model.Entities.Entity.EntityInits;
+using static Larnix.Model.Entities.Entity;
 
 namespace Larnix.Model.Entities;
 
@@ -19,17 +19,14 @@ public static class EntityFactory
 
     private class EntityInfo
     {
-        public string Name;
-        public Type? Type;
-        public Func<EntityInits, Entity> Constructor;
-        public List<Action<Entity>> Inits = new();
-
-        public Entity SlaveInstance { get; init; }
+        public readonly Func<EntityInits, Entity> Constructor;
+        public readonly List<Action<Entity>> Inits = new();
+        public readonly Entity SlaveInstance;
 
         public EntityInfo(EntityID ID)
         {
-            Name = ID.ToString();
-            Type = Type.GetType(Namespace + "." + Name + ", " + AsmName);
+            string Name = ID.ToString();
+            Type? Type = Type.GetType(Namespace + "." + Name + ", " + AsmName);
 
             var ctorInfo = Type?.GetConstructor(Array.Empty<Type>());
             var ctor = Type != null ? RuntimeCompilation.CompileConstructor(ctorInfo) : null;

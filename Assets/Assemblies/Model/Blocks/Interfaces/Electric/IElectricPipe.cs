@@ -1,6 +1,7 @@
 using System;
 using Larnix.Model.Blocks.Structs;
 using Larnix.Core.Vectors;
+using Larnix.Model.Interfaces;
 
 namespace Larnix.Model.Blocks.All;
 

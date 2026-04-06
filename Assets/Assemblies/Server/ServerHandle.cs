@@ -2,7 +2,6 @@
 using Larnix.Core;
 using Larnix.Core.Files;
 using Larnix.Core.Utils;
-using Larnix.Model.Blocks;
 using Larnix.Model.Json;
 using Larnix.Model.Physics;
 using Larnix.Model.Utils;
@@ -10,16 +9,20 @@ using Larnix.Model.Worldgen;
 using Larnix.Server.Commands;
 using Larnix.Server.Data;
 using Larnix.Model.Database.Connection;
-using Larnix.Server.Terrain;
+using Larnix.Server.Chunks;
 using Larnix.Server.Transmission;
 using Larnix.Socket.Backend;
 using System;
 using System.IO;
 using System.Threading.Tasks;
 using Larnix.Model.Database;
-using RunSuggestions = Larnix.Server.ServerRunner.RunSuggestions;
-using ServerAnswer = Larnix.Server.ServerRunner.ServerAnswer;
 using Larnix.Server.Entities;
+using Larnix.Server.Entities.Data;
+using Larnix.Server.Entities.Scripts;
+using Larnix.Server.Chunks.Data;
+using Larnix.Server.Chunks.Scripts;
+using static Larnix.Server.ServerRunner;
+using Larnix.Model.Interfaces;
 
 namespace Larnix.Server;
 
@@ -93,12 +96,11 @@ internal class ServerHandle : IServerHandle
     {
         GlobRef.Set<IServer>(new Server(ServerType, WorldPath, StopSignal));
 
-        GlobRef.New<PhysicsManager, PhysicsManager>();
-        GlobRef.New<Chat, Chat>();
-
         GlobRef.Set<ServerConfig>(
-            Config.FromFile<ServerConfig>(WorldPath, Common.ConfigFile)
-        );
+            Config.FromFile<ServerConfig>(
+                WorldPath, Common.ConfigFile
+                )
+            );
 
         GlobRef.Set<IDbControl>(
             new DbControl(
@@ -106,35 +108,50 @@ internal class ServerHandle : IServerHandle
                 )
             );
 
+        GlobRef.Set<IGenerator>(
+            new Generator(
+                Db.Values.GetOrPut("seed",
+                    () => Suggestions.Seed ?? RandUtils.SecureLong())
+                )
+            );
+
+        GlobRef.Set<IPhysicsManager>(
+            new PhysicsManager(Common.PhysicsSectorSize)
+            );
+
         GlobRef.New<IDataSaver, DataSaver>();
 
+        GlobRef.New<IClock, Clock>();
         GlobRef.New<IWorldMetaManager, WorldMetaManager>();
-        GlobRef.New<IChunkRepository, ChunkRepository>();
-        GlobRef.New<IEntityRepository, EntityRepository>();
         GlobRef.New<IUserRepository, UserRepository>();
 
-        GlobRef.New<IClock, Clock>();
+        GlobRef.New<IChat, Chat>();
 
+        // Chunks
+        GlobRef.New<IChunkRepository, ChunkRepository>();
+        GlobRef.New<IAtomicChunks, AtomicChunks>();
+        GlobRef.New<IChunkLoader, ChunkLoader>();
+        GlobRef.New<IChunkHolders, ChunkHolders>();
+        GlobRef.New<IWorldAPI, WorldAPI>();
+
+        // Entities
+        GlobRef.New<IEntityRepository, EntityRepository>();
         GlobRef.New<IEntityControllers, EntityControllers>();
         GlobRef.New<IConnectedPlayers, ConnectedPlayers>();
 
-        long MakeSeed() => Suggestions.Seed ?? RandUtils.SecureLong();
-
-        GlobRef.Set<Generator>(new Generator(Db.Values.GetOrPut("seed", MakeSeed)));
-        GlobRef.New<IWorldAPI, WorldAPI>();
-
         Scripts = new Scripts(
-            (0, new IScript[] {
-                GlobRef.New<IAtomicChunks, AtomicChunks>(),
-            }),
             (1, new IScript[] {
-                GlobRef.New<Chunks, Chunks>(), // 1st
-                GlobRef.New<IEntityManager, EntityManager>() // 2nd
+                GlobRef.New<IChunkManager, ChunkManager>(),
+                GlobRef.New<IEntityManager, EntityManager>()
             }),
             (2, new IScript[] {
-                GlobRef.New<BlockSender, BlockSender>(),
+                GlobRef.New<IChunkSender, ChunkSender>(),
+                GlobRef.New<IEntitySender, EntitySender>()
+            }),
+            (3, new IScript[] {
                 GlobRef.New<ICmdManager, CmdManager>()
-            }));
+            })
+        );
 
         GlobRef.Set<QuickServer>(
             new QuickServer(

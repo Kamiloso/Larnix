@@ -1,9 +1,9 @@
 using System.Collections.Generic;
-using Larnix.Model;
 using System;
 using System.Text;
 using System.Linq;
 using Larnix.Server.Commands.All;
+using Larnix.Model.Interfaces;
 
 namespace Larnix.Server.Commands;
 

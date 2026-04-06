@@ -14,6 +14,8 @@ using Larnix.Client.Terrain.Selector;
 using Larnix.Client.Entities;
 using Larnix.Scoping;
 using Larnix.Core;
+using Larnix.Model.Utils;
+using Larnix.Model.Interfaces;
 
 namespace Larnix.Client
 {
@@ -56,7 +58,9 @@ namespace Larnix.Client
             EarlyUpdateInjector.InjectEarlyUpdate(EarlyUpdate, order: 0);
 
             GlobRef.Set(this);
-            GlobRef.Set(new PhysicsManager());
+            GlobRef.Set<IPhysicsManager>(
+                new PhysicsManager(Common.PhysicsSectorSize)
+                );
 
             WorldPath = WorldLoad.WorldPath;
             IsMultiplayer = WorldLoad.IsMultiplayer;

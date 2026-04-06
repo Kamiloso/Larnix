@@ -1,13 +1,12 @@
-using System.Collections;
-using System.Collections.Generic;
-using Larnix.Model.Physics;
+#nullable enable
 using Larnix.Model.Json;
+using Larnix.Model.Interfaces;
 
 namespace Larnix.Model.Entities.All;
 
 public interface IEntityInterface
 {
     Entity This => (Entity)this;
-    PhysicsManager Physics => This.Physics;
+    IPhysicsManager Physics => This.Physics;
     Storage Data => This.EntityData.NBT;
 }

@@ -5,14 +5,15 @@ using Larnix.Core.Vectors;
 using Larnix.Model.Blocks.Structs;
 using Larnix.Server.Commands;
 using Larnix.Core;
-using Larnix.Model;
-using BreakMode = Larnix.Model.Blocks.IWorldAPI.BreakMode;
+using Larnix.Server.Chunks.Scripts;
+using static Larnix.Model.Interfaces.IWorldAPI;
+using Larnix.Model.Interfaces;
 
-namespace Larnix.Server.Terrain;
+namespace Larnix.Server.Chunks;
 
 internal class WorldAPI : IWorldAPI
 {
-    private Chunks Chunks => GlobRef.Get<Chunks>();
+    private IChunkHolders ChunkHolders => GlobRef.Get<IChunkHolders>();
     private IAtomicChunks AtomicChunks => GlobRef.Get<IAtomicChunks>();
     private ICmdManager CmdManager => GlobRef.Get<ICmdManager>();
     private IClock Clock => GlobRef.Get<IClock>();
@@ -23,7 +24,7 @@ internal class WorldAPI : IWorldAPI
     {
         return atomic ?
             AtomicChunks.IsAtomicLoaded(chunk) :
-            Chunks.IsChunkLoaded(chunk);
+            ChunkHolders.IsChunkInZone(chunk, ChunkLoadState.Loaded);
     }
 
     public Block? GetBlock(Vec2Int POS, bool isFront)
@@ -31,7 +32,7 @@ internal class WorldAPI : IWorldAPI
         Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
         Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
 
-        return Chunks.GetChunk(chunk)?.GetBlock(pos, isFront);
+        return ChunkHolders.GetChunkBrain(chunk)?.GetBlock(pos, isFront);
     }
 
     public Block? ReplaceBlock(Vec2Int POS, bool isFront, BlockData1 blockTemplate,
@@ -41,7 +42,7 @@ internal class WorldAPI : IWorldAPI
         Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
 
         BlockData1 blockDeepCopy = blockTemplate.DeepCopy();
-        return Chunks.GetChunk(chunk)?.UpdateBlock(pos, isFront, blockDeepCopy, breakMode);
+        return ChunkHolders.GetChunkBrain(chunk)?.UpdateBlock(pos, isFront, blockDeepCopy, breakMode);
     }
 
     public Block? MutateBlockVariant(Vec2Int POS, bool isFront, byte variant)
@@ -51,7 +52,7 @@ internal class WorldAPI : IWorldAPI
 
         BlockData1 blockData = GetBlock(POS, isFront)!.BlockData;
         blockData.Variant = variant;
-        return Chunks.GetChunk(chunk)?.UpdateBlockMutated(pos, isFront);
+        return ChunkHolders.GetChunkBrain(chunk)?.UpdateBlockMutated(pos, isFront);
     }
 
     public bool CanPlaceBlock(Vec2Int POS, bool front, BlockData1 item)

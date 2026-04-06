@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using LogType = Larnix.Core.Echo.LogType;
 
-namespace Larnix.Model;
+namespace Larnix.Model.Interfaces;
 
 public enum CmdResult { Raw, Info, Log, Success, Warning, Error, Ignore, Clear }
+
 public interface ICmdExecutor
 {
     public (CmdResult, string) ExecuteCommand(string command, string? sender = null);

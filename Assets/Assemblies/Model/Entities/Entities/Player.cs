@@ -13,7 +13,7 @@ public sealed class Player : Entity, IHasCollider, IPhysicsProperties
     double IPhysicsProperties.JUMP_SIZE() => 25.0;
     double IPhysicsProperties.MAX_HORIZONTAL_VELOCITY() => 15.0;
 
-    public static DynamicCollider MakeDynamicCollider(PhysicsManager physics, Vec2 position)
+    public static DynamicCollider MakeDynamicCollider(Vec2 position)
     {
         Player slave = EntityFactory.GetSlaveInstance<Player>(EntityID.Player)!;
 
@@ -22,6 +22,6 @@ public sealed class Player : Entity, IHasCollider, IPhysicsProperties
 
         PhysicsProperties phProp = ((IPhysicsProperties)slave).PHYSICS_PROPERTIES();
 
-        return new DynamicCollider(physics, position, offset, size, phProp);
+        return new DynamicCollider(position, offset, size, phProp);
     }
 }

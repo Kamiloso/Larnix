@@ -7,9 +7,9 @@ using Larnix.Client.Terrain;
 using Larnix.Client.UI;
 using Larnix.Client.Particles;
 using Larnix.Core;
-using Larnix.Model.Blocks;
 using Larnix.Background;
 using Larnix.Client.Chat;
+using Larnix.Model.Interfaces;
 
 namespace Larnix.Client;
 

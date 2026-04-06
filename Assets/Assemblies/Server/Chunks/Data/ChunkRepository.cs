@@ -7,8 +7,9 @@ using Larnix.Core.Vectors;
 using System;
 using Larnix.Core;
 using Larnix.Model.Database;
+using Larnix.Server.Data;
 
-namespace Larnix.Server.Data;
+namespace Larnix.Server.Chunks.Data;
 
 internal interface IChunkRepository
 {
@@ -18,7 +19,6 @@ internal interface IChunkRepository
     /// </summary>
     ChunkData TakeActiveChunk(Vec2Int chunk);
     void ReturnActiveChunk(Vec2Int chunk);
-    void FlushIntoDatabase();
 }
 
 internal class ChunkRepository : IChunkRepository
@@ -30,7 +30,7 @@ internal class ChunkRepository : IChunkRepository
 
     private IDbControl Db => GlobRef.Get<IDbControl>();
     private IDataSaver DataSaver => GlobRef.Get<IDataSaver>();
-    private Generator Generator => GlobRef.Get<Generator>();
+    private IGenerator Generator => GlobRef.Get<IGenerator>();
 
     public ChunkRepository()
     {
@@ -74,7 +74,7 @@ internal class ChunkRepository : IChunkRepository
         _referencedChunks.Remove(chunk);
     }
 
-    public void FlushIntoDatabase()
+    private void FlushIntoDatabase()
     {
         if (DebugUnlinkDatabase) return;
 

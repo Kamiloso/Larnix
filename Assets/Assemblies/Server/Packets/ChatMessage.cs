@@ -37,7 +37,6 @@ public sealed class ChatMessage : Payload
     public ChatMessage(in String512 message, ChatCode msgCode) :
         this(LogType.Raw, default, message, msgCode) { }
 
-    public bool TryGetMsgText(out string msgText) => TryAppendPrefix(Message, out msgText);
     public bool TryAppendPrefix(string raw, out string msgText)
     {
         if (MsgCode == ChatCode.ClearChat || MsgCode == ChatCode.PlayerToServer)

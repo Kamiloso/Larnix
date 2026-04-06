@@ -8,7 +8,7 @@ namespace Larnix.Server.Data;
 
 internal class ServerConfig : Config
 {
-    public int ConfigVersion { get; set; } = 14;
+    public int ConfigVersion { get; set; } = 15;
 
     // --- Main ---
     public ushort MaxPlayers { get; set; } = 10;
@@ -39,13 +39,6 @@ internal class ServerConfig : Config
         set => _periodicTasks_EntityBroadcastPeriodFrames = Math.Max(1, value);
     }
 
-    private int _periodicTasks_ChunkSendingPeriodFrames = 2;
-    public int PeriodicTasks_ChunkSendingPeriodFrames
-    {
-        get => _periodicTasks_ChunkSendingPeriodFrames;
-        set => _periodicTasks_ChunkSendingPeriodFrames = Math.Max(1, value);
-    }
-
     // --- Network ---
     public int Network_ClientIdentityPrefixSizeIPv4 { get; set; } = 32;
     public int Network_ClientIdentityPrefixSizeIPv6 { get; set; } = 56;
@@ -74,6 +67,11 @@ internal class ServerConfig : Config
         if (ConfigVersion < 14) // updated: Electricity_MaxContraptionChunks: 128 -> 64
         {
             Electricity_MaxContraptionChunks = defaults.Electricity_MaxContraptionChunks;
+        }
+
+        if (ConfigVersion < 15) // removed: PeriodicTasks_ChunkSendingPeriodFrames
+        {
+            ;
         }
 
         ConfigVersion = defaults.ConfigVersion;

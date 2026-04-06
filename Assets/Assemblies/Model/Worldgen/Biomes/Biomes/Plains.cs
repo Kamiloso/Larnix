@@ -15,7 +15,7 @@ public sealed class Plains : Biome, IOreNormal, ISkyColor
     Col32 ISkyColor.SKY_COLOR() => ISkyColor.Temperate;
     Col32 ISkyColor.NIGHT_SKY_COLOR() => ISkyColor.Night;
 
-    public override BlockHeader2 TranslateProtoBlock(ProtoBlock protoBlock) =>
+    internal override BlockHeader2 TranslateProtoBlock(ProtoBlock protoBlock) =>
         protoBlock switch
         {
             ProtoBlock.Sky => BlockHeader2.Empty,

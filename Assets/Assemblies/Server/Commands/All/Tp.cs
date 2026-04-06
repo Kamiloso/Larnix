@@ -2,13 +2,12 @@
 using Larnix.Server.Packets;
 using Larnix.Model.Utils;
 using Larnix.Core.Vectors;
-using Larnix.Model;
 using Larnix.Socket.Backend;
-using Larnix.Model.Entities.All;
 using Larnix.Socket.Packets;
 using Larnix.Core;
 using Larnix.Server.Entities;
 using Larnix.Server.Entities.Controllers;
+using Larnix.Model.Interfaces;
 
 namespace Larnix.Server.Commands.All;
 
@@ -18,7 +17,7 @@ internal class Tp : BaseCmd
     public override string Pattern => $"{Name} <nickname> <x> <y>";
     public override string ShortDescription => "Teleports a player to a specific position.";
 
-    private QuickServer QuickServer => GlobRef.Get<QuickServer>();
+    private IServer Server => GlobRef.Get<IServer>();
     private IEntityControllers EntityControllers => GlobRef.Get<IEntityControllers>();
     private IConnectedPlayers ConnectedPlayers => GlobRef.Get<IConnectedPlayers>();
 
@@ -57,10 +56,10 @@ internal class Tp : BaseCmd
             Vec2 _realPosition = _position + Common.UpEpsilon;
 
             Payload packet = new Teleport(_realPosition);
-            QuickServer.Send(_nickname, packet);
+            Server.Send(_nickname, packet);
 
             ulong uid = ConnectedPlayers.UidByNickname(_nickname);
-            PlayerController controller = EntityControllers.GetPlayerController(uid)!;
+            var controller = (EntityControllers.GetController(uid) as PlayerController)!;
             controller.AcceptTeleport(_realPosition);
 
             return (CmdResult.Success, // should show _position

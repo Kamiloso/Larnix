@@ -11,7 +11,7 @@ public abstract class Biome
     public Col32 SkyColor => (this as ISkyColor)?.SKY_COLOR() ?? ISkyColor.Temperate;
     public Col32 NightSkyColor => (this as ISkyColor)?.NIGHT_SKY_COLOR() ?? ISkyColor.Night;
 
-    public abstract BlockHeader2 TranslateProtoBlock(ProtoBlock protoBlock);
+    internal abstract BlockHeader2 TranslateProtoBlock(ProtoBlock protoBlock);
 
     protected Biome(Seed seed)
     {

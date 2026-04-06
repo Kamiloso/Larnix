@@ -1,8 +1,10 @@
+#nullable enable
 using System.Collections.Generic;
 using Larnix.Socket.Backend;
 using Larnix.Model.Worldgen;
 using Larnix.Core;
 using Larnix.Model;
+using Larnix.Model.Interfaces;
 
 namespace Larnix.Server.Commands.All;
 
@@ -14,7 +16,7 @@ internal class Info : BaseCmd
 
     private QuickServer QuickServer => GlobRef.Get<QuickServer>();
     private IServer Server => GlobRef.Get<IServer>();
-    private Generator Generator => GlobRef.Get<Generator>();
+    private IGenerator Generator => GlobRef.Get<IGenerator>();
 
     public override void Inject(string command)
     {
@@ -27,7 +29,7 @@ internal class Info : BaseCmd
     public override (CmdResult, string) Execute(string sender, PrivilegeLevel privilege)
     {
         IEnumerable<string> lines = new[] {
-            $"Version: {Model.Version.Current}",
+            $"Version: {Version.Current}",
             $"Players: {QuickServer.PlayerCount} / {QuickServer.PlayerLimit}",
             $"Port: {Server.Port}",
             $"Authcode: {QuickServer.Authcode}",

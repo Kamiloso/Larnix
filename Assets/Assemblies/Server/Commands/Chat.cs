@@ -1,18 +1,21 @@
 #nullable enable
 using Larnix.Core;
-using Larnix.Model;
 using Larnix.Model.Utils;
-using Larnix.Server.Commands;
 using Larnix.Server.Packets;
-using Larnix.Socket.Backend;
 using LogType = Larnix.Core.Echo.LogType;
 using ChatCode = Larnix.Server.Packets.ChatMessage.ChatCode;
+using Larnix.Model.Interfaces;
 
-namespace Larnix.Server.Transmission;
+namespace Larnix.Server.Commands;
 
-internal class Chat
+internal interface IChat
 {
-    private QuickServer QuickServer => GlobRef.Get<QuickServer>();
+    void OnArrive(string nickname, string message);
+}
+
+internal class Chat : IChat
+{
+    private IServer Server => GlobRef.Get<IServer>();
     private ICmdManager CmdManager => GlobRef.Get<ICmdManager>();
 
     public void OnArrive(string nickname, string message)
@@ -41,12 +44,12 @@ internal class Chat
             {
                 bool isLast = i == answerParts.Length - 1;
                 ChatCode msgCode = isLast ?
-                    (result == CmdResult.Clear ? ChatCode.ClearChat : ChatCode.Default) :
+                    result == CmdResult.Clear ? ChatCode.ClearChat : ChatCode.Default :
                     ChatCode.Incomplete;
 
-                QuickServer.Send(nickname, new ChatMessage(
+                Server.Send(nickname, new ChatMessage(
                     logType: logType,
-                    sender: (String64)"<Server>",
+                    sender: new String64("<Server>"),
                     message: answerParts[i],
                     msgCode: msgCode
                 ));
@@ -56,17 +59,18 @@ internal class Chat
 
     private void BroadcastMsg(string nickname, string message)
     {
-        ChatMessage packet = new ChatMessage(
+        var packet = new ChatMessage(
                 logType: LogType.Log,
-                sender: (String64)$"[{nickname}]",
-                message: (String512)message
+                sender: new String64($"[{nickname}]"),
+                message: new String512(message)
             );
 
-        if (packet.TryGetMsgText(out string msgText))
+        string fullMsg = packet.Message; // no fragmentation here
+        if (packet.TryAppendPrefix(fullMsg, out string msgText))
         {
-            Echo.Log(msgText); // log to console
+            Echo.Log(msgText);
         }
 
-        QuickServer.Broadcast(packet);
+        Server.Broadcast(packet);
     }
 }

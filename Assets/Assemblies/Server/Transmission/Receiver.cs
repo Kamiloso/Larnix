@@ -1,8 +1,10 @@
 #nullable enable
 using Larnix.Core;
 using Larnix.Core.Vectors;
-using Larnix.Model.Blocks;
+using Larnix.Model.Interfaces;
 using Larnix.Model.Utils;
+using Larnix.Server.Chunks.Scripts;
+using Larnix.Server.Commands;
 using Larnix.Server.Entities;
 using Larnix.Server.Packets;
 using Larnix.Socket.Backend;
@@ -24,8 +26,8 @@ internal class Receiver
     private IWorldAPI WorldAPI => GlobRef.Get<IWorldAPI>();
     private QuickServer QuickServer => GlobRef.Get<QuickServer>();
     private IConnectedPlayers ConnectedPlayers => GlobRef.Get<IConnectedPlayers>();
-    private BlockSender BlockSender => GlobRef.Get<BlockSender>();
-    private Chat Chat => GlobRef.Get<Chat>();
+    private IChunkSender ChunkSender => GlobRef.Get<IChunkSender>();
+    private IChat Chat => GlobRef.Get<IChat>();
 
     public Receiver()
     {
@@ -150,7 +152,7 @@ internal class Receiver
                 WorldAPI.PlaceBlockWithEffects(POS, front, new(msg.Item));
             }
 
-            BlockSender.AddRetBlockChange(new BlockChangeItem(owner, msg.Operation, POS, front, success));
+            ChunkSender.AddRetBlockChange(new BlockChangeItem(owner, msg.Operation, POS, front, success));
         }
 
         else if (code == 1) // break using item
@@ -166,7 +168,7 @@ internal class Receiver
                 WorldAPI.BreakBlockWithEffects(POS, front, new(msg.Tool));
             }
 
-            BlockSender.AddRetBlockChange(new BlockChangeItem(owner, msg.Operation, POS, front, success));
+            ChunkSender.AddRetBlockChange(new BlockChangeItem(owner, msg.Operation, POS, front, success));
         }
     }
 

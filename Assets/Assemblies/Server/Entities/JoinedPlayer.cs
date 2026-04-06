@@ -23,7 +23,7 @@ internal class JoinedPlayer
     public HashSet<ulong> NearbyEntityUids { get; set; } = new();
     public HashSet<Vec2Int> LoadedChunks { get; set; } = new();
 
-    private PlayerController? PlayerController => EntityControllers.GetPlayerController(Uid);
+    private PlayerController? PlayerController => EntityControllers.GetController(Uid) as PlayerController;
 
     public PlayerState State
     {

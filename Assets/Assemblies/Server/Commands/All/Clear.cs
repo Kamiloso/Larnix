@@ -1,4 +1,4 @@
-using Larnix.Model;
+using Larnix.Model.Interfaces;
 
 namespace Larnix.Server.Commands.All;
 

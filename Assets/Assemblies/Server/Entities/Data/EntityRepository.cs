@@ -7,8 +7,9 @@ using Larnix.Core;
 using Larnix.Model.Entities;
 using Larnix.Model.Database;
 using System.Linq;
+using Larnix.Server.Data;
 
-namespace Larnix.Server.Data;
+namespace Larnix.Server.Entities.Data;
 
 internal interface IEntityRepository
 {

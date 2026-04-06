@@ -1,10 +1,11 @@
 #nullable enable
 using System.Collections.Generic;
 using Larnix.Core.Vectors;
+using Larnix.Model.Blocks;
 using Larnix.Model.Blocks.Structs;
 using Larnix.Model.Utils;
 
-namespace Larnix.Model.Blocks;
+namespace Larnix.Model.Interfaces;
 
 public interface IWorldAPI : ICmdExecutor
 {
@@ -12,7 +13,7 @@ public interface IWorldAPI : ICmdExecutor
     {
         Replace = 0,
         Effects = 1, // drops particles
-        Weak = 2, // rearm event flag
+        Weak = 2, // rearms event flag
     }
 
     public long ServerTick { get; }

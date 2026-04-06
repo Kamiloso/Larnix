@@ -9,13 +9,17 @@ using System.Collections.ObjectModel;
 using Larnix.Core.Collections;
 using Larnix.Server.Data;
 using Larnix.Core;
+using Larnix.Server.Chunks.Scripts;
+using Larnix.Model.Interfaces;
 
-namespace Larnix.Server.Terrain;
+namespace Larnix.Server.Chunks;
 
-internal interface IAtomicChunks : IScript
+internal interface IAtomicChunks
 {
     Vec2Int? WishChunk { get; }
     bool DiscoversChunks { get; set; }
+
+    void Reset();
     List<Vec2Int>? GetAtomicSet(Vec2Int chunk);
     bool IsAtomicLoaded(Vec2Int chunk, HashSet<Vec2Int>? wentThrough = null);
 }
@@ -23,12 +27,11 @@ internal interface IAtomicChunks : IScript
 internal class AtomicChunks : IAtomicChunks
 {
     private const int CHUNK_SIZE = BlockUtils.CHUNK_SIZE;
-    private static readonly Vec2Int WARN_CHUNK = new Vec2Int(int.MinValue, int.MinValue);
+    private static Vec2Int WARN_CHUNK => new(int.MinValue, int.MinValue);
 
-    // Config values
-    private int MAX_ATOMIC_AREA => ServerConfig.Electricity_MaxContraptionChunks;
-    private int WARNING_PERIOD => 750; // 15 seconds at 50 TPS
-    private bool WARNING_SUPPRESS => ServerConfig.Electricity_SizeWarningSuppress;
+    private int MaxAtomicArea => ServerConfig.Electricity_MaxContraptionChunks;
+    private int WarningPeriod => 750; // 15 seconds at 50 TPS
+    private bool WarningSuppress => ServerConfig.Electricity_SizeWarningSuppress;
 
     const int MIN = 0;
     const int MAX = CHUNK_SIZE - 1;
@@ -61,13 +64,12 @@ internal class AtomicChunks : IAtomicChunks
     public Vec2Int? WishChunk { get; private set; } = null;
     public bool DiscoversChunks { get; set; } = false;
 
-    private Chunks Chunks => GlobRef.Get<Chunks>();
+    private IChunkHolders ChunkHolders => GlobRef.Get<IChunkHolders>();
     private IWorldAPI WorldAPI => GlobRef.Get<IWorldAPI>();
     private ServerConfig ServerConfig => GlobRef.Get<ServerConfig>();
 
-    void IScript.PostEarlyFrameUpdate()
+    public void Reset()
     {
-        // Reset info before next frame
         _atomicLoadedCache.Clear();
         _atomicSets.Clear();
         _warningEmitted = false;
@@ -112,13 +114,13 @@ internal class AtomicChunks : IAtomicChunks
             wentThrough = new HashSet<Vec2Int>();
         }
 
-        if (!Chunks.IsChunkLoaded(chunk))
+        if (!ChunkHolders.IsChunkInZone(chunk, ChunkLoadState.Loaded))
         {
             WishChunk = chunk;
-            return false; // unloaded -> false
+            return false; // not loaded -> false
         }
 
-        bool limitReached = wentThrough!.Count >= MAX_ATOMIC_AREA;
+        bool limitReached = wentThrough!.Count >= MaxAtomicArea;
         if (limitReached)
         {
             wentThrough.Add(WARN_CHUNK);
@@ -142,7 +144,7 @@ internal class AtomicChunks : IAtomicChunks
 
                 if (tooLarge)
                 {
-                    if (!WARNING_SUPPRESS && WorldAPI.ServerTick % WARNING_PERIOD == 0 && !_warningEmitted)
+                    if (!WarningSuppress && WorldAPI.ServerTick % WarningPeriod == 0 && !_warningEmitted)
                     {
                         _warningEmitted = true;
                         Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, Vec2Int.Zero);
@@ -194,7 +196,7 @@ internal class AtomicChunks : IAtomicChunks
                 bool? first = IsActivePropagator(chunk, _chunkDirPos[direction](i).First);
                 bool? other = IsActivePropagator(neighbor, _chunkDirPos[direction](i).Other);
 
-                if (first is not false && other is not false)
+                if (first != false && other != false)
                     return true;
             }
         }
@@ -203,7 +205,7 @@ internal class AtomicChunks : IAtomicChunks
 
     private bool? IsActivePropagator(Vec2Int chunk, Vec2Int pos)
     {
-        if (Chunks.IsChunkLoaded(chunk))
+        if (ChunkHolders.IsChunkInZone(chunk, ChunkLoadState.Loaded))
         {
             Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, pos);
 

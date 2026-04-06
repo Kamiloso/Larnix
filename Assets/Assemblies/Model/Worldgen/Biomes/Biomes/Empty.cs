@@ -8,7 +8,7 @@ public sealed class Empty : Biome
 {
     public Empty(Seed seed) : base(seed) {}
 
-    public override BlockHeader2 TranslateProtoBlock(ProtoBlock protoBlock)
+    internal override BlockHeader2 TranslateProtoBlock(ProtoBlock protoBlock)
     {
         return BlockHeader2.Empty;
     }

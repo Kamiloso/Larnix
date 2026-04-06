@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Larnix.Model.Utils;
 using Larnix.Model.Json;
 using Larnix.Model.Blocks.Structs;
+using Larnix.Model.Interfaces;
 
 namespace Larnix.Model.Blocks.All;
 

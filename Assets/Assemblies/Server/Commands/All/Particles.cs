@@ -4,12 +4,11 @@ using Larnix.Model.Enums;
 using Larnix.Model.Utils;
 using Larnix.Core.Vectors;
 using Larnix.Server.Packets;
-using Larnix.Socket.Backend;
 using Larnix.Socket.Packets;
 using Larnix.Core;
-using Larnix.Model;
 using Larnix.Server.Entities;
 using System.Linq;
+using Larnix.Model.Interfaces;
 
 namespace Larnix.Server.Commands.All;
 
@@ -19,7 +18,7 @@ internal class Particles : BaseCmd
     public override string Pattern => $"{Name} <type> <x> <y> [uid]";
     public override string ShortDescription => "Spawns particles, optionally connected to entity.";
 
-    private QuickServer QuickServer => GlobRef.Get<QuickServer>();
+    private IServer Server => GlobRef.Get<IServer>();
     private IConnectedPlayers ConnectedPlayers => GlobRef.Get<IConnectedPlayers>();
 
     private ParticleID _particleID;
@@ -74,7 +73,7 @@ internal class Particles : BaseCmd
 
         foreach (string nickname in nearbyPlayers)
         {
-            QuickServer.Send(nickname, packet);
+            Server.Send(nickname, packet);
         }
 
         if (_uid == 0)

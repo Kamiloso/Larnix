@@ -4,9 +4,8 @@ using Larnix.Core.Vectors;
 using Larnix.Model.Entities;
 using Larnix.Model.Entities.Structs;
 using Larnix.Model.Utils;
-using Larnix.Server.Data;
 using Larnix.Server.Entities.Controllers;
-using Larnix.Server.Terrain;
+using Larnix.Server.Entities.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,12 +22,12 @@ internal interface IEntityControllers
     event Action<BaseController>? OnKill;
 
     void LoadEntityControllersByChunk(Vec2Int chunk);
+    void ActivateEntityControllersByChunk(Vec2Int chunk);
+    void UnloadEntityControllersByChunk(Vec2Int chunk);
+
     bool CreateEntityController(EntityData entityTemplate);
     void LoadPlayerController(ulong uid, string nickname);
-
     BaseController? GetController(ulong uid);
-    EntityController? GetEntityController(ulong uid) => GetController(uid) as EntityController;
-    PlayerController? GetPlayerController(ulong uid) => GetController(uid) as PlayerController;
 
     void UnloadController(ulong uid);
     void KillController(ulong uid);
@@ -37,6 +36,7 @@ internal interface IEntityControllers
 internal class EntityControllers : IEntityControllers
 {
     private readonly Dictionary<ulong, BaseController> _controllers = new();
+    private readonly HashSet<Vec2Int> _activeChunks = new();
 
     public IEnumerable<ulong> Uids => _controllers.Keys.ToList();
     public IEnumerable<ulong> EntityUids => _controllers.Where(kvp => kvp.Value is EntityController).Select(kvp => kvp.Key).ToList();
@@ -46,14 +46,41 @@ internal class EntityControllers : IEntityControllers
     public event Action<BaseController>? OnKill;
 
     private IEntityRepository EntityRepository => GlobRef.Get<IEntityRepository>();
-    private Chunks Chunks => GlobRef.Get<Chunks>();
 
     public void LoadEntityControllersByChunk(Vec2Int chunk)
     {
+        _activeChunks.Add(chunk);
+
         Dictionary<ulong, EntityData> entitiesToLoad = EntityRepository.EntitiesToLoadByChunk(chunk);
         foreach (var (uid, entityData) in entitiesToLoad)
         {
             AttachEntityController(uid, entityData);
+        }
+    }
+
+    public void ActivateEntityControllersByChunk(Vec2Int chunk)
+    {
+        foreach (ulong uid in EntityUids)
+        {
+            var controller = (GetController(uid) as EntityController)!;
+            if (BlockUtils.InChunk(chunk, controller.Position))
+            {
+                controller.Activate();
+            }
+        }
+    }
+
+    public void UnloadEntityControllersByChunk(Vec2Int chunk)
+    {
+        _activeChunks.Remove(chunk);
+
+        foreach (ulong uid in EntityUids)
+        {
+            var controller = (GetController(uid) as EntityController)!;
+            if (BlockUtils.InChunk(chunk, controller.Position))
+            {
+                UnloadController(uid);
+            }
         }
     }
 
@@ -62,13 +89,11 @@ internal class EntityControllers : IEntityControllers
         ulong uid = EntityRepository.NextUid();
         EntityData entityData = entityTemplate.DeepCopy();
 
-        if (Chunks.IsLoadedPosition(entityData.Position))
-        {
-            AttachEntityController(uid, entityData);
-            return true;
-        }
+        if (!_activeChunks.Contains(BlockUtils.CoordsToChunk(entityData.Position)))
+            return false;
 
-        return false;
+        AttachEntityController(uid, entityData);
+        return true;
     }
 
     private void AttachEntityController(ulong uid, EntityData entityData)
@@ -85,7 +110,7 @@ internal class EntityControllers : IEntityControllers
         if (entityData is not null && entityData.Header.ID != EntityID.Player)
             throw new InvalidOperationException($"Entity with UID {uid} is not a player.");
 
-        entityData ??= new EntityData( // default data for a new player
+        entityData ??= new EntityData( // default data for a new player (temporary)
             id: EntityID.Player,
             position: new Vec2(0, 0) + Common.UpEpsilon,
             rotation: 0.0f,

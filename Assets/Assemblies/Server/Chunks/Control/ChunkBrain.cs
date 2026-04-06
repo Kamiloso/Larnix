@@ -11,14 +11,13 @@ using Larnix.Model.Blocks.Structs;
 using Larnix.Server.Packets.Structs;
 using Larnix.Model.Blocks.All;
 using Larnix.Core;
-using Larnix.Server.Data;
-using Larnix.Server.Transmission;
 using static Larnix.Model.Blocks.Block;
-using static Larnix.Model.Blocks.IWorldAPI;
+using static Larnix.Model.Interfaces.IWorldAPI;
+using Larnix.Model.Interfaces;
 
-namespace Larnix.Server.Terrain;
+namespace Larnix.Server.Chunks.Control;
 
-internal class Chunk : IDisposable
+internal class ChunkBrain : IDisposable
 {
     private readonly Vec2Int _chunkpos;
     private readonly BlockEvents _blockEvents;
@@ -26,22 +25,22 @@ internal class Chunk : IDisposable
     private readonly Block[,] _blocksBack = ChunkIterator.Array2D<Block>();
     private readonly Dictionary<Vec2Int, StaticCollider[]> _colliderCollections = new();
 
-    private IWorldAPI WorldAPI => GlobRef.Get<IWorldAPI>();
-    private IChunkRepository ChunkRepository => GlobRef.Get<IChunkRepository>();
-    private PhysicsManager PhysicsManager => GlobRef.Get<PhysicsManager>();
-    private BlockSender BlockSender => GlobRef.Get<BlockSender>();
+    public event Action<BlockUpdateRecord>? OnBlockUpdate;
 
     public IEnumerable FrameInvoker => _blockEvents.GetFrameInvoker();
-    public readonly ChunkData ActiveChunkReference;
+    public ChunkData ActiveChunkReference { get; }
+
+    private IPhysicsManager PhysicsManager => GlobRef.Get<IPhysicsManager>();
+    private IWorldAPI WorldAPI => GlobRef.Get<IWorldAPI>();
 
     private bool _disposed = false;
 
-    public Chunk(Vec2Int chunkpos)
+    public ChunkBrain(Vec2Int chunkpos, ChunkData chunkActiveReference)
     {
         _chunkpos = chunkpos;
         _blockEvents = new BlockEvents(_chunkpos, WorldAPI, _blocksFront, _blocksBack);
 
-        ActiveChunkReference = ChunkRepository.TakeActiveChunk(_chunkpos);
+        ActiveChunkReference = chunkActiveReference;
 
         ChunkIterator.Iterate((x, y) =>
         {
@@ -50,7 +49,7 @@ internal class Chunk : IDisposable
             RefreshCollider(pos);
         });
 
-        PhysicsManager.SetChunkActive(_chunkpos, true);
+        PhysicsManager.EnableChunk(_chunkpos);
     }
 
     private void BlockCreate(Vec2Int pos)
@@ -72,32 +71,29 @@ internal class Chunk : IDisposable
 
     public Block GetBlock(Vec2Int pos, bool isFront)
     {
-        return isFront ? _blocksFront[pos.x, pos.y] : _blocksBack[pos.x, pos.y];
+        return isFront
+            ? _blocksFront[pos.x, pos.y]
+            : _blocksBack[pos.x, pos.y];
     }
 
     public Block UpdateBlock(Vec2Int pos, bool isFront, BlockData1 newBlock, BreakMode breakMode)
     {
-        // --- Chunk changes ---
-
         BlockHeader2 oldHeader = ActiveChunkReference[pos.x, pos.y].Header;
         Block result = RefreshBlock(pos, newBlock, isFront);
         RefreshCollider(pos);
         BlockHeader2 newHeader = ActiveChunkReference[pos.x, pos.y].Header;
 
-        // --- Rearm EventFlag ---
-
         if (breakMode == BreakMode.Weak)
+        {
             result.EventFlag = true;
-
-        // --- Push send update ---
+        }
 
         if (oldHeader != newHeader)
         {
             Vec2Int POS = BlockUtils.GlobalBlockCoords(_chunkpos, pos);
-            BlockSender.AddBlockUpdate(new BlockUpdateRecord(
-                POS, newHeader,
-                breakMode
-                ));
+            OnBlockUpdate?.Invoke(
+                new BlockUpdateRecord(POS, newHeader, breakMode)
+                );
         }
 
         return result;
@@ -105,18 +101,14 @@ internal class Chunk : IDisposable
 
     public Block UpdateBlockMutated(Vec2Int pos, bool isFront)
     {
-        // --- Chunk changes ---
-
         Block result = GetBlock(pos, isFront);
         RefreshCollider(pos);
         BlockHeader2 newHeader = ActiveChunkReference[pos.x, pos.y].Header;
 
-        // --- Push send update ---
-
         Vec2Int POS = BlockUtils.GlobalBlockCoords(_chunkpos, pos);
-        BlockSender.AddBlockUpdate(new BlockUpdateRecord(
-            POS, newHeader, BreakMode.Replace
-            ));
+        OnBlockUpdate?.Invoke(
+            new BlockUpdateRecord(POS, newHeader, BreakMode.Replace)
+            );
 
         return result;
     }
@@ -181,27 +173,24 @@ internal class Chunk : IDisposable
 
     public void Dispose()
     {
-        if (!_disposed)
+        if (_disposed) return;
+        _disposed = true;
+
+        foreach (var block in _blocksFront)
         {
-            _disposed = true;
-
-            foreach (var block in _blocksFront)
-            {
-                block?.Detach();
-            }
-
-            foreach (var block in _blocksBack)
-            {
-                block?.Detach();
-            }
-
-            foreach (var collider in _colliderCollections.Values.SelectMany(x => x))
-            {
-                PhysicsManager.RemoveColliderByReference(collider);
-            }
-
-            PhysicsManager.SetChunkActive(_chunkpos, false);
-            ChunkRepository.ReturnActiveChunk(_chunkpos);
+            block?.Detach();
         }
+
+        foreach (var block in _blocksBack)
+        {
+            block?.Detach();
+        }
+
+        foreach (var collider in _colliderCollections.Values.SelectMany(x => x))
+        {
+            PhysicsManager.RemoveColliderByReference(collider);
+        }
+
+        PhysicsManager.DisableChunk(_chunkpos);
     }
 }

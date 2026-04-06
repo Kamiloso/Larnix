@@ -1,16 +1,15 @@
-using System.Collections.Generic;
+#nullable enable
 using Larnix.Model.Utils;
 using Larnix.Model.Blocks.Structs;
 using Larnix.Core.Vectors;
 using Larnix.Model.Worldgen.Biomes;
-using Larnix.Model;
 using System.Collections.ObjectModel;
 using Larnix.Model.Worldgen.Transformers;
 using Larnix.Model.Worldgen.Transformers.Pipeline;
 
 namespace Larnix.Model.Worldgen;
 
-public enum ProtoBlock : ushort
+internal enum ProtoBlock : ushort
 {
     Sky = 0,
     Stone = 1,
@@ -20,17 +19,27 @@ public enum ProtoBlock : ushort
     Lake = 5
 }
 
-public class Generator
+public interface IGenerator
 {
-    public Seed Seed  { get; }
-    public ReadOnlyDictionary<BiomeID, Biome> Biomes { get; }
+    long Seed { get; }
+    ChunkData GenerateChunk(Vec2Int chunk);
+    Col32 SkyColorAt(Vec2 position);
+    BiomeID BiomeAt(Vec2 position);
+}
+
+public class Generator : IGenerator
+{
+    public long Seed => SeedObj.Value;
+    internal Seed SeedObj  { get; }
+    internal ReadOnlyDictionary<BiomeID, Biome> Biomes { get; }
+
     private readonly UsefulBag _usefulBag;
     private readonly GenPipeline _genPipeline;
 
     public Generator(long seed)
     {
-        Seed = new Seed(seed);
-        Biomes = EnumFactory<BiomeID, Biome>.CreateDictionary((typeof(Seed), Seed));
+        SeedObj = new Seed(seed);
+        Biomes = EnumFactory<BiomeID, Biome>.CreateDictionary((typeof(Seed), SeedObj));
 
         _usefulBag = new UsefulBag(this);
         UsefulBag ub = _usefulBag;
@@ -54,8 +63,6 @@ public class Generator
         ChunkIterator.Iterate((x, y) => chunkData[x, y] = blocks[x, y]);
         return chunkData;
     }
-
-#region Biome & Sky Color
 
     public Col32 SkyColorAt(Vec2 position)
     {
@@ -84,18 +91,15 @@ public class Generator
         return temperature switch
         {
             < -0.22 => BiomeID.Arctic,
-            < -0.21 => Utils.ValueFromGradient(BiomeID.Arctic, BiomeID.Plains, (temperature + 0.22) / 0.01, Seed.BlockHash(POS, Phrase)),
+            < -0.21 => Utils.ValueFromGradient(BiomeID.Arctic, BiomeID.Plains, (temperature + 0.22) / 0.01, SeedObj.BlockHash(POS, Phrase)),
             < 0.21  => BiomeID.Plains,
-            < 0.22  => Utils.ValueFromGradient(BiomeID.Plains, BiomeID.Desert, (temperature - 0.21) / 0.01, Seed.BlockHash(POS, Phrase)),
+            < 0.22  => Utils.ValueFromGradient(BiomeID.Plains, BiomeID.Desert, (temperature - 0.21) / 0.01, SeedObj.BlockHash(POS, Phrase)),
             _       => BiomeID.Desert
         };
     }
 
-    public Biome BiomeObjectAt(Vec2 position)
+    internal Biome BiomeObjectAt(Vec2 position)
     {
         return Biomes[BiomeAt(position)];
     }
-
-#endregion
-
 }

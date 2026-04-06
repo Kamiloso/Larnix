@@ -6,7 +6,7 @@ using Larnix.Model.Entities;
 using Larnix.Model.Entities.Structs;
 using Larnix.Server.Entities;
 using Larnix.Core;
-using Larnix.Model;
+using Larnix.Model.Interfaces;
 
 namespace Larnix.Server.Commands.All;
 

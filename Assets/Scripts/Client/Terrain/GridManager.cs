@@ -13,6 +13,7 @@ using Larnix.Client.Particles;
 using Larnix.Model.Enums;
 using IHasCollider = Larnix.Model.Blocks.All.IHasCollider;
 using Larnix.Core.Utils;
+using Larnix.Model.Interfaces;
 
 namespace Larnix.Client.Terrain
 {
@@ -24,7 +25,7 @@ namespace Larnix.Client.Terrain
         private readonly List<BlockLock> _lockedBlocks = new();
 
         private ParticleManager ParticleManager => GlobRef.Get<ParticleManager>();
-        private PhysicsManager PhysicsManager => GlobRef.Get<PhysicsManager>();
+        private IPhysicsManager PhysicsManager => GlobRef.Get<IPhysicsManager>();
 
         private class BlockLock
         {
@@ -157,7 +158,14 @@ namespace Larnix.Client.Terrain
                 UpdateBlockCollider(POS, chunkView?[x, y]);
             });
 
-            PhysicsManager.SetChunkActive(chunk, chunkView != null);
+            if (chunkView is not null)
+            {
+                PhysicsManager.EnableChunk(chunk);
+            }
+            else
+            {
+                PhysicsManager.DisableChunk(chunk);
+            }
         }
 
         private void UpdateBlockCollider(Vec2Int POS, BlockHeader2? blockNullable)

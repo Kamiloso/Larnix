@@ -1,8 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using Larnix.Model.Blocks.Structs;
-using Larnix.Model;
 using Larnix.Model.Json;
+using Larnix.Model.Interfaces;
 
 namespace Larnix.Model.Blocks.All;
 

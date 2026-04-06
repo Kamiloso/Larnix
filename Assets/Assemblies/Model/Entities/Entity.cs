@@ -1,8 +1,8 @@
-using Larnix.Model.Physics;
 using System;
 using Larnix.Core.Vectors;
 using Larnix.Model.Entities.Structs;
 using Larnix.Model.Entities.All;
+using Larnix.Model.Interfaces;
 
 namespace Larnix.Model.Entities;
 
@@ -10,12 +10,12 @@ public class Entity
 {
     public ulong Uid { get; private set; }
     public EntityData EntityData { get; private set; } // connected to entity-saving system
-    public PhysicsManager Physics { get; private set; }
+    public IPhysicsManager Physics { get; private set; }
 
     private bool _constructed = false;
 
     internal Entity() {}
-    public record EntityInits(ulong Uid, EntityData EntityData, PhysicsManager Physics);
+    public record EntityInits(ulong Uid, EntityData EntityData, IPhysicsManager Physics);
     internal void Construct(EntityInits entityInits)
     {
         if (!_constructed)

@@ -5,7 +5,7 @@ using System.Reflection;
 using System.Runtime.Serialization;
 using Larnix.Core;
 using Larnix.Model.Blocks.All;
-using BlockInits = Larnix.Model.Blocks.Block.BlockInits;
+using static Larnix.Model.Blocks.Block;
 
 namespace Larnix.Model.Blocks;
 
@@ -19,17 +19,14 @@ public static class BlockFactory
 
     private class BlockInfo
     {
-        public string Name;
-        public Type? Type;
-        public Func<BlockInits, Block> Constructor;
-        public List<Action<Block>> Inits = new();
-
-        public Block SlaveInstance { get; init; }
+        public readonly Func<BlockInits, Block> Constructor;
+        public readonly List<Action<Block>> Inits = new();
+        public readonly Block SlaveInstance;
 
         public BlockInfo(BlockID ID)
         {
-            Name = ID.ToString();
-            Type = Type.GetType(Namespace + "." + Name + ", " + AsmName);
+            string Name = ID.ToString();
+            Type? Type = Type.GetType(Namespace + "." + Name + ", " + AsmName);
 
             var ctorInfo = Type?.GetConstructor(Array.Empty<Type>());
             var ctor = Type != null ? RuntimeCompilation.CompileConstructor(ctorInfo) : null;

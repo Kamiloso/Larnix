@@ -5,8 +5,8 @@ using Larnix.Server.Data;
 using Larnix.Server.Entities;
 using Larnix.Socket.Backend;
 using Larnix.Model.Json;
-using Larnix.Model;
 using Larnix.Model.Utils;
+using Larnix.Model.Interfaces;
 
 namespace Larnix.Server.Commands.All;
 

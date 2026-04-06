@@ -1,8 +1,8 @@
 using Larnix.Core.Binary;
 using Larnix.Core.Vectors;
-using BreakMode = Larnix.Model.Blocks.IWorldAPI.BreakMode;
 using Larnix.Model.Blocks.Structs;
 using Larnix.Core.Utils;
+using BreakMode = Larnix.Model.Interfaces.IWorldAPI.BreakMode;
 
 namespace Larnix.Server.Packets.Structs;
 

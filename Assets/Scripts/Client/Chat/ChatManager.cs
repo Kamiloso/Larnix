@@ -1,13 +1,11 @@
 using UnityEngine;
 using TMPro;
-using System.Text;
 using Larnix.Core;
 using Larnix.Server.Packets;
 using Larnix.Model.Utils;
 using System.Collections.Generic;
 using Larnix.Scoping;
-using ChatCode = Larnix.Server.Packets.ChatMessage.ChatCode;
-using Larnix.Core.Binary;
+using static Larnix.Server.Packets.ChatMessage;
 
 namespace Larnix.Client.Chat
 {
@@ -21,7 +19,7 @@ namespace Larnix.Client.Chat
 
         public bool IsChatOpen => Scopes.Matches(ScopeID.Chat);
 
-        private readonly Queue<String512> _incompleteMsgs = new();
+        private readonly List<String512> _incompleteMsgs = new();
 
         private void Awake()
         {
@@ -73,20 +71,9 @@ namespace Larnix.Client.Chat
             InputPanel.SetActive(IsChatOpen);
         }
 
-        private string UncacheText()
-        {
-            List<byte> byteList = new();
-            while (_incompleteMsgs.TryDequeue(out String512 part))
-            {
-                byte[] bytes = Primitives.GetBytes(part);
-                byteList.AddRange(bytes);
-            }
-            return Encoding.Unicode.GetString(byteList.ToArray()).TrimEnd('\0');
-        }
-
         public void AddMessage(ChatMessage message)
         {
-            _incompleteMsgs.Enqueue(message.Message);
+            _incompleteMsgs.Add(message.Message);
 
             if (message.MsgCode != ChatCode.Incomplete)
             {
@@ -95,7 +82,8 @@ namespace Larnix.Client.Chat
                     ChatOrigin.Clear();
                 }
 
-                string fullMsg = UncacheText();
+                string fullMsg = IStringStruct.Join(_incompleteMsgs.ToArray());
+                _incompleteMsgs.Clear();
 
                 if (message.TryAppendPrefix(fullMsg, out string msgText))
                 {
@@ -106,10 +94,10 @@ namespace Larnix.Client.Chat
 
         public void ApplyMessage(string message)
         {
-            if (string.IsNullOrWhiteSpace(message))
+            if (string.IsNullOrEmpty(message))
                 return; // Don't trim! This condition is ok.
 
-            var msg = new ChatMessage((String512)message, ChatCode.PlayerToServer);
+            var msg = new ChatMessage(new String512(message), ChatCode.PlayerToServer);
             Client.Send(msg);
         }
     }

@@ -4,6 +4,7 @@ using System.Collections;
 using Larnix.Model.Utils;
 using Larnix.Core.Vectors;
 using Larnix.Core.Collections;
+using Larnix.Model.Interfaces;
 
 namespace Larnix.Model.Blocks;
 

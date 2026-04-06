@@ -14,6 +14,7 @@ using Larnix.Core;
 using Larnix.Model.Physics.Structs;
 using Larnix.Client.Relativity;
 using Larnix.Model.Entities.Structs;
+using Larnix.Model.Interfaces;
 
 namespace Larnix.Client
 {
@@ -25,7 +26,7 @@ namespace Larnix.Client
 
         private Client Client => GlobRef.Get<Client>();
         private GridManager GridManager => GlobRef.Get<GridManager>();
-        private PhysicsManager PhysicsManager => GlobRef.Get<PhysicsManager>();
+        private IPhysicsManager PhysicsManager => GlobRef.Get<IPhysicsManager>();
         private Debugger Debugger => GlobRef.Get<Debugger>();
 
         Vec2 IRelativityOrigin.OriginOffset => Position.ExtractOrigin();
@@ -70,7 +71,7 @@ namespace Larnix.Client
 
             OnRespawn += () =>
             {
-                _dynamicCollider = Player.MakeDynamicCollider(PhysicsManager, Position);
+                _dynamicCollider = Player.MakeDynamicCollider(Position);
                 UpdateTransform();
                 EntityProjection.ResetSmoother();
             };
@@ -91,7 +92,7 @@ namespace Larnix.Client
                 Vec2Int chunk = BlockUtils.CoordsToChunk(Position);
                 if (GridManager.ChunkLoaded(chunk))
                 {
-                    odata = _dynamicCollider.PhysicsUpdate(new InputData
+                    odata = PhysicsManager.TickPhysics(_dynamicCollider, new InputData
                     {
                         Left = MyInput.PressedLeft(),
                         Right = MyInput.PressedRight(),
@@ -113,7 +114,7 @@ namespace Larnix.Client
                     (MyInput.PressedDown() ? 1 : 0) * new Vec2(0, -1)
                 );
 
-                odata = _dynamicCollider.NoPhysicsUpdate(Position + will);
+                odata = PhysicsManager.TickNoPhysics(_dynamicCollider, Position + will);
             }
             Position = odata?.Position ?? Position;
 
@@ -122,7 +123,7 @@ namespace Larnix.Client
 
         public void Teleport(Vec2 position)
         {
-            OutputData odata = _dynamicCollider.NoPhysicsUpdate(position);
+            OutputData odata = PhysicsManager.TickNoPhysics(_dynamicCollider, position);
             Position = odata.Position;
         }
 

@@ -6,7 +6,7 @@ namespace Larnix.Model.Worldgen;
 
 internal class UsefulBag
 {
-    public Seed Seed => Generator.Seed;
+    public Seed Seed => Generator.SeedObj;
     public Generator Generator { get; }
     public Dictionary<string, ValueProvider> Providers { get; }
 

@@ -24,6 +24,7 @@ public static class Common
     public static int TargetTPS => 50;
     public static float FixedTime => 1f / TargetTPS;
     public static double ViewDistance => 50.0;
+    public static double PhysicsSectorSize => 3.0f;
 
     public static Vec2 UpEpsilon => new(0.00, 0.01);
 
@@ -109,12 +110,5 @@ public static class Common
         }
 
         return false;
-    }
-
-    public static void DoForSeconds(double seconds, Action<Stopwatch, double> action)
-    {
-        var timer = Stopwatch.StartNew();
-        action(timer, seconds);
-        timer.Stop();
     }
 }
