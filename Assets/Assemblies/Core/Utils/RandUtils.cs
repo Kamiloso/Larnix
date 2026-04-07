@@ -3,7 +3,6 @@ using System;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
-using Larnix.Core.Binary;
 
 namespace Larnix.Core.Utils;
 
@@ -72,6 +71,6 @@ public static class RandUtils
     {
         using var sha = SHA256.Create();
         byte[] hash = sha.ComputeHash(Encoding.UTF8.GetBytes(input));
-        return Primitives.FromBytes<long>(hash, 0);
+        return Binary<long>.Deserialize(hash);
     }
 }

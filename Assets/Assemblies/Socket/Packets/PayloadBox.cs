@@ -1,9 +1,7 @@
-using System.Collections;
-using System.Collections.Generic;
 using System;
-using Larnix.Core.Binary;
 using Larnix.Socket.Security.Keys;
 using Larnix.Core.Utils;
+using Larnix.Core;
 
 namespace Larnix.Socket.Packets;
 
@@ -56,14 +54,14 @@ internal class PayloadBox
         {
             PayloadBox box = new PayloadBox();
 
-            ushort checksum = Primitives.FromBytes<ushort>(networkBytes, 0);
-            ushort version = Primitives.FromBytes<ushort>(networkBytes, 2);
+            ushort checksum = Binary<ushort>.Deserialize(networkBytes, 0);
+            ushort version = Binary<ushort>.Deserialize(networkBytes, 2);
 
             if (version == PROTOCOL_VERSION && checksum == CheckSum(networkBytes, 2))
             {
-                box.SeqNum = Primitives.FromBytes<int>(networkBytes, 4);
-                box.AckNum = Primitives.FromBytes<int>(networkBytes, 8);
-                box.Flags = Primitives.FromBytes<byte>(networkBytes, 12);
+                box.SeqNum = Binary<int>.Deserialize(networkBytes, 4);
+                box.AckNum = Binary<int>.Deserialize(networkBytes, 8);
+                box.Flags = Binary<byte>.Deserialize(networkBytes, 12);
 
                 if (key != null) // include contents
                 {
@@ -72,7 +70,7 @@ internal class PayloadBox
                     if (box.Bytes.Length >= Payload.BASE_HEADER_SIZE)
                     {
                         // extract encrypted signature
-                        int secureSeq = Primitives.FromBytes<int>(box.Bytes, 3);
+                        int secureSeq = Binary<int>.Deserialize(box.Bytes, 3);
 
                         // check integrity
                         if (secureSeq == box.SeqNum)
@@ -102,15 +100,15 @@ internal class PayloadBox
     public byte[] Serialize(IEncryptionKey key)
     {
         byte[] serialized = ArrayUtils.MegaConcat(
-            Primitives.GetBytes((ushort) 0),
-            Primitives.GetBytes(PROTOCOL_VERSION),
-            Primitives.GetBytes(SeqNum),
-            Primitives.GetBytes(AckNum),
-            Primitives.GetBytes(Flags),
+            Binary<ushort>.Serialize(0),
+            Binary<ushort>.Serialize(PROTOCOL_VERSION),
+            Binary<int>.Serialize(SeqNum),
+            Binary<int>.Serialize(AckNum),
+            Binary<byte>.Serialize(Flags),
             key.Encrypt(Bytes)
             );
 
-        byte[] checksum = Primitives.GetBytes(CheckSum(serialized, 2));
+        byte[] checksum = Binary<ushort>.Serialize(CheckSum(serialized, 2));
         Buffer.BlockCopy(checksum, 0, serialized, 0, checksum.Length);
 
         return serialized;
@@ -118,14 +116,11 @@ internal class PayloadBox
 
     private static ushort CheckSum(byte[] bytes, int from = 0)
     {
-        unchecked
+        ushort sum = 0;
+        for (int i = from; i < bytes.Length; i++)
         {
-            ushort sum = 0;
-            for (int i = from; i < bytes.Length; i++)
-            {
-                sum += bytes[i];
-            }
-            return sum;
+            sum += bytes[i];
         }
+        return sum;
     }
 }

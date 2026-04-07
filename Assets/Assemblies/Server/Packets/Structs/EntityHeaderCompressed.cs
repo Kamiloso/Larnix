@@ -1,54 +1,52 @@
 using Larnix.Model.Utils;
-using Larnix.Core.Binary;
 using Larnix.Core.Vectors;
 using Larnix.Model.Entities.Structs;
 using Larnix.Model.Entities;
 using Larnix.Core.Utils;
+using Larnix.Core;
+using System.Runtime.InteropServices;
 
 namespace Larnix.Server.Packets.Structs;
 
-public readonly struct EntityHeaderCompressed : IBinary<EntityHeaderCompressed>
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public readonly record struct EntityHeaderCompressed : IFixedStruct<EntityHeaderCompressed>
 {
-    public const int SIZE = sizeof(EntityID) + 2 * CompressionUtils.COMPRESSED_DOUBLE_SIZE + sizeof(byte);
+    private readonly long _d1; // 0 - 7
+    private readonly int _d2; // 8 - 11
+    private readonly byte _d3; // 12 - 12
 
-    public EntityHeader Header { get; }
+    public EntityHeader Header
+    {
+        get
+        {
+            byte[] bytes = ArrayUtils.MegaConcat(
+                Binary<long>.Serialize(_d1),
+                Binary<int>.Serialize(_d2),
+                Binary<byte>.Serialize(_d3)
+            );
+
+            EntityID id = Binary<EntityID>.Deserialize(bytes, 0);
+            double x = CompressionUtils.DecompressWorldDouble(bytes, 2);
+            double y = CompressionUtils.DecompressWorldDouble(bytes, 7);
+            float rotation = CompressionUtils.DecompressRotation(bytes[12]);
+
+            return new EntityHeader(id, new Vec2(x, y), rotation);
+        }
+    }
 
     public EntityHeaderCompressed(EntityHeader header)
     {
-        Header = header;
-    }
+        header = header.Sanitize();
 
-    public bool Deserialize(byte[] bytes, int offset, out EntityHeaderCompressed result)
-    {
-        if (offset < 0 || offset + SIZE > bytes.Length)
-        {
-            result = default;
-            return false;
-        }
-
-        EntityID id = Primitives.FromBytes<EntityID>(bytes, offset);
-        offset += sizeof(EntityID);
-
-        double x = CompressionUtils.DecompressWorldDouble(bytes, offset);
-        offset += CompressionUtils.COMPRESSED_DOUBLE_SIZE;
-
-        double y = CompressionUtils.DecompressWorldDouble(bytes, offset);
-        offset += CompressionUtils.COMPRESSED_DOUBLE_SIZE;
-
-        float rotation = CompressionUtils.DecompressRotation(bytes[offset]);
-        offset += sizeof(byte);
-
-        result = new EntityHeaderCompressed(new EntityHeader(id, new Vec2(x, y), rotation));
-        return true;
-    }
-
-    public byte[] Serialize()
-    {
-        return ArrayUtils.MegaConcat(
-            Primitives.GetBytes(Header.ID),
-            CompressionUtils.CompressWorldDouble(Header.Position.x),
-            CompressionUtils.CompressWorldDouble(Header.Position.y),
-            new byte[] { CompressionUtils.CompressRotation(Header.Rotation) }
+        byte[] bytes = ArrayUtils.MegaConcat(
+            Binary<EntityID>.Serialize(header.ID),
+            CompressionUtils.CompressWorldDouble(header.Position.x),
+            CompressionUtils.CompressWorldDouble(header.Position.y),
+            new byte[] { CompressionUtils.CompressRotation(header.Rotation) }
         );
+
+        _d1 = Binary<long>.Deserialize(bytes, 0);
+        _d2 = Binary<int>.Deserialize(bytes, 8);
+        _d3 = Binary<byte>.Deserialize(bytes, 12);
     }
 }

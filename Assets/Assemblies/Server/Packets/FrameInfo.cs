@@ -1,31 +1,30 @@
 using Larnix.Core.Vectors;
-using Larnix.Core.Binary;
 using Larnix.Socket.Packets;
 using Larnix.Model.Enums;
 using Larnix.Model.Worldgen.Biomes;
 using Larnix.Core.Utils;
-using System;
+using Larnix.Core;
 
 namespace Larnix.Server.Packets;
 
 public sealed class FrameInfo : Payload
 {
-    private const int SIZE = sizeof(long) + Col32.SIZE + sizeof(BiomeID) + sizeof(WeatherID) + sizeof(float);
+    private static int SIZE => sizeof(long) + Binary<Col32>.Size + sizeof(BiomeID) + sizeof(WeatherID) + sizeof(float);
 
-    public long ServerTick => Primitives.FromBytes<long>(Bytes, 0);
-    public Col32 SkyColor => Serializer.Deserialize<Col32>(Bytes.AsSpan(8, Col32.SIZE));
-    public BiomeID BiomeID => Primitives.FromBytes<BiomeID>(Bytes, 12);
-    public WeatherID Weather => Primitives.FromBytes<WeatherID>(Bytes, 14);
-    public float Tps => Primitives.FromBytes<float>(Bytes, 16);
+    public long ServerTick => Binary<long>.Deserialize(Bytes, 0);
+    public Col32 SkyColor => Binary<Col32>.Deserialize(Bytes, 8);
+    public BiomeID BiomeID => Binary<BiomeID>.Deserialize(Bytes, 12);
+    public WeatherID Weather => Binary<WeatherID>.Deserialize(Bytes, 14);
+    public float Tps => Binary<float>.Deserialize(Bytes, 16);
 
     public FrameInfo(long serverTick, Col32 skyColor, BiomeID biomeID, WeatherID weather, float tps, byte code = 0)
     {
         InitializePayload(ArrayUtils.MegaConcat(
-            Primitives.GetBytes(serverTick),
-            Serializer.Serialize(ref skyColor).ToArray(),
-            Primitives.GetBytes(biomeID),
-            Primitives.GetBytes(weather),
-            Primitives.GetBytes(tps)
+            Binary<long>.Serialize(serverTick),
+            Binary<Col32>.Serialize(skyColor),
+            Binary<BiomeID>.Serialize(biomeID),
+            Binary<WeatherID>.Serialize(weather),
+            Binary<float>.Serialize(tps)
         ), code);
     }
 

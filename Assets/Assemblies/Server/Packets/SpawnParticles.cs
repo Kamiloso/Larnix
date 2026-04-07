@@ -1,28 +1,26 @@
-using System;
-using System.Collections;
 using Larnix.Core.Vectors;
-using Larnix.Core.Binary;
 using Larnix.Socket.Packets;
 using Larnix.Model.Enums;
 using Larnix.Core.Utils;
+using Larnix.Core;
 
 namespace Larnix.Server.Packets;
 
 public sealed class SpawnParticles : Payload
 {
-    private const int SIZE = Vec2.SIZE + sizeof(ParticleID) + sizeof(ulong);
+	private static int SIZE => Binary<Vec2>.Size + sizeof(ParticleID) + sizeof(ulong);
 
-    public Vec2 Position => Structures.FromBytes<Vec2>(Bytes, 0); // Vec2.SIZE
-    public ParticleID ParticleID => Primitives.FromBytes<ParticleID>(Bytes, Vec2.SIZE); // ParticleID size
-    public ulong EntityUid => Primitives.FromBytes<ulong>(Bytes, Vec2.SIZE + sizeof(ParticleID)); // ulong size
+    public Vec2 Position => Binary<Vec2>.Deserialize(Bytes, 0); // Binary<Vec2>.Size
+    public ParticleID ParticleID => Binary<ParticleID>.Deserialize(Bytes, 16); // ParticleID size
+    public ulong EntityUid => Binary<ulong>.Deserialize(Bytes, 18); // ulong size
     public bool IsEntityParticle => EntityUid != 0;
 
     public SpawnParticles(Vec2 position, ParticleID particleID, ulong entityUid = 0, byte code = 0)
     {
         InitializePayload(ArrayUtils.MegaConcat(
-            Structures.GetBytes(position),
-            Primitives.GetBytes(particleID),
-            Primitives.GetBytes(entityUid)
+            Binary<Vec2>.Serialize(position),
+            Binary<ParticleID>.Serialize(particleID),
+            Binary<ulong>.Serialize(entityUid)
             ), code);
     }
 

@@ -1,21 +1,22 @@
 #nullable enable
+using Larnix.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Larnix.Core.Binary;
+using System.Runtime.InteropServices;
 
 namespace Larnix.Model;
 
-public readonly struct Version : IBinary<Version>
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public readonly record struct Version : IFixedStruct<Version>
 {
-    public static readonly Version Current = new("0.0.45.9");
+    public static readonly Version Current = new("0.0.46");
 
-    public const int SIZE = sizeof(uint);
-    public uint ID { get; }
+    public readonly uint Value;
 
-    public Version(uint id)
+    public Version(uint value)
     {
-        ID = id;
+        Value = value;
     }
 
     /// <summary>
@@ -42,7 +43,7 @@ public readonly struct Version : IBinary<Version>
                 constructID <<= 8;
                 constructID |= b;
             }
-            ID = constructID;
+            Value = constructID;
         }
         catch
         {
@@ -52,39 +53,17 @@ public readonly struct Version : IBinary<Version>
 
     public bool CompatibleWith(Version version)
     {
-        return ID >> 8 == version.ID >> 8;
+        return Value >> 8 == version.Value >> 8;
     }
-
-    public byte[] Serialize()
-    {
-        return Primitives.GetBytes(ID);
-    }
-
-    public bool Deserialize(byte[] bytes, int offset, out Version result)
-    {
-        if (offset < 0 || offset + SIZE > bytes.Length)
-        {
-            result = default;
-            return false;
-        }
-
-        result = new Version(Primitives.FromBytes<uint>(bytes, offset));
-        return true;
-    }
-
-    public static bool operator <(Version a, Version b) => a.ID < b.ID;
-    public static bool operator >(Version a, Version b) => a.ID > b.ID;
-    public static bool operator <=(Version a, Version b) => a.ID <= b.ID;
-    public static bool operator >=(Version a, Version b) => a.ID >= b.ID;
 
     public override string ToString()
     {
         List<byte> segments = new()
         {
-            (byte)((0xFF_00_00_00 & ID) >> 24),
-            (byte)((0x00_FF_00_00 & ID) >> 16),
-            (byte)((0x00_00_FF_00 & ID) >> 8),
-            (byte)((0x00_00_00_FF & ID) >> 0),
+            (byte)((0xFF_00_00_00 & Value) >> 24),
+            (byte)((0x00_FF_00_00 & Value) >> 16),
+            (byte)((0x00_00_FF_00 & Value) >> 8),
+            (byte)((0x00_00_00_FF & Value) >> 0),
         };
 
         while (segments.Count > 2 && segments[segments.Count - 1] == 0)
@@ -92,4 +71,9 @@ public readonly struct Version : IBinary<Version>
 
         return string.Join(".", segments);
     }
+
+    public static bool operator <(Version a, Version b) => a.Value < b.Value;
+    public static bool operator >(Version a, Version b) => a.Value > b.Value;
+    public static bool operator <=(Version a, Version b) => a.Value <= b.Value;
+    public static bool operator >=(Version a, Version b) => a.Value >= b.Value;
 }

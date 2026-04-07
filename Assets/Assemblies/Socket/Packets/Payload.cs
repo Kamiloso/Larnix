@@ -4,13 +4,13 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
 using Larnix.Socket.Packets.Control;
-using Larnix.Core.Binary;
 using System.Runtime.Serialization;
 using Larnix.Core.Utils;
 
 namespace Larnix.Socket.Packets;
 
 public enum CmdID : ushort { None = 0 } // Use Payload.CmdID<T>() to get enum value
+
 public abstract class Payload
 {
     public const int BASE_HEADER_SIZE = 2 + 1 + 4;
@@ -31,14 +31,14 @@ public abstract class Payload
     {
         if (rawBytes.Length >= BASE_HEADER_SIZE)
         {
-            CmdID id = Primitives.FromBytes<CmdID>(rawBytes, 0);
+            CmdID id = Binary<CmdID>.Deserialize(rawBytes, 0);
             if (id == CmdID<T>())
             {
                 // no constructor is needed
                 T payload = (T)FormatterServices.GetUninitializedObject(typeof(T));
 
                 payload.ID = payload.GetMyCmdID();
-                payload.Code = Primitives.FromBytes<byte>(rawBytes, 2);
+                payload.Code = Binary<byte>.Deserialize(rawBytes, 2);
                 payload.Bytes = rawBytes[7..];
 
                 if (payload.IsValid())
@@ -56,9 +56,9 @@ public abstract class Payload
     internal byte[] Serialize(int seqSecure)
     {
         return ArrayUtils.MegaConcat(
-            Primitives.GetBytes(ID),
-            Primitives.GetBytes(Code),
-            Primitives.GetBytes(seqSecure), // SeqNum signature
+            Binary<CmdID>.Serialize(ID),
+            Binary<byte>.Serialize(Code),
+            Binary<int>.Serialize(seqSecure), // SeqNum signature
             Bytes
             );
     }

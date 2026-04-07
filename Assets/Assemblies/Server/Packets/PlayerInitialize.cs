@@ -1,31 +1,30 @@
-using System;
-using System.Collections;
+#nullable enable
 using Larnix.Core.Vectors;
-using Larnix.Core.Binary;
 using Larnix.Socket.Packets;
 using Larnix.Core.Utils;
+using Larnix.Core;
 
 namespace Larnix.Server.Packets;
 
 public sealed class PlayerInitialize : Payload
 {
-    private const int SIZE = Vec2.SIZE + sizeof(ulong) + sizeof(uint);
+    private static int SIZE => Binary<Vec2>.Size + sizeof(ulong) + sizeof(uint);
 
-    public Vec2 Position => Structures.FromBytes<Vec2>(Bytes, 0); // Vec2.SIZE
-    public ulong MyUid => Primitives.FromBytes<ulong>(Bytes, Vec2.SIZE); // sizeof(ulong)
-    public uint LastFixedFrame => Primitives.FromBytes<uint>(Bytes, Vec2.SIZE + sizeof(ulong)); // sizeof(uint)
+    public Vec2 Position => Binary<Vec2>.Deserialize(Bytes, 0);
+    public ulong MyUid => Binary<ulong>.Deserialize(Bytes, 16);
+    public uint LastFixedFrame => Binary<uint>.Deserialize(Bytes, 24);
 
     public PlayerInitialize(Vec2 position, ulong myUid, uint lastFixedFrame, byte code = 0)
     {
         InitializePayload(ArrayUtils.MegaConcat(
-            Structures.GetBytes(position),
-            Primitives.GetBytes(myUid),
-            Primitives.GetBytes(lastFixedFrame)
+            Binary<Vec2>.Serialize(position),
+            Binary<ulong>.Serialize(myUid),
+            Binary<uint>.Serialize(lastFixedFrame)
             ), code);
     }
 
     protected override bool IsValid()
     {
-        return Bytes.Length == SIZE;
+		return Bytes.Length == SIZE;
     }
 }

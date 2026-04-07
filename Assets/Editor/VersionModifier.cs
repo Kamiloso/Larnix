@@ -35,7 +35,7 @@ public class VersionModifier : EditorWindow
             string path = AssetDatabase.GUIDToAssetPath(guid);
             string content = File.ReadAllText(path);
 
-            if (!content.Contains("public readonly struct Version"))
+            if (!content.Contains("public readonly record struct Version"))
                 continue;
 
             targetFilePath = path;

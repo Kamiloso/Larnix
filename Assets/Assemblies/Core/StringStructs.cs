@@ -1,13 +1,13 @@
 #nullable enable
-using Larnix.Core.Binary;
 using System.Collections.Generic;
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
+using Larnix.Core;
 
 namespace Larnix.Model.Utils;
 
-public interface IStringStruct : IEndianSafe
+public interface IStringStruct
 {
     public int BinarySize { get; }
 
@@ -31,14 +31,18 @@ public interface IStringStruct : IEndianSafe
         return parts.ToArray();
     }
 
-    public static string Join<T>(T[] parts) where T : IStringStruct
+    public static string Join<T>(T[] parts) where T : IStringStruct, new()
     {
+        int binSize = new T().BinarySize;
+        int strSize = binSize / sizeof(char);
+
         StringBuilder sb = new();
         foreach (T part in parts)
         {
-            sb.Append(part.ToString());
+            string str = part.ToString();
+            sb.Append(str + new string('\0', strSize - str.Length));
         }
-        return sb.ToString();
+        return sb.ToString().TrimEnd('\0');
     }
 
     protected static byte[] StringToFixedBinary(string str, int stringSize)

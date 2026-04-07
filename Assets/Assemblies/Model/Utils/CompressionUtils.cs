@@ -1,6 +1,6 @@
 #nullable enable
 using System;
-using Larnix.Core.Binary;
+using Larnix.Core;
 using Larnix.Core.Utils;
 
 namespace Larnix.Model.Utils;
@@ -21,7 +21,7 @@ public static class CompressionUtils
             byte fracByte = (byte)Math.Clamp(fraction * 256.0, 0.0, LESS_THAN_256); // [0, 256) -> floor by cast
 
             return ArrayUtils.MegaConcat(
-                Primitives.GetBytes(integer),
+                Binary<int>.Serialize(integer),
                 new[] { fracByte }
             );
         }
@@ -33,7 +33,7 @@ public static class CompressionUtils
         if (offset + COMPRESSED_DOUBLE_SIZE > compressed.Length)
             throw new ArgumentException("Compressed data is too short.");
 
-        int integer = Primitives.FromBytes<int>(compressed, offset);
+        int integer = Binary<int>.Deserialize(compressed, offset);
         byte fracByte = compressed[offset + 4];
         double fraction = fracByte / 256.0;
 

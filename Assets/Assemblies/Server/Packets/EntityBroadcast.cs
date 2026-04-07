@@ -1,24 +1,24 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Larnix.Core.Binary;
 using Larnix.Socket.Packets;
 using Larnix.Model.Entities.Structs;
 using Larnix.Server.Packets.Structs;
 using Larnix.Core.Utils;
+using Larnix.Core;
 
 namespace Larnix.Server.Packets;
 
 public sealed class EntityBroadcast : Payload
 {
-    private const int HEADER_SIZE = sizeof(uint) + sizeof(ushort) + sizeof(ushort);
-    private const int ENTRY_A_SIZE = sizeof(ulong) + EntityHeaderCompressed.SIZE; // entity transforms entry
-    private const int ENTRY_B_SIZE = sizeof(ulong) + sizeof(uint); // player fixed indexes entry
-    private const int MAX_PAYLOAD_SIZE = 1400 - HEADER_SIZE; // max payload bytes excluding header
+    private static int HEADER_SIZE => sizeof(uint) + sizeof(ushort) + sizeof(ushort);
+    private static int ENTRY_A_SIZE => sizeof(ulong) + Binary<EntityHeaderCompressed>.Size; // entity transforms entry
+    private static int ENTRY_B_SIZE => sizeof(ulong) + sizeof(uint); // player fixed indexes entry
+    private static int MAX_PAYLOAD_SIZE => 1400 - HEADER_SIZE; // max payload bytes excluding header
 
-    public uint PacketFixedIndex => Primitives.FromBytes<uint>(Bytes, 0); // 4B
-    public ushort EntityLength => Primitives.FromBytes<ushort>(Bytes, 4); // 2B
-    public ushort PlayerFixedLength => Primitives.FromBytes<ushort>(Bytes, 6); // 2B
+    public uint PacketFixedIndex => Binary<uint>.Deserialize(Bytes, 0); // 4B
+    public ushort EntityLength => Binary<ushort>.Deserialize(Bytes, 4); // 2B
+    public ushort PlayerFixedLength => Binary<ushort>.Deserialize(Bytes, 6); // 2B
     public Dictionary<ulong, EntityHeader> EntityTransforms => GetDictionaryA(Bytes, EntityLength, HEADER_SIZE); // n * ENTRY_A_SIZE
     public Dictionary<ulong, uint> PlayerFixedIndexes => GetDictionaryB(Bytes, PlayerFixedLength, HEADER_SIZE + EntityLength * ENTRY_A_SIZE); // n * ENTRY_B_SIZE
 
@@ -29,9 +29,9 @@ public sealed class EntityBroadcast : Payload
         if (playerFixedIndexes == null) playerFixedIndexes = new();
 
         InitializePayload(ArrayUtils.MegaConcat(
-            Primitives.GetBytes(packetFixedIndex),
-            Primitives.GetBytes((ushort)entityTransforms.Count),
-            Primitives.GetBytes((ushort)playerFixedIndexes.Count),
+            Binary<uint>.Serialize(packetFixedIndex),
+            Binary<ushort>.Serialize((ushort)entityTransforms.Count),
+            Binary<ushort>.Serialize((ushort)playerFixedIndexes.Count),
             SerializeDictionaryA(entityTransforms),
             SerializeDictionaryB(playerFixedIndexes)
             ), code);
@@ -39,8 +39,8 @@ public sealed class EntityBroadcast : Payload
 
     public static List<EntityBroadcast> CreateList(uint packetFixedIndex, Dictionary<ulong, EntityHeader> entityTransforms, Dictionary<ulong, uint> playerFixedIndexes, byte code = 0)
     {
-        if (entityTransforms == null) entityTransforms = new();
-        if (playerFixedIndexes == null) playerFixedIndexes = new();
+        entityTransforms ??= new();
+        playerFixedIndexes ??= new();
 
         List<EntityBroadcast> result = new();
         List<ulong> sendUIDs = entityTransforms.Keys.ToList();
@@ -82,8 +82,8 @@ public sealed class EntityBroadcast : Payload
         var result = new Dictionary<ulong, EntityHeader>();
         for (int i = 0; i < count; i++)
         {
-            ulong key = Primitives.FromBytes<ulong>(bytes, i * ENTRY_A_SIZE + 0 + offset);
-            EntityHeader value = Structures.FromBytes<EntityHeaderCompressed>(bytes, i * ENTRY_A_SIZE + sizeof(ulong) + offset).Header;
+            ulong key = Binary<ulong>.Deserialize(bytes, i * ENTRY_A_SIZE + 0 + offset);
+            EntityHeader value = Binary<EntityHeaderCompressed>.Deserialize(bytes, i * ENTRY_A_SIZE + sizeof(ulong) + offset).Header;
             result[key] = value;
         }
         return result;
@@ -94,8 +94,8 @@ public sealed class EntityBroadcast : Payload
         var result = new Dictionary<ulong, uint>();
         for (int i = 0; i < count; i++)
         {
-            ulong key = Primitives.FromBytes<ulong>(bytes, i * ENTRY_B_SIZE + 0 + offset);
-            uint value = Primitives.FromBytes<uint>(bytes, i * ENTRY_B_SIZE + sizeof(ulong) + offset);
+            ulong key = Binary<ulong>.Deserialize(bytes, i * ENTRY_B_SIZE + 0 + offset);
+            uint value = Binary<uint>.Deserialize(bytes, i * ENTRY_B_SIZE + sizeof(ulong) + offset);
             result[key] = value;
         }
         return result;
@@ -107,11 +107,11 @@ public sealed class EntityBroadcast : Payload
         int i = 0;
         foreach (var kvp in dictA)
         {
-            byte[] keyBytes = Primitives.GetBytes(kvp.Key);
-            byte[] valueBytes = Structures.GetBytes(new EntityHeaderCompressed(kvp.Value));
+            byte[] keyBytes = Binary<ulong>.Serialize(kvp.Key);
+            byte[] valueBytes = Binary<EntityHeaderCompressed>.Serialize(new EntityHeaderCompressed(kvp.Value));
 
             Buffer.BlockCopy(keyBytes, 0, buffer, 0 + i * ENTRY_A_SIZE, sizeof(ulong));
-            Buffer.BlockCopy(valueBytes, 0, buffer, sizeof(ulong) + i * ENTRY_A_SIZE, EntityHeaderCompressed.SIZE);
+            Buffer.BlockCopy(valueBytes, 0, buffer, sizeof(ulong) + i * ENTRY_A_SIZE, Binary<EntityHeaderCompressed>.Size);
 
             i++;
         }
@@ -124,8 +124,8 @@ public sealed class EntityBroadcast : Payload
         int i = 0;
         foreach (var kvp in dictB)
         {
-            byte[] keyBytes = Primitives.GetBytes(kvp.Key);
-            byte[] valueBytes = Primitives.GetBytes(kvp.Value);
+            byte[] keyBytes = Binary<ulong>.Serialize(kvp.Key);
+            byte[] valueBytes = Binary<uint>.Serialize(kvp.Value);
 
             Buffer.BlockCopy(keyBytes, 0, buffer, 0 + i * ENTRY_B_SIZE, sizeof(ulong));
             Buffer.BlockCopy(valueBytes, 0, buffer, sizeof(ulong) + i * ENTRY_B_SIZE, sizeof(uint));

@@ -1,22 +1,21 @@
-using System;
-using System.Collections;
+#nullable enable
 using Larnix.Core.Vectors;
-using Larnix.Core.Binary;
 using Larnix.Socket.Packets;
 using Larnix.Core.Utils;
+using Larnix.Core;
 
 namespace Larnix.Server.Packets;
 
 public sealed class Teleport : Payload
 {
-    private const int SIZE = Vec2.SIZE;
+    private static int SIZE => Binary<Vec2>.Size;
 
-    public Vec2 TargetPosition => Structures.FromBytes<Vec2>(Bytes, 0); // Vec2.SIZE
+    public Vec2 TargetPosition => Binary<Vec2>.Deserialize(Bytes, 0); // Binary<Vec2>.Size
 
     public Teleport(Vec2 targetPosition, byte code = 0)
     {
         InitializePayload(ArrayUtils.MegaConcat(
-            Structures.GetBytes(targetPosition)
+            Binary<Vec2>.Serialize(targetPosition)
             ), code);
     }
 

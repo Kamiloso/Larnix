@@ -1,19 +1,19 @@
-using System.Collections;
+#nullable enable
 using Larnix.Model.Utils;
-using Larnix.Core.Binary;
 using Larnix.Core.Utils;
+using Larnix.Core;
 
 namespace Larnix.Socket.Packets.Control;
 
 public sealed class DebugMessage : Payload
 {
     private const int SIZE = 512;
-    public String512 Message => Primitives.FromBytes<String512>(Bytes, 0);
+    public String512 Message => Binary<String512>.Deserialize(Bytes, 0);
 
     public DebugMessage(in String512 message, byte code = 0)
     {
         InitializePayload(ArrayUtils.MegaConcat(
-            Primitives.GetBytes(message)
+            Binary<String512>.Serialize(message)
             ), code);
     }
 

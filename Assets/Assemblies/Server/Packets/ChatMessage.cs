@@ -1,10 +1,10 @@
 using System;
 using Larnix.Model.Utils;
-using Larnix.Core.Binary;
 using Larnix.Socket.Packets;
 using System.Linq;
-using LogType = Larnix.Core.Echo.LogType;
 using Larnix.Core.Utils;
+using Larnix.Core;
+using LogType = Larnix.Core.Echo.LogType;
 
 namespace Larnix.Server.Packets;
 
@@ -12,9 +12,9 @@ public sealed class ChatMessage : Payload
 {
     private const int SIZE = sizeof(LogType) + String64.BYTE_SIZE + String512.BYTE_SIZE;
 
-    public LogType LogType => Primitives.FromBytes<LogType>(Bytes, 0);
-    public String64 Sender => Primitives.FromBytes<String64>(Bytes, 1);
-    public String512 Message => Primitives.FromBytes<String512>(Bytes, 65);
+    public LogType LogType => Binary<LogType>.Deserialize(Bytes, 0);
+    public String64 Sender => Binary<String64>.Deserialize(Bytes, 1);
+    public String512 Message => Binary<String512>.Deserialize(Bytes, 65);
     public ChatCode MsgCode => (ChatCode)Code;
 
     public enum ChatCode : byte
@@ -28,9 +28,9 @@ public sealed class ChatMessage : Payload
     public ChatMessage(LogType logType, String64 sender, in String512 message, ChatCode msgCode = ChatCode.Default)
     {
         InitializePayload(ArrayUtils.MegaConcat(
-            Primitives.GetBytes(logType),
-            Primitives.GetBytes(sender),
-            Primitives.GetBytes(message)
+            Binary<LogType>.Serialize(logType),
+            Binary<String64>.Serialize(sender),
+            Binary<String512>.Serialize(message)
             ), (byte)msgCode);
     }
 

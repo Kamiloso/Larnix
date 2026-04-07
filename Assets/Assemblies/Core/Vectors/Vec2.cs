@@ -1,19 +1,15 @@
 #nullable enable
 using System;
-using Larnix.Core.Binary;
 using System.Globalization;
-using Larnix.Core.Utils;
 using System.Runtime.InteropServices;
 
 namespace Larnix.Core.Vectors;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct Vec2 : IBinary<Vec2>, IFixedStruct<Vec2>
+public readonly record struct Vec2 : IFixedStruct<Vec2>
 {
-    public const int SIZE = sizeof(double) * 2;
-
-    public double x { get; }
-    public double y { get; }
+    public readonly double x;
+    public readonly double y;
 
     public Vec2(double x, double y)
     {
@@ -21,42 +17,10 @@ public readonly record struct Vec2 : IBinary<Vec2>, IFixedStruct<Vec2>
         this.y = double.IsFinite(y) ? y : 0.0;
     }
 
-    public Vec2 Sanitize()
-    {
-        return new Vec2(
-            double.IsFinite(x) ? x : 0.0,
-            double.IsFinite(y) ? y : 0.0
-        );
-    }
+    public Vec2 Sanitize() => new(x, y);
 
-    public byte[] Serialize()
-    {
-        return ArrayUtils.MegaConcat(
-            Primitives.GetBytes(x),
-            Primitives.GetBytes(y)
-        );
-    }
-
-    public bool Deserialize(byte[] bytes, int offset, out Vec2 result)
-    {
-        if (offset < 0 || offset + SIZE > bytes.Length)
-        {
-            result = default;
-            return false;
-        }
-
-        double _x = Primitives.FromBytes<double>(bytes, offset);
-        double _y = Primitives.FromBytes<double>(bytes, offset + 8);
-
-        result = new Vec2(
-            double.IsFinite(_x) ? _x : 0.0,
-            double.IsFinite(_y) ? _y : 0.0
-        );
-        return true;
-    }
-
-    public static Vec2 Zero => new Vec2(0, 0);
-    public static Vec2 One => new Vec2(1, 1);
+    public static Vec2 Zero => new(0, 0);
+    public static Vec2 One => new(1, 1);
     public double Magnitude => Math.Sqrt(x * x + y * y);
     public double SqrMagnitude => x * x + y * y;
     public Vec2 Normalized

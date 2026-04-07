@@ -7,7 +7,7 @@ using System.Collections.ObjectModel;
 
 namespace Larnix.Model;
 
-public static class EnumFactory<TEnum, TClass> where TEnum : struct, IConvertible where TClass : class
+public static class EnumFactory<TEnum, TClass> where TEnum : struct, Enum where TClass : class
 {
     public static ReadOnlyDictionary<TEnum, TClass> CreateDictionary(params (Type Type, object Object)[] args)
     {

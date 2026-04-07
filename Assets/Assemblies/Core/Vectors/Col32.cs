@@ -1,14 +1,26 @@
 #nullable enable
 using System;
 using System.Runtime.InteropServices;
-using Larnix.Core.Binary;
 
 namespace Larnix.Core.Vectors;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct Col32(byte r, byte g, byte b, byte a) : IFixedStruct<Col32>
+public readonly record struct Col32 : IFixedStruct<Col32>
 {
-    public const int SIZE = sizeof(byte) * 4;
+    public readonly byte r;
+    public readonly byte g;
+    public readonly byte b;
+    public readonly byte a;
+
+    public Col32(byte r, byte g, byte b, byte a = 255)
+    {
+        this.r = r;
+        this.g = g;
+        this.b = b;
+        this.a = a;
+    }
+
+    public override string ToString() => $"(R: {r}, G: {g}, B: {b}, A: {a})";
 
     public static Col32 Red => new(255, 0, 0, 255);
     public static Col32 Green => new(0, 255, 0, 255);
@@ -32,6 +44,4 @@ public readonly record struct Col32(byte r, byte g, byte b, byte a) : IFixedStru
             lerp(start.a, end.a)
         );
     }
-
-    public override string ToString() => $"(R: {r}, G: {g}, B: {b}, A: {a})";
 }

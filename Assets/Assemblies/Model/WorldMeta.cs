@@ -60,7 +60,7 @@ public readonly struct WorldMeta
 
     public static void SaveToFolder(string path, WorldMeta mdata)
     {
-        string data = $"{mdata.Version.ID}{NEW_SEP}{mdata.Nickname}";
+        string data = $"{mdata.Version.Value}{NEW_SEP}{mdata.Nickname}";
         FileManager.Write(path, "metadata.txt", data);
     }
 

@@ -2,17 +2,16 @@
 using System;
 using SimpleJSON;
 using System.Collections.Generic;
-using Larnix.Core.Binary;
 using Larnix.Model.Json;
 using Larnix.Model.Utils;
-using Larnix.Model;
+using Larnix.Core;
 
 namespace Larnix.Model.Blocks.Structs;
 
 public class ChunkData
 {
     private const int CHUNK_SIZE = BlockUtils.CHUNK_SIZE;
-    private const int S = BlockHeader2.SIZE; // S = 5
+    private static readonly int S = Binary<BlockHeader2>.Size; // S = 5
 
     public BlockData2[,] Blocks { get; }
 
@@ -54,7 +53,7 @@ public class ChunkData
                 if (eyes + S >= 1280)
                     goto fallback_to_raw;
 
-                byte[] blockBytes = Structures.GetBytes(bh2);
+                byte[] blockBytes = Binary<BlockHeader2>.Serialize(bh2);
                 Buffer.BlockCopy(blockBytes, 0, bytes, eyes, S);
                 eyes += S;
                 bytes[0]++; // can overflow to 256 = 0
@@ -90,7 +89,7 @@ public class ChunkData
     fallback_to_raw:
         ChunkIterator.Iterate((x, y) =>
         {
-            byte[] arr = Structures.GetBytes(Blocks[x, y].Header);
+            byte[] arr = Binary<BlockHeader2>.Serialize(Blocks[x, y].Header);
             Buffer.BlockCopy(arr, 0, bytes, (CHUNK_SIZE * x + y) * S, S);
 
         }, IterationOrder.XY);
@@ -123,7 +122,7 @@ public class ChunkData
             byte ind1 = 0;
             while (entries > 0)
             {
-                BlockHeader2 bh2 = Structures.FromBytes<BlockHeader2>(bytes, offset + eyes);
+                BlockHeader2 bh2 = Binary<BlockHeader2>.Deserialize(bytes, offset + eyes);
                 blockMap.Add(ind1++, bh2);
 
                 eyes += S;
@@ -171,7 +170,7 @@ public class ChunkData
             ChunkIterator.Iterate((x, y) =>
             {
                 int realOffset = offset + (CHUNK_SIZE * x + y) * S;
-                BlockHeader2 header = Structures.FromBytes<BlockHeader2>(bytes, realOffset);
+                BlockHeader2 header = Binary<BlockHeader2>.Deserialize(bytes, realOffset);
                 Blocks[x, y] = new BlockData2(header);
 
             }, IterationOrder.XY);

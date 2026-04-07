@@ -1,11 +1,8 @@
 using Larnix.Core.Files;
-using Larnix.Model.Utils;
-using System.Collections;
-using System.Collections.Generic;
 using Org.BouncyCastle.Crypto.Generators;
 using System.Text;
-using Larnix.Core.Binary;
 using Larnix.Core.Utils;
+using Larnix.Core;
 
 namespace Larnix.Socket.Security;
 
@@ -40,7 +37,7 @@ public static class Authcode
 
     internal static string ProduceRawAuthCodeRSA(byte[] key, long secret)
     {
-        byte[] hash = DeriveKeyScrypt(key, Primitives.GetBytes((long)-7264111368357934733)); // random, hard-coded salt
+        byte[] hash = DeriveKeyScrypt(key, Binary<long>.Serialize(-7264111368357934733)); // random, hard-coded salt
 
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < VERIFY_PART_LENGTH; i++)

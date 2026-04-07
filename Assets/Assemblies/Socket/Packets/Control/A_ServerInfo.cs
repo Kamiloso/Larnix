@@ -1,10 +1,9 @@
-using System.Collections;
-using System.Collections.Generic;
+#nullable enable
 using System;
-using Larnix.Core.Binary;
 using Larnix.Model.Utils;
-using Version = Larnix.Model.Version;
 using Larnix.Core.Utils;
+using Larnix.Core;
+using Version = Larnix.Model.Version;
 
 namespace Larnix.Socket.Packets.Control;
 
@@ -13,32 +12,30 @@ internal sealed class A_ServerInfo : Payload
     private const int SIZE = 264 + 2 + 2 + 4 + 8 + 8 + 8 + 256 + 32;
 
     public byte[] PublicKey => new Span<byte>(Bytes, 0, 264).ToArray();
-    public ushort CurrentPlayers => Primitives.FromBytes<ushort>(Bytes, 264);
-    public ushort MaxPlayers => Primitives.FromBytes<ushort>(Bytes, 266);
-    public Version GameVersion => new Version(Primitives.FromBytes<uint>(Bytes, 268));
-    public long ChallengeID => Primitives.FromBytes<long>(Bytes, 272);
-    public long Timestamp => Primitives.FromBytes<long>(Bytes, 280);
-    public long RunID => Primitives.FromBytes<long>(Bytes, 288);
-    public String256 Motd => Primitives.FromBytes<String256>(Bytes, 296);
-    public String32 HostUser => Primitives.FromBytes<String32>(Bytes, 552);
-    public bool MayRegister => (Code & (1 << 0)) != 0;
+    public ushort CurrentPlayers => Binary<ushort>.Deserialize(Bytes, 264);
+    public ushort MaxPlayers => Binary<ushort>.Deserialize(Bytes, 266);
+    public Version GameVersion => Binary<Version>.Deserialize(Bytes, 268);
+    public long ChallengeID => Binary<long>.Deserialize(Bytes, 272);
+    public long Timestamp => Binary<long>.Deserialize(Bytes, 280);
+    public long RunID => Binary<long>.Deserialize(Bytes, 288);
+    public String256 Motd => Binary<String256>.Deserialize(Bytes, 296);
+    public String32 HostUser => Binary<String32>.Deserialize(Bytes, 552);
+    public bool MayRegister => Code != 0;
 
     public A_ServerInfo(byte[] publicKey, ushort currentPlayers, ushort maxPlayers, Version gameVersion, long challengeID, long timestamp, long runID,
         in String256 motd, in String32 hostUser, bool mayRegister)
     {
         InitializePayload(ArrayUtils.MegaConcat(
             publicKey?.Length == 264 ? publicKey : throw new ArgumentException("PublicKey must have length of exactly 264 bytes."),
-            Primitives.GetBytes(currentPlayers),
-            Primitives.GetBytes(maxPlayers),
-            Primitives.GetBytes(gameVersion.ID),
-            Primitives.GetBytes(challengeID),
-            Primitives.GetBytes(timestamp),
-            Primitives.GetBytes(runID),
-            Primitives.GetBytes(motd),
-            Primitives.GetBytes(hostUser)
-            ), code: (byte)(
-                mayRegister ? 0b0000001 : 0
-                ));
+            Binary<ushort>.Serialize(currentPlayers),
+            Binary<ushort>.Serialize(maxPlayers),
+            Binary<Version>.Serialize(gameVersion),
+            Binary<long>.Serialize(challengeID),
+            Binary<long>.Serialize(timestamp),
+            Binary<long>.Serialize(runID),
+            Binary<String256>.Serialize(motd),
+            Binary<String32>.Serialize(hostUser)
+            ), code: (byte)(mayRegister ? 1 : 0));
     }
 
     protected override bool IsValid()
