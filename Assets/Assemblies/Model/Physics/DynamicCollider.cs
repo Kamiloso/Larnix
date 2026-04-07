@@ -25,6 +25,9 @@ public class DynamicCollider
 
     public DynamicCollider(Vec2 center, Vec2 offset, Vec2 size, PhysicsProperties properties)
     {
+        ColliderUtils.AssertSizePositive(size);
+        ColliderUtils.AssertSizeWithinLimits(size, offset);
+
         Properties = properties;
         Offset = offset;
         Size = size;
@@ -235,8 +238,8 @@ public class DynamicCollider
         OutputData report = default;
         if (bestCollision is not null)
         {
-            Vec2 endPoint = BitChangeVector(bestCollision.Value.FinalPoint, moved);
-            Vec2 colPoint = BitChangeVector(bestCollision.Value.CollisionPoint, moved);
+            Vec2 endPoint = ApplyEpsilon(bestCollision.Value.FinalPoint, moved);
+            Vec2 colPoint = ApplyEpsilon(bestCollision.Value.CollisionPoint, moved);
 
             report = new OutputData
             {
@@ -257,11 +260,11 @@ public class DynamicCollider
         return report;
     }
 
-    private static Vec2 BitChangeVector(Vec2 vect, Vec2 moved)
+    private static Vec2 ApplyEpsilon(Vec2 vect, Vec2 moved)
     {
         return new Vec2(
-            moved.x > 0.0 ? DoubleUtils.BitDecrement(vect.x, 1) : (moved.x < 0.0 ? DoubleUtils.BitIncrement(vect.x, 1) : vect.x),
-            moved.y > 0.0 ? DoubleUtils.BitDecrement(vect.y, 1) : (moved.y < 0.0 ? DoubleUtils.BitIncrement(vect.y, 1) : vect.y)
+            moved.x > 0.0 ? vect.x - Common.WorldEpsilon.x : moved.x < 0.0 ? vect.x + Common.WorldEpsilon.x : vect.x,
+            moved.y > 0.0 ? vect.y - Common.WorldEpsilon.y : moved.y < 0.0 ? vect.y + Common.WorldEpsilon.y : vect.y
             );
     }
 }

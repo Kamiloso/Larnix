@@ -7,10 +7,10 @@ namespace Larnix.Core.Vectors;
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public readonly record struct Col32 : IFixedStruct<Col32>
 {
-    public readonly byte r;
-    public readonly byte g;
-    public readonly byte b;
-    public readonly byte a;
+    public byte r { get; }
+    public byte g { get; }
+    public byte b { get; }
+    public byte a { get; }
 
     public Col32(byte r, byte g, byte b, byte a = 255)
     {

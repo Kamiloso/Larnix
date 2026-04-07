@@ -1,11 +1,12 @@
+#nullable enable
+using Larnix.Core;
+using Larnix.Core.Utils;
+using Larnix.Model.Entities.Structs;
+using Larnix.Server.Packets.Structs;
+using Larnix.Socket.Packets;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Larnix.Socket.Packets;
-using Larnix.Model.Entities.Structs;
-using Larnix.Server.Packets.Structs;
-using Larnix.Core.Utils;
-using Larnix.Core;
 
 namespace Larnix.Server.Packets;
 
@@ -25,8 +26,8 @@ public sealed class EntityBroadcast : Payload
 
     private EntityBroadcast(uint packetFixedIndex, Dictionary<ulong, EntityHeader> entityTransforms, Dictionary<ulong, uint> playerFixedIndexes, byte code = 0)
     {
-        if (entityTransforms == null) entityTransforms = new();
-        if (playerFixedIndexes == null) playerFixedIndexes = new();
+        entityTransforms ??= new();
+        playerFixedIndexes ??= new();
 
         InitializePayload(ArrayUtils.MegaConcat(
             Binary<uint>.Serialize(packetFixedIndex),
@@ -108,7 +109,7 @@ public sealed class EntityBroadcast : Payload
         foreach (var kvp in dictA)
         {
             byte[] keyBytes = Binary<ulong>.Serialize(kvp.Key);
-            byte[] valueBytes = Binary<EntityHeaderCompressed>.Serialize(new EntityHeaderCompressed(kvp.Value));
+            byte[] valueBytes = Binary<EntityHeaderCompressed>.Serialize(EntityHeaderCompressed.FromHeader(kvp.Value));
 
             Buffer.BlockCopy(keyBytes, 0, buffer, 0 + i * ENTRY_A_SIZE, sizeof(ulong));
             Buffer.BlockCopy(valueBytes, 0, buffer, sizeof(ulong) + i * ENTRY_A_SIZE, Binary<EntityHeaderCompressed>.Size);

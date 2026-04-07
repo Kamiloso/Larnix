@@ -14,9 +14,9 @@ internal class EntityManager : IEntityManager
 
     public EntityManager()
     {
-        ChunkHolders.OnStartedLoading += chunk => EntityControllers.LoadEntityControllersByChunk(chunk);
-        ChunkHolders.OnFullyLoaded += chunk => EntityControllers.ActivateEntityControllersByChunk(chunk);
-        ChunkHolders.OnUnloaded += chunk => EntityControllers.UnloadEntityControllersByChunk(chunk);
+        ChunkHolders.OnStartedLoading += chunk => EntityControllers.PrepareEntityControllers(chunk);
+        ChunkHolders.OnFullyLoaded += chunk => EntityControllers.ActivateEntityControllers(chunk);
+        ChunkHolders.OnUnloaded += chunk => EntityControllers.UnloadEntityControllers(chunk);
     }
 
     void IScript.FrameUpdate()

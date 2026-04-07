@@ -65,7 +65,7 @@ public class PhysicsManager : IPhysicsManager
                 {
                     list.Add(new StaticCollider(
                         BlockUtils.ChunkCenter(chunk),
-                        new Vec2(CHUNK_SIZE + 0.01, CHUNK_SIZE + 0.01)
+                        new Vec2(CHUNK_SIZE, CHUNK_SIZE)
                         ));
                 }
             }

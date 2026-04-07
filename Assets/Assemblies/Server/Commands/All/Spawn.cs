@@ -58,22 +58,14 @@ internal class Spawn : BaseCmd
 
     public override (CmdResult, string) Execute(string sender, PrivilegeLevel privilege)
     {
-        bool success = EntityControllers.CreateEntityController(new EntityData(
+        EntityControllers.SpawnEntity(new EntityData(
             id: _entityID,
             position: _position,
             rotation: 0.0f,
             nbt: Storage.FromString(_json)
         ));
 
-        if (success)
-        {
-            return (CmdResult.Success,
-                $"Spawned '{_entityID}' at position {_position}.");
-        }
-        else
-        {
-            return (CmdResult.Error,
-                $"Position {_position} is not loaded.");
-        }
+        return (CmdResult.Success,
+            $"Spawned '{_entityID}' at position {_position}.");
     }
 }

@@ -11,10 +11,7 @@ namespace Larnix.Core;
 /// contain any reference types, bools or other weird members and has a
 /// sequential layout with no padding.
 /// </summary>
-public interface IFixedStruct<T> where T : unmanaged
-{
-    T Sanitize() => (T)this;
-}
+public interface IFixedStruct<T> where T : unmanaged { }
 
 public static unsafe class Binary<T> where T : unmanaged
 {
@@ -41,8 +38,7 @@ public static unsafe class Binary<T> where T : unmanaged
         if (offset < 0 || offset > bytes.Length - sizeof(T))
             throw new ArgumentOutOfRangeException(nameof(offset), "Byte array size mismatch.");
 
-        T desrl = MemoryMarshal.Read<T>(bytes.AsSpan(offset));
-        return desrl is IFixedStruct<T> rs ? rs.Sanitize() : desrl;
+        return MemoryMarshal.Read<T>(bytes.AsSpan(offset));
     }
 
     public static byte[] SerializeArray(T[] array)
@@ -58,12 +54,9 @@ public static unsafe class Binary<T> where T : unmanaged
         if (offset < 0 || offset + ((long)count * sizeof(T)) > bytes.Length)
             throw new ArgumentOutOfRangeException(nameof(offset), "Byte array size mismatch.");
 
-        T[] results = new T[count];
-        for (int i = 0; i < count; i++)
-        {
-            results[i] = Deserialize(bytes, offset + i * sizeof(T));
-        }
-        return results;
+        return MemoryMarshal.Cast<byte, T>(
+            bytes.AsSpan(offset, count * sizeof(T))
+        ).ToArray();
     }
 
     private static bool IsSupportedType()
@@ -78,7 +71,7 @@ public static unsafe class Binary<T> where T : unmanaged
             return false;
 
         StructLayoutAttribute? layout = typeof(T).StructLayoutAttribute;
-        if (layout == null || layout.Value != LayoutKind.Sequential || layout.Pack != 1)
+        if (layout == null || (layout.Value != LayoutKind.Sequential && layout.Value != LayoutKind.Explicit) || layout.Pack != 1)
         {
             return false;
         }

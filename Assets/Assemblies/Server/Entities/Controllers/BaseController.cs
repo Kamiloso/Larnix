@@ -2,13 +2,11 @@
 using System;
 using Larnix.Core;
 using Larnix.Core.Vectors;
-using Larnix.Model;
 using Larnix.Model.Entities;
 using Larnix.Model.Entities.Structs;
 using Larnix.Model.Physics;
 using Larnix.Server.Commands;
 using Larnix.Server.Entities.Data;
-using static Larnix.Model.Entities.Entity;
 
 namespace Larnix.Server.Entities.Controllers;
 
@@ -39,13 +37,19 @@ internal abstract class BaseController
         EntityRepository.SetEntityData(Uid, ActiveData);
     }
 
-    public void Activate()
+    public void Activate() // idempotent
     {
-        if (IsActive)
-            throw new InvalidOperationException($"Controller with UID {Uid} is already active.");
+        if (IsActive) return;
 
         EntityInits inits = new(Uid, ActiveData, Interfaces);
         RealInstance = EntityFactory.ConstructEntityObject(inits);
+    }
+
+    public void Deactivate() // idempotent
+    {
+        if (!IsActive) return;
+
+        RealInstance = null;
     }
 
     public void FrameUpdate()

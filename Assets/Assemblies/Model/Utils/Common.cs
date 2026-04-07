@@ -26,7 +26,8 @@ public static class Common
     public static double ViewDistance => 50.0;
     public static double PhysicsSectorSize => 3.0f;
 
-    public static Vec2 UpEpsilon => new(0.00, 0.01);
+    public static Vec2 WorldEpsilon => new(0.0001, 0.0001);
+    public static Vec2 WorldEpsilonUp => new(0.0000, 0.0001);
 
     public static string SplitPascalCase(string input)
     {

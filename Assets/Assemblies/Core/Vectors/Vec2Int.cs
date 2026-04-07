@@ -7,8 +7,8 @@ namespace Larnix.Core.Vectors;
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public readonly record struct Vec2Int : IFixedStruct<Vec2Int>
 {
-    public readonly int x;
-    public readonly int y;
+    public int x { get; }
+    public int y { get; }
 
     public Vec2Int(int x, int y)
     {

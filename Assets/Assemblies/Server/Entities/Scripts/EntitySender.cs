@@ -95,10 +95,6 @@ internal class EntitySender : IEntitySender
                     fixedIndexes[uid] = update.FixedFrame;
                 }
             }
-            else if (controller is not PlayerController)
-            {
-                nearby.Add(uid);
-            }
         }
 
         return new PlayerContext(headers, fixedIndexes, nearby);

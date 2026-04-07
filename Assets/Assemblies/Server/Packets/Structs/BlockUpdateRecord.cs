@@ -10,9 +10,9 @@ namespace Larnix.Server.Packets.Structs;
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public readonly record struct BlockUpdateRecord : IFixedStruct<BlockUpdateRecord>
 {
-    public readonly Vec2Int Position;
-    public readonly BlockHeader2 Block;
-    public readonly BreakMode BreakMode;
+    public Vec2Int Position { get; }
+    public BlockHeader2 Block { get; }
+    public BreakMode BreakMode { get; }
 
     public BlockUpdateRecord(Vec2Int position, BlockHeader2 block, BreakMode breakMode)
     {

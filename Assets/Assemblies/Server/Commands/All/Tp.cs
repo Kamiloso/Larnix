@@ -53,7 +53,7 @@ internal class Tp : BaseCmd
     {
         if (ConnectedPlayers.IsAlive(_nickname))
         {
-            Vec2 _realPosition = _position + Common.UpEpsilon;
+            Vec2 _realPosition = _position + Common.WorldEpsilonUp;
 
             Payload packet = new Teleport(_realPosition);
             Server.Send(_nickname, packet);

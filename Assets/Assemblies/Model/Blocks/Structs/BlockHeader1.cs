@@ -9,19 +9,20 @@ public readonly record struct BlockHeader1 : IFixedStruct<BlockHeader1>
 {
     public const int MAX_VARIANT = 0x0F; // 15
 
-    public readonly BlockID ID;
-    public readonly byte Variant;
+    private readonly BlockID _id;
+    private readonly byte _variant;
+
+    public BlockID ID => _id;
+    public byte Variant => (byte)(_variant & 0x0F);
 
     public static BlockHeader1 Air => new(BlockID.Air);
     public static BlockHeader1 UltimateTool => new(BlockID.UltimateTool);
 
     public BlockHeader1(BlockID id, byte variant = 0)
     {
-        ID = id;
-        Variant = (byte)(variant & 0x0F);
+        _id = id;
+        _variant = variant;
     }
-
-    public BlockHeader1 Sanitize() => new(ID, Variant);
 
     public override string ToString()
     {

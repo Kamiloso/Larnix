@@ -10,7 +10,7 @@ namespace Larnix.Model;
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public readonly record struct Version : IFixedStruct<Version>
 {
-    public static readonly Version Current = new("0.0.46");
+    public static readonly Version Current = new("0.0.46.1");
 
     public readonly uint Value;
 
