@@ -4,7 +4,6 @@ using Larnix.Socket.Backend;
 using Larnix.Model.Worldgen;
 using Larnix.Core;
 using Larnix.Model;
-using Larnix.Model.Interfaces;
 
 namespace Larnix.Server.Commands.All;
 

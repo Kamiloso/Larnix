@@ -1,18 +1,19 @@
-using Larnix.Model;
-using System.Collections;
-using System.Collections.Generic;
+#nullable enable
 using Larnix.Model.Utils;
 using Larnix.Model.Json;
-using Larnix.Model.Blocks.Structs;
-using Larnix.Model.Interfaces;
 
 namespace Larnix.Model.Blocks.All;
 
 public interface IBlockInterface
 {
     Block This => (Block)this;
-    IWorldAPI WorldAPI => This.WorldAPI;
+
+    BlockID ID => This.BlockData.ID;
+    byte Variant => This.BlockData.Variant;
     Storage Data => This.BlockData.NBT;
+
+    IWorldAPI WorldAPI => This.Interfaces.WorldAPI;
+    ICmdExecutor CmdExecutor => This.Interfaces.CmdExecutor;
 
     void SelfChangeVariant(byte variant)
     {

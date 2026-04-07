@@ -4,7 +4,7 @@ using Larnix.Core;
 using Larnix.Model.Utils;
 using Larnix.Server.Data;
 using Larnix.Model.Json;
-using Larnix.Model.Interfaces;
+using Larnix.Model;
 
 namespace Larnix.Server.Commands.All;
 

@@ -1,13 +1,12 @@
 #nullable enable
 using System.Collections.Generic;
 using Larnix.Core.Vectors;
-using Larnix.Model.Blocks;
 using Larnix.Model.Blocks.Structs;
 using Larnix.Model.Utils;
 
-namespace Larnix.Model.Interfaces;
+namespace Larnix.Model.Blocks;
 
-public interface IWorldAPI : ICmdExecutor
+public interface IWorldAPI
 {
     public enum BreakMode : byte
     {
@@ -18,7 +17,7 @@ public interface IWorldAPI : ICmdExecutor
 
     public long ServerTick { get; }
 
-    public bool IsChunkLoaded(Vec2Int chunk, bool atomic = false);
+    public bool IsChunkLoaded(Vec2Int chunk);
     public bool IsBlockLoaded(Vec2Int POS) => IsChunkLoaded(BlockUtils.CoordsToChunk(POS));
 
     public Block? GetBlock(Vec2Int POS, bool front);

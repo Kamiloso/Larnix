@@ -1,7 +1,6 @@
 #nullable enable
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using Larnix.Core.Vectors;
 using Larnix.Core;
 using Larnix.Server.Chunks.Control;
@@ -20,7 +19,6 @@ internal interface IChunkManager : IScript { }
 internal class ChunkManager : IChunkManager
 {
     private IClock Clock => GlobRef.Get<IClock>();
-    private IAtomicChunks AtomicChunks => GlobRef.Get<IAtomicChunks>();
     private IChunkLoader ChunkLoader => GlobRef.Get<IChunkLoader>();
     private IChunkHolders ChunkHolders => GlobRef.Get<IChunkHolders>();
 
@@ -79,29 +77,16 @@ internal class ChunkManager : IChunkManager
 
         if (invokers.Count >= 1)
         {
-            bool first = true;
             bool done = false;
 
             while (!done)
             {
-                if (first)
-                {
-                    AtomicChunks.Reset();
-                    AtomicChunks.DiscoversChunks = true;
-                }
-
                 foreach (IEnumerator inv in invokers)
                 {
                     if (!inv.MoveNext())
                     {
                         done = true;
                     }
-                }
-
-                if (first)
-                {
-                    AtomicChunks.DiscoversChunks = false;
-                    first = false;
                 }
             }
         }

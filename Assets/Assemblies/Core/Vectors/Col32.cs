@@ -1,25 +1,14 @@
 #nullable enable
 using System;
+using System.Runtime.InteropServices;
 using Larnix.Core.Binary;
 
 namespace Larnix.Core.Vectors;
 
-public readonly struct Col32 : IEquatable<Col32>, IBinary<Col32>
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public readonly record struct Col32(byte r, byte g, byte b, byte a) : IFixedStruct<Col32>
 {
     public const int SIZE = sizeof(byte) * 4;
-
-    public byte r { get; }
-    public byte g { get; }
-    public byte b { get; }
-    public byte a { get; }
-
-    public Col32(byte r, byte g, byte b, byte a)
-    {
-        this.r = r;
-        this.g = g;
-        this.b = b;
-        this.a = a;
-    }
 
     public static Col32 Red => new(255, 0, 0, 255);
     public static Col32 Green => new(0, 255, 0, 255);
@@ -30,28 +19,6 @@ public readonly struct Col32 : IEquatable<Col32>, IBinary<Col32>
     public static Col32 Cyan => new(0, 255, 255, 255);
     public static Col32 Magenta => new(255, 0, 255, 255);
     public static Col32 Transparent => new(0, 0, 0, 0);
-
-    public byte[] Serialize()
-    {
-        return new byte[] { r, g, b, a };
-    }
-
-    public bool Deserialize(byte[] bytes, int offset, out Col32 result)
-    {
-        if (offset < 0 || offset + SIZE > bytes.Length)
-        {
-            result = default;
-            return false;
-        }
-
-        result = new Col32(
-            bytes[offset + 0],
-            bytes[offset + 1],
-            bytes[offset + 2],
-            bytes[offset + 3]
-        );
-        return true;
-    }
 
     public static Col32 Lerp(Col32 start, Col32 end, double t = 0.5f)
     {
@@ -66,11 +33,5 @@ public readonly struct Col32 : IEquatable<Col32>, IBinary<Col32>
         );
     }
 
-    public static bool operator ==(Col32 lhs, Col32 rhs) => lhs.Equals(rhs);
-    public static bool operator !=(Col32 lhs, Col32 rhs) => !(lhs == rhs);
-
     public override string ToString() => $"(R: {r}, G: {g}, B: {b}, A: {a})";
-    public override bool Equals(object obj) => obj is Col32 other && Equals(other);
-    public bool Equals(Col32 other) => r == other.r && g == other.g && b == other.b && a == other.a;
-    public override int GetHashCode() => HashCode.Combine(r, g, b, a);
 }

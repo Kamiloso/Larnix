@@ -4,7 +4,7 @@ using Larnix.Model.Utils;
 using Larnix.Server.Packets;
 using LogType = Larnix.Core.Echo.LogType;
 using ChatCode = Larnix.Server.Packets.ChatMessage.ChatCode;
-using Larnix.Model.Interfaces;
+using Larnix.Model;
 
 namespace Larnix.Server.Commands;
 

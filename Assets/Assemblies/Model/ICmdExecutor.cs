@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using LogType = Larnix.Core.Echo.LogType;
 
-namespace Larnix.Model.Interfaces;
+namespace Larnix.Model;
 
 public enum CmdResult { Raw, Info, Log, Success, Warning, Error, Ignore, Clear }
 

@@ -9,6 +9,7 @@ public interface IQuickConfig
     public String256 Motd { get; }
     public String32 HostUser { get; }
 
+    public ushort Port { get; init; }
     public bool IsLoopback { get; init; }
     public string DataPath { get; init; }
     public int MaskIPv4 { get; init; }

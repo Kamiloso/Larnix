@@ -9,7 +9,7 @@ using Larnix.Core.Vectors;
 using Larnix.Server.Packets.Structs;
 using Larnix.Core;
 using Larnix.Server.Entities;
-using Larnix.Model.Interfaces;
+using Larnix.Model.Blocks;
 
 namespace Larnix.Server.Chunks.Scripts;
 

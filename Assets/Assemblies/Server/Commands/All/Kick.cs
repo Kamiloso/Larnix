@@ -2,7 +2,7 @@ using Larnix.Model.Utils;
 using Larnix.Server.Entities;
 using Larnix.Socket.Backend;
 using Larnix.Core;
-using Larnix.Model.Interfaces;
+using Larnix.Model;
 
 namespace Larnix.Server.Commands.All;
 

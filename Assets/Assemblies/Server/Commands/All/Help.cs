@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using Larnix.Model.Interfaces;
+using Larnix.Model;
 
 namespace Larnix.Server.Commands.All;
 

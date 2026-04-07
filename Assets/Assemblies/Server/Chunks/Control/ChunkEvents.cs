@@ -4,21 +4,12 @@ using System.Collections;
 using Larnix.Model.Utils;
 using Larnix.Core.Vectors;
 using Larnix.Core.Collections;
-using Larnix.Model.Interfaces;
+using Larnix.Core;
+using Larnix.Server.Chunks;
 
 namespace Larnix.Model.Blocks;
 
-public enum BlockOrder
-{
-    PreFrame, PreFrameSelfMutations,
-    Conway,
-    Sequential, Random,
-    ElectricPropagation, ElectricFinalize, ElectricDevices,
-    SequentialLate, RandomLate,
-    TechCmdExecute,
-}
-
-public class BlockEvents
+internal class ChunkEvents : IChunkEvents
 {
     private const int CHUNK_SIZE = BlockUtils.CHUNK_SIZE;
     private record EventInfo(BlockOrder Type, IterationOrder Order);
@@ -39,9 +30,10 @@ public class BlockEvents
     };
 
     private readonly Vec2Int _chunkpos;
-    private readonly IWorldAPI _worldAPI;
     private readonly Block[,] _blocksFront;
     private readonly Block[,] _blocksBack;
+
+    private IAtomicChunks AtomicChunks => GlobRef.Get<IAtomicChunks>();
 
     private class ActionPair
     {
@@ -75,7 +67,7 @@ public class BlockEvents
     private readonly PriorityQueue<ActionPair, (Vec2Int, bool)>[] _eventActions =
         new PriorityQueue<ActionPair, (Vec2Int, bool)>[_blockEvents.Length];
 
-    public BlockEvents(Vec2Int chunkpos, IWorldAPI worldAPI, Block[,] blocksFront, Block[,] blocksBack)
+    public ChunkEvents(Vec2Int chunkpos, Block[,] blocksFront, Block[,] blocksBack)
     {
         if (blocksFront.GetLength(0) != CHUNK_SIZE || blocksFront.GetLength(1) != CHUNK_SIZE ||
             blocksBack.GetLength(0) != CHUNK_SIZE || blocksBack.GetLength(1) != CHUNK_SIZE)
@@ -84,7 +76,6 @@ public class BlockEvents
         }
 
         _chunkpos = chunkpos;
-        _worldAPI = worldAPI;
         _blocksFront = blocksFront;
         _blocksBack = blocksBack;
 
@@ -124,7 +115,14 @@ public class BlockEvents
             _blocksFront[x, y].EventFlag = true;
         });
 
-        bool isAtomicLoaded = _worldAPI.IsChunkLoaded(_chunkpos, atomic: true);
+        AtomicChunks.Reset();
+        AtomicChunks.DiscoversChunks = true;
+
+        yield return null;
+        bool isAtomicLoaded = AtomicChunks.IsAtomicLoaded(_chunkpos);
+
+        yield return null;
+        AtomicChunks.DiscoversChunks = false;
 
         foreach (var (type, order) in _blockEvents) // EXECUTE EVENTS
         {

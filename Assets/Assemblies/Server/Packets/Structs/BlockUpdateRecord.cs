@@ -2,7 +2,7 @@ using Larnix.Core.Binary;
 using Larnix.Core.Vectors;
 using Larnix.Model.Blocks.Structs;
 using Larnix.Core.Utils;
-using BreakMode = Larnix.Model.Interfaces.IWorldAPI.BreakMode;
+using BreakMode = Larnix.Model.Blocks.IWorldAPI.BreakMode;
 
 namespace Larnix.Server.Packets.Structs;
 

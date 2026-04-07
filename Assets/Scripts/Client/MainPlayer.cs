@@ -14,7 +14,6 @@ using Larnix.Core;
 using Larnix.Model.Physics.Structs;
 using Larnix.Client.Relativity;
 using Larnix.Model.Entities.Structs;
-using Larnix.Model.Interfaces;
 
 namespace Larnix.Client
 {

@@ -1,7 +1,7 @@
 #nullable enable
 using Larnix.Core;
 using Larnix.Core.Vectors;
-using Larnix.Model.Interfaces;
+using Larnix.Model.Blocks;
 using Larnix.Model.Utils;
 using Larnix.Server.Chunks.Scripts;
 using Larnix.Server.Commands;

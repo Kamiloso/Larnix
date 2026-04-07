@@ -44,7 +44,7 @@ public interface IStringStruct : IEndianSafe
     protected static byte[] StringToFixedBinary(string str, int stringSize)
     {
         if (!BitConverter.IsLittleEndian)
-            throw new PlatformNotSupportedException("Big Endian platforms are not supported.");
+            throw new PlatformNotSupportedException("Only little-endian platforms are supported.");
 
         int bytesSize = sizeof(char) * stringSize;
         byte[] bytes = new byte[bytesSize];
@@ -63,7 +63,7 @@ public interface IStringStruct : IEndianSafe
     protected static string FixedBinaryToString(ReadOnlySpan<byte> span)
     {
         if (!BitConverter.IsLittleEndian)
-            throw new PlatformNotSupportedException("Big Endian platforms are not supported.");
+            throw new PlatformNotSupportedException("Only little-endian platforms are supported.");
 
         ReadOnlySpan<char> chars = MemoryMarshal.Cast<byte, char>(span);
         chars = chars.TrimEnd('\0');
@@ -72,7 +72,7 @@ public interface IStringStruct : IEndianSafe
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public unsafe struct String32 : IStringStruct
+public unsafe struct String32 : IStringStruct, IFixedStruct<String32>
 {
     private fixed byte buffer[BYTE_SIZE];
     public readonly int BinarySize => BYTE_SIZE;
@@ -95,7 +95,7 @@ public unsafe struct String32 : IStringStruct
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public unsafe struct String64 : IStringStruct
+public unsafe struct String64 : IStringStruct, IFixedStruct<String64>
 {
     private fixed byte buffer[BYTE_SIZE];
     public readonly int BinarySize => BYTE_SIZE;
@@ -118,7 +118,7 @@ public unsafe struct String64 : IStringStruct
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public unsafe struct String128 : IStringStruct
+public unsafe struct String128 : IStringStruct, IFixedStruct<String128>
 {
     private fixed byte buffer[BYTE_SIZE];
     public readonly int BinarySize => BYTE_SIZE;
@@ -141,7 +141,7 @@ public unsafe struct String128 : IStringStruct
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public unsafe struct String256 : IStringStruct
+public unsafe struct String256 : IStringStruct, IFixedStruct<String256>
 {
     private fixed byte buffer[BYTE_SIZE];
     public readonly int BinarySize => BYTE_SIZE;
@@ -164,7 +164,7 @@ public unsafe struct String256 : IStringStruct
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public unsafe struct String512 : IStringStruct
+public unsafe struct String512 : IStringStruct, IFixedStruct<String512>
 {
     private fixed byte buffer[BYTE_SIZE];
     public readonly int BinarySize => BYTE_SIZE;
@@ -187,7 +187,7 @@ public unsafe struct String512 : IStringStruct
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public unsafe struct String1024 : IStringStruct
+public unsafe struct String1024 : IStringStruct, IFixedStruct<String1024>
 {
     private fixed byte buffer[BYTE_SIZE];
     public readonly int BinarySize => BYTE_SIZE;

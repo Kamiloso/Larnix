@@ -11,34 +11,37 @@ using Larnix.Model.Blocks.Structs;
 using Larnix.Server.Packets.Structs;
 using Larnix.Model.Blocks.All;
 using Larnix.Core;
-using static Larnix.Model.Blocks.Block;
-using static Larnix.Model.Interfaces.IWorldAPI;
-using Larnix.Model.Interfaces;
+using Larnix.Server.Commands;
+using static Larnix.Model.Blocks.IWorldAPI;
 
 namespace Larnix.Server.Chunks.Control;
 
 internal class ChunkBrain : IDisposable
 {
     private readonly Vec2Int _chunkpos;
-    private readonly BlockEvents _blockEvents;
+    private readonly ChunkEvents _chunkEvents;
     private readonly Block[,] _blocksFront = ChunkIterator.Array2D<Block>();
     private readonly Block[,] _blocksBack = ChunkIterator.Array2D<Block>();
     private readonly Dictionary<Vec2Int, StaticCollider[]> _colliderCollections = new();
 
     public event Action<BlockUpdateRecord>? OnBlockUpdate;
 
-    public IEnumerable FrameInvoker => _blockEvents.GetFrameInvoker();
+    public IEnumerable FrameInvoker => _chunkEvents.GetFrameInvoker();
     public ChunkData ActiveChunkReference { get; }
 
+    private BlockInterfaces BlockInterfaces => new(
+        WorldAPI: GlobRef.Get<IWorldAPI>(),
+        CmdExecutor: GlobRef.Get<ICmdManager>()
+        );
+
     private IPhysicsManager PhysicsManager => GlobRef.Get<IPhysicsManager>();
-    private IWorldAPI WorldAPI => GlobRef.Get<IWorldAPI>();
 
     private bool _disposed = false;
 
     public ChunkBrain(Vec2Int chunkpos, ChunkData chunkActiveReference)
     {
         _chunkpos = chunkpos;
-        _blockEvents = new BlockEvents(_chunkpos, WorldAPI, _blocksFront, _blocksBack);
+        _chunkEvents = new ChunkEvents(_chunkpos, _blocksFront, _blocksBack);
 
         ActiveChunkReference = chunkActiveReference;
 
@@ -55,18 +58,19 @@ internal class ChunkBrain : IDisposable
     private void BlockCreate(Vec2Int pos)
     {
         Vec2Int POS = BlockUtils.GlobalBlockCoords(_chunkpos, pos);
+        BlockData2 blockData = ActiveChunkReference[pos.x, pos.y];
 
-        BlockData2 blockdata = ActiveChunkReference[pos.x, pos.y];
-        Block frontblock = BlockFactory.ConstructBlockObject(
-            new BlockInits(POS, true, blockdata.Front, WorldAPI));
-        Block backblock = BlockFactory.ConstructBlockObject(
-            new BlockInits(POS, false, blockdata.Back, WorldAPI));
+        BlockInits initsFront = new(POS, true, blockData.Front, BlockInterfaces);
+        Block frontBlock = BlockFactory.ConstructBlockObject(initsFront);
 
-        frontblock.AttachTo(_blockEvents);
-        backblock.AttachTo(_blockEvents);
+        BlockInits initsBack = new(POS, false, blockData.Back, BlockInterfaces);
+        Block backBlock = BlockFactory.ConstructBlockObject(initsBack);
 
-        _blocksFront[pos.x, pos.y] = frontblock;
-        _blocksBack[pos.x, pos.y] = backblock;
+        frontBlock.AttachTo(_chunkEvents);
+        backBlock.AttachTo(_chunkEvents);
+
+        _blocksFront[pos.x, pos.y] = frontBlock;
+        _blocksBack[pos.x, pos.y] = backBlock;
     }
 
     public Block GetBlock(Vec2Int pos, bool isFront)
@@ -129,10 +133,10 @@ internal class ChunkBrain : IDisposable
         oldBlock.Detach();
 
         Block newBlock = BlockFactory.ConstructBlockObject(
-            new BlockInits(oldBlock.Position, isFront, block, WorldAPI)
+            new BlockInits(oldBlock.Position, isFront, block, BlockInterfaces)
         );
 
-        newBlock.AttachTo(_blockEvents);
+        newBlock.AttachTo(_chunkEvents);
         blocks[pos.x, pos.y] = newBlock;
 
         return newBlock;

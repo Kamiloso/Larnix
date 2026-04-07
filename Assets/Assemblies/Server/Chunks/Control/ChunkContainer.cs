@@ -20,8 +20,8 @@ internal class ChunkContainer
     private List<Vec2Int> AtomicGroup => AtomicChunks.GetAtomicSet(Chunkpos) ?? new List<Vec2Int> { Chunkpos };
     private Func<Vec2Int, ChunkContainer> GetChunk { get; }
 
-    private IAtomicChunks AtomicChunks => GlobRef.Get<IAtomicChunks>();
     private IChunkRepository ChunkRepository => GlobRef.Get<IChunkRepository>();
+    private IAtomicChunks AtomicChunks => GlobRef.Get<IAtomicChunks>();
 
     public ChunkContainer(Vec2Int chunkpos, Func<Vec2Int, ChunkContainer> getChunk)
     {

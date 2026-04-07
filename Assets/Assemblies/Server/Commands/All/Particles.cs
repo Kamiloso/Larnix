@@ -8,7 +8,7 @@ using Larnix.Socket.Packets;
 using Larnix.Core;
 using Larnix.Server.Entities;
 using System.Linq;
-using Larnix.Model.Interfaces;
+using Larnix.Model;
 
 namespace Larnix.Server.Commands.All;
 

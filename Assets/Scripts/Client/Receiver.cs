@@ -9,7 +9,7 @@ using Larnix.Client.Particles;
 using Larnix.Core;
 using Larnix.Background;
 using Larnix.Client.Chat;
-using Larnix.Model.Interfaces;
+using Larnix.Model.Blocks;
 
 namespace Larnix.Client;
 

@@ -1,3 +1,4 @@
+#nullable enable
 using Larnix.Core;
 using Larnix.Model.Utils;
 using System.IO;
@@ -21,6 +22,7 @@ internal class QuickSettings : IQuickConfig
         WorldMetaManager.HostNickname;
 
     // Static settings
+    public ushort Port { get; init; }
     public bool IsLoopback { get; init; }
     public string DataPath { get; init; }
     public int MaskIPv4 { get; init; }
@@ -29,6 +31,7 @@ internal class QuickSettings : IQuickConfig
 
     public QuickSettings()
     {
+        Port = Server.ServerType == ServerType.Remote ? ServerConfig.Port : (ushort)0;
         IsLoopback = Server.ServerType == ServerType.Local;
         DataPath = Path.Combine(Server.WorldPath, "Socket");
 

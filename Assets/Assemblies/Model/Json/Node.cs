@@ -7,7 +7,7 @@ namespace Larnix.Model.Json;
 
 public class Node
 {
-    private JSONNode _node;
+    private readonly JSONNode _node;
     internal Node(JSONNode node) => _node = node;
 
     public string String

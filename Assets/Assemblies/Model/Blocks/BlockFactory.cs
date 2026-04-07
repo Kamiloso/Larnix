@@ -5,7 +5,6 @@ using System.Reflection;
 using System.Runtime.Serialization;
 using Larnix.Core;
 using Larnix.Model.Blocks.All;
-using static Larnix.Model.Blocks.Block;
 
 namespace Larnix.Model.Blocks;
 

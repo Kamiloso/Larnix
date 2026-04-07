@@ -10,7 +10,6 @@ using Larnix.Core.Collections;
 using Larnix.Server.Data;
 using Larnix.Core;
 using Larnix.Server.Chunks.Scripts;
-using Larnix.Model.Interfaces;
 
 namespace Larnix.Server.Chunks;
 

@@ -2,10 +2,11 @@
 using System;
 using Larnix.Core;
 using Larnix.Core.Vectors;
+using Larnix.Model;
 using Larnix.Model.Entities;
 using Larnix.Model.Entities.Structs;
-using Larnix.Model.Interfaces;
 using Larnix.Model.Physics;
+using Larnix.Server.Commands;
 using Larnix.Server.Entities.Data;
 using static Larnix.Model.Entities.Entity;
 
@@ -21,8 +22,12 @@ internal abstract class BaseController
     protected Entity? RealInstance { get; private set; }
     public bool IsActive => RealInstance is not null;
 
+    private EntityInterfaces Interfaces => new(
+        Physics: GlobRef.Get<IPhysicsManager>(),
+        CmdExecutor: GlobRef.Get<ICmdManager>()
+        );
+
     private IEntityRepository EntityRepository => GlobRef.Get<IEntityRepository>();
-    private IPhysicsManager PhysicsManager => GlobRef.Get<IPhysicsManager>();
 
     private bool _deactivated = false;
 
@@ -39,9 +44,8 @@ internal abstract class BaseController
         if (IsActive)
             throw new InvalidOperationException($"Controller with UID {Uid} is already active.");
 
-        RealInstance = EntityFactory.ConstructEntityObject(new EntityInits(
-            Uid, ActiveData, PhysicsManager
-            ));
+        EntityInits inits = new(Uid, ActiveData, Interfaces);
+        RealInstance = EntityFactory.ConstructEntityObject(inits);
     }
 
     public void FrameUpdate()

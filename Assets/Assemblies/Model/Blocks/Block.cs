@@ -1,23 +1,33 @@
+using System;
 using Larnix.Model.Blocks.All;
 using Larnix.Model.Blocks.Structs;
 using Larnix.Core.Vectors;
 using Larnix.Model.Utils;
-using System;
-using Larnix.Model.Interfaces;
 
 namespace Larnix.Model.Blocks;
+
+public record BlockInits(
+    Vec2Int Position,
+    bool IsFront,
+    BlockData1 BlockData,
+    BlockInterfaces Interfaces
+    );
+
+public record BlockInterfaces(
+    IWorldAPI WorldAPI,
+    ICmdExecutor CmdExecutor
+    );
 
 public class Block
 {
     public Vec2Int Position { get; private set; }
     public bool IsFront { get; private set; }
     public BlockData1 BlockData { get; private set; } // connected to block-saving system
-    public IWorldAPI WorldAPI { get; private set; }
+    public BlockInterfaces Interfaces { get; private set; }
 
     private bool _constructed = false;
 
     internal Block() {}
-    public record BlockInits(Vec2Int Position, bool IsFront, BlockData1 BlockData, IWorldAPI WorldAPI);
     internal void Construct(BlockInits blockInits)
     {
         if (!_constructed)
@@ -25,14 +35,14 @@ public class Block
             Position = blockInits.Position;
             IsFront = blockInits.IsFront;
             BlockData = blockInits.BlockData;
-            WorldAPI = blockInits.WorldAPI;
+            Interfaces = blockInits.Interfaces;
 
             _constructed = true;
         }
         else throw new InvalidOperationException("Block already constructed.");
     }
 
-    private BlockEvents _eventSystem = null;
+    private IChunkEvents _eventSystem = null;
 
     /// <summary>
     /// Determines whether block is active for event in the current frame.
@@ -64,7 +74,7 @@ public class Block
         action();
     }
 
-    public void AttachTo(BlockEvents eventSystem)
+    public void AttachTo(IChunkEvents eventSystem)
     {
         _eventSystem = eventSystem;
 

@@ -6,13 +6,13 @@ using Larnix.Server.Entities;
 using Larnix.Socket.Backend;
 using Larnix.Model.Json;
 using Larnix.Model.Utils;
-using Larnix.Model.Interfaces;
+using Larnix.Model;
 
 namespace Larnix.Server.Commands.All;
 
 internal class Ban : BaseCmd
 {
-    public override PrivilegeLevel PrivilegeLevel => PrivilegeLevel.Admin;
+    public override PrivilegeLevel PrivilegeLevel => PrivilegeLevel.Console;
     public override string Pattern => $"{Name} <params...>";
     public override string Hint => $"Type 'help {Name}' for more information.";
     public override string ShortDescription => "Manages bans.";

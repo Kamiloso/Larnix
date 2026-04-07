@@ -3,7 +3,7 @@ using System;
 using System.Text;
 using System.Linq;
 using Larnix.Server.Commands.All;
-using Larnix.Model.Interfaces;
+using Larnix.Model;
 
 namespace Larnix.Server.Commands;
 

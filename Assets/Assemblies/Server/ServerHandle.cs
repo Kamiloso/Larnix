@@ -21,8 +21,8 @@ using Larnix.Server.Entities.Data;
 using Larnix.Server.Entities.Scripts;
 using Larnix.Server.Chunks.Data;
 using Larnix.Server.Chunks.Scripts;
+using Larnix.Model.Blocks;
 using static Larnix.Server.ServerRunner;
-using Larnix.Model.Interfaces;
 
 namespace Larnix.Server;
 
@@ -50,9 +50,9 @@ internal class ServerHandle : IServerHandle
     private IWorldMetaManager WorldMetaManager => GlobRef.Get<IWorldMetaManager>();
     private IDataSaver DataSaver => GlobRef.Get<IDataSaver>();
 
-    private Locker? Locker { get; set; }
-    private Receiver? Receiver { get; set; }
-    private Scripts? Scripts { get; set; }
+    private readonly Locker? _locker;
+    private Receiver? _receiver;
+    private Scripts? _scripts;
 
     private bool _disposed = false;
 
@@ -69,7 +69,7 @@ internal class ServerHandle : IServerHandle
         if (ServerType == ServerType.Remote)
             Echo.LogRaw("Starting the server...\n");
 
-        Locker = Locker.LockOrException(WorldPath, "world_locker.lock", () =>
+        _locker = Locker.LockOrException(WorldPath, "world_locker.lock", () =>
             new IOException($"Trying to access world at \"{WorldPath}\" that is already open."));
         
         CreateSingletons();
@@ -139,7 +139,7 @@ internal class ServerHandle : IServerHandle
         GlobRef.New<IEntityControllers, EntityControllers>();
         GlobRef.New<IConnectedPlayers, ConnectedPlayers>();
 
-        Scripts = new Scripts(
+        _scripts = new Scripts(
             (1, new IScript[] {
                 GlobRef.New<IChunkManager, ChunkManager>(),
                 GlobRef.New<IEntityManager, EntityManager>()
@@ -155,7 +155,6 @@ internal class ServerHandle : IServerHandle
 
         GlobRef.Set<QuickServer>(
             new QuickServer(
-                port: ServerType == ServerType.Remote ? ServerConfig.Port : (ushort)0,
                 userAccess: Db.Users,
                 config: new QuickSettings()
             ));
@@ -164,7 +163,7 @@ internal class ServerHandle : IServerHandle
             QuickServer.IUserManager
             );
 
-        Receiver = new Receiver();
+        _receiver = new Receiver();
     }
 
     private bool TryEstablishRelay(string? relaySuggestion, out Task<string>? relayTask)
@@ -201,11 +200,11 @@ internal class ServerHandle : IServerHandle
         Clock.Tick(deltaTime);
 
         // Server ticks
-        Receiver!.Tick(Clock.DeltaTime); // for limits
+        _receiver!.Tick(Clock.DeltaTime); // for limits
         QuickServer.Tick(Clock.DeltaTime); // refresh & process packets
 
         // Process server logic
-        Scripts!.Tick(Clock.DeltaTime);
+        _scripts!.Tick(Clock.DeltaTime);
 
         // Tick data saving
         DataSaver.Tick(Clock.DeltaTime);
@@ -225,7 +224,7 @@ internal class ServerHandle : IServerHandle
         }
 
         Db?.Handle.Dispose();
-        Locker?.Dispose();
+        _locker?.Dispose();
 
         Echo.Log(emergency ?
             "Server has crashed!" :

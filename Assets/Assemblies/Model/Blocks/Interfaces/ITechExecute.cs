@@ -1,8 +1,7 @@
-using System.Collections;
+#nullable enable
 using System.Collections.Generic;
 using Larnix.Model.Blocks.Structs;
 using Larnix.Model.Json;
-using Larnix.Model.Interfaces;
 
 namespace Larnix.Model.Blocks.All;
 
@@ -25,7 +24,7 @@ public interface ITechExecute : IBlockInterface
             ["$y"] = This.Position.y.ToString(),
         });
 
-        WorldAPI.ExecuteCommand(command);
+        CmdExecutor.ExecuteCommand(command);
 
         BlockData1 replaceBlock = new(
             id: (BlockID)data["tech_execute.replace.id"].Int,

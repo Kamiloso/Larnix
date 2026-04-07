@@ -1,22 +1,15 @@
 #nullable enable
 using System;
+using System.Runtime.InteropServices;
 using Larnix.Core.Binary;
 using Larnix.Core.Utils;
 
 namespace Larnix.Core.Vectors;
 
-public readonly struct Vec2Int : IEquatable<Vec2Int>, IBinary<Vec2Int>
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public readonly record struct Vec2Int(int x, int y) : IBinary<Vec2Int>, IFixedStruct<Vec2Int>
 {
     public const int SIZE = sizeof(int) * 2;
-
-    public int x { get; }
-    public int y { get; }
-
-    public Vec2Int(int x, int y)
-    {
-        this.x = x;
-        this.y = y;
-    }
 
     public Vec2 ToVec2()
     {
@@ -81,10 +74,4 @@ public readonly struct Vec2Int : IEquatable<Vec2Int>, IBinary<Vec2Int>
     public static Vec2Int operator *(int scalar, Vec2Int a) => new(a.x * scalar, a.y * scalar);
     public static Vec2Int operator /(Vec2Int a, int scalar) => new(a.x / scalar, a.y / scalar);
     public static Vec2Int operator -(Vec2Int a) => new(-a.x, -a.y);
-    public static bool operator ==(Vec2Int lhs, Vec2Int rhs) => lhs.x == rhs.x && lhs.y == rhs.y;
-    public static bool operator !=(Vec2Int lhs, Vec2Int rhs) => !(lhs == rhs);
-
-    public override bool Equals(object obj) => obj is Vec2Int v && Equals(v);
-    public bool Equals(Vec2Int other) => x == other.x && y == other.y;
-    public override int GetHashCode() => HashCode.Combine(x, y);
 }

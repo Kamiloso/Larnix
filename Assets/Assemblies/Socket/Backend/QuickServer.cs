@@ -12,10 +12,9 @@ using Larnix.Socket.Helpers;
 using Larnix.Socket.Helpers.Limiters;
 using Larnix.Core;
 using Larnix.Model.Utils;
-using LoginMode = Larnix.Socket.Backend.UserManager.LoginMode;
-using Larnix.Model;
 using Larnix.Core.Utils;
 using Larnix.Model.Database;
+using LoginMode = Larnix.Socket.Backend.UserManager.LoginMode;
 
 namespace Larnix.Socket.Backend;
 
@@ -48,13 +47,13 @@ public class QuickServer : ITickable, IDisposable
     private readonly Dictionary<CmdID, Action<HeaderSpan, string>> Subscriptions = new();
     private bool _disposed;
 
-    public QuickServer(ushort port, IUserAccess userAccess, IQuickConfig config)
+    public QuickServer(IUserAccess userAccess, IQuickConfig config)
     {
         Config = config;
 
         // Nested classes
         _keyRSA = new KeyRSA(config.DataPath, PRIVATE_KEY_FILENAME); // 1
-        _udpSocket = new TripleSocket(port, config.IsLoopback); // 2
+        _udpSocket = new TripleSocket(config.Port, config.IsLoopback); // 2
         ConnDict = new ConnDict(this, _udpSocket); // 3
         UserManager = new UserManager(this, userAccess); // 4
         _heavyPacketLimiter = new TrafficLimiter<InternetID>(5, 50); // per second

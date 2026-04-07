@@ -3,28 +3,22 @@ using Larnix.Model.Blocks;
 using Larnix.Model.Utils;
 using Larnix.Core.Vectors;
 using Larnix.Model.Blocks.Structs;
-using Larnix.Server.Commands;
 using Larnix.Core;
 using Larnix.Server.Chunks.Scripts;
-using static Larnix.Model.Interfaces.IWorldAPI;
-using Larnix.Model.Interfaces;
+using static Larnix.Model.Blocks.IWorldAPI;
 
 namespace Larnix.Server.Chunks;
 
 internal class WorldAPI : IWorldAPI
 {
     private IChunkHolders ChunkHolders => GlobRef.Get<IChunkHolders>();
-    private IAtomicChunks AtomicChunks => GlobRef.Get<IAtomicChunks>();
-    private ICmdManager CmdManager => GlobRef.Get<ICmdManager>();
     private IClock Clock => GlobRef.Get<IClock>();
 
     public long ServerTick => Clock.ServerTick;
 
-    public bool IsChunkLoaded(Vec2Int chunk, bool atomic = false)
+    public bool IsChunkLoaded(Vec2Int chunk)
     {
-        return atomic ?
-            AtomicChunks.IsAtomicLoaded(chunk) :
-            ChunkHolders.IsChunkInZone(chunk, ChunkLoadState.Loaded);
+        return ChunkHolders.IsChunkInZone(chunk, ChunkLoadState.Loaded);
     }
 
     public Block? GetBlock(Vec2Int POS, bool isFront)
@@ -95,10 +89,5 @@ internal class WorldAPI : IWorldAPI
         // TODO: Drop items code here
 
         ReplaceBlock(POS, front, BlockData1.Air, BreakMode.Effects);
-    }
-
-    public (CmdResult, string) ExecuteCommand(string command, string? sender = null)
-    {
-        return CmdManager.ExecuteCommand(command, sender);
     }
 }

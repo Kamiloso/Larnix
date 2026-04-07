@@ -7,7 +7,7 @@ using Larnix.Socket.Packets;
 using Larnix.Core;
 using Larnix.Server.Entities;
 using Larnix.Server.Entities.Controllers;
-using Larnix.Model.Interfaces;
+using Larnix.Model;
 
 namespace Larnix.Server.Commands.All;
 

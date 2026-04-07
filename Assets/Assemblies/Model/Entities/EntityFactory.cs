@@ -5,7 +5,6 @@ using System.Reflection;
 using System.Runtime.Serialization;
 using Larnix.Core;
 using Larnix.Model.Entities.All;
-using static Larnix.Model.Entities.Entity;
 
 namespace Larnix.Model.Entities;
 

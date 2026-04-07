@@ -4,6 +4,7 @@ using Larnix.Socket.Packets;
 using Larnix.Model.Enums;
 using Larnix.Model.Worldgen.Biomes;
 using Larnix.Core.Utils;
+using System;
 
 namespace Larnix.Server.Packets;
 
@@ -12,7 +13,7 @@ public sealed class FrameInfo : Payload
     private const int SIZE = sizeof(long) + Col32.SIZE + sizeof(BiomeID) + sizeof(WeatherID) + sizeof(float);
 
     public long ServerTick => Primitives.FromBytes<long>(Bytes, 0);
-    public Col32 SkyColor => Structures.FromBytes<Col32>(Bytes, 8);
+    public Col32 SkyColor => Serializer.Deserialize<Col32>(Bytes.AsSpan(8, Col32.SIZE));
     public BiomeID BiomeID => Primitives.FromBytes<BiomeID>(Bytes, 12);
     public WeatherID Weather => Primitives.FromBytes<WeatherID>(Bytes, 14);
     public float Tps => Primitives.FromBytes<float>(Bytes, 16);
@@ -21,7 +22,7 @@ public sealed class FrameInfo : Payload
     {
         InitializePayload(ArrayUtils.MegaConcat(
             Primitives.GetBytes(serverTick),
-            Structures.GetBytes(skyColor),
+            Serializer.Serialize(ref skyColor).ToArray(),
             Primitives.GetBytes(biomeID),
             Primitives.GetBytes(weather),
             Primitives.GetBytes(tps)

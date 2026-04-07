@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -43,12 +44,14 @@ public static class GlobRef
         {
             return (T)instance;
         }
-        return null;
+        throw new KeyNotFoundException($"No instance of type {typeof(T)} found for current thread.");
     }
 
     public static bool Has<T>() where T : class
     {
-        return Get<T>() != null;
+        var key = GetKey();
+        return (_keyToData.TryGetValue(key, out var dict) &&
+            dict.ContainsKey(typeof(T)));
     }
 
     public static void Clear()
