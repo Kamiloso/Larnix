@@ -19,8 +19,11 @@ internal static class EndCompressor
         while (nulls < plaintext.Length)
         {
             byte b = plaintext[plaintext.Length - 1 - nulls];
-            if (b != 0) break;
-            nulls = (ushort)Math.Min(nulls + 1, ushort.MaxValue);
+            if (b != 0 || nulls == ushort.MaxValue)
+            {
+                break;
+            }
+            nulls++;
         }
 
         byte[] target = new byte[plaintext.Length - nulls + 2];

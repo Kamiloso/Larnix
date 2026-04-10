@@ -119,4 +119,35 @@ public class PayloadTests
             NetworkSerialization.ToBytes(header, cmd, DummyKey.Instance);
         });
     }
+
+    [Test]
+    public void EndCompressor_WorksAsExpected()
+    {
+        byte[] data = new byte[] { 1, 2, 3, 4, 5, 0, 0, 0, 0 };
+        byte[] compressed = EndCompressor.Compress(data);
+
+        ushort sizeStatement = Binary<ushort>.Deserialize(compressed[^2..]);
+        Assert.AreEqual(4, sizeStatement);
+
+        byte[] decompressed = EndCompressor.Decompress(compressed);
+        Assert.AreEqual(data, decompressed);
+    }
+
+    [Test]
+    public void EndCompressor_WorksWhenExceedingUShortLimit()
+    {
+        byte[] data = new byte[70000];
+
+        data[1] = 123;
+        data[2] = 124;
+        data[3] = 125;
+
+        byte[] compressed = EndCompressor.Compress(data);
+
+        ushort sizeStatement = Binary<ushort>.Deserialize(compressed[^2..]);
+        Assert.AreEqual(ushort.MaxValue, sizeStatement);
+
+        byte[] decompressed = EndCompressor.Decompress(compressed);
+        Assert.AreEqual(data, decompressed);
+    }
 }
