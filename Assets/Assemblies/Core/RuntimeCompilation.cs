@@ -30,7 +30,7 @@ public static class RuntimeCompilation
         return lambda.Compile();
     }
 
-    public static Func<object, object[], object> CompileMethod(MethodInfo method)
+    public static Func<object?, object[], object> CompileMethod(MethodInfo method)
     {
         if (method == null)
             throw new ArgumentNullException(nameof(method));
@@ -56,7 +56,7 @@ public static class RuntimeCompilation
             ? Expression.Block(callExpr, Expression.Constant(null, typeof(object)))
             : Expression.Convert(callExpr, typeof(object));
 
-        Expression<Func<object, object[], object>> lambda = Expression.Lambda<Func<object, object[], object>>(body, instanceParam, argsParam);
+        Expression<Func<object?, object[], object>> lambda = Expression.Lambda<Func<object?, object[], object>>(body, instanceParam, argsParam);
 
         return lambda.Compile();
     }

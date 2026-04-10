@@ -2,7 +2,7 @@ using Larnix.Core.Files;
 using Org.BouncyCastle.Crypto.Generators;
 using System.Text;
 using Larnix.Core.Utils;
-using Larnix.Core;
+using Larnix.Core.Serialization;
 
 namespace Larnix.Socket.Security;
 

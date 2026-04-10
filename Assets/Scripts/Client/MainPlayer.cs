@@ -139,7 +139,7 @@ namespace Larnix.Client
         {
             if (_lastSentFixedCounter != Client.FixedFrame)
             {
-                Payload packet = new PlayerUpdate(Position, Rotation, Client.FixedFrame);
+                Payload_Legacy packet = new PlayerUpdate(Position, Rotation, Client.FixedFrame);
                 Client.Send(packet, false); // fast mode
 
                 _lastSentFixedCounter = Client.FixedFrame;

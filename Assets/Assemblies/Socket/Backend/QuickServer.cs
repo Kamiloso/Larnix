@@ -15,6 +15,7 @@ using Larnix.Model.Utils;
 using Larnix.Core.Utils;
 using Larnix.Model.Database;
 using LoginMode = Larnix.Socket.Backend.UserManager.LoginMode;
+using Larnix.Socket.Packets.Payload;
 
 namespace Larnix.Socket.Backend;
 
@@ -137,7 +138,7 @@ public class QuickServer : ITickable, IDisposable
             return; // class E is used internally
         }
 
-        if (PayloadBox.TryDeserializeHeader(bytes, out var header))
+        if (PayloadBox_Legacy.TryDeserializeHeader(bytes, out var header))
         {
             // Heavy packet limiter
             if (header.HasFlag(PacketFlag.SYN) ||
@@ -151,17 +152,17 @@ public class QuickServer : ITickable, IDisposable
             // Decrypt RSA
             if (header.HasFlag(PacketFlag.RSA))
             {
-                if (!PayloadBox.TryDeserialize(bytes, _keyRSA, out var decrypted))
+                if (!PayloadBox_Legacy.TryDeserialize(bytes, _keyRSA, out var decrypted))
                     return; // drop invalid RSA packet
 
                 decrypted.UnsetFlag(PacketFlag.RSA);
-                bytes = decrypted.Serialize(KeyEmpty.GetInstance());
+                bytes = decrypted.Serialize(KeyEmpty.Instance);
             }
 
             if (header.HasFlag(PacketFlag.NCN))
             {
                 // Non-connection packet - NCN
-                if (PayloadBox.TryDeserialize(bytes, KeyEmpty.GetInstance(), out var box))
+                if (PayloadBox_Legacy.TryDeserialize(bytes, KeyEmpty.Instance, out var box))
                     ProcessNCN(target, box.SeqNum, new HeaderSpan(box.Bytes));
             }
             else
@@ -169,8 +170,8 @@ public class QuickServer : ITickable, IDisposable
                 if (header.HasFlag(PacketFlag.SYN))
                 {
                     // Start new connection
-                    if (PayloadBox.TryDeserialize(bytes, KeyEmpty.GetInstance(), out var synBox) &&
-                        Payload.TryConstructPayload<AllowConnection>(synBox.Bytes, out var allowcon) &&
+                    if (PayloadBox_Legacy.TryDeserialize(bytes, KeyEmpty.Instance, out var synBox) &&
+                        Payload_Legacy.TryConstructPayload<AllowConnection>(synBox.Bytes, out var allowcon) &&
                         ConnDict.TryAddPreLogin(target, synBox))
                     {
                         P_LoginTry logtry = allowcon.ToLoginTry();
@@ -188,9 +189,9 @@ public class QuickServer : ITickable, IDisposable
 
     private void ProcessNCN(IPEndPoint target, int ncnID, HeaderSpan headerSpan)
     {
-        void SendNCN(Payload packet)
+        void SendNCN(Payload_Legacy packet)
         {
-            PayloadBox safeAnswer = new PayloadBox(
+            PayloadBox_Legacy safeAnswer = new PayloadBox_Legacy(
                 seqNum: ncnID,
                 ackNum: 0,
                 flags: (byte)PacketFlag.NCN,
@@ -198,11 +199,11 @@ public class QuickServer : ITickable, IDisposable
                 );
 
             // answer always as plaintext
-            byte[] payload = safeAnswer.Serialize(KeyEmpty.GetInstance());
+            byte[] payload = safeAnswer.Serialize(KeyEmpty.Instance);
             _udpSocket.Send(target, payload);
         };
 
-        if (Payload.TryConstructPayload<P_ServerInfo>(headerSpan, out var infoask))
+        if (Payload_Legacy.TryConstructPayload<P_ServerInfo>(headerSpan, out var infoask))
         {
             string nickname = infoask.Nickname;
 
@@ -222,7 +223,7 @@ public class QuickServer : ITickable, IDisposable
             SendNCN(srvInfo);
         }
 
-        else if (Payload.TryConstructPayload<P_LoginTry>(headerSpan, out var logtry))
+        else if (Payload_Legacy.TryConstructPayload<P_LoginTry>(headerSpan, out var logtry))
         {
             string nickname = logtry.Nickname;
 
@@ -241,12 +242,12 @@ public class QuickServer : ITickable, IDisposable
     /// Stop packet always ends the connection.
     /// Stop packet can only appear once in a returned packet queue.
     /// </summary>
-    public void Subscribe<T>(Action<T, string> InterpretPacket) where T : Payload
+    public void Subscribe<T>(Action<T, string> InterpretPacket) where T : Payload_Legacy
     {
-        CmdID ID = Payload.CmdID<T>();
+        CmdID ID = Payload_Legacy.CmdID<T>();
         Subscriptions[ID] = (HeaderSpan headerSpan, string owner) =>
         {
-            if (Payload.TryConstructPayload<T>(headerSpan, out var message))
+            if (Payload_Legacy.TryConstructPayload<T>(headerSpan, out var message))
             {
                 InterpretPacket(message, owner);
             }
@@ -263,7 +264,7 @@ public class QuickServer : ITickable, IDisposable
         return ConnDict.TryGetEndPoint(nickname, out endPoint);
     }
 
-    public void Send(string nickname, Payload packet, bool safemode = true)
+    public void Send(string nickname, Payload_Legacy packet, bool safemode = true)
     {
         if (TryGetClientEndPoint(nickname, out IPEndPoint endPoint))
         {
@@ -271,7 +272,7 @@ public class QuickServer : ITickable, IDisposable
         }
     }
 
-    public void Broadcast(Payload packet, bool safemode = true)
+    public void Broadcast(Payload_Legacy packet, bool safemode = true)
     {
         ConnDict.SendToAll(packet, safemode);
     }

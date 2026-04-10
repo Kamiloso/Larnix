@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 namespace Larnix.Model.Entities.Structs;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct EntityHeader : IFixedStruct<EntityHeader>
+public readonly record struct EntityHeader
 {
     private readonly EntityID _id;
     private readonly Vec2 _position;

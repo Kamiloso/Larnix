@@ -1,5 +1,6 @@
 #nullable enable
 using Larnix.Core;
+using Larnix.Core.Serialization;
 using Larnix.Model;
 using Larnix.Model.Utils;
 using Larnix.Socket.Backend;
@@ -11,7 +12,7 @@ namespace Larnix.Server.Data;
 internal interface IWorldMetaManager
 {
     Version Version { get; }
-    String32 HostNickname { get; }
+    FixedString32 HostNickname { get; }
     void EnsureDetachedServer();
 }
 
@@ -29,9 +30,9 @@ internal class WorldMetaManager : IWorldMetaManager
     }
 
     public Version Version => WorldMeta.Version;
-    public String32 HostNickname
+    public FixedString32 HostNickname
     {
-        get => (String32)WorldMeta.Nickname;
+        get => (FixedString32)WorldMeta.Nickname;
         private set => WorldMeta = new WorldMeta(WorldMeta.Version, value);
     }
 
@@ -64,7 +65,7 @@ internal class WorldMetaManager : IWorldMetaManager
             if (Validation.IsGoodPassword(password))
             {
                 UserManager.TryChangePasswordOrAddUserSync(HostNickname, password);
-                HostNickname = (String32)Common.ReservedNickname;
+                HostNickname = new FixedString32(Common.ReservedNickname);
                 changeSuccess = true;
             }
             else

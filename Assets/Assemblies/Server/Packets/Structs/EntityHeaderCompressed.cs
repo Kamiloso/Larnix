@@ -1,6 +1,5 @@
 #nullable enable
 using Larnix.Core.Vectors;
-using Larnix.Core;
 using System.Runtime.InteropServices;
 using System;
 using Larnix.Model.Entities;
@@ -9,7 +8,7 @@ using Larnix.Model.Entities.Structs;
 namespace Larnix.Server.Packets.Structs;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct EntityHeaderCompressed : IFixedStruct<EntityHeaderCompressed>
+public readonly record struct EntityHeaderCompressed
 {
     private readonly EntityID _id;
     private readonly int _xi;

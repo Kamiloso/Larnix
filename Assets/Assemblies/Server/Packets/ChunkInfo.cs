@@ -5,11 +5,11 @@ using Larnix.Model.Blocks.Structs;
 using Larnix.Socket.Packets;
 using System;
 using Larnix.Core.Utils;
-using Larnix.Core;
+using Larnix.Core.Serialization;
 
 namespace Larnix.Server.Packets;
 
-public sealed class ChunkInfo : Payload
+public sealed class ChunkInfo : Payload_Legacy
 {
     private static int CHUNK_SIZE => BlockUtils.CHUNK_SIZE;
     private static int MIN_SIZE => Binary<Vec2Int>.Size;

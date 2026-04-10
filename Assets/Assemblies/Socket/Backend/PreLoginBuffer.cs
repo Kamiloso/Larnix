@@ -12,16 +12,16 @@ internal class PreLoginBuffer
     public const int MAX_PACKETS = 64;
     public AllowConnection AllowConnection => _allowConnection;
 
-    private readonly PayloadBox _synBox;
+    private readonly PayloadBox_Legacy _synBox;
     private readonly AllowConnection _allowConnection;
     private readonly Queue<byte[]> _buffer = new(MAX_PACKETS);
     private bool _receivedAny = false;
 
-    public PreLoginBuffer(PayloadBox synBox)
+    public PreLoginBuffer(PayloadBox_Legacy synBox)
     {
         _synBox = synBox;
 
-        if (!Payload.TryConstructPayload(synBox.Bytes, out _allowConnection))
+        if (!Payload_Legacy.TryConstructPayload(synBox.Bytes, out _allowConnection))
         {
             throw new InvalidOperationException("Failed to construct AllowConnection payload from the given synBox.");
         }
@@ -49,7 +49,7 @@ internal class PreLoginBuffer
             isSyn = true;
 
             _receivedAny = true;
-            return _synBox.Serialize(KeyEmpty.GetInstance());
+            return _synBox.Serialize(KeyEmpty.Instance);
         }
     }
 }

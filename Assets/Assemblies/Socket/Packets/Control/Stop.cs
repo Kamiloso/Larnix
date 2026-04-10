@@ -1,10 +1,8 @@
-using System.Collections;
-using System.Collections.Generic;
-using Larnix.Socket.Packets;
+#nullable enable
 
 namespace Larnix.Socket.Packets.Control;
 
-public sealed class Stop : Payload
+public sealed class Stop : Payload_Legacy
 {
     private const int SIZE = 0;
 

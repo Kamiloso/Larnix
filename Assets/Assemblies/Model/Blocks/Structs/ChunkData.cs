@@ -4,7 +4,7 @@ using SimpleJSON;
 using System.Collections.Generic;
 using Larnix.Model.Json;
 using Larnix.Model.Utils;
-using Larnix.Core;
+using Larnix.Core.Serialization;
 
 namespace Larnix.Model.Blocks.Structs;
 

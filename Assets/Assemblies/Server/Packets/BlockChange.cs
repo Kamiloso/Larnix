@@ -4,11 +4,11 @@ using Larnix.Core.Vectors;
 using Larnix.Socket.Packets;
 using Larnix.Model.Blocks.Structs;
 using Larnix.Core.Utils;
-using Larnix.Core;
+using Larnix.Core.Serialization;
 
 namespace Larnix.Server.Packets;
 
-public sealed class BlockChange : Payload
+public sealed class BlockChange : Payload_Legacy
 {
     private static int SIZE => Binary<Vec2Int>.Size + Binary<BlockHeader2>.Size + sizeof(long) + sizeof(byte);
 

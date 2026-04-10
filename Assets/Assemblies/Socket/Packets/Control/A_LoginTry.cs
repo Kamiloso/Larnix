@@ -5,7 +5,7 @@ using System;
 
 namespace Larnix.Socket.Packets.Control;
 
-internal sealed class A_LoginTry : Payload
+internal sealed class A_LoginTry : Payload_Legacy
 {
     private const int SIZE = 0;
 

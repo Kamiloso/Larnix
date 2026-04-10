@@ -6,12 +6,19 @@ using System.Linq;
 using Larnix.Socket.Packets.Control;
 using System.Runtime.Serialization;
 using Larnix.Core.Utils;
+using Larnix.Core.Serialization;
 
 namespace Larnix.Socket.Packets;
 
-public enum CmdID : ushort { None = 0 } // Use Payload.CmdID<T>() to get enum value
+public enum CmdID : ushort
+{
+    // Enum reflection-generated
+    // Use Cmd.Value<T>() to get enum value
 
-public abstract class Payload
+    None = 0,
+}
+
+public abstract class Payload_Legacy
 {
     public const int BASE_HEADER_SIZE = 2 + 1 + 4;
 
@@ -22,12 +29,12 @@ public abstract class Payload
     protected virtual bool WarningSuppress => false;
     protected abstract bool IsValid();
 
-    internal static bool TryConstructPayload<T>(HeaderSpan headerSpan, out T output) where T : Payload
+    internal static bool TryConstructPayload<T>(HeaderSpan headerSpan, out T output) where T : Payload_Legacy
     {
         return TryConstructPayload(headerSpan.AllBytes, out output);
     }
 
-    internal static bool TryConstructPayload<T>(byte[] rawBytes, out T output) where T : Payload
+    internal static bool TryConstructPayload<T>(byte[] rawBytes, out T output) where T : Payload_Legacy
     {
         if (rawBytes.Length >= BASE_HEADER_SIZE)
         {
@@ -87,7 +94,7 @@ public abstract class Payload
 
     private static readonly Dictionary<Type, CmdID> _dictCmdIDs = new();
     private static bool _staticInitialized = false;
-    private static object _locker = new object();
+    private static readonly object _locker = new();
 
     private static readonly List<Type> _hardCodedCmdIDs = new()
     {
@@ -123,13 +130,13 @@ public abstract class Payload
 
         // Filter and sort
 
-        allTypes = allTypes.Where(t => IsDerived(t, typeof(Payload))).ToList();
+        allTypes = allTypes.Where(t => IsDerived(t, typeof(Payload_Legacy))).ToList();
         allTypes.Sort((typeA, typeB) =>
         {
             string assemblyA = typeA.Assembly.GetName().Name;
             string assemblyB = typeB.Assembly.GetName().Name;
 
-            string thisAssembly = typeof(Payload).Assembly.GetName().Name;
+            string thisAssembly = typeof(Payload_Legacy).Assembly.GetName().Name;
             if (assemblyA == thisAssembly && assemblyB != thisAssembly) return -1;
             if (assemblyA != thisAssembly && assemblyB == thisAssembly) return 1;
 
@@ -182,7 +189,7 @@ public abstract class Payload
         }
     }
 
-    public static CmdID CmdID<T>() where T : Payload
+    public static CmdID CmdID<T>() where T : Payload_Legacy
     {
         return CmdIDByType(typeof(T));
     }

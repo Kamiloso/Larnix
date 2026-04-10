@@ -1,4 +1,5 @@
 #nullable enable
+using Larnix.Core.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,27 +20,27 @@ public static class Validation
     };
 
     public static bool IsGoodNickname(string nickname) =>
-        nickname != null &&
-        !nickname.EndsWith('\0') &&
+        BasicValidation(nickname) &&
         nickname.Length is >= 3 and <= 16 &&
         nickname.All(c => char.IsLetterOrDigit(c) || c == '-' || c == '_');
 
     public static bool IsGoodPassword(string password) =>
-        password != null &&
-        !password.EndsWith('\0') &&
+        BasicValidation(password) &&
         password.Length is >= 7 and <= 32 &&
         !password.Any(char.IsWhiteSpace);
 
     public static bool IsValidWorldName(string worldName) =>
-        worldName != null &&
-        !worldName.Contains('\0') &&
+        BasicValidation(worldName) &&
         worldName.Length is >= 1 and <= 32 &&
         worldName.All(c => char.IsLetterOrDigit(c) || c == '-' || c == '_' || c == ' ') &&
         worldName == worldName.Trim() &&
         !_denyWorldNames.Contains(worldName.ToUpperInvariant());
 
-    public static bool IsGoodText<T>(string message) where T : IStringStruct, new() =>
-        message != null &&
-        !message.EndsWith('\0') &&
-        message.Length <= new T().BinarySize / 2;
+    public static bool IsGoodText<T>(string message) where T : IFixedString, new() =>
+        BasicValidation(message) &&
+        message.Length <= new T().Capacity;
+
+    private static bool BasicValidation(string str) =>
+        str != null &&
+        !str.EndsWith('\0');
 }

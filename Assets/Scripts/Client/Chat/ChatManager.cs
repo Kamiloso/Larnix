@@ -2,10 +2,11 @@ using UnityEngine;
 using TMPro;
 using Larnix.Core;
 using Larnix.Server.Packets;
-using Larnix.Model.Utils;
 using System.Collections.Generic;
 using Larnix.Scoping;
 using static Larnix.Server.Packets.ChatMessage;
+using Larnix.Core.Serialization;
+using Larnix.Core.Utils;
 
 namespace Larnix.Client.Chat
 {
@@ -19,7 +20,7 @@ namespace Larnix.Client.Chat
 
         public bool IsChatOpen => Scopes.Matches(ScopeID.Chat);
 
-        private readonly List<String512> _incompleteMsgs = new();
+        private readonly List<FixedString512> _incompleteMsgs = new();
 
         private void Awake()
         {
@@ -82,7 +83,7 @@ namespace Larnix.Client.Chat
                     ChatOrigin.Clear();
                 }
 
-                string fullMsg = IStringStruct.Join(_incompleteMsgs.ToArray());
+                string fullMsg = FixedStringUtils.Join(_incompleteMsgs.ToArray());
                 _incompleteMsgs.Clear();
 
                 if (message.TryAppendPrefix(fullMsg, out string msgText))
@@ -97,7 +98,7 @@ namespace Larnix.Client.Chat
             if (string.IsNullOrEmpty(message))
                 return; // Don't trim! This condition is ok.
 
-            var msg = new ChatMessage(new String512(message), ChatCode.PlayerToServer);
+            var msg = new ChatMessage(new FixedString512(message), ChatCode.PlayerToServer);
             Client.Send(msg);
         }
     }

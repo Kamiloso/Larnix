@@ -3,11 +3,11 @@ using Larnix.Socket.Packets;
 using Larnix.Model.Enums;
 using Larnix.Model.Worldgen.Biomes;
 using Larnix.Core.Utils;
-using Larnix.Core;
+using Larnix.Core.Serialization;
 
 namespace Larnix.Server.Packets;
 
-public sealed class FrameInfo : Payload
+public sealed class FrameInfo : Payload_Legacy
 {
     private static int SIZE => sizeof(long) + Binary<Col32>.Size + sizeof(BiomeID) + sizeof(WeatherID) + sizeof(float);
 

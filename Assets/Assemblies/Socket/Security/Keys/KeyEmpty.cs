@@ -1,23 +1,17 @@
-using System.Collections;
-using System.Collections.Generic;
-using Larnix.Model;
+#nullable enable
+
+using System.Threading;
 
 namespace Larnix.Socket.Security.Keys;
 
 internal class KeyEmpty : IEncryptionKey
 {
-    private static KeyEmpty _instance;
+    private static readonly ThreadLocal<KeyEmpty> _keyProvider = new(() => new());
 
     private KeyEmpty() { }
 
-    public static KeyEmpty GetInstance()
-    {
-        if (_instance == null)
-            _instance = new KeyEmpty();
+    public static KeyEmpty Instance => _keyProvider.Value;
 
-        return _instance;
-    }
-
-    public byte[] Encrypt(byte[] plaintext) => plaintext;
-    public byte[] Decrypt(byte[] ciphertext) => ciphertext;
+    public byte[] Encrypt(byte[] plaintext) => plaintext[..];
+    public byte[] Decrypt(byte[] ciphertext) => ciphertext[..];
 }

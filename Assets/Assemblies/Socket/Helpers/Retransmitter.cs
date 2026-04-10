@@ -10,27 +10,27 @@ internal class Retransmitter
 {
     private readonly int RETRY_COUNT;
 
-    private readonly Dictionary<PayloadBox, int> _triesLeft = new(ReferenceEqualityComparer.Instance);
-    private readonly Dictionary<PayloadBox, long> _retryAt = new(ReferenceEqualityComparer.Instance);
+    private readonly Dictionary<PayloadBox_Legacy, int> _triesLeft = new(ReferenceEqualityComparer.Instance);
+    private readonly Dictionary<PayloadBox_Legacy, long> _retryAt = new(ReferenceEqualityComparer.Instance);
 
     public Retransmitter(int retryCount)
     {
         RETRY_COUNT = retryCount;
     }
 
-    public void Add(PayloadBox box, long miliseconds)
+    public void Add(PayloadBox_Legacy box, long miliseconds)
     {
         _triesLeft[box] = RETRY_COUNT;
         _retryAt[box] = Timestamp.GetTimestamp() + miliseconds;
     }
 
-    public void Discard(PayloadBox box)
+    public void Discard(PayloadBox_Legacy box)
     {
         _triesLeft.Remove(box);
         _retryAt.Remove(box);
     }
 
-    public bool AllowRetransmission(PayloadBox box, long miliseconds, out bool isTimeout)
+    public bool AllowRetransmission(PayloadBox_Legacy box, long miliseconds, out bool isTimeout)
     {
         isTimeout = false;
 
@@ -54,16 +54,16 @@ internal class Retransmitter
         return false;
     }
 
-    private class ReferenceEqualityComparer : IEqualityComparer<PayloadBox>
+    private class ReferenceEqualityComparer : IEqualityComparer<PayloadBox_Legacy>
     {
         public static readonly ReferenceEqualityComparer Instance = new();
 
-        public bool Equals(PayloadBox x, PayloadBox y)
+        public bool Equals(PayloadBox_Legacy x, PayloadBox_Legacy y)
         {
             return ReferenceEquals(x, y);
         }
 
-        public int GetHashCode(PayloadBox obj)
+        public int GetHashCode(PayloadBox_Legacy obj)
         {
             return System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj);
         }

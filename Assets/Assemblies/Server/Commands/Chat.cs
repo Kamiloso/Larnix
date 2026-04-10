@@ -5,6 +5,8 @@ using Larnix.Server.Packets;
 using LogType = Larnix.Core.Echo.LogType;
 using ChatCode = Larnix.Server.Packets.ChatMessage.ChatCode;
 using Larnix.Model;
+using Larnix.Core.Serialization;
+using Larnix.Core.Utils;
 
 namespace Larnix.Server.Commands;
 
@@ -39,7 +41,7 @@ internal class Chat : IChat
         {
             LogType logType = ICmdExecutor.ConvertToLogType(result);
 
-            String512[] answerParts = IStringStruct.Cut<String512>(answer, s => new(s));
+            FixedString512[] answerParts = FixedStringUtils.Cut<FixedString512>(answer, s => new(s));
             for (int i = 0; i < answerParts.Length; i++)
             {
                 bool isLast = i == answerParts.Length - 1;
@@ -49,7 +51,7 @@ internal class Chat : IChat
 
                 Server.Send(nickname, new ChatMessage(
                     logType: logType,
-                    sender: new String64("<Server>"),
+                    sender: new FixedString64("<Server>"),
                     message: answerParts[i],
                     msgCode: msgCode
                 ));
@@ -61,8 +63,8 @@ internal class Chat : IChat
     {
         var packet = new ChatMessage(
                 logType: LogType.Log,
-                sender: new String64($"[{nickname}]"),
-                message: new String512(message)
+                sender: new FixedString64($"[{nickname}]"),
+                message: new FixedString512(message)
             );
 
         string fullMsg = packet.Message; // no fragmentation here

@@ -3,11 +3,11 @@ using Larnix.Model.Utils;
 using Larnix.Socket.Packets;
 using Larnix.Model.Blocks.Structs;
 using Larnix.Core.Utils;
-using Larnix.Core;
+using Larnix.Core.Serialization;
 
 namespace Larnix.Server.Packets;
 
-public sealed class RetBlockChange : Payload
+public sealed class RetBlockChange : Payload_Legacy
 {
     private static int SIZE => Binary<Vec2Int>.Size + sizeof(long) + Binary<BlockHeader2>.Size + sizeof(byte);
 

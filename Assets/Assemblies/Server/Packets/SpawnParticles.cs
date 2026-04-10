@@ -2,11 +2,11 @@ using Larnix.Core.Vectors;
 using Larnix.Socket.Packets;
 using Larnix.Model.Enums;
 using Larnix.Core.Utils;
-using Larnix.Core;
+using Larnix.Core.Serialization;
 
 namespace Larnix.Server.Packets;
 
-public sealed class SpawnParticles : Payload
+public sealed class SpawnParticles : Payload_Legacy
 {
 	private static int SIZE => Binary<Vec2>.Size + sizeof(ParticleID) + sizeof(ulong);
 

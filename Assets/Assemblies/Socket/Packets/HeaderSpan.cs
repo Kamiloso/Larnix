@@ -1,4 +1,4 @@
-using Larnix.Core;
+using Larnix.Core.Serialization;
 
 namespace Larnix.Socket.Packets;
 

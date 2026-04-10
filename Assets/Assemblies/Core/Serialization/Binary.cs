@@ -2,16 +2,9 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using System.Reflection;
 
-namespace Larnix.Core;
-
-/// <summary>
-/// By applying this interface you promise that the struct that it is being
-/// applied has a fully deterministic memory layout. That means it doesn't
-/// contain any reference types, bools or other weird members and has a
-/// sequential layout with no padding.
-/// </summary>
-public interface IFixedStruct<T> where T : unmanaged { }
+namespace Larnix.Core.Serialization;
 
 public static unsafe class Binary<T> where T : unmanaged
 {
@@ -22,7 +15,7 @@ public static unsafe class Binary<T> where T : unmanaged
         if (!BitConverter.IsLittleEndian)
             throw new PlatformNotSupportedException("Only little-endian platforms are supported.");
 
-        if (!IsSupportedType())
+        if (!IsSupportedType(typeof(T)))
             throw new NotSupportedException($"Type {typeof(T)} is not supported.");
     }
 
@@ -51,7 +44,7 @@ public static unsafe class Binary<T> where T : unmanaged
         if (count < 0)
             throw new ArgumentOutOfRangeException(nameof(count), "Count cannot be negative.");
 
-        if (offset < 0 || offset + ((long)count * sizeof(T)) > bytes.Length)
+        if (offset < 0 || offset + (long)count * sizeof(T) > bytes.Length)
             throw new ArgumentOutOfRangeException(nameof(offset), "Byte array size mismatch.");
 
         return MemoryMarshal.Cast<byte, T>(
@@ -59,19 +52,50 @@ public static unsafe class Binary<T> where T : unmanaged
         ).ToArray();
     }
 
-    private static bool IsSupportedType()
+    private static bool IsSupportedType(Type type)
     {
-        if (typeof(T) == typeof(bool))
+        if (type == typeof(bool) || type == typeof(decimal))
+        {
             return false;
+        }
 
-        if (typeof(T).IsPrimitive || typeof(T).IsEnum)
+        if (type.IsPrimitive || type.IsEnum)
+        {
             return true;
+        }
 
-        if (!typeof(IFixedStruct<T>).IsAssignableFrom(typeof(T)))
+        if (!type.IsValueType)
+        {
             return false;
+        }
 
-        StructLayoutAttribute? layout = typeof(T).StructLayoutAttribute;
-        if (layout == null || (layout.Value != LayoutKind.Sequential && layout.Value != LayoutKind.Explicit) || layout.Pack != 1)
+        FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        if (fields.Length == 0)
+        {
+            return false; // something weird, better not allow it
+        }
+
+        foreach (FieldInfo field in fields)
+        {
+            FixedBufferAttribute? fixedBuffer = field.GetCustomAttribute<FixedBufferAttribute>();
+            if (fixedBuffer == null) // normal struct field
+            {
+                if (!IsSupportedType(field.FieldType))
+                {
+                    return false;
+                }
+            }
+            else // fixed-size buffer field
+            {
+                if (!IsSupportedType(fixedBuffer.ElementType))
+                {
+                    return false;
+                }
+            }
+        }
+
+        StructLayoutAttribute? layout = type.StructLayoutAttribute;
+        if (layout == null || layout.Value != LayoutKind.Sequential || layout.Pack != 1)
         {
             return false;
         }

@@ -45,7 +45,7 @@ internal class Receiver
     }
 
     private void Subscribe<T>(Action<T, string> callback, int maxPerSecond = 0,
-        bool softLimit = false) where T : Payload
+        bool softLimit = false) where T : Payload_Legacy
     {
         QuickServer.Subscribe<T>((msg, owner) =>
         {

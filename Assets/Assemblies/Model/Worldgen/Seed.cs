@@ -4,7 +4,7 @@ using Larnix.Core.Vectors;
 using System.Buffers.Binary;
 using System.Security.Cryptography;
 using Larnix.Model.Utils;
-using Larnix.Core;
+using Larnix.Core.Serialization;
 
 namespace Larnix.Model.Worldgen;
 
@@ -58,7 +58,7 @@ public record Seed(long Value)
         if (string.IsNullOrEmpty(phrase)) throw new ArgumentException(nameof(phrase));
 
         using SHA256 sha = SHA256.Create();
-        byte[] binary = Binary<String64>.Serialize((String64)phrase);
+        byte[] binary = Binary<FixedString64>.Serialize((FixedString64)phrase);
         byte[] hash = sha.ComputeHash(binary);
 
         return BinaryPrimitives.ReadInt64BigEndian(hash.AsSpan(0, 8));

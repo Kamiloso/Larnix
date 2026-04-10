@@ -65,7 +65,7 @@ internal class Particles : BaseCmd
 
     public override (CmdResult, string) Execute(string sender, PrivilegeLevel privilege)
     {
-        Payload packet = new SpawnParticles(_position, _particleID, _uid);
+        Payload_Legacy packet = new SpawnParticles(_position, _particleID, _uid);
 
         List<string> nearbyPlayers = ConnectedPlayers.AllPlayers
             .Where(nickname => Vec2.Distance(ConnectedPlayers[nickname].RenderPosition, _position) <= Common.ViewDistance)

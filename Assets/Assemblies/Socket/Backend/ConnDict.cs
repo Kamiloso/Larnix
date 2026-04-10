@@ -54,7 +54,7 @@ internal class ConnDict : ITickable, IDisposable
         return _connections.TryGetValue(endPoint, out connection);
     }
 
-    public bool TryAddPreLogin(IPEndPoint endPoint, PayloadBox synBox)
+    public bool TryAddPreLogin(IPEndPoint endPoint, PayloadBox_Legacy synBox)
     {
         if (CurrentPlayers < MaxPlayers && !_preLogins.ContainsKey(endPoint))
         {
@@ -145,8 +145,8 @@ internal class ConnDict : ITickable, IDisposable
                 PacketPair pair = new(packet, nickname);
                 int priority = 0; // default priority
 
-                if (packet.ID == Payload.CmdID<AllowConnection>()) priority = -1; // higher
-                if (packet.ID == Payload.CmdID<Stop>()) priority = -2; // highest
+                if (packet.ID == Payload_Legacy.CmdID<AllowConnection>()) priority = -1; // higher
+                if (packet.ID == Payload_Legacy.CmdID<Stop>()) priority = -2; // highest
 
                 _received.Enqueue(pair, priority);
 
@@ -170,7 +170,7 @@ internal class ConnDict : ITickable, IDisposable
         return _received.TryDequeue(out packetPair);
     }
 
-    public void TrySendTo(IPEndPoint endPoint, Payload payload, bool safemode = true)
+    public void TrySendTo(IPEndPoint endPoint, Payload_Legacy payload, bool safemode = true)
     {
         if (TryGetConnectionObject(endPoint, out var conn))
         {
@@ -178,7 +178,7 @@ internal class ConnDict : ITickable, IDisposable
         }
     }
 
-    public void SendToAll(Payload payload, bool safemode = true)
+    public void SendToAll(Payload_Legacy payload, bool safemode = true)
     {
         foreach (var conn in _connections.Values)
         {

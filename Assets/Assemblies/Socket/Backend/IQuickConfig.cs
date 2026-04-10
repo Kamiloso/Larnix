@@ -1,13 +1,13 @@
 using System.Net;
-using Larnix.Model.Utils;
+using Larnix.Core.Serialization;
 
 namespace Larnix.Socket.Backend;
 
 public interface IQuickConfig
 {
     public ushort MaxClients { get; }
-    public String256 Motd { get; }
-    public String32 HostUser { get; }
+    public FixedString256 Motd { get; }
+    public FixedString32 HostUser { get; }
 
     public ushort Port { get; init; }
     public bool IsLoopback { get; init; }

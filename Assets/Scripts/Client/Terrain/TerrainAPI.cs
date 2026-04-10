@@ -68,7 +68,7 @@ public static class TerrainAPI
 
     private static void SendBlockChange(Vec2Int POS, BlockHeader1 item, BlockHeader1 tool, bool front, long operation, byte code)
     {
-        Payload packet = new BlockChange(POS, item, tool, operation, front, code);
+        Payload_Legacy packet = new BlockChange(POS, item, tool, operation, front, code);
         Client.Send(packet);
     }
 }

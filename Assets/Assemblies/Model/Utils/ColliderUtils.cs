@@ -10,6 +10,14 @@ public static class ColliderUtils
 {
     public static Vec2 MaxColliderSize => new(6f, 6f);
 
+    // TODO: Make colliders more robust. Instead of assuming that every
+    // collider has a max size, we should implement a more complex size
+    // deduction system based on a given EntityData.
+    //
+    // Following:
+    // - Inside PhysicsManager modify alghorithm to check EVERY collider that
+    //   moving entity may collide with and not just a simple heuristic.
+
     static ColliderUtils()
     {
         if (MaxColliderSize.x <= 0 || MaxColliderSize.x >= BlockUtils.CHUNK_SIZE ||

@@ -5,7 +5,7 @@ using Larnix.Core;
 namespace Larnix.Model.Blocks.Structs;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct BlockHeader1 : IFixedStruct<BlockHeader1>
+public readonly record struct BlockHeader1
 {
     public const int MAX_VARIANT = 0x0F; // 15
 

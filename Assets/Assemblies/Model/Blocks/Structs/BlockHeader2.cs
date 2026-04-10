@@ -5,7 +5,7 @@ using Larnix.Core;
 namespace Larnix.Model.Blocks.Structs;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct BlockHeader2 : IFixedStruct<BlockHeader2>
+public readonly record struct BlockHeader2
 {
     private readonly BlockID _idFront;
     private readonly BlockID _idBack;

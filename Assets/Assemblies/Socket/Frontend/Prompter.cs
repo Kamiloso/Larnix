@@ -7,6 +7,7 @@ using Larnix.Socket.Helpers.Networking;
 using Larnix.Socket.Packets;
 using Larnix.Core;
 using Larnix.Core.Utils;
+using Larnix.Socket.Packets.Payload;
 
 namespace Larnix.Socket.Frontend;
 
@@ -23,7 +24,7 @@ internal class Prompter : IDisposable
         _udpClient = udpClient;
     }
 
-    public static async Task<TAnswer> PromptAsync<TAnswer>(string address, Payload prompt, int timeoutMiliseconds = 3000, KeyRSA publicKey = null) where TAnswer : Payload
+    public static async Task<TAnswer> PromptAsync<TAnswer>(string address, Payload_Legacy prompt, int timeoutMiliseconds = 3000, KeyRSA publicKey = null) where TAnswer : Payload_Legacy
     {
         IPEndPoint target = await Resolver.ResolveStringAsync(address);
         if (target == null) return null;
@@ -41,11 +42,11 @@ internal class Prompter : IDisposable
         return await prompter.SendAndWaitAsync<TAnswer>(prompt, publicKey, timeoutMiliseconds);
     }
 
-    private async Task<TAnswer> SendAndWaitAsync<TAnswer>(Payload prompt, KeyRSA publicKey, int timeoutMiliseconds) where TAnswer : Payload
+    private async Task<TAnswer> SendAndWaitAsync<TAnswer>(Payload_Legacy prompt, KeyRSA publicKey, int timeoutMiliseconds) where TAnswer : Payload_Legacy
     {
         int promptID = RandUtils.SecureInt();
 
-        PayloadBox payloadBox = new PayloadBox(
+        PayloadBox_Legacy payloadBox = new(
             seqNum: promptID,
             ackNum: 0,
             flags: (byte)(PacketFlag.NCN | (publicKey != null ? PacketFlag.RSA : 0)),
@@ -54,7 +55,7 @@ internal class Prompter : IDisposable
 
         byte[] data = publicKey != null ?
             payloadBox.Serialize(publicKey) :
-            payloadBox.Serialize(KeyEmpty.GetInstance());
+            payloadBox.Serialize(KeyEmpty.Instance);
 
         try
         {
@@ -74,9 +75,9 @@ internal class Prompter : IDisposable
             {
                 byte[] networkBytes = item.data;
 
-                if (PayloadBox.TryDeserialize(networkBytes, KeyEmpty.GetInstance(), out var incoming) && incoming.SeqNum == promptID)
+                if (PayloadBox_Legacy.TryDeserialize(networkBytes, KeyEmpty.Instance, out var incoming) && incoming.SeqNum == promptID)
                 {
-                    if (Payload.TryConstructPayload<TAnswer>(incoming.Bytes, out var answer))
+                    if (Payload_Legacy.TryConstructPayload<TAnswer>(incoming.Bytes, out var answer))
                         return answer;
                 }
             }

@@ -8,9 +8,9 @@ using System.Runtime.InteropServices;
 namespace Larnix.Model;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct Version : IFixedStruct<Version>
+public readonly record struct Version
 {
-    public static readonly Version Current = new("0.0.46.1");
+    public static readonly Version Current = new("0.0.47");
 
     public readonly uint Value;
 

@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 namespace Larnix.Core.Vectors;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct Vec2 : IFixedStruct<Vec2>
+public readonly record struct Vec2
 {
     private readonly double _x;
     private readonly double _y;

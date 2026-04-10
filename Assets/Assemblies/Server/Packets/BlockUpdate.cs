@@ -2,11 +2,11 @@ using System;
 using System.Collections.Generic;
 using Larnix.Socket.Packets;
 using Larnix.Server.Packets.Structs;
-using Larnix.Core;
+using Larnix.Core.Serialization;
 
 namespace Larnix.Server.Packets;
 
-public sealed class BlockUpdate : Payload
+public sealed class BlockUpdate : Payload_Legacy
 {
     private static int ENTRY_SIZE => Binary<BlockUpdateRecord>.Size;
     private static int HEADER_SIZE => 0;

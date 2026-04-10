@@ -8,7 +8,7 @@ using Larnix.Socket.Security;
 using Larnix.Socket.Security.Keys;
 using Larnix.Socket.Packets.Control;
 using Larnix.Socket.Helpers.Networking;
-using Larnix.Model.Utils;
+using Larnix.Core.Serialization;
 using Larnix.Core;
 
 namespace Larnix.Socket.Frontend;
@@ -65,7 +65,7 @@ public class QuickClient : IDisposable, ITickable
         KeyAES keyAES = new(); // auto-generate
         byte[] aesBytes = keyAES.ExportKey();
 
-        Payload synPacket = new AllowConnection((String32)nickname, (String64)password, aesBytes, serverSecret, challengeID, timestamp, runID);
+        Payload_Legacy synPacket = new AllowConnection(new FixedString32(nickname), new FixedString64(password), aesBytes, serverSecret, challengeID, timestamp, runID);
         _connection = Connection.CreateClient(_udpClient, _target, keyAES, _rsaKey, synPacket);
     }
 
@@ -97,19 +97,19 @@ public class QuickClient : IDisposable, ITickable
         }
     }
 
-    public void Subscribe<T>(Action<T> InterpretPacket) where T : Payload
+    public void Subscribe<T>(Action<T> InterpretPacket) where T : Payload_Legacy
     {
-        CmdID ID = Payload.CmdID<T>();
+        CmdID ID = Payload_Legacy.CmdID<T>();
         Subscriptions[ID] = (HeaderSpan packetBytes) =>
         {
-            if (Payload.TryConstructPayload<T>(packetBytes, out var message))
+            if (Payload_Legacy.TryConstructPayload<T>(packetBytes, out var message))
             {
                 InterpretPacket(message);
             }
         };
     }
 
-    public void Send(Payload packet, bool safemode = true) => _connection.Send(packet, safemode);
+    public void Send(Payload_Legacy packet, bool safemode = true) => _connection.Send(packet, safemode);
     public bool IsDead() => _connection.IsDead;
     public float GetPing() => _connection.AvgRTT * 1000f; // ms
 

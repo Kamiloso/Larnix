@@ -72,13 +72,13 @@ internal class ChunkSender : IChunkSender
             foreach (var chunk in added)
             {
                 ChunkView chunkData = ChunkHolders.GetChunkBrain(chunk)!.ActiveChunkReference.HeaderView;
-                Payload packet = new ChunkInfo(chunk, chunkData);
+                Payload_Legacy packet = new ChunkInfo(chunk, chunkData);
                 Server.Send(nickname, packet);
             }
 
             foreach (var chunk in removed)
             {
-                Payload packet = new ChunkInfo(chunk, null);
+                Payload_Legacy packet = new ChunkInfo(chunk, null);
                 Server.Send(nickname, packet);
             }
 
@@ -111,7 +111,7 @@ internal class ChunkSender : IChunkSender
             BlockUpdateRecord[] records = changes.ToArray();
 
             List<BlockUpdate> packets = BlockUpdate.CreateList(records);
-            foreach (Payload packet in packets)
+            foreach (Payload_Legacy packet in packets)
             {
                 Server.Send(nickname, packet);
             }
@@ -132,7 +132,7 @@ internal class ChunkSender : IChunkSender
                 ConnectedPlayers[elm.Nickname].LoadedChunks.Contains(chunk))
             {
                 BlockHeader2 currentBlock = new(blockFront.Header, blockBack.Header);
-                Payload packet = new RetBlockChange(POS, elm.Operation, currentBlock, elm.Front, elm.Success);
+                Payload_Legacy packet = new RetBlockChange(POS, elm.Operation, currentBlock, elm.Front, elm.Success);
                 Server.Send(elm.Nickname, packet);
             }
         }

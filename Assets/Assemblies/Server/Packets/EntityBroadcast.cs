@@ -1,5 +1,6 @@
 #nullable enable
 using Larnix.Core;
+using Larnix.Core.Serialization;
 using Larnix.Core.Utils;
 using Larnix.Model.Entities.Structs;
 using Larnix.Server.Packets.Structs;
@@ -10,7 +11,7 @@ using System.Linq;
 
 namespace Larnix.Server.Packets;
 
-public sealed class EntityBroadcast : Payload
+public sealed class EntityBroadcast : Payload_Legacy
 {
     private static int HEADER_SIZE => sizeof(uint) + sizeof(ushort) + sizeof(ushort);
     private static int ENTRY_A_SIZE => sizeof(ulong) + Binary<EntityHeaderCompressed>.Size; // entity transforms entry

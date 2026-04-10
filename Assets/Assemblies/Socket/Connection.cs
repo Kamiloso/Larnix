@@ -10,6 +10,7 @@ using Larnix.Socket.Helpers.Networking;
 using Larnix.Socket.Helpers;
 using Larnix.Core;
 using Larnix.Core.Utils;
+using Larnix.Socket.Packets.Payload;
 
 namespace Larnix.Socket;
 
@@ -35,8 +36,8 @@ internal class Connection : ITickable, IDisposable
     private readonly RTTTracker _rttTracker;
     private readonly CycleTimer _ackTimer, _safeAckTimer;
 
-    private readonly List<PayloadBox> _sendBuffer = new();
-    private readonly Dictionary<int, PayloadBox> _recvBuffer = new();
+    private readonly List<PayloadBox_Legacy> _sendBuffer = new();
+    private readonly Dictionary<int, PayloadBox_Legacy> _recvBuffer = new();
     private readonly LinkedList<HeaderSpan> _readyPackets = new();
 
     private readonly KeyRSA _rsaKey;
@@ -46,7 +47,7 @@ internal class Connection : ITickable, IDisposable
     private bool _disposed = false;
 
     public static Connection CreateClient(
-        INetworkInteractions udp, IPEndPoint target, KeyAES aesKey, KeyRSA rsaKey, Payload synPacket)
+        INetworkInteractions udp, IPEndPoint target, KeyAES aesKey, KeyRSA rsaKey, Payload_Legacy synPacket)
     {
         return new(udp, target, aesKey, ConnectionRole.Client, synPacket, rsaKey);
     }
@@ -59,7 +60,7 @@ internal class Connection : ITickable, IDisposable
 
     private Connection(
         INetworkInteractions udp, IPEndPoint target, KeyAES aesKey,
-        ConnectionRole role, Payload synPacket = null, KeyRSA rsaKey = null)
+        ConnectionRole role, Payload_Legacy synPacket = null, KeyRSA rsaKey = null)
     {
         Role = role;
 
@@ -73,7 +74,7 @@ internal class Connection : ITickable, IDisposable
 
         if (Role == ConnectionRole.Client)
         {
-            PayloadBox synBox = new PayloadBox(
+            PayloadBox_Legacy synBox = new PayloadBox_Legacy(
                 seqNum: ++SeqNum,
                 ackNum: GetNum,
                 flags: (byte)(PacketFlag.SYN | PacketFlag.RSA),
@@ -84,13 +85,13 @@ internal class Connection : ITickable, IDisposable
         }
     }
 
-    public void Send(Payload packet, bool safemode = true)
+    public void Send(Payload_Legacy packet, bool safemode = true)
     {
         if (_connClosed) return;
 
         if (safemode)
         {
-            PayloadBox box = new PayloadBox(
+            PayloadBox_Legacy box = new PayloadBox_Legacy(
                 seqNum: ++SeqNum,
                 ackNum: GetNum,
                 flags: 0,
@@ -100,7 +101,7 @@ internal class Connection : ITickable, IDisposable
         }
         else
         {
-            PayloadBox box = new PayloadBox(
+            PayloadBox_Legacy box = new PayloadBox_Legacy(
                 seqNum: SeqNum,
                 ackNum: GetNum,
                 flags: (byte)PacketFlag.FAS,
@@ -118,8 +119,8 @@ internal class Connection : ITickable, IDisposable
         if (_recvBuffer.Count >= BUFFER_LIMIT) return;
         if (_readyPackets.Count >= BUFFER_LIMIT) return;
 
-        IEncryptionKey key = isSyn ? KeyEmpty.GetInstance() : _aesKey; // RSA already removed
-        if (PayloadBox.TryDeserialize(networkBytes, key, out PayloadBox box))
+        IEncryptionKey key = isSyn ? KeyEmpty.Instance : _aesKey; // RSA already removed
+        if (PayloadBox_Legacy.TryDeserialize(networkBytes, key, out PayloadBox_Legacy box))
         {
             int diff = box.SeqNum - GetNum;
 
@@ -193,7 +194,7 @@ internal class Connection : ITickable, IDisposable
                 }
 
                 int nextGetNum = GetNum + 1;
-                Payload payload = new Stop(0);
+                Payload_Legacy payload = new Stop(0);
                 byte[] bytes = payload.Serialize(nextGetNum);
 
                 IsDead = true;
@@ -219,7 +220,7 @@ internal class Connection : ITickable, IDisposable
         // Send 3 FIN flags (to ensure they arrive).
         // If they don't, protocol will automatically disconnect after a few seconds.
 
-        PayloadBox box = new PayloadBox(
+        PayloadBox_Legacy box = new PayloadBox_Legacy(
             seqNum: SeqNum,
             ackNum: GetNum,
             flags: (byte)(PacketFlag.FAS | PacketFlag.FIN),
@@ -236,7 +237,7 @@ internal class Connection : ITickable, IDisposable
     private void FlushReceivedIntoReady()
     {
         int nextSeq = GetNum + 1;
-        while (_recvBuffer.TryGetValue(nextSeq, out PayloadBox box))
+        while (_recvBuffer.TryGetValue(nextSeq, out PayloadBox_Legacy box))
         {
             ReadyPacketTryEnqueue(box);
             _recvBuffer.Remove(nextSeq);
@@ -259,7 +260,7 @@ internal class Connection : ITickable, IDisposable
 
         for (int i = 0; i < _sendBuffer.Count; i++)
         {
-            PayloadBox box = _sendBuffer[i];
+            PayloadBox_Legacy box = _sendBuffer[i];
             if (box.SeqNum - AckNum <= 0)
             {
                 _sendBuffer.RemoveAt(i--);
@@ -285,7 +286,7 @@ internal class Connection : ITickable, IDisposable
         return report;
     }
 
-    private void SendSafe(PayloadBox box)
+    private void SendSafe(PayloadBox_Legacy box)
     {
         Transmit(box);
 
@@ -295,7 +296,7 @@ internal class Connection : ITickable, IDisposable
         _rttTracker.Ping(box.SeqNum);
     }
 
-    private void Transmit(PayloadBox box)
+    private void Transmit(PayloadBox_Legacy box)
     {
         bool isSyn = box.HasFlag(PacketFlag.SYN);
         bool isRsa = box.HasFlag(PacketFlag.RSA);
@@ -310,15 +311,15 @@ internal class Connection : ITickable, IDisposable
         _sendBytes(payload);
     }
 
-    private bool ReadyPacketTryEnqueue(PayloadBox box)
+    private bool ReadyPacketTryEnqueue(PayloadBox_Legacy box)
     {
         // AllowConnection packets only with SYN flag allowed
-        if (Payload.TryConstructPayload<AllowConnection>(box.Bytes, out _) &&
+        if (Payload_Legacy.TryConstructPayload<AllowConnection>(box.Bytes, out _) &&
             !box.HasFlag(PacketFlag.SYN))
             return false;
 
         // Stop packets generate on server side, they cannot be sent through network
-        if (Payload.TryConstructPayload<Stop>(box.Bytes, out _))
+        if (Payload_Legacy.TryConstructPayload<Stop>(box.Bytes, out _))
             return false;
 
         // Enqueue if everything ok

@@ -18,10 +18,10 @@ internal interface IServer
 
     void PrintHelloToConsole();
 
-    void Send(string nickname, Payload payload);
-    void Broadcast(Payload payload);
-    void SendFast(string nickname, Payload payload);
-    void BroadcastFast(Payload payload);
+    void Send(string nickname, Payload_Legacy payload);
+    void Broadcast(Payload_Legacy payload);
+    void SendFast(string nickname, Payload_Legacy payload);
+    void BroadcastFast(Payload_Legacy payload);
     void Close();
 }
 
@@ -62,9 +62,9 @@ internal class Server : IServer
         }
     }
 
-    public void Send(string nickname, Payload payload) => QuickServer.Send(nickname, payload);
-    public void Broadcast(Payload payload) => QuickServer.Broadcast(payload);
-    public void SendFast(string nickname, Payload payload) => QuickServer.Send(nickname, payload, false);
-    public void BroadcastFast(Payload payload) => QuickServer.Broadcast(payload, false);
+    public void Send(string nickname, Payload_Legacy payload) => QuickServer.Send(nickname, payload);
+    public void Broadcast(Payload_Legacy payload) => QuickServer.Broadcast(payload);
+    public void SendFast(string nickname, Payload_Legacy payload) => QuickServer.Send(nickname, payload, false);
+    public void BroadcastFast(Payload_Legacy payload) => QuickServer.Broadcast(payload, false);
     public void Close() => CloseServer();
 }

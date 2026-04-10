@@ -2,11 +2,11 @@ using System;
 using System.Collections.Generic;
 using Larnix.Socket.Packets;
 using Larnix.Core.Utils;
-using Larnix.Core;
+using Larnix.Core.Serialization;
 
 namespace Larnix.Server.Packets;
 
-public sealed class NearbyEntities : Payload
+public sealed class NearbyEntities : Payload_Legacy
 {
     private static int HEADER_SIZE => sizeof(uint) + 2 * sizeof(ushort);
     private static int ENTRY_SIZE => sizeof(ulong);

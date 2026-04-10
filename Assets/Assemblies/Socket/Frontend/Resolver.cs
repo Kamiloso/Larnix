@@ -7,6 +7,7 @@ using Larnix.Socket.Security;
 using Larnix.Socket.Security.Keys;
 using Larnix.Model.Utils;
 using Larnix.Socket.Packets.Control;
+using Larnix.Core.Serialization;
 
 namespace Larnix.Socket.Frontend;
 
@@ -88,7 +89,7 @@ public static class Resolver
             if (!ignoreCache && Cacher.TryGetInfo(authcode, nickname, out var cached))
                 return (cached, ResolverError.None);
 
-            var prompt = new P_ServerInfo((String32)nickname);
+            var prompt = new P_ServerInfo(new FixedString32(nickname));
             var packet = await Prompter.PromptAsync<A_ServerInfo>(address, prompt);
             if (packet == null) return (null, ResolverError.PromptFailed);
 
@@ -150,8 +151,8 @@ public static class Resolver
             long serverSecret = Authcode.GetSecretFromAuthCode(authcode);
             long timestamp = Timestamp.GetServerTimestamp(address);
 
-            String64? newPassStruct = newPassword != null ? (String64)newPassword : null;
-            var prompt = new P_LoginTry((String32)nickname, (String64)password, serverSecret, info.ChallengeID, timestamp, info.RunID, newPassStruct);
+            FixedString64? newPassStruct = newPassword != null ? new FixedString64(newPassword) : null;
+            var prompt = new P_LoginTry(new FixedString32(nickname), new FixedString64(password), serverSecret, info.ChallengeID, timestamp, info.RunID, newPassStruct);
             var packet = await Prompter.PromptAsync<A_LoginTry>(address, prompt, publicKey: rsa);
 
             if (packet == null) return (null, ResolverError.PromptFailed);

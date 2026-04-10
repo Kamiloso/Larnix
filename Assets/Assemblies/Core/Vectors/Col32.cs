@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 namespace Larnix.Core.Vectors;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct Col32 : IFixedStruct<Col32>
+public readonly record struct Col32
 {
     public byte r { get; }
     public byte g { get; }
