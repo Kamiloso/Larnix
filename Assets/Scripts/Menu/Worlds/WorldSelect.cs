@@ -8,7 +8,6 @@ using UnityEngine.UI;
 using TMPro;
 using Larnix.Menu.Forms;
 using Larnix.Model;
-using Larnix.Model.Utils;
 using ServerAnswer = Larnix.Server.ServerRunner.ServerAnswer;
 using RunSuggestions = Larnix.Server.ServerRunner.RunSuggestions;
 

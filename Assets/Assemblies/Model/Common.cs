@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using Larnix.Core.Vectors;
 
-namespace Larnix.Model.Utils;
+namespace Larnix.Model;
 
 public static class Common
 {
@@ -92,7 +92,7 @@ public static class Common
 
                 if (remainingBits > 0)
                 {
-                    int mask = (0xFF << (8 - remainingBits)) & 0xFF;
+                    int mask = 0xFF << 8 - remainingBits & 0xFF;
                     if ((networkBytes[fullBytes] & mask) != (addressBytes[fullBytes] & mask))
                         return false;
                 }

@@ -4,7 +4,6 @@ using Larnix.Core.Files;
 using Larnix.Core.Utils;
 using Larnix.Model.Json;
 using Larnix.Model.Physics;
-using Larnix.Model.Utils;
 using Larnix.Model.Worldgen;
 using Larnix.Server.Commands;
 using Larnix.Server.Data;
@@ -23,6 +22,7 @@ using Larnix.Server.Chunks.Data;
 using Larnix.Server.Chunks.Scripts;
 using Larnix.Model.Blocks;
 using static Larnix.Server.ServerRunner;
+using Larnix.Model;
 
 namespace Larnix.Server;
 

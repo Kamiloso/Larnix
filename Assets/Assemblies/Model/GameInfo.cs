@@ -4,7 +4,7 @@ namespace Larnix.Model;
 
 public static class GameInfo
 {
-    public static Version Version => new("0.0.48");
+    public static Version Version => new("0.0.48.1");
 
     public static ushort DefaultPort => 27682;
     public static ushort DefaultRelayPort => 27681;

@@ -2,9 +2,9 @@
 using Larnix.Core;
 using Larnix.Core.Utils;
 using Larnix.Core.Vectors;
+using Larnix.Model;
 using Larnix.Model.Entities.Structs;
 using Larnix.Model.Enums;
-using Larnix.Model.Utils;
 using Larnix.Model.Worldgen;
 using Larnix.Server;
 using Larnix.Server.Data;
