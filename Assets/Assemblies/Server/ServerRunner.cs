@@ -4,8 +4,8 @@ using System.Diagnostics;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Larnix.Model.Utils;
 using Larnix.Core;
+using Larnix.Model;
 
 namespace Larnix.Server;
 
@@ -18,7 +18,7 @@ public enum ServerType
 
 public sealed class ServerRunner : IDisposable
 {
-    private static float PERIOD => Common.FixedTime;
+    private static float PERIOD => GameInfo.FixedTime;
     private static long MAX_FRAME_DELAY => 5;
 
     public record ServerAnswer(

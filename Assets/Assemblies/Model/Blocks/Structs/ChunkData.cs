@@ -232,8 +232,8 @@ public class ChunkData
 
     private static long UniqueLong(BlockHeader2 bh2)
     {
-        long frontPart = ((long)bh2.Front.ID & 0xFFFF) | (((long)bh2.Front.Variant & 0xFF) << 16);
-        long backPart = ((long)bh2.Back.ID & 0xFFFF) | (((long)bh2.Back.Variant & 0xFF) << 16);
+        long frontPart = ((long)bh2.Front.Id & 0xFFFF) | (((long)bh2.Front.Variant & 0xFF) << 16);
+        long backPart = ((long)bh2.Back.Id & 0xFFFF) | (((long)bh2.Back.Variant & 0xFF) << 16);
 
         return frontPart | (backPart << 24);
     }

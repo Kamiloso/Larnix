@@ -101,7 +101,7 @@ internal class UserManager : IUserManager, ITickable, IDisposable
     {
         string hostUser = _server.Config.HostUser;
 
-        return username == Common.ReservedNickname ||
+        return username == GameInfo.ReservedNickname ||
                username == hostUser;
     }
 
@@ -346,8 +346,8 @@ internal class UserManager : IUserManager, ITickable, IDisposable
 
             // Complex checks
             !Timestamp.InTimestamp(timestamp) || // login message is outdated
-            !(isLoopback || nickname != Common.ReservedNickname) || // loopback-only nickname
-            !(isLoopback || password != Common.ReservedPassword) || // loopback-only password
+            !(isLoopback || nickname != GameInfo.ReservedNickname) || // loopback-only nickname
+            !(isLoopback || password != GameInfo.ReservedPassword) || // loopback-only password
             !(challengeID == GetChallengeID(nickname))) // wrong challengeID
         {
             yield return new Box<bool>(false);

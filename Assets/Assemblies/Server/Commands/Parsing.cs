@@ -66,8 +66,7 @@ internal static class Parsing
             {
                 if (parts.Length == 2)
                 {
-                    if (byte.TryParse(parts[1], out variant) &&
-                        variant <= BlockHeader1.MAX_VARIANT)
+                    if (byte.TryParse(parts[1], out variant) && variant <= 0x0F)
                     {
                         return true;
                     }

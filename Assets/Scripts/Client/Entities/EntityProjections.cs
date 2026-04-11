@@ -172,9 +172,9 @@ namespace Larnix.Client.Entities
 
         private EntityProjection CreateProjection(ulong uid, EntityHeader entityData, double time)
         {
-            GameObject gobj = Prefabs.CreateEntity(entityData.ID);
+            GameObject gobj = Prefabs.CreateEntity(entityData.Id);
             gobj.transform.SetParent(transform, false);
-            gobj.transform.name = entityData.ID + " [" + uid + "]";
+            gobj.transform.name = entityData.Id + " [" + uid + "]";
             EntityProjection projection = gobj.GetComponent<EntityProjection>();
             projection.UpdateTransform(entityData, time);
             return projection;

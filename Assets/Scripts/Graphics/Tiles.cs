@@ -17,11 +17,11 @@ public static class Tiles
 
     public static Tile GetTile(BlockHeader1 block, bool isFront)
     {
-        string string_id = block.ID + ":" + block.Variant + ":" + isFront;
+        string string_id = block.Id + ":" + block.Variant + ":" + isFront;
 
         if (!TileCache.TryGetValue(string_id, out Tile tile))
         {
-            tile = Textures.CreateTileObject(block.ID, block.Variant);
+            tile = Textures.CreateTileObject(block.Id, block.Variant);
             TileCache.Add(string_id, tile);
         }
         return tile;
@@ -42,7 +42,7 @@ public static class Tiles
         BlockHeader1? blockNullable = grid.BlockDataAtPOS(POS)?.Front;
 
         IHasConture iface;
-        if (blockNullable != null && (iface = BlockFactory.GetSlaveInstance<IHasConture>(blockNullable.Value.ID)) != null)
+        if (blockNullable != null && (iface = BlockFactory.GetSlaveInstance<IHasConture>(blockNullable.Value.Id)) != null)
         {
             BlockHeader1 block = blockNullable.Value;
 

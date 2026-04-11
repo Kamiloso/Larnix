@@ -111,7 +111,7 @@ namespace Larnix.Client.Terrain.Selector
             BlockHeader1 holdBlock = Inventory.GetHoldingBlock().Header;
             Tile tile = Tiles.GetTile(holdBlock, !shift);
 
-            bool isTool = BlockFactory.HasInterface<ITool>(holdBlock.ID);
+            bool isTool = BlockFactory.HasInterface<ITool>(holdBlock.Id);
 
             if (isTool)
             {

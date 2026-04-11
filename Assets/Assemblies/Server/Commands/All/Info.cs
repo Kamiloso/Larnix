@@ -28,7 +28,7 @@ internal class Info : BaseCmd
     public override (CmdResult, string) Execute(string sender, PrivilegeLevel privilege)
     {
         IEnumerable<string> lines = new[] {
-            $"Version: {Version.Current}",
+            $"Version: {GameInfo.Version}",
             $"Players: {QuickServer.PlayerCount} / {QuickServer.PlayerLimit}",
             $"Port: {Server.Port}",
             $"Authcode: {QuickServer.Authcode}",

@@ -19,7 +19,7 @@ public interface ILiquid : IMovingBehaviour, IPlaceable, IReplaceable, IBlocking
         if (LIQUID_IS_REPLACEABLE())
         {
             // can only be replaced by blocks with different IDs
-            return thisBlock.ID != otherBlock.ID;
+            return thisBlock.Id != otherBlock.Id;
         }
         else
         {

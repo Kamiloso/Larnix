@@ -33,7 +33,7 @@ namespace Larnix.Menu.Forms
 
         protected override ErrorCode GetErrorCode()
         {
-            if (IF_Nickname.text == Common.ReservedNickname)
+            if (IF_Nickname.text == GameInfo.ReservedNickname)
                 return ErrorCode.NICKNAME_IS_PLAYER;
 
             if (!Validation.IsGoodNickname(IF_Nickname.text))
@@ -68,7 +68,7 @@ namespace Larnix.Menu.Forms
                 seedSuggestion = RandUtils.SeedFromString(seedStr);
             }
 
-            WorldMeta.SaveToWorldFolder(worldName, new WorldMeta(Version.Current, nickname));
+            WorldMeta.SaveToWorldFolder(worldName, new WorldMeta(GameInfo.Version, nickname));
             WorldSelect.PlayWorldByName(worldName, seedSuggestion);
         }
     }

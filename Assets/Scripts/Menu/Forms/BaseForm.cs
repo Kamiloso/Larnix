@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using System;
 using Larnix.Model.Utils;
+using Larnix.Model;
 
 namespace Larnix.Menu.Forms
 {
@@ -35,7 +36,7 @@ namespace Larnix.Menu.Forms
             ErrorCode.WORLD_NAME_FORMAT => Validation.WrongWorldNameInfo,
             ErrorCode.WORLD_EXISTS => "World with such name already exists.",
             ErrorCode.NICKNAME_FORMAT => Validation.WrongNicknameInfo,
-            ErrorCode.NICKNAME_IS_PLAYER => $"Nickname \"{Common.ReservedNickname}\" is reserved.",
+            ErrorCode.NICKNAME_IS_PLAYER => $"Nickname \"{GameInfo.ReservedNickname}\" is reserved.",
             ErrorCode.PASSWORD_FORMAT => Validation.WrongPasswordInfo,
             ErrorCode.ADDRESS_EXISTS => "This address already exists in the server list.",
             ErrorCode.AUTHCODE_FORMAT => "It is not a correct authcode.",

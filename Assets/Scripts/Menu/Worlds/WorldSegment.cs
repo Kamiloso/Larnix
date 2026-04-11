@@ -4,7 +4,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using Larnix.Model;
-using Version = Larnix.Model.Version;
+using Larnix.Model.Utils;
 
 namespace Larnix.Menu.Worlds
 {
@@ -52,7 +52,7 @@ namespace Larnix.Menu.Worlds
                 if (!_versionChecked)
                 {
                     WorldMeta mdata = WorldMeta.ReadFromWorldFolder(Name);
-                    PlayButton.interactable = mdata.Version <= Version.Current;
+                    PlayButton.interactable = mdata.Version <= GameInfo.Version;
                     _versionChecked = true;
                 }
             }

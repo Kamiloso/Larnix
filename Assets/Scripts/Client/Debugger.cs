@@ -6,9 +6,9 @@ using System.Linq;
 using UnityEngine.Profiling;
 using Larnix.Core.Vectors;
 using Larnix.Core;
-using Larnix.Model.Utils;
 using Larnix.Scoping;
 using Larnix.Model.Worldgen.Biomes;
+using Larnix.Model;
 
 namespace Larnix.Client
 {
@@ -53,7 +53,7 @@ namespace Larnix.Client
 
             if (AdvancedDebugKeys)
             {
-                if(MyInput.GetKeyDown(KeyCode.N))
+                if (MyInput.GetKeyDown(KeyCode.N))
                     SpectatorMode = !SpectatorMode;
             }
         }
@@ -113,7 +113,7 @@ namespace Larnix.Client
                 $"Y: {playerPos.y:F3}\n" +
                 $"Biome: {_currentBiome}\n" +
                 $"World Age: {TextAge(_serverTick)}\n" +
-                $"TPS: {_lastTPS ?? _tps:F1} / {Common.TargetTPS:F1}\n";
+                $"TPS: {_lastTPS ?? _tps:F1} / {GameInfo.TargetTPS:F1}\n";
 
             DebugF3.text = ShowDebugInfo && MainPlayer.Alive ? debugText : "";
         }

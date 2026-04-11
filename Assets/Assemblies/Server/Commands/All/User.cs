@@ -24,7 +24,7 @@ internal class User : BaseCmd
         $"user delete <username> - Deletes a user.\n" +
         $"user resetlimits - Resets all hashing and registration user limits.\n" +
         $"user list - Lists all registered users.\n" +
-        $"user deleteall - Deletes all users except host and '{Common.ReservedNickname}'.";
+        $"user deleteall - Deletes all users except host and '{GameInfo.ReservedNickname}'.";
 
     private QuickServer QuickServer => GlobRef.Get<QuickServer>();
     private IConnectedPlayers ConnectedPlayers => GlobRef.Get<IConnectedPlayers>();

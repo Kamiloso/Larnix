@@ -12,9 +12,9 @@ public static class BlockInteractions
         BlockHeader1 backBlock = blockPair.Back;
         BlockHeader1 block = front ? frontBlock : backBlock;
 
-        bool can_place = BlockFactory.GetSlaveInstance<IPlaceable>(item.ID)?.STATIC_IsPlaceable(item, front) == true;
-        bool can_replace = BlockFactory.GetSlaveInstance<IReplaceable>(block.ID)?.STATIC_IsReplaceable(block, item, front) == true;
-        bool blocking_front = BlockFactory.GetSlaveInstance<IBlockingFront>(frontBlock.ID)?.IS_BLOCKING_FRONT() == true;
+        bool can_place = BlockFactory.GetSlaveInstance<IPlaceable>(item.Id)?.STATIC_IsPlaceable(item, front) == true;
+        bool can_replace = BlockFactory.GetSlaveInstance<IReplaceable>(block.Id)?.STATIC_IsReplaceable(block, item, front) == true;
+        bool blocking_front = BlockFactory.GetSlaveInstance<IBlockingFront>(frontBlock.Id)?.IS_BLOCKING_FRONT() == true;
 
         return can_place && can_replace && (front || !blocking_front);
     }
@@ -25,9 +25,9 @@ public static class BlockInteractions
         BlockHeader1 backBlock = blockPair.Back;
         BlockHeader1 block = front ? frontBlock : backBlock;
 
-        bool is_breakable = BlockFactory.GetSlaveInstance<IBreakable>(block.ID)?.STATIC_IsBreakable(block, tool, front) == true;
-        bool is_breakable_match = BlockFactory.GetSlaveInstance<IBreakable>(block.ID)?.STATIC_IsBreakableItemMatch(block, item) == true;
-        bool blocking_front = BlockFactory.GetSlaveInstance<IBlockingFront>(frontBlock.ID)?.IS_BLOCKING_FRONT() == true;
+        bool is_breakable = BlockFactory.GetSlaveInstance<IBreakable>(block.Id)?.STATIC_IsBreakable(block, tool, front) == true;
+        bool is_breakable_match = BlockFactory.GetSlaveInstance<IBreakable>(block.Id)?.STATIC_IsBreakableItemMatch(block, item) == true;
+        bool blocking_front = BlockFactory.GetSlaveInstance<IBlockingFront>(frontBlock.Id)?.IS_BLOCKING_FRONT() == true;
 
         return is_breakable && is_breakable_match && (front || !blocking_front);
     }

@@ -6,6 +6,7 @@ using Larnix.Socket.Backend;
 using System.Net;
 using System.Linq;
 using Larnix.Core.Serialization;
+using Larnix.Model;
 
 namespace Larnix.Server.Data;
 
@@ -19,7 +20,7 @@ internal class QuickSettings : IQuickConfig
     public ushort MaxClients => ServerConfig.MaxPlayers;
     public FixedString256 Motd => new(ServerConfig.Motd);
     public FixedString32 HostUser => Server.ServerType == ServerType.Remote ?
-        new FixedString32(Common.ReservedNickname) :
+        new FixedString32(GameInfo.ReservedNickname) :
         WorldMetaManager.HostNickname;
 
     // Static settings

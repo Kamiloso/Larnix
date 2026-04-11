@@ -28,7 +28,7 @@ public struct InvalidLayoutStruct { public int Id; }
 [StructLayout(LayoutKind.Sequential, Pack = 1)] public struct StructWithDecimal { public decimal Val; }
 
 [TestFixture]
-public class BinaryTests
+public class SerializationTests
 {
     [Test]
     public void SupportedTypes_InitializeSuccessfully()

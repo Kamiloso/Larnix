@@ -9,7 +9,6 @@ using TMPro;
 using Larnix.Menu.Forms;
 using Larnix.Model;
 using Larnix.Model.Utils;
-using Version = Larnix.Model.Version;
 using ServerAnswer = Larnix.Server.ServerRunner.ServerAnswer;
 using RunSuggestions = Larnix.Server.ServerRunner.RunSuggestions;
 
@@ -49,7 +48,7 @@ namespace Larnix.Menu.Worlds
         {
             WorldMeta mdata = WorldMeta.ReadFromWorldFolder(name);
 
-            if(mdata.Nickname != Common.ReservedNickname)
+            if(mdata.Nickname != GameInfo.ReservedNickname)
                 Settings.Settings.Instance.SetValue("$last-nickname-SGP", mdata.Nickname, true);
 
             var suggestions = new RunSuggestions(seedSuggestion);
@@ -61,7 +60,7 @@ namespace Larnix.Menu.Worlds
         {
             WorldMeta mdata = WorldMeta.ReadFromWorldFolder(name);
 
-            if (mdata.Nickname != Common.ReservedNickname)
+            if (mdata.Nickname != GameInfo.ReservedNickname)
                 Settings.Settings.Instance.SetValue("$last-nickname-SGP", mdata.Nickname, true);
 
             WorldLoad.StartHost(name, mdata.Nickname, answer);
@@ -112,7 +111,7 @@ namespace Larnix.Menu.Worlds
             NameText.text = worldName ?? "";
 
             bool enable = worldName != null;
-            bool compatible = enable ? _metadatas[worldName].Version <= Version.Current : false;
+            bool compatible = enable ? _metadatas[worldName].Version <= GameInfo.Version : false;
 
             BT_Play.interactable = enable && compatible;
             BT_Host.interactable = enable && compatible;
@@ -126,7 +125,7 @@ namespace Larnix.Menu.Worlds
 
                 LoadImageOrClear(Path.Combine(SavesPath, worldName, "last_image.png"), TitleImage);
                 string description = $"Version: {versionDisplay}[REPLACE]\n" +
-                                     (playerDisplay != Common.ReservedNickname ? $"Player: {playerDisplay}" : "Detached World");
+                                     (playerDisplay != GameInfo.ReservedNickname ? $"Player: {playerDisplay}" : "Detached World");
 
                 DescriptionText.text = description.Replace("[REPLACE]", compatible ? "" : " - Incompatible");
             }

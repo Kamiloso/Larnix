@@ -163,7 +163,7 @@ namespace Larnix.Client.Terrain
                     BlockHeader1? blockNullable = BlockDataAtPOS(n_POS)?.Front;
 
                     IHasConture iface;
-                    if (blockNullable != null && (iface = BlockFactory.GetSlaveInstance<IHasConture>(blockNullable.Value.ID)) != null)
+                    if (blockNullable != null && (iface = BlockFactory.GetSlaveInstance<IHasConture>(blockNullable.Value.Id)) != null)
                     {
                         BlockHeader1 block = blockNullable.Value;
 

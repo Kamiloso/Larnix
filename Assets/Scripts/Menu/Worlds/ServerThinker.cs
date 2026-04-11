@@ -1,11 +1,9 @@
 using System.Collections;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
 using Larnix.Socket.Frontend;
 using Larnix.Socket.Packets;
-using Version = Larnix.Model.Version;
-using Larnix.Model.Utils;
+using Larnix.Model;
 
 namespace Larnix.Menu.Worlds
 {
@@ -164,7 +162,7 @@ namespace Larnix.Menu.Worlds
             bool knowsUserData = nickname != "" && password != "";
 
             var downloading = Task.Run(() =>
-                Resolver.DownloadServerInfoAsync(address, authcode, knowsUserData ? nickname : Common.ReservedNickname, true));
+                Resolver.DownloadServerInfoAsync(address, authcode, knowsUserData ? nickname : GameInfo.ReservedNickname, true));
 
             while (!downloading.IsCompleted)
                 yield return null;
@@ -187,7 +185,7 @@ namespace Larnix.Menu.Worlds
             else // success
             {
                 serverInfo = downloading.Result.info;
-                State = Version.Current.CompatibleWith(serverInfo.GameVersion) ?
+                State = GameInfo.Version.CompatibleWith(serverInfo.GameVersion) ?
                     ThinkerState.Ready :
                     ThinkerState.Incompatible;
 

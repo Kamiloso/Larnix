@@ -8,7 +8,7 @@ public class EntityData
     public EntityHeader Header { get; private set; }
     public Storage NBT { get; }
 
-    public EntityID ID => Header.ID;
+    public EntityID ID => Header.Id;
     public Vec2 Position
     {
         get => Header.Position;

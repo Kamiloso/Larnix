@@ -1,6 +1,5 @@
 #nullable enable
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -12,17 +11,9 @@ namespace Larnix.Model.Utils;
 
 public static class Common
 {
-    public const ushort LARNIX_PORT = 27682;
-
-    public static string DefaultRelayAddress => "relay.se3.page";
-    public static string ReservedNickname => "Player";
-    public static string ReservedPassword => "SGP_PASSWORD\x01";
-
     public static string ConfigFile => "config.json";
     public static string DatabaseFile => "database.sqlite";
 
-    public static int TargetTPS => 50;
-    public static float FixedTime => 1f / TargetTPS;
     public static double ViewDistance => 50.0;
     public static double PhysicsSectorSize => 3.0f;
 

@@ -41,7 +41,7 @@ internal class EntryTicket
 
 public static class Resolver
 {
-    public static async Task<IPEndPoint> ResolveStringAsync(string address, ushort defaultPort = Common.LARNIX_PORT)
+    public static async Task<IPEndPoint> ResolveStringAsync(string address, ushort defaultPort)
     {
         if (address == null) return null;
 

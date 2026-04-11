@@ -105,7 +105,7 @@ public class DynamicCollider
         VelocityWallReset();
 
         OldCenter = Center;
-        Center += Velocity * Common.FixedTime;
+        Center += Velocity * GameInfo.FixedTime;
 
         Report = MoveCollider(staticColliders);
         return Report with { Position = Report.Position - Offset };

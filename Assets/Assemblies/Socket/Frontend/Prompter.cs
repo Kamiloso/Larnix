@@ -8,6 +8,7 @@ using Larnix.Socket.Packets;
 using Larnix.Core;
 using Larnix.Core.Utils;
 using Larnix.Socket.Packets.Payload;
+using Larnix.Model;
 
 namespace Larnix.Socket.Frontend;
 
@@ -26,7 +27,7 @@ internal class Prompter : IDisposable
 
     public static async Task<TAnswer> PromptAsync<TAnswer>(string address, Payload_Legacy prompt, int timeoutMiliseconds = 3000, KeyRSA publicKey = null) where TAnswer : Payload_Legacy
     {
-        IPEndPoint target = await Resolver.ResolveStringAsync(address);
+        IPEndPoint target = await Resolver.ResolveStringAsync(address, GameInfo.DefaultPort);
         if (target == null) return null;
 
         using UdpClient2 udp = new UdpClient2(

@@ -7,6 +7,7 @@ using Larnix.Model.Utils;
 using ServerType = Larnix.Server.ServerType;
 using ServerAnswer = Larnix.Server.ServerRunner.ServerAnswer;
 using RunSuggestions = Larnix.Server.ServerRunner.RunSuggestions;
+using Larnix.Model;
 
 namespace Larnix;
 
@@ -42,7 +43,7 @@ public static class WorldLoad
         Address = answer.Address;
         Authcode = answer.Authcode;
         Nickname = nickname;
-        Password = Common.ReservedPassword;
+        Password = GameInfo.ReservedPassword;
 
         // Load client
         SceneManager.LoadScene("Client");
@@ -61,7 +62,7 @@ public static class WorldLoad
         Address = input.Address;
         Authcode = input.Authcode;
         Nickname = nickname;
-        Password = Common.ReservedPassword;
+        Password = GameInfo.ReservedPassword;
 
         // Load client
         SceneManager.LoadScene("Client");

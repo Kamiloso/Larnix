@@ -3,6 +3,7 @@ using UnityEngine;
 using Larnix.Menu.Worlds;
 using Larnix.Model.Utils;
 using Larnix.Core;
+using Larnix.Model;
 
 namespace Larnix.Menu.Forms
 {
@@ -41,7 +42,7 @@ namespace Larnix.Menu.Forms
             if (!Validation.IsGoodNickname(nickname))
                 return ErrorCode.NICKNAME_FORMAT;
 
-            if (nickname == Common.ReservedNickname)
+            if (nickname == GameInfo.ReservedNickname)
                 return ErrorCode.NICKNAME_IS_PLAYER;
 
             if (!Validation.IsGoodPassword(password))

@@ -1,4 +1,6 @@
 using Larnix.Core;
+using Larnix.Model;
+using Larnix.Model.Utils;
 using Larnix.Socket.Backend;
 using Larnix.Socket.Packets;
 using System;
@@ -49,7 +51,7 @@ internal class Server : IServer
     {
         if (ServerType == ServerType.Remote)
         {
-            Echo.SetTitle("Larnix Server " + Version.Current);
+            Echo.SetTitle("Larnix Server " + GameInfo.Version);
             Echo.PrintBorder();
 
             Echo.LogRaw($"Socket created on port: {Port}\n");

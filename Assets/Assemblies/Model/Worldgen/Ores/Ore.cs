@@ -20,7 +20,7 @@ public abstract class Ore
 
     public bool TryGenerateOre(Vec2Int POS, BlockHeader1 oldBlock, out BlockHeader1 newBlock)
     {
-        if (BlockFactory.HasInterface<IOreReplaceable>(oldBlock.ID) &&
+        if (BlockFactory.HasInterface<IOreReplaceable>(oldBlock.Id) &&
             OrePresentAt(POS))
         {
             newBlock = BlockTransform(oldBlock);

@@ -126,7 +126,7 @@ internal class EntityControllers : IEntityControllers
     {
         EntityData? entityData = EntityRepository.FindEntityData(uid);
 
-        if (entityData is not null && entityData.Header.ID != EntityID.Player)
+        if (entityData is not null && entityData.Header.Id != EntityID.Player)
             throw new InvalidOperationException($"Entity with UID {uid} is not a player.");
 
         entityData ??= new EntityData( // default data for a new player (temporary)

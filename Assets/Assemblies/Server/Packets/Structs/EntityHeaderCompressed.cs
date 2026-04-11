@@ -17,26 +17,21 @@ public readonly record struct EntityHeaderCompressed
     private readonly byte _yf;
     private readonly byte _rt;
 
-    public EntityHeader Header => new(ID, Position, Rotation);
+    public EntityHeader Header => new(Id, Position, Rotation);
 
-    public EntityID ID => _id;
+    public EntityID Id => _id;
     public Vec2 Position => new(
         x: _xi + (_xf / 256.0),
         y: _yi + (_yf / 256.0)
     );
     public float Rotation => _rt * (360f / 256f);
 
-    public static EntityHeaderCompressed FromHeader(in EntityHeader header)
+    public EntityHeaderCompressed(in EntityHeader header)
     {
-        return new EntityHeaderCompressed(header.ID, header.Position, header.Rotation);
-    }
+        _id = header.Id;
 
-    public EntityHeaderCompressed(EntityID id, Vec2 position, float rotation)
-    {
-        _id = id;
-
-        double px = Math.Clamp(position.x, int.MinValue + 1, int.MaxValue - 1);
-        double py = Math.Clamp(position.y, int.MinValue + 1, int.MaxValue - 1);
+        double px = Math.Clamp(header.Position.x, int.MinValue + 1, int.MaxValue - 1);
+        double py = Math.Clamp(header.Position.y, int.MinValue + 1, int.MaxValue - 1);
 
         _xi = (int)Math.Floor(px);
         _xf = (byte)Math.Min((px - _xi) * 256.0, 255.0);
@@ -44,7 +39,7 @@ public readonly record struct EntityHeaderCompressed
         _yi = (int)Math.Floor(py);
         _yf = (byte)Math.Min((py - _yi) * 256.0, 255.0);
 
-        _rt = EncodeRotation(rotation);
+        _rt = EncodeRotation(header.Rotation);
     }
 
     private static byte EncodeRotation(float rotation)
@@ -60,6 +55,6 @@ public readonly record struct EntityHeaderCompressed
 
     public override string ToString()
     {
-        return ID.ToString();
+        return Id.ToString();
     }
 }

@@ -5,7 +5,7 @@ using UnityEngine;
 using System.Text;
 using System.Linq;
 using Larnix.Core.Files;
-using Larnix.Model.Utils;
+using Larnix.Model;
 using System;
 
 namespace Larnix.Menu.Settings
@@ -18,7 +18,7 @@ namespace Larnix.Menu.Settings
         private Dictionary<string, string> options = null;
         private static Dictionary<string, string> defaultOptions = new()
         {
-            { "$relay-server", Common.DefaultRelayAddress },
+            { "$relay-server", GameInfo.DefaultRelayAddress },
             { "$last-nickname-SGP", "" }
         };
 

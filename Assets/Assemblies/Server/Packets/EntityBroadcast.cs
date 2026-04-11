@@ -110,7 +110,7 @@ public sealed class EntityBroadcast : Payload_Legacy
         foreach (var kvp in dictA)
         {
             byte[] keyBytes = Binary<ulong>.Serialize(kvp.Key);
-            byte[] valueBytes = Binary<EntityHeaderCompressed>.Serialize(EntityHeaderCompressed.FromHeader(kvp.Value));
+            byte[] valueBytes = Binary<EntityHeaderCompressed>.Serialize(new EntityHeaderCompressed(kvp.Value));
 
             Buffer.BlockCopy(keyBytes, 0, buffer, 0 + i * ENTRY_A_SIZE, sizeof(ulong));
             Buffer.BlockCopy(valueBytes, 0, buffer, sizeof(ulong) + i * ENTRY_A_SIZE, Binary<EntityHeaderCompressed>.Size);

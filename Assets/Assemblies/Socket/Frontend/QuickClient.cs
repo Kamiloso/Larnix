@@ -9,6 +9,7 @@ using Larnix.Socket.Security.Keys;
 using Larnix.Socket.Packets.Control;
 using Larnix.Socket.Helpers.Networking;
 using Larnix.Core.Serialization;
+using Larnix.Model;
 using Larnix.Core;
 
 namespace Larnix.Socket.Frontend;
@@ -24,7 +25,7 @@ public class QuickClient : IDisposable, ITickable
 
     public static async Task<QuickClient> CreateClientAsync(string address, string authcode, string nickname, string password)
     {
-        IPEndPoint endPoint = await Resolver.ResolveStringAsync(address);
+        IPEndPoint endPoint = await Resolver.ResolveStringAsync(address, GameInfo.DefaultPort);
         if (endPoint == null) return null;
 
         EntryTicket ticket = (await Resolver.GetEntryTicketAsync(address, authcode, nickname)).ticket;

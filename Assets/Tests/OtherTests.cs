@@ -7,6 +7,8 @@ using Larnix.Socket.Security.Keys;
 using System.Linq;
 using System;
 using Larnix.Core.Serialization;
+using Larnix.Model.Blocks.Structs;
+using Larnix.Model.Blocks;
 
 [CmdId(1)]
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -49,7 +51,7 @@ internal class DummyKey : IEncryptionKey
     public byte[] Encrypt(byte[] plaintext) => plaintext[..].Reverse().ToArray();
 }
 
-public class PayloadTests
+public class OtherTests
 {
     [Test]
     public void StringStructs_Equality()
@@ -149,5 +151,41 @@ public class PayloadTests
 
         byte[] decompressed = EndCompressor.Decompress(compressed);
         Assert.AreEqual(data, decompressed);
+    }
+
+    [Test]
+    public void Structs_ComparesDefinedStructsAsExpected()
+    {
+        static void Compare<T>(Func<T> ctor1, Func<T> ctor2) where T : unmanaged
+        {
+            T o1 = ctor1();
+            T o2 = ctor1();
+            T o3 = ctor2();
+
+            Assert.AreEqual(o1, o2);
+            Assert.AreNotEqual(o1, o3);
+        }
+
+        Compare<Vec2Int>(() => new(1, 2), () => new(3, 4));
+        Compare<BlockHeader1>(() => new(BlockID.Stone), () => new(BlockID.Stone, 1));
+        Compare<BlockHeader2>(() => new(new(BlockID.Stone), new()), () => new(new(), new(BlockID.Sand)));
+    }
+
+    [Test]
+    public void FixedBuffer_WrongInternalsComparisons()
+    {
+        byte[] data1 = new byte[] { /* Size */ 2, 0, /* Contents */ 3, 4, 5, 6, 0, 0, 0, 0 };
+        byte[] data2 = new byte[] { /* Size */ 2, 0, /* Contents */ 3, 4, 5, 6, 7, 8, 9, 10 };
+
+        FixedBuffer8<short> buffer1 = Binary<FixedBuffer8<short>>.Deserialize(data1);
+        FixedBuffer8<short> buffer2 = Binary<FixedBuffer8<short>>.Deserialize(data2);
+
+        Assert.That(buffer1.Count == 2);
+        Assert.That(buffer2.Count == 2);
+
+        Assert.That(buffer1.Capacity == 4);
+        Assert.That(buffer2.Capacity == 4);
+
+        Assert.AreEqual(buffer1, buffer2);
     }
 }

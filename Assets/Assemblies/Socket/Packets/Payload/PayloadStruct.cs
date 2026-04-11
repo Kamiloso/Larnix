@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 namespace Larnix.Socket.Packets.Payload;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-internal readonly record struct PayloadStruct<T> where T : unmanaged
+internal readonly record struct PayloadStruct<T> : ISanitizable<PayloadStruct<T>> where T : unmanaged
 {
     public readonly short CmdId;
     public readonly T Contents;
@@ -34,7 +34,12 @@ internal readonly record struct PayloadStruct<T> where T : unmanaged
     public PayloadStruct(in T contents)
     {
         CmdId = Cmd.Value<T>();
-        Contents = contents;
+        Contents = contents is ISanitizable<T> sanitizable ? sanitizable.Sanitize() : contents;
+    }
+
+    public PayloadStruct<T> Sanitize()
+    {
+        return new PayloadStruct<T>(Contents);
     }
 
     public override string ToString()

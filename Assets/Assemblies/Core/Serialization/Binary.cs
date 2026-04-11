@@ -6,6 +6,11 @@ using System.Reflection;
 
 namespace Larnix.Core.Serialization;
 
+public interface ISanitizable<T> where T : unmanaged
+{
+    T Sanitize();
+}
+
 public static unsafe class Binary<T> where T : unmanaged
 {
     public static int Size => sizeof(T);
@@ -31,7 +36,12 @@ public static unsafe class Binary<T> where T : unmanaged
         if (offset < 0 || offset > bytes.Length - sizeof(T))
             throw new ArgumentOutOfRangeException(nameof(offset), "Byte array size mismatch.");
 
-        return MemoryMarshal.Read<T>(bytes.AsSpan(offset));
+        T item = MemoryMarshal.Read<T>(bytes.AsSpan(offset));
+        
+        if (item is ISanitizable<T> sanitizable)
+            item = sanitizable.Sanitize();
+
+        return item;
     }
 
     public static byte[] SerializeArray(T[] array)
@@ -47,9 +57,17 @@ public static unsafe class Binary<T> where T : unmanaged
         if (offset < 0 || offset + (long)count * sizeof(T) > bytes.Length)
             throw new ArgumentOutOfRangeException(nameof(offset), "Byte array size mismatch.");
 
-        return MemoryMarshal.Cast<byte, T>(
+        T[] array = MemoryMarshal.Cast<byte, T>(
             bytes.AsSpan(offset, count * sizeof(T))
         ).ToArray();
+
+        foreach (ref T item in array.AsSpan())
+        {
+            if (item is ISanitizable<T> sanitizable)
+                item = sanitizable.Sanitize();
+        }
+
+        return array;
     }
 
     private static bool IsSupportedType(Type type)

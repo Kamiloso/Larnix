@@ -13,7 +13,7 @@ public enum TestEnum : byte
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct TestStruct : IEquatable<TestStruct>
+public readonly record struct TestStruct
 {
     public readonly int Id;
     public readonly byte Value;
@@ -32,7 +32,7 @@ public struct InvalidTestStruct
 }
 
 [TestFixture]
-public class FixedBuffer32Tests
+public class FixedBufferTests
 {
     [Test]
     public void Capacity_CalculatedCorrectly_ForDifferentTypes()
@@ -55,7 +55,7 @@ public class FixedBuffer32Tests
         buffer.Push(20);
         buffer.Push(30);
 
-        Assert.That(buffer.Size, Is.EqualTo(3));
+        Assert.That(buffer.Count, Is.EqualTo(3));
         Assert.That(buffer.IsFull, Is.False);
 
         int[] result = buffer.ToArray();
@@ -70,7 +70,7 @@ public class FixedBuffer32Tests
         buffer.Push(TestEnum.Alpha);
         buffer.Push(TestEnum.Gamma);
 
-        Assert.That(buffer.Size, Is.EqualTo(2));
+        Assert.That(buffer.Count, Is.EqualTo(2));
 
         TestEnum[] result = buffer.ToArray();
         Assert.That(result, Is.EqualTo(new[] { TestEnum.Alpha, TestEnum.Gamma }));
@@ -86,7 +86,7 @@ public class FixedBuffer32Tests
         buffer.Push(s1);
         buffer.Push(s2);
 
-        Assert.That(buffer.Size, Is.EqualTo(2));
+        Assert.That(buffer.Count, Is.EqualTo(2));
 
         TestStruct[] result = buffer.ToArray();
         Assert.That(result, Is.EqualTo(new[] { s1, s2 }));
@@ -115,7 +115,7 @@ public class FixedBuffer32Tests
 
         buffer.Clear();
 
-        Assert.That(buffer.Size, Is.EqualTo(0));
+        Assert.That(buffer.Count, Is.EqualTo(0));
         Assert.That(buffer.IsFull, Is.False);
         Assert.That(buffer.ToArray(), Is.Empty);
     }

@@ -8,7 +8,7 @@ public class BlockData1
     public BlockHeader1 Header { get; private set; }
     public Storage NBT { get; private set; }
 
-    public BlockID ID => Header.ID;
+    public BlockID ID => Header.Id;
     public byte Variant
     {
         get => Header.Variant;

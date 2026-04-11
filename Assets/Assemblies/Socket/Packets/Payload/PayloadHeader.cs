@@ -1,5 +1,4 @@
 #nullable enable
-using Larnix.Core;
 using System.Runtime.InteropServices;
 
 namespace Larnix.Socket.Packets.Payload;

@@ -1,6 +1,5 @@
 #nullable enable
 using System.IO;
-using Larnix.Model.Utils;
 using Larnix.Core.Files;
 
 namespace Larnix.Model;
@@ -15,12 +14,10 @@ public readonly struct WorldMeta
     private const char LEGACY_SEP = '\n';
     private const char NEW_SEP = ':';
 
-    public Version Version { get; init; }
-    public string Nickname { get; init; }
+    public Version Version { get; }
+    public string Nickname { get; }
 
-    public static WorldMeta Default => new(
-        Version.Current, Common.ReservedNickname
-        );
+    public static WorldMeta Default => new(GameInfo.Version, GameInfo.ReservedNickname);
 
     public WorldMeta(Version version, string nickname)
     {

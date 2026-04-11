@@ -3,6 +3,7 @@ using Larnix.Model.Utils;
 using System.Reflection;
 using System.Collections.Generic;
 using Larnix.Model.Json;
+using Larnix.Model;
 
 namespace Larnix.Server.Data;
 
@@ -12,7 +13,7 @@ internal class ServerConfig : Config
 
     // --- Main ---
     public ushort MaxPlayers { get; set; } = 10;
-    public ushort Port { get; set; } = Common.LARNIX_PORT;
+    public ushort Port { get; set; } = GameInfo.DefaultPort;
     public string Motd { get; set; } = "Welcome to Larnix server!";
 
     // --- Administration ---
@@ -25,7 +26,7 @@ internal class ServerConfig : Config
     public bool Electricity_SizeWarningSuppress { get; set; } = false;
 
     // --- Periodic tasks ---
-    private int _periodicTasks_DataSavingPeriodFrames = 15 * Common.TargetTPS;
+    private int _periodicTasks_DataSavingPeriodFrames = 15 * GameInfo.TargetTPS;
     public int PeriodicTasks_DataSavingPeriodFrames
     {
         get => _periodicTasks_DataSavingPeriodFrames;
@@ -44,7 +45,7 @@ internal class ServerConfig : Config
     public int Network_ClientIdentityPrefixSizeIPv6 { get; set; } = 56;
     public bool Network_AllowRegistration { get; set; } = true;
     public bool Network_UseRelay { get; set; } = false;
-    public string Network_RelayAddress { get; set; } = Common.DefaultRelayAddress;
+    public string Network_RelayAddress { get; set; } = GameInfo.DefaultRelayAddress;
 
     public override void Update()
     {

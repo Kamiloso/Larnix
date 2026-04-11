@@ -1,30 +1,31 @@
 #nullable enable
-using Larnix.Core;
+using Larnix.Core.Serialization;
 using Larnix.Core.Vectors;
 using System.Runtime.InteropServices;
 
 namespace Larnix.Model.Entities.Structs;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct EntityHeader
+public readonly record struct EntityHeader : ISanitizable<EntityHeader>
 {
-    private readonly EntityID _id;
-    private readonly Vec2 _position;
-    private readonly float _rotation;
-
-    public EntityID ID => _id;
-    public Vec2 Position => _position;
-    public float Rotation => float.IsFinite(_rotation) ? _rotation : 0f;
+    public EntityID Id { get; }
+    public Vec2 Position { get; }
+    public float Rotation { get; }
 
     public EntityHeader(EntityID id, Vec2 position, float rotation)
     {
-        _id = id;
-        _position = position;
-        _rotation = rotation;
+        Id = id;
+        Position = position.Sanitize();
+        Rotation = float.IsFinite(rotation) ? rotation : 0f;
+    }
+
+    public EntityHeader Sanitize()
+    {
+        return new EntityHeader(Id, Position, Rotation);
     }
 
     public override string ToString()
     {
-        return ID.ToString();
+        return Id.ToString();
     }
 }

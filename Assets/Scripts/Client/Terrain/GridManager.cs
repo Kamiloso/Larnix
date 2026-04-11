@@ -127,16 +127,16 @@ namespace Larnix.Client.Terrain
 
             if (breakMode == IWorldAPI.BreakMode.Effects)
             {
-                if (oldBlock.Front.ID == BlockID.Air && newBlock.Front.ID != BlockID.Air) // front block placed
+                if (oldBlock.Front.Id == BlockID.Air && newBlock.Front.Id != BlockID.Air) // front block placed
                     ParticleManager.SpawnBlockParticles(newBlock.Front, POS, true, ParticleID.BlockPlace);
 
-                if (oldBlock.Front.ID != BlockID.Air && newBlock.Front.ID == BlockID.Air) // front block broken
+                if (oldBlock.Front.Id != BlockID.Air && newBlock.Front.Id == BlockID.Air) // front block broken
                     ParticleManager.SpawnBlockParticles(oldBlock.Front, POS, true, ParticleID.BlockBreak);
 
-                if (oldBlock.Back.ID == BlockID.Air && newBlock.Back.ID != BlockID.Air) // back block placed
+                if (oldBlock.Back.Id == BlockID.Air && newBlock.Back.Id != BlockID.Air) // back block placed
                     ParticleManager.SpawnBlockParticles(newBlock.Back, POS, false, ParticleID.BlockPlace);
 
-                if (oldBlock.Back.ID != BlockID.Air && newBlock.Back.ID == BlockID.Air) // back block broken
+                if (oldBlock.Back.Id != BlockID.Air && newBlock.Back.Id == BlockID.Air) // back block broken
                     ParticleManager.SpawnBlockParticles(oldBlock.Back, POS, false, ParticleID.BlockBreak);
             }
 
@@ -184,11 +184,11 @@ namespace Larnix.Client.Terrain
             {
                 BlockHeader2 block = (BlockHeader2)blockNullable;
 
-                IHasCollider iface = BlockFactory.GetSlaveInstance<IHasCollider>(block.Front.ID);
+                IHasCollider iface = BlockFactory.GetSlaveInstance<IHasCollider>(block.Front.Id);
                 if (iface != null)
                 {
                     StaticCollider[] staticColliders = iface
-                        .STATIC_GetAllColliders(block.Front.ID, block.Front.Variant)
+                        .STATIC_GetAllColliders(block.Front.Id, block.Front.Variant)
                         .Select(col => IHasCollider.MakeStaticCollider(col, POS))
                         .ToArray();
 

@@ -1,137 +1,134 @@
-using UnityEditor;
 using UnityEngine;
+using UnityEditor;
 using System.IO;
 using System.Text.RegularExpressions;
 
 public class VersionModifier : EditorWindow
 {
-    private string currentVersion = "Searching...";
-    private string newVersion = "";
-    private string status = "";
-    private string targetFilePath = "";
+    private string gameInfoFilePath;
+    private string currentVersion;
 
-    private static readonly Regex VersionRegex = new(@"^\d{1,3}(\.\d{1,3}){0,3}$");
-    private static readonly Regex CurrentLineRegex = new(@"public static readonly Version Current = new\(""([^""]+)""\);");
+    private const string VersionRegexPattern = @"(public static Version Version => new\("")(.*?)(""\);)";
 
-    [MenuItem("Automation/Tools/Version Updater")]
+    [MenuItem("Automation/Tools/Version Modifier")]
     public static void ShowWindow()
     {
-        var window = GetWindow<VersionModifier>("Version Updater");
-        window.minSize = new Vector2(350, 170);
-        window.maxSize = new Vector2(350, 170);
-        window.Show();
+        var window = GetWindow<VersionModifier>("Version Modifier");
+        window.minSize = new Vector2(500, 150);
+        window.FindAndLoadVersion();
     }
 
     private void OnEnable()
     {
-        RefreshCurrentVersion();
+        FindAndLoadVersion();
     }
 
-    private void RefreshCurrentVersion()
+    private void FindAndLoadVersion()
     {
-        string[] guids = AssetDatabase.FindAssets("Version t:Script");
-        foreach (string guid in guids)
+        string[] scriptGuids = AssetDatabase.FindAssets("t:MonoScript");
+
+        foreach (string guid in scriptGuids)
         {
             string path = AssetDatabase.GUIDToAssetPath(guid);
-            string content = File.ReadAllText(path);
+            string scriptContent = File.ReadAllText(path);
 
-            if (!content.Contains("public readonly record struct Version"))
-                continue;
-
-            targetFilePath = path;
-            Match match = CurrentLineRegex.Match(content);
-            if (match.Success)
+            if (scriptContent.Contains("namespace Larnix.Model") &&
+                scriptContent.Contains("public static class GameInfo"))
             {
-                currentVersion = match.Groups[1].Value;
-
-                if (string.IsNullOrEmpty(newVersion))
+                Match match = Regex.Match(scriptContent, VersionRegexPattern);
+                if (match.Success)
                 {
-                    newVersion = currentVersion;
+                    gameInfoFilePath = path;
+                    currentVersion = match.Groups[2].Value;
+                    return;
                 }
-                status = "Ready for update.";
-                return;
             }
         }
 
-        status = "Error: Version struct file not found.";
-        currentVersion = "No data";
+        gameInfoFilePath = null;
+        currentVersion = string.Empty;
     }
 
     private void OnGUI()
     {
         GUILayout.Space(10);
-        GUILayout.Label("Project Version Management", EditorStyles.boldLabel);
-
-        EditorGUILayout.HelpBox($"Current version in code: {currentVersion}", MessageType.None);
+        EditorGUILayout.LabelField("Version Manager (GameInfo)", EditorStyles.boldLabel);
         GUILayout.Space(5);
 
-        newVersion = EditorGUILayout.TextField("New version:", newVersion);
-        GUILayout.Space(10);
-
-        if (GUILayout.Button("Apply New Version", GUILayout.Height(30)))
+        if (string.IsNullOrEmpty(gameInfoFilePath))
         {
-            ApplyVersion();
+            EditorGUILayout.HelpBox("No GameInfo file with the correct signature found in the project.", MessageType.Error);
+            if (GUILayout.Button("Rescan"))
+            {
+                FindAndLoadVersion();
+            }
+            return;
         }
 
+        GUI.enabled = false;
+        EditorGUILayout.TextField("File Path:", gameInfoFilePath);
+        GUI.enabled = true;
+
         GUILayout.Space(10);
 
-        if (!string.IsNullOrEmpty(status))
-        {
-            MessageType msgType = status.StartsWith("Error") || status.StartsWith("Invalid")
-                ? MessageType.Error
-                : MessageType.Info;
+        currentVersion = EditorGUILayout.TextField("Current Version:", currentVersion);
 
-            EditorGUILayout.HelpBox(status, msgType);
+        bool isValid = IsValidVersionString(currentVersion);
+
+        if (!isValid)
+        {
+            EditorGUILayout.HelpBox("Invalid format! The version must consist of 1 to 4 numbers (0-255) separated by dots (e.g., 1.2.3.4).", MessageType.Warning);
         }
+
+        GUILayout.Space(15);
+
+        GUI.enabled = isValid;
+        if (GUILayout.Button("Save new version", GUILayout.Height(30)))
+        {
+            SaveVersion();
+        }
+        GUI.enabled = true;
     }
 
-    private void ApplyVersion()
+    private void SaveVersion()
     {
-        if (string.IsNullOrEmpty(targetFilePath) || !File.Exists(targetFilePath))
+        if (!IsValidVersionString(currentVersion))
         {
-            status = "Error: Target file not found. Close and reopen the window.";
+            Debug.LogWarning("[GameInfo] Attempted to save an invalid version string.");
             return;
         }
 
-        if (!IsValidVersion(newVersion))
+        string fileContent = File.ReadAllText(gameInfoFilePath);
+        string updatedContent = Regex.Replace(fileContent, VersionRegexPattern, $"${{1}}{currentVersion}${{3}}");
+
+        if (fileContent != updatedContent)
         {
-            status = "Error: Invalid format. Use e.g. 1.0, 1.2.3 (numbers 0-255).";
-            return;
-        }
-
-        string content = File.ReadAllText(targetFilePath);
-        string newContent = CurrentLineRegex.Replace(
-            content,
-            $"public static readonly Version Current = new(\"{newVersion}\");"
-        );
-
-        if (content != newContent)
-        {
-            File.WriteAllText(targetFilePath, newContent);
-
-            AssetDatabase.ImportAsset(targetFilePath);
-
-            status = $"Successfully updated to: {newVersion}";
-            currentVersion = newVersion;
-
-            GUI.FocusControl(null);
+            File.WriteAllText(gameInfoFilePath, updatedContent);
+            AssetDatabase.Refresh();
+            Debug.Log($"[GameInfo] Game version updated to: <b>{currentVersion}</b>");
         }
         else
         {
-            status = "The provided version is the same as the current one (no changes).";
+            Debug.Log("[GameInfo] Version is already up to date. No changes made.");
         }
     }
 
-    private bool IsValidVersion(string v)
+    private bool IsValidVersionString(string versionStr)
     {
-        if (!VersionRegex.IsMatch(v))
+        if (string.IsNullOrWhiteSpace(versionStr))
             return false;
 
-        var parts = v.Split('.');
-        foreach (var p in parts)
+        string[] segments = versionStr.Split('.');
+
+        if (segments.Length > 4)
+            return false;
+
+        foreach (string segment in segments)
         {
-            if (!byte.TryParse(p, out _))
+            if (!byte.TryParse(segment, out _))
+            {
                 return false;
+            }
         }
 
         return true;

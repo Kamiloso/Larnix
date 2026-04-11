@@ -42,7 +42,7 @@ internal class WorldMetaManager : IWorldMetaManager
     public WorldMetaManager()
     {
         var meta = WorldMeta.ReadFromFolder(Server.WorldPath);
-        WorldMeta = new WorldMeta(Version.Current, meta.Nickname);
+        WorldMeta = new WorldMeta(GameInfo.Version, meta.Nickname);
     }
 
     public void EnsureDetachedServer()
@@ -50,7 +50,7 @@ internal class WorldMetaManager : IWorldMetaManager
         if (Server.ServerType != ServerType.Remote)
             throw new InvalidOperationException("EnsureDetachedServer() should only be called for headless servers.");
 
-        if (HostNickname == Common.ReservedNickname)
+        if (HostNickname == GameInfo.ReservedNickname)
             return;
 
         Echo.LogRaw($"This world was previously in use by {HostNickname}.\n");
@@ -65,7 +65,7 @@ internal class WorldMetaManager : IWorldMetaManager
             if (Validation.IsGoodPassword(password))
             {
                 UserManager.TryChangePasswordOrAddUserSync(HostNickname, password);
-                HostNickname = new FixedString32(Common.ReservedNickname);
+                HostNickname = new FixedString32(GameInfo.ReservedNickname);
                 changeSuccess = true;
             }
             else

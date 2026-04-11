@@ -5,7 +5,8 @@ using TMPro;
 using Larnix.Server;
 using Larnix.Core;
 using Larnix.Scoping;
-using Ver = Larnix.Model.Version;
+using Larnix.Model.Utils;
+using Larnix.Model;
 
 namespace Larnix.Menu
 {
@@ -30,7 +31,7 @@ namespace Larnix.Menu
 
         private void Start()
         {
-            VersionText.text = "Version " + Ver.Current;
+            VersionText.text = "Version " + GameInfo.Version;
 
             foreach (var screen in Screens)
             {

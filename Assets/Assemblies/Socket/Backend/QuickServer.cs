@@ -16,6 +16,7 @@ using Larnix.Core.Utils;
 using Larnix.Model.Database;
 using LoginMode = Larnix.Socket.Backend.UserManager.LoginMode;
 using Larnix.Socket.Packets.Payload;
+using Larnix.Model;
 
 namespace Larnix.Socket.Backend;
 
@@ -211,7 +212,7 @@ public class QuickServer : ITickable, IDisposable
                 publicKey: _keyRSA.ExportPublicKey(),
                 currentPlayers: PlayerCount,
                 maxPlayers: PlayerLimit,
-                gameVersion: Model.Version.Current,
+                gameVersion: GameInfo.Version,
                 challengeID: UserManager.GetChallengeID(nickname),
                 timestamp: Timestamp.GetTimestamp(),
                 runID: RunID,

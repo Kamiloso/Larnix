@@ -174,4 +174,17 @@ public class FixedStringTests
         string joined = FixedStringUtils.Join(parts);
         Assert.AreEqual(input, joined);
     }
+
+    [Test]
+    public void ComparisonsWithGarbage_WorksCorrectly()
+    {
+        byte[] data1 = new byte[] { /* Size */ 2, 0, /* Contents */ 65, 0, 66, 0, 5, 6, 7, 8 };
+        byte[] data2 = new byte[] { /* Size */ 2, 0, /* Contents */ 65, 0, 66, 0, 0, 0, 0, 0 };
+
+        FixedString8 fstr1 = Binary<FixedString8>.Deserialize(data1);
+        FixedString8 fstr2 = Binary<FixedString8>.Deserialize(data2);
+
+        Assert.AreEqual(fstr1, fstr2);
+        Assert.That(fstr1.ToString(), Is.EqualTo("AB"));
+    }
 }

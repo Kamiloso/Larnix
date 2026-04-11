@@ -31,8 +31,8 @@ public interface IElectricPipe : IPipe, IElectricPropagator
 
     bool IBreakable.STATIC_IsBreakableItemMatch(BlockHeader1 block, BlockHeader1 item)
     {
-        string id1 = BlockFactory.GetSlaveInstance<IElectricPipe>(block.ID)?.ELECTRIC_PIPE_ID();
-        string id2 = BlockFactory.GetSlaveInstance<IElectricPipe>(item.ID)?.ELECTRIC_PIPE_ID();
+        string id1 = BlockFactory.GetSlaveInstance<IElectricPipe>(block.Id)?.ELECTRIC_PIPE_ID();
+        string id2 = BlockFactory.GetSlaveInstance<IElectricPipe>(item.Id)?.ELECTRIC_PIPE_ID();
 
         return id1 != null && id2 != null && id1 == id2;
     }
