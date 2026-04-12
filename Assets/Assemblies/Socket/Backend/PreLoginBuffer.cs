@@ -1,7 +1,5 @@
-using System.Collections;
+#nullable enable
 using System.Collections.Generic;
-using Larnix.Socket.Packets;
-using Larnix.Socket.Packets.Control;
 using Larnix.Socket.Security.Keys;
 using System;
 
@@ -33,7 +31,7 @@ internal class PreLoginBuffer
             _buffer.Enqueue(bytes);
     }
 
-    public byte[] TryReceive(out bool isSyn)
+    public byte[]? TryReceive(out bool isSyn)
     {
         if (_receivedAny)
         {

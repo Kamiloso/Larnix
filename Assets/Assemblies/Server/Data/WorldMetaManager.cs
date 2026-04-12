@@ -5,7 +5,7 @@ using Larnix.Model;
 using Larnix.Model.Utils;
 using Larnix.Socket.Backend;
 using System;
-using Version = Larnix.Model.Version;
+using Version = Larnix.Core.Version;
 
 namespace Larnix.Server.Data;
 

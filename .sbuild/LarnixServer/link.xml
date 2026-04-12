@@ -7,10 +7,5 @@
 
   <assembly fullname="Larnix.Server">
     <type fullname="Larnix.Server.Data.*" />
-    <type fullname="Larnix.Server.Packets.*" />
-  </assembly>
-
-  <assembly fullname="Larnix.Socket">
-    <type fullname="Larnix.Socket.Packets.Control.*" />
   </assembly>
 </linker>

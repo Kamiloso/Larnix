@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using Larnix.Model.Utils;
@@ -7,35 +8,44 @@ namespace Larnix.Socket.Helpers;
 internal class RTTTracker
 {
     private const int MAX_RTTS = 10;
-    private readonly float FALLBACK_RTT, OFFSET_RTT;
 
-    private readonly LinkedList<(int seq, long time)> PacketTimestamps = new();
-    private readonly LinkedList<long> PacketRTTs = new();
-    private bool _rttRecalculate = true;
+    private readonly LinkedList<(int seq, long time)> _packetTimestamps = new();
+    private readonly LinkedList<long> _packetRTTs = new();
+
     private float _rttCache;
 
-    public RTTTracker(long fallbackRTT, long offsetRTT)
+    public long FallbackRTT { get; init; }
+    public long OffsetRTT { get; init; }
+
+    public float AvgRTT
     {
-        FALLBACK_RTT = Miliseconds(fallbackRTT);
-        OFFSET_RTT = Miliseconds(offsetRTT);
+        get
+        {
+            if (_packetRTTs.Count == 0)
+                _rttCache = FallbackRTT; // not enough data
+            else
+                _rttCache = (float)_packetRTTs.Median() / 1000.0f;
+
+            return _rttCache;
+        }
     }
 
     public void Ping(int seq)
     {
-        PacketTimestamps.ForEachRemove(tuple => !Timestamp.InTimestamp(tuple.time));
-        PacketTimestamps.AddLast((seq, Timestamp.GetTimestamp()));
+        _packetTimestamps.ForEachRemove(tuple => !Timestamp.InTimestamp(tuple.time));
+        _packetTimestamps.AddLast((seq, Timestamp.GetTimestamp()));
     }
 
     public void Pong(int seq)
     {
-        PacketTimestamps.ForEachRemove(tuple => tuple.seq - seq <= 0, tuple =>
+        _packetTimestamps.ForEachRemove(tuple => tuple.seq - seq <= 0, tuple =>
         {
             long delta = Timestamp.GetTimestamp() - tuple.time;
 
-            PacketRTTs.AddLast(delta);
-            if (PacketRTTs.Count > MAX_RTTS)
+            _packetRTTs.AddLast(delta);
+            if (_packetRTTs.Count > MAX_RTTS)
             {
-                PacketRTTs.RemoveFirst();
+                _packetRTTs.RemoveFirst();
             }
         });
     }
@@ -43,27 +53,11 @@ internal class RTTTracker
     public void ForgetSequences(HashSet<int> sequences)
     {
         if (sequences.Count > 0)
-            PacketTimestamps.ForEachRemove(tuple => sequences.Contains(tuple.seq));
+            _packetTimestamps.ForEachRemove(tuple => sequences.Contains(tuple.seq));
     }
 
-    public long WaitingTimeMs() =>
-        (long)Math.Round((AvgRTT + OFFSET_RTT) * 1000f);
-
-    public float AvgRTT
+    public long WaitingTimeMs()
     {
-        get
-        {
-            if (_rttRecalculate)
-            {
-                if (PacketRTTs.Count == 0)
-                    _rttCache = FALLBACK_RTT; // not enough data
-                else
-                    _rttCache = (float)PacketRTTs.Median() / 1000.0f;
-            }
-
-            return _rttCache;
-        }
+        return (long)Math.Round((AvgRTT + OffsetRTT) * 1000f);
     }
-
-    private static float Miliseconds(long ms) => ms * 0.001f;
 }

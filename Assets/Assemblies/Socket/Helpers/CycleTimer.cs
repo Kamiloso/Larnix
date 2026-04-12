@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using Larnix.Core;
 
@@ -5,30 +6,24 @@ namespace Larnix.Socket.Helpers;
 
 internal class CycleTimer : ITickable
 {
-    private readonly float PERIOD_SECONDS;
-    private float _accumulator;
-    private readonly Action _onTick;
+    public long Interval { get; }
+    public long Accumulator { get; private set; }
 
-    public bool Enabled { get; set; } = true;
+    public event Action? OnTick;
 
-    public CycleTimer(float periodSeconds, Action onTick)
+    public CycleTimer(long interval)
     {
-        PERIOD_SECONDS = periodSeconds > 0f ?
-            periodSeconds : throw new ArgumentException(nameof(periodSeconds));
-
-        _accumulator = 0f;
-        _onTick = onTick ?? (() => {});
+        Interval = interval;
+        Accumulator = 0;
     }
 
     public void Tick(float deltaTime)
     {
-        if (!Enabled) return;
-
-        _accumulator += deltaTime;
-        if (_accumulator > PERIOD_SECONDS)
+        Accumulator += (long)(deltaTime * 1000f);
+        if (Accumulator > Interval)
         {
-            _onTick();
-            _accumulator %= PERIOD_SECONDS;
+            OnTick?.Invoke();
+            Accumulator %= Interval;
         }
     }
 }

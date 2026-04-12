@@ -1,22 +1,20 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using Larnix.Socket.Packets;
 using System;
 using Larnix.Model.Utils;
 using Larnix.Socket.Security.Keys;
-using Larnix.Socket.Packets.Control;
-using Larnix.Socket.Helpers.Networking;
+using Larnix.Socket.Networking;
 using Larnix.Socket.Helpers;
 using Larnix.Core;
 using Larnix.Core.Utils;
-using Larnix.Socket.Packets.Payload;
+using Larnix.Socket.Payload;
 
 namespace Larnix.Socket;
 
 internal class Connection : ITickable, IDisposable
 {
-    public const uint BUFFER_LIMIT = 128;
+    private const uint BUFFER_LIMIT = 128;
     private const int SEQ_TOLERANCE_FAST = 128;
     private const int SEQ_TOLERANCE_SAFE = 128;
     private const float DEBUG_DROP_RATE = 0.0f;

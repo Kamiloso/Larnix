@@ -1,8 +1,5 @@
 using Larnix.Core.Coroutines;
-using Larnix.Model.Utils;
 using Larnix.Socket.Helpers;
-using Larnix.Socket.Helpers.Limiters;
-using Larnix.Socket.Packets.Control;
 using Larnix.Socket.Security;
 using System;
 using System.Collections.Generic;
@@ -11,6 +8,7 @@ using System.Threading.Tasks;
 using Larnix.Core;
 using Larnix.Model;
 using Larnix.Model.Database;
+using Larnix.Core.Limiters;
 
 namespace Larnix.Socket.Backend;
 
@@ -38,12 +36,12 @@ internal class UserManager : IUserManager, ITickable, IDisposable
     private readonly IUserAccess _userAccess;
     private readonly CoroutineRunner _coroutines;
 
-    private readonly Limiter<InternetID> _hashLimiter;
-    private readonly Limiter<InternetID> _registerLimiter;
+    private readonly LimiterOf<WebIdentity> _hashLimiter;
+    private readonly LimiterOf<WebIdentity> _registerLimiter;
     private readonly Limiter _hashingLimiter;
 
     private readonly CycleTimer[] _cycleTimers;
-    private readonly Limiter<InternetID>[] _localLimiters;
+    private readonly LimiterOf<WebIdentity>[] _localLimiters;
 
     private bool _disposed = false;
 
@@ -53,7 +51,7 @@ internal class UserManager : IUserManager, ITickable, IDisposable
         _userAccess = userAccess;
         _coroutines = new CoroutineRunner();
 
-        InternetID classE = InternetID.ClassE();
+        WebIdentity classE = WebIdentity.ClassE();
 
         _hashLimiter = new(6, ignoreKey: classE); // per minute
         _registerLimiter = new(6, ignoreKey: classE); // per 3 hours
@@ -329,7 +327,7 @@ internal class UserManager : IUserManager, ITickable, IDisposable
 
     private IEnumerator<Box<bool>> LoginCoroutine(IPEndPoint target, P_LoginTry logtry)
     {
-        InternetID internetID = _server.MakeInternetID(target);
+        WebIdentity internetID = _server.MakeWebIdentity(target);
         bool isLoopback = IPAddress.IsLoopback(target.Address);
 
         string nickname = logtry.Nickname;
@@ -371,7 +369,7 @@ internal class UserManager : IUserManager, ITickable, IDisposable
 
         if (isLogin) // LOGIN
         {
-            MoreLimiters limiters = new(
+            GroupLimiter limiters = new(
                 (() => _hashLimiter.TryAdd(internetID), () => _hashLimiter.Remove(internetID)), // 0
                 (() => _hashingLimiter.TryAdd(), () => _hashingLimiter.Remove()) // 1
             );
@@ -416,7 +414,7 @@ internal class UserManager : IUserManager, ITickable, IDisposable
         }
         else // REGISTER
         {
-            MoreLimiters limiters = new(
+            GroupLimiter limiters = new(
                 (() => _registerLimiter.TryAdd(internetID), () => _registerLimiter.Remove(internetID)), // 0
                 (() => _hashLimiter.TryAdd(internetID), () => _hashLimiter.Remove(internetID)), // 1
                 (() => _hashingLimiter.TryAdd(), () => _hashingLimiter.Remove()) // 2
@@ -470,9 +468,9 @@ internal class UserManager : IUserManager, ITickable, IDisposable
     private IEnumerator<Box<bool>> ChangePasswordCoroutine(IPEndPoint target, string username,
         string oldHash, string newPassword)
     {
-        InternetID internetID = _server.MakeInternetID(target);
+        WebIdentity internetID = _server.MakeWebIdentity(target);
 
-        MoreLimiters limiters = new(
+        GroupLimiter limiters = new(
             (() => _hashLimiter.TryAdd(internetID), () => _hashLimiter.Remove(internetID)), // 0
             (() => _hashingLimiter.TryAdd(), () => _hashingLimiter.Remove()) // 1
         );

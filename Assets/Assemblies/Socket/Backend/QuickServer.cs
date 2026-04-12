@@ -1,21 +1,19 @@
-using System.Collections;
+#nullable enable
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Net;
-using Larnix.Socket.Packets;
 using System.Threading.Tasks;
 using System;
 using Larnix.Socket.Security.Keys;
-using Larnix.Socket.Packets.Control;
-using Larnix.Socket.Helpers.Networking;
+using Larnix.Socket.Networking;
 using Larnix.Socket.Helpers;
-using Larnix.Socket.Helpers.Limiters;
+using Larnix.Core.Limiters;
 using Larnix.Core;
 using Larnix.Core.Utils;
 using Larnix.Model.Database;
-using LoginMode = Larnix.Socket.Backend.UserManager.LoginMode;
-using Larnix.Socket.Packets.Payload;
 using Larnix.Model;
+using Larnix.Socket.Payload;
+using LoginMode = Larnix.Socket.Backend.UserManager.LoginMode;
 
 namespace Larnix.Socket.Backend;
 
@@ -26,7 +24,7 @@ public class QuickServer : ITickable, IDisposable
 
     // --- Public Properties ---
     public string Authcode { get; }
-    public ushort Port => _udpSocket.Port;
+    public ushort Port => _udpSocket.LocalPort;
     public ushort PlayerCount => ConnDict.CurrentPlayers;
     public ushort PlayerLimit => ConnDict.MaxPlayers;
     public IUserManager IUserManager => UserManager;
@@ -41,11 +39,16 @@ public class QuickServer : ITickable, IDisposable
     // --- Private classes ---
     private readonly KeyRSA _keyRSA;
     private readonly TripleSocket _udpSocket;
-    private readonly TrafficLimiter<InternetID> _heavyPacketLimiter;
-    private readonly CycleTimer[] _cycleTimers;
+    private readonly TrafficLimiter<WebIdentity> _heavyPacketLimiter;
+
+    private readonly Dictionary<string, CycleTimer> _cycleTimers = new()
+    {
+        ["HEAVY PACKET LIMITER"] = new(1000),
+        ["UDP KEEPALIVE"] = new(5000),
+    };
 
     // --- Other ---
-    private readonly Dictionary<CmdID, Action<HeaderSpan, string>> Subscriptions = new();
+    private readonly Dictionary<CmdId, Action<HeaderSpan, string>> Subscriptions = new();
     private bool _disposed;
 
     public QuickServer(IUserAccess userAccess, IQuickConfig config)
@@ -57,7 +60,7 @@ public class QuickServer : ITickable, IDisposable
         _udpSocket = new TripleSocket(config.Port, config.IsLoopback); // 2
         ConnDict = new ConnDict(this, _udpSocket); // 3
         UserManager = new UserManager(this, userAccess); // 4
-        _heavyPacketLimiter = new TrafficLimiter<InternetID>(5, 50); // per second
+        _heavyPacketLimiter = new TrafficLimiter<WebIdentity>(5, 50); // per second
 
         // Constants
         ServerSecret = Security.Authcode.ObtainSecret(config.DataPath, SERVER_SECRET_FILENAME);
@@ -65,14 +68,11 @@ public class QuickServer : ITickable, IDisposable
         RunID = RandUtils.SecureLong();
 
         // Cycle timers
-        _cycleTimers = new[]
-        {
-            new CycleTimer(1f, () => _heavyPacketLimiter.Reset()), // 1 second
-            new CycleTimer(5f, () => _udpSocket.KeepAlive()), // 5 seconds
-        };
+        _cycleTimers["HEAVY PACKET LIMITER"].OnTick += () => _heavyPacketLimiter.Reset();
+        _cycleTimers["UDP KEEPALIVE"].OnTick += () => _udpSocket.KeepAlive();
     }
 
-    public async Task<string> EstablishRelayAsync(string relayAddress)
+    public async Task<string?> EstablishRelayAsync(string relayAddress)
     {
         ushort? relayPort = await _udpSocket.StartRelayAsync(relayAddress);
 
@@ -93,7 +93,7 @@ public class QuickServer : ITickable, IDisposable
     public void Tick(float deltaTime)
     {
         // Tick cycle timers
-        foreach (var timer in _cycleTimers)
+        foreach (var timer in _cycleTimers.Values)
         {
             timer.Tick(deltaTime);
         }
@@ -132,11 +132,7 @@ public class QuickServer : ITickable, IDisposable
             return; // ignore banned IPs
         }
 
-        InternetID internetID = MakeInternetID(target);
-        if (internetID.IsClassE)
-        {
-            return; // class E is used internally
-        }
+        WebIdentity internetID = MakeWebIdentity(target);
 
         if (PayloadBox_Legacy.TryDeserializeHeader(bytes, out var header))
         {
@@ -295,9 +291,9 @@ public class QuickServer : ITickable, IDisposable
         }
     }
 
-    internal InternetID MakeInternetID(IPEndPoint endPoint)
+    internal WebIdentity MakeWebIdentity(IPEndPoint endPoint)
     {
-        return new InternetID(
+        return new WebIdentity(
             endPoint.Address,
             endPoint.AddressFamily == AddressFamily.InterNetwork ?
                 Config.MaskIPv4 : Config.MaskIPv6

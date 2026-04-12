@@ -6,7 +6,7 @@ namespace Larnix.Socket.Security.Keys;
 
 /// <summary>
 /// This is used to compress payload ending with nulls.
-/// It may sometimes greatly reduce the size.
+/// It may sometimes greatly reduce the size of a packet.
 /// Be careful when putting security sensitive data at the end
 /// of your payload! It may reveal trailing null count to the attacker.
 /// </summary>

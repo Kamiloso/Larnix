@@ -1,5 +1,5 @@
 using Larnix.Core.Vectors;
-using Larnix.Socket.Frontend;
+using Larnix.Socket.Client;
 using Larnix.Server.Packets;
 using Larnix.Server.Packets.Structs;
 using Larnix.Client.Entities;

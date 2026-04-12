@@ -6,7 +6,7 @@ using Larnix.Socket.Packets;
 using System.Threading.Tasks;
 using Larnix.Model.Physics;
 using Larnix.Server;
-using Larnix.Socket.Frontend;
+using Larnix.Socket.Client;
 using Larnix.Patches;
 using Larnix.Server.Packets;
 using Larnix.Client.UI;

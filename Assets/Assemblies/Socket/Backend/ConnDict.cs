@@ -2,15 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using Larnix.Socket.Helpers.Networking;
-using Larnix.Socket.Packets;
+using Larnix.Socket.Networking;
 using Larnix.Socket.Security.Keys;
-using Larnix.Socket.Helpers.Limiters;
-using Larnix.Socket.Packets.Control;
 using Larnix.Core.Collections;
 using Larnix.Socket.Helpers;
 using Larnix.Core;
 using Larnix.Core.Utils;
+using Larnix.Core.Limiters;
 
 namespace Larnix.Socket.Backend;
 
@@ -28,7 +26,7 @@ internal class ConnDict : ITickable, IDisposable
     private readonly Dictionary<IPEndPoint, Connection> _connections = new();
     private readonly Dictionary<IPEndPoint, PreLoginBuffer> _preLogins = new();
 
-    private readonly Limiter<InternetID> _connLimiter = new(3);
+    private readonly LimiterOf<WebIdentity> _connLimiter = new(3);
     private readonly PriorityQueue<PacketPair, int> _received = new();
 
     private bool _disposed = false;
@@ -83,7 +81,7 @@ internal class ConnDict : ITickable, IDisposable
                 return false; // reject, player may connect once again
             }
 
-            InternetID internetID = _server.MakeInternetID(endPoint);
+            WebIdentity internetID = _server.MakeWebIdentity(endPoint);
             if (!_connLimiter.TryAdd(internetID))
             {
                 ulong max = _connLimiter.Max;
@@ -155,7 +153,7 @@ internal class ConnDict : ITickable, IDisposable
                     _nickAndEp.RemoveByKey(endPoint);
                     _connections.Remove(endPoint);
 
-                    InternetID internetID = _server.MakeInternetID(endPoint);
+                    WebIdentity internetID = _server.MakeWebIdentity(endPoint);
                     _connLimiter.Remove(internetID);
 
                     conn.Dispose();

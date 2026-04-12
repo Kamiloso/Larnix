@@ -1,5 +1,5 @@
 #nullable enable
-using Larnix.Socket.Packets.Payload;
+using Larnix.Socket.Payload;
 using NUnit.Framework;
 using Larnix.Core.Vectors;
 using System.Runtime.InteropServices;
@@ -9,6 +9,7 @@ using System;
 using Larnix.Core.Serialization;
 using Larnix.Model.Blocks.Structs;
 using Larnix.Model.Blocks;
+using Larnix.Socket.Payload;
 
 [CmdId(1)]
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -76,16 +77,16 @@ public class OtherTests
             Health = 100
         };
 
-        byte[] bytes = NetworkSerialization.ToBytes(header, cmd, DummyKey.Instance);
+        byte[] bytes = NetworkSerializer.ToBytes(header, cmd, DummyKey.Instance);
 
-        bool successHeader = NetworkSerialization.TryPlainHeaderFromBytes(bytes, out PayloadHeader outHeader);
+        bool successHeader = NetworkSerializer.TryPlainHeaderFromBytes(bytes, out PayloadHeader outHeader);
         Assert.IsTrue(successHeader);
         Assert.AreEqual(header, outHeader);
 
-        bool successDecrypt = NetworkSerialization.TryDecryptNetworkBytes(bytes, DummyKey.Instance, out byte[]? decrypted);
+        bool successDecrypt = NetworkSerializer.TryDecryptNetworkBytes(bytes, DummyKey.Instance, out byte[]? decrypted);
         Assert.IsTrue(successDecrypt);
 
-        bool successPayload = NetworkSerialization.TryDecryptedBytesAs(decrypted!, out PayloadHeader outHeader2, out TestCommand1 outCmd);
+        bool successPayload = NetworkSerializer.TryDecryptedBytesAs(decrypted!, out PayloadHeader outHeader2, out TestCommand1 outCmd);
         Assert.IsTrue(successPayload);
         Assert.AreEqual(header, outHeader2);
         Assert.AreEqual(cmd, outCmd);
@@ -104,7 +105,7 @@ public class OtherTests
 
         Assert.Throws<TypeInitializationException>(() =>
         {
-            NetworkSerialization.ToBytes(header, cmd, DummyKey.Instance);
+            NetworkSerializer.ToBytes(header, cmd, DummyKey.Instance);
         });
     }
 
@@ -118,7 +119,7 @@ public class OtherTests
 
         Assert.DoesNotThrow(() =>
         {
-            NetworkSerialization.ToBytes(header, cmd, DummyKey.Instance);
+            NetworkSerializer.ToBytes(header, cmd, DummyKey.Instance);
         });
     }
 

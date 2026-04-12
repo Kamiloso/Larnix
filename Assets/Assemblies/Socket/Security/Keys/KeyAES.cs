@@ -8,23 +8,24 @@ namespace Larnix.Socket.Security.Keys;
 
 internal class KeyAES : IEncryptionKey
 {
-    private const int KeySize = 32;
-    private const int NonceSize = 12;
-    private const int TagSize = 16;
+    private const int KEY_SIZE = 32;
+    private const int NONCE_SIZE = 12;
+    private const int TAG_SIZE = 16;
 
     private readonly byte[] _key;
 
-    public KeyAES()
-    {
-        _key = RandUtils.SecureBytes(KeySize);
-    }
-
     public KeyAES(byte[] keyBytes)
     {
-        if (keyBytes.Length != KeySize)
-            throw new ArgumentException($"AES key length must be {KeySize} bytes (256-bit)!", nameof(keyBytes));
+        if (keyBytes.Length != KEY_SIZE)
+            throw new ArgumentException($"AES key length must be {KEY_SIZE} bytes (256-bit)!", nameof(keyBytes));
 
         _key = keyBytes;
+    }
+
+    public static KeyAES GenerateNew()
+    {
+        byte[] bytes = RandUtils.SecureBytes(KEY_SIZE);
+        return new KeyAES(bytes);
     }
 
     public byte[] ExportKey()
@@ -39,12 +40,12 @@ internal class KeyAES : IEncryptionKey
         if (plaintext == null)
             throw new ArgumentNullException(nameof(plaintext));
 
-        byte[] nonce = RandUtils.SecureBytes(NonceSize);
+        byte[] nonce = RandUtils.SecureBytes(NONCE_SIZE);
 
         var cipher = new GcmBlockCipher(new AesEngine());
         var parameters = new AeadParameters(
             new KeyParameter(_key),
-            TagSize * 8,
+            TAG_SIZE * 8,
             nonce
         );
 
@@ -62,19 +63,19 @@ internal class KeyAES : IEncryptionKey
         if (ciphertext == null)
             throw new ArgumentNullException(nameof(ciphertext));
 
-        if (ciphertext.Length < NonceSize + TagSize)
+        if (ciphertext.Length < NONCE_SIZE + TAG_SIZE)
             return new byte[0];
 
-        byte[] nonce = new byte[NonceSize];
-        byte[] encrypted = new byte[ciphertext.Length - NonceSize];
+        byte[] nonce = new byte[NONCE_SIZE];
+        byte[] encrypted = new byte[ciphertext.Length - NONCE_SIZE];
 
-        Array.Copy(ciphertext, 0, nonce, 0, NonceSize);
-        Array.Copy(ciphertext, NonceSize, encrypted, 0, encrypted.Length);
+        Array.Copy(ciphertext, 0, nonce, 0, NONCE_SIZE);
+        Array.Copy(ciphertext, NONCE_SIZE, encrypted, 0, encrypted.Length);
 
         var cipher = new GcmBlockCipher(new AesEngine());
         var parameters = new AeadParameters(
             new KeyParameter(_key),
-            TagSize * 8,
+            TAG_SIZE * 8,
             nonce
         );
 

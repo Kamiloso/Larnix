@@ -1,5 +1,7 @@
 #nullable enable
 
+using Larnix.Core;
+
 namespace Larnix.Model;
 
 public static class GameInfo

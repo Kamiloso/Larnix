@@ -1,3 +1,4 @@
+#nullable enable
 using Larnix.Core.Files;
 using Org.BouncyCastle.Crypto.Generators;
 using System.Text;
@@ -17,7 +18,7 @@ public static class Authcode
 
     internal static long ObtainSecret(string path, string filename)
     {
-        string data = FileManager.Read(path, filename);
+        string? data = FileManager.Read(path, filename);
         if (data != null)
         {
             if (long.TryParse(data, out long readSecret))
@@ -115,7 +116,7 @@ public static class Authcode
         if (string.IsNullOrEmpty(input) || n <= 0)
             return input;
 
-        StringBuilder sb = new StringBuilder(input.Length + input.Length / n);
+        StringBuilder sb = new(input.Length + input.Length / n);
         for (int i = 0; i < input.Length; i++)
         {
             if (i > 0 && i % n == 0)

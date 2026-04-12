@@ -1,9 +1,9 @@
 using System.Collections;
 using System.Threading.Tasks;
 using UnityEngine;
-using Larnix.Socket.Frontend;
 using Larnix.Socket.Packets;
 using Larnix.Model;
+using Larnix.Socket.Requests;
 
 namespace Larnix.Menu.Worlds
 {
@@ -39,7 +39,7 @@ namespace Larnix.Menu.Worlds
     {
         public ThinkerState State { get; private set; } = ThinkerState.None;
         public ServerData serverData = new(); // input
-        public ServerInfo serverInfo = null; // output
+        public ServerInfo_Legacy serverInfo = null; // output
 
         Coroutine loginCoroutine = null;
         public bool? LoginSuccess { get; private set; } = null;
@@ -169,7 +169,7 @@ namespace Larnix.Menu.Worlds
 
             if (downloading.Result.info == null)
             {
-                if (downloading.Result.error == ResolverError.PublicKeyInvalid) // public key problems fail
+                if (downloading.Result.error == ResolveError.PublicKeyInvalid) // public key problems fail
                 {
                     serverInfo = null;
                     State = ThinkerState.WrongPublicKey;
