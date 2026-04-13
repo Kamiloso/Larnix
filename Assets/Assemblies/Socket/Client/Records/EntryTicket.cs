@@ -1,7 +1,7 @@
 #nullable enable
 using Larnix.Socket.Payload.Structs;
 
-namespace Larnix.Socket.Helpers.Records;
+namespace Larnix.Socket.Client.Records;
 
 internal record EntryTicket(
     long ServerSecret,

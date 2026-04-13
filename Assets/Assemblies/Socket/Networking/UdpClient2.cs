@@ -14,9 +14,10 @@ namespace Larnix.Socket.Networking;
 internal class UdpClient2 : INetworkInteractions, IDisposable
 {
     public ushort Port { get; }
-    public bool IsListener { get; }
-    public bool IsLoopback { get; }
-    public bool IsIPv6 { get; }
+    public IPEndPoint? Destination => _destination;
+
+    private readonly bool _isLoopback;
+    private readonly bool _isIPv6;
 
     private readonly UdpClient _udpClient;
     private readonly IPEndPoint? _destination;
@@ -46,25 +47,24 @@ internal class UdpClient2 : INetworkInteractions, IDisposable
             throw new ArgumentException("Non-listeners must specify a destination IPEndPoint!");
         }
 
-        IsListener = isListener;
-        IsLoopback = isLoopback;
-        IsIPv6 = isIPv6;
+        _isLoopback = isLoopback;
+        _isIPv6 = isIPv6;
 
         _destination = destination;
         _maxQueueLength = recvBufferSize / 1024 + 1; // assuming average packet size to be 1024 bytes
 
-        _udpClient = new UdpClient(IsIPv6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork);
+        _udpClient = new UdpClient(_isIPv6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork);
         _udpClient.Client.ReceiveBufferSize = recvBufferSize;
         _udpClient.Client.Blocking = true;
 
-        if (IsIPv6)
+        if (_isIPv6)
         {
             _udpClient.Client.DualMode = false;
         }
 
-        _udpClient.Client.Bind(new IPEndPoint(IsLoopback ?
-            IsIPv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback :
-            IsIPv6 ? IPAddress.IPv6Any : IPAddress.Any,
+        _udpClient.Client.Bind(new IPEndPoint(_isLoopback ?
+            _isIPv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback :
+            _isIPv6 ? IPAddress.IPv6Any : IPAddress.Any,
             port));
 
         Port = (ushort)((IPEndPoint)_udpClient.Client.LocalEndPoint).Port;
@@ -189,7 +189,7 @@ internal class UdpClient2 : INetworkInteractions, IDisposable
                     return true;
                 }
 
-                result = null!;
+                result = null!; // lie strategically to prevent infinite loops
                 return false;
             }
         }

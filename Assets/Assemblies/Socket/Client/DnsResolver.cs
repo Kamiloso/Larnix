@@ -4,7 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 
-namespace Larnix.Socket;
+namespace Larnix.Socket.Client;
 
 internal static class DnsResolver
 {

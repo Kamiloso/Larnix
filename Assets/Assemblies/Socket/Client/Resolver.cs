@@ -1,12 +1,12 @@
 #nullable enable
 using System.Threading.Tasks;
-using Larnix.Socket.Requests.Cache;
+using Larnix.Socket.Client.Cache;
 using Larnix.Socket.Payload.Packets;
-using Larnix.Socket.Helpers.Records;
+using Larnix.Socket.Client.Records;
 using Larnix.Socket.Security;
 using ServerInfoStruct = Larnix.Socket.Payload.Structs.ServerInfo;
 
-namespace Larnix.Socket.Requests;
+namespace Larnix.Socket.Client;
 
 public enum ResolveError
 {
@@ -43,8 +43,9 @@ public static partial class Resolver
         }
 
         A_ServerInfo ainfo = recv.Result;
+        ServerInfoStruct info = ainfo.Info;
 
-        return ServerInfo.FromStruct(address, ainfo.Info);
+        return ServerInfo.FromStruct(address, info);
     }
 
     public static async Task<ResolveAnswer<bool>> UserExistsAsync(
@@ -56,8 +57,9 @@ public static partial class Resolver
             return recv.Error;
         }
 
-        A_ServerInfo answer = recv.Result;
-        return answer.UserExists();
+        A_ServerInfo ainfo = recv.Result;
+
+        return ainfo.UserExists();
     }
 
     public static async Task<ResolveAnswer<bool>> TryLoginAsync(

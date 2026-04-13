@@ -1,30 +1,33 @@
 #nullable enable
-using System.Collections.Generic;
-using System.Net;
-using System.Net.Sockets;
-using System;
-using System.Threading.Tasks;
-using Larnix.Socket.Security.Keys;
-using Larnix.Socket.Networking;
-using Larnix.Model;
 using Larnix.Core;
-using Larnix.Socket.Requests;
-using Larnix.Socket.Helpers.Records;
+using Larnix.Model;
+using Larnix.Socket.Channel;
+using Larnix.Socket.Client.Records;
+using Larnix.Socket.Networking;
+using Larnix.Socket.Payload;
 using Larnix.Socket.Payload.Packets;
 using Larnix.Socket.Payload.Structs;
+using Larnix.Socket.Security.Keys;
+using System;
+using System.Net;
+using System.Net.Sockets;
+using System.Threading.Tasks;
 
 namespace Larnix.Socket.Client;
 
-public class QuickClient : IDisposable, ITickable
+public class QuickClient : ITickable, IDisposable
 {
     public float Ping => _conn.AvgRTT * 1000f; // ms
     public bool IsDead => _conn.IsDead;
+    public IPEndPoint Target => _conn.Target;
 
     private readonly UdpClient2 _udp;
-    private readonly Connection _conn;
-    private readonly KeyRSA _rsaKey;
+    private readonly KeyRSA _rsa;
+    private readonly QuickConnection _conn;
 
-    private readonly Dictionary<CmdID, Action<HeaderSpan>> Subscriptions = new();
+    private event Action? _listeners;
+
+    private bool _disposed;
 
     public static async Task<QuickClient?> CreateClientAsync(FullLoginData fullLogin)
     {
@@ -73,11 +76,6 @@ public class QuickClient : IDisposable, ITickable
             destination: target
             );
 
-        KeyAES keyAes = KeyAES.GenerateNew();
-        byte[] aesBytes = keyAes.ExportKey();
-
-        _rsaKey = new KeyRSA(ticket.RsaPublicKey.Bytes264);
-
         Credentials credentials = new(
             nickname: nickname,
             password: password,
@@ -87,60 +85,56 @@ public class QuickClient : IDisposable, ITickable
             runId: ticket.RunId
             );
 
-        AllowConnection synPacket = new(credentials, aesBytes);
+        _rsa = new KeyRSA(ticket.RsaPublicKey.Bytes264);
 
-        _conn = Connection.CreateClient(_udp, target, keyAes, _rsaKey, synPacket);
+        KeyAES aes = KeyAES.GenerateNew();
+        byte[] aesBytes = aes.ExportKey();
+
+        _conn = new QuickConnection(_udp, aes);
+        _conn.SendHandshake(
+            new AllowConnection(credentials, aesBytes), _rsa
+            );
     }
 
-    public void Tick(float deltaTime)
+    public void Send<T>(in T payload, bool safe = true) where T : unmanaged
     {
-        // Get packets from UDP client
-        while (_udp.TryReceive(out var pair))
-        {
-            _conn.PushFromWeb(pair.data, false);
-        }
-
-        // Process received packets
-        _conn.Tick(deltaTime);
-        if (!_conn.IsDead)
-        {
-            while (_conn.TryReceive(out var headerSpan, out bool stopSignal))
-            {
-                CmdID cmdID = headerSpan.ID;
-                if (Subscriptions.TryGetValue(cmdID, out var Execute))
-                {
-                    Execute(headerSpan);
-                }
-
-                if (stopSignal)
-                {
-                    break;
-                }
-            }
-        }
+        _conn.Send(payload, safe);
     }
 
-    public void Subscribe<T>(Action<T> InterpretPacket) where T : Payload_Legacy
+    public void OnReceive<T>(CmdHandler<T>? execute) where T : unmanaged
     {
-        CmdID ID = Payload_Legacy.CmdID<T>();
-        Subscriptions[ID] = (HeaderSpan packetBytes) =>
+        _listeners += () =>
         {
-            if (Payload_Legacy.TryConstructPayload<T>(packetBytes, out var message))
+            if (_conn.TryCastCurrent(out T result))
             {
-                InterpretPacket(message);
+                execute?.Invoke(result);
             }
         };
     }
 
-    public void Send(Payload_Legacy packet, bool safemode = true)
+    public void Tick(float deltaTime)
     {
-        _conn.Send(packet, safemode);
+        while (_udp.TryReceive(out DataBox result))
+        {
+            byte[] bytes = result.Data;
+            _conn.PushFromWeb(bytes);
+        }
+
+        _conn.Tick(deltaTime);
+
+        while (_conn.MoveNext())
+        {
+            _listeners?.Invoke();
+        }
     }
 
     public void Dispose()
     {
+        if (_disposed) return;
+        _disposed = true;
+
         _conn?.Dispose();
-        _rsaKey?.Dispose();
+        _rsa?.Dispose();
         _udp?.Dispose();
     }
 }

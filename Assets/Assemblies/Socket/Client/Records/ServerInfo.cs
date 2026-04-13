@@ -3,7 +3,7 @@ using Larnix.Core.Serialization;
 using Larnix.Core;
 using ServerInfoStruct = Larnix.Socket.Payload.Structs.ServerInfo;
 
-namespace Larnix.Socket.Helpers.Records;
+namespace Larnix.Socket.Client.Records;
 
 public record ServerInfo(
     string Address,

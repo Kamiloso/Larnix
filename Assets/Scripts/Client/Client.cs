@@ -6,7 +6,6 @@ using Larnix.Socket.Packets;
 using System.Threading.Tasks;
 using Larnix.Model.Physics;
 using Larnix.Server;
-using Larnix.Socket.Client;
 using Larnix.Patches;
 using Larnix.Server.Packets;
 using Larnix.Client.UI;
@@ -15,6 +14,7 @@ using Larnix.Client.Entities;
 using Larnix.Scoping;
 using Larnix.Core;
 using Larnix.Model;
+using Larnix.Socket.Client;
 
 namespace Larnix.Client
 {

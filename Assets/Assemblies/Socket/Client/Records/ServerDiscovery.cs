@@ -1,7 +1,7 @@
 #nullable enable
 using Larnix.Core.Serialization;
 
-namespace Larnix.Socket.Helpers.Records;
+namespace Larnix.Socket.Client.Records;
 
 public record ServerDiscovery(
     string Address,

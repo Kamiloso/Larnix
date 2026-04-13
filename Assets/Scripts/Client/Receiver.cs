@@ -1,5 +1,4 @@
 using Larnix.Core.Vectors;
-using Larnix.Socket.Client;
 using Larnix.Server.Packets;
 using Larnix.Server.Packets.Structs;
 using Larnix.Client.Entities;
@@ -10,6 +9,7 @@ using Larnix.Core;
 using Larnix.Background;
 using Larnix.Client.Chat;
 using Larnix.Model.Blocks;
+using Larnix.Socket.Client;
 
 namespace Larnix.Client;
 

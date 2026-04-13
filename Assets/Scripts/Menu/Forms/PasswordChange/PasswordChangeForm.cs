@@ -6,7 +6,7 @@ using Larnix.Forms;
 using System.Threading.Tasks;
 using Larnix.Model.Utils;
 using Larnix.Core;
-using Larnix.Socket.Requests;
+using Larnix.Socket.Client;
 
 namespace Larnix.Menu.Forms
 {

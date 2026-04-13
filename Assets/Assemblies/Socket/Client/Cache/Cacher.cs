@@ -3,7 +3,7 @@ using Larnix.Core;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Larnix.Socket.Requests.Cache;
+namespace Larnix.Socket.Client.Cache;
 
 internal class Cacher<TKey, TValue>
 {

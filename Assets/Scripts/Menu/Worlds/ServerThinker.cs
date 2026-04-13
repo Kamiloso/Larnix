@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using Larnix.Socket.Packets;
 using Larnix.Model;
-using Larnix.Socket.Requests;
+using Larnix.Socket.Client;
 
 namespace Larnix.Menu.Worlds
 {

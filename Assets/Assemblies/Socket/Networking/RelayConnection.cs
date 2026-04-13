@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Larnix.Core;
 using Larnix.Model;
+using Larnix.Socket.Client;
 
 namespace Larnix.Socket.Networking;
 
@@ -31,10 +32,10 @@ internal class RelayConnection : INetworkInteractions, IDisposable
         Stop = 0x02
     };
 
-    private RelayConnection(IPEndPoint endPoint, UdpClient2 udpClient)
+    private RelayConnection(UdpClient2 udp, IPEndPoint target)
     {
-        _target = endPoint;
-        _udp = udpClient;
+        _udp = udp;
+        _target = target;
     }
 
     public static async Task<RelayConnection?> EstablishRelayAsync(string address)
@@ -45,7 +46,7 @@ internal class RelayConnection : INetworkInteractions, IDisposable
             return null;
         }
 
-        UdpClient2 udpClient = new(
+        UdpClient2 udp = new(
             port: 0,
             isListener: false,
             isLoopback: IPAddress.IsLoopback(target.Address),
@@ -54,7 +55,7 @@ internal class RelayConnection : INetworkInteractions, IDisposable
             destination: target
             );
 
-        RelayConnection relay = new(target, udpClient);
+        RelayConnection relay = new(udp, target);
 
         long timeNow = Timestamp.Now();
         long deadline = timeNow + RelayTimeout;
@@ -62,7 +63,7 @@ internal class RelayConnection : INetworkInteractions, IDisposable
         relay.SendInfo(RelayInfo.Start); // send and wait for answer
         while (Timestamp.Now() < deadline)
         {
-            while (udpClient.TryReceive(out DataBox result))
+            while (udp.TryReceive(out DataBox result))
             {
                 byte[] bytes = result.Data;
                 if (bytes.Length == 2)
@@ -119,6 +120,7 @@ internal class RelayConnection : INetworkInteractions, IDisposable
             // but that's not a problem, relay will handle that
 
             // UdpClient2 ignores sending after dispose
+            // so exception won't be thrown
 
             SendInfo(RelayInfo.KeepAlive);
             await Task.Delay(KeepAliveInterval);

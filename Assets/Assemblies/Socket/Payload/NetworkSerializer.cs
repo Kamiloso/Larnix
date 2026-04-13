@@ -18,9 +18,10 @@ internal static class NetworkSerializer
 
         byte[] headerBytes = Binary<PayloadHeader>.Serialize(header);
 
-        PayloadSafe<T> safePayload = new(header, new PayloadStruct<T>(payload));
+        PayloadStruct<T> pstruct = new(payload);
+        PayloadSafe<T> safe = new(header, pstruct);
 
-        byte[] payloadSafe = Binary<PayloadSafe<T>>.Serialize(safePayload);
+        byte[] payloadSafe = Binary<PayloadSafe<T>>.Serialize(safe);
         byte[] nullsTrimmed = EndCompressor.Compress(payloadSafe);
         byte[] payloadBytes = key.Encrypt(nullsTrimmed);
 
@@ -93,8 +94,9 @@ internal static class NetworkSerializer
         }
 
         byte[] withNulls = EndCompressor.Decompress(decrypted);
+
         PayloadSafe<T> readSafe = Binary<PayloadSafe<T>>.Deserialize(withNulls);
-        if (readSafe.Payload.CmdId != Cmd.Value<T>())
+        if (readSafe.Payload.CmdId != Cmd.Id<T>())
         {
             return false;
         }
@@ -122,13 +124,27 @@ internal static class NetworkSerializer
         return true;
     }
 
+    public static byte[] PackAsIfDecrypted<T>(in T payload) where T : unmanaged
+    {
+        var safe = new PayloadSafe<T>(
+            new PayloadHeader(),
+            new PayloadStruct<T>(payload)
+            );
+
+        byte[] withNulls = Binary<PayloadSafe<T>>.Serialize(safe);
+        return EndCompressor.Compress(withNulls);
+    }
+
     private static ushort CalculateChecksum(byte[] bytes)
     {
-        ushort checksum = 0;
-        for (int i = 0; i < bytes.Length; i++)
+        unchecked
         {
-            checksum += bytes[i];
+            ushort checksum = 0;
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                checksum += bytes[i];
+            }
+            return checksum;
         }
-        return checksum;
     }
 }

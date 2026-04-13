@@ -7,6 +7,8 @@ using Larnix.Core.Utils;
 
 namespace Larnix.Socket.Payload;
 
+public delegate void CmdHandler<T>(in T cmd) where T : unmanaged;
+
 [AttributeUsage(AttributeTargets.Struct, AllowMultiple = false)]
 public class CmdIdAttribute : Attribute
 {
@@ -29,6 +31,7 @@ internal static class Cmd
             .GetAssemblies()
             .SelectMany(a => ReflectionUtils.GetLoadableTypes(a))
             .Where(t => t.GetCustomAttribute<CmdIdAttribute>() != null)
+            .Where(t => !t.IsGenericType)
             .ToList()
             .ForEach(type =>
             {
@@ -49,9 +52,13 @@ internal static class Cmd
             });
     }
 
-    public static short Value<T>() where T : unmanaged
+    public static short Id<T>() where T : unmanaged
     {
-        return _idByType.TryGetValue(typeof(T), out short id) ? id :
-            throw new InvalidOperationException($"Type {typeof(T).FullName} does not have a CmdIdAttribute.");
+        if (!_idByType.TryGetValue(typeof(T), out short id))
+        {
+            throw new InvalidOperationException(
+                $"Type {typeof(T).FullName} does not have a CmdId attribute or is a generic type.");
+        }
+        return id;
     }
 }

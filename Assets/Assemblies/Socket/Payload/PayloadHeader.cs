@@ -1,5 +1,6 @@
 #nullable enable
 using System.Runtime.InteropServices;
+using Larnix.Socket.Payload.Structs;
 
 namespace Larnix.Socket.Payload;
 
@@ -18,11 +19,11 @@ internal readonly record struct PayloadHeader
     private const ushort PROTOCOL_VERSION = 5;
 
     private readonly ushort ProtocolVersion;
-    public readonly int SeqNum;
-    public readonly int AckNum;
+    public readonly Seq SeqNum;
+    public readonly Seq AckNum;
     public readonly byte Flags;
 
-    public PayloadHeader(int seqNum, int ackNum, byte flags)
+    public PayloadHeader(Seq seqNum, Seq ackNum, byte flags)
     {
         ProtocolVersion = PROTOCOL_VERSION;
         SeqNum = seqNum;

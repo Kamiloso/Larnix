@@ -9,7 +9,7 @@ using Larnix.Core.Utils;
 using Larnix.Model;
 using Larnix.Socket.Payload;
 
-namespace Larnix.Socket.Requests;
+namespace Larnix.Socket.Client;
 
 internal static class Prompter
 {

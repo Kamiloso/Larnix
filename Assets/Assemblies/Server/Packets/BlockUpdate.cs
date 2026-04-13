@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Larnix.Socket.Packets;
 using Larnix.Server.Packets.Structs;
 using Larnix.Core.Serialization;
 

@@ -3,7 +3,7 @@ using System;
 using System.Collections.Concurrent;
 using Larnix.Core;
 
-namespace Larnix.Socket.Requests.Cache;
+namespace Larnix.Socket.Client.Cache;
 
 internal class Timestamps<T>
 {

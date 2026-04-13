@@ -22,6 +22,9 @@ internal class TripleSocket : INetworkInteractions, IDisposable
     private readonly UdpClient2 _udp6;
     private readonly RelayClient _relay;
 
+    private readonly Queue<DataBox> _recvBuffer = new();
+    private bool _refillBuffer = true;
+
     private readonly HashSet<IPEndPoint> _relayEndPoints = new();
 
     private bool _disposed;
@@ -144,36 +147,39 @@ internal class TripleSocket : INetworkInteractions, IDisposable
 
     public bool TryReceive(out DataBox result)
     {
-        int offset = RandUtils.Rand.Next(0, 3);
-
-        for (int i = 0; i < 3; i++)
+        if (_refillBuffer)
         {
-            int turn = (offset + i) % 3;
-
-            if (turn == 0 && _udp4.TryReceive(out result))
+            while (_udp4.TryReceive(out DataBox res4))
             {
-                _relayEndPoints.Remove(result!.Target);
-                return true;
+                _relayEndPoints.Remove(res4.Target);
+                _recvBuffer.Enqueue(res4);
             }
 
-            if (turn == 1 && _udp6.TryReceive(out result))
+            while (_udp6.TryReceive(out DataBox res6))
             {
-                return true;
+                _recvBuffer.Enqueue(res6);
             }
 
-            if (turn == 2 && _relay.TryReceive(out result))
+            while (_relay.TryReceive(out DataBox resRelay))
             {
                 if (_relayEndPoints.Count < EpCacheCapacity)
                 {
-                    _relayEndPoints.Add(result!.Target);
+                    _relayEndPoints.Add(resRelay.Target);
                 }
-                
-                return true;
+                _recvBuffer.Enqueue(resRelay);
             }
+
+            _refillBuffer = false;
         }
 
-        result = null!;
-        return false;
+        bool hasResult = _recvBuffer.TryDequeue(out result);
+        if (!hasResult)
+        {
+            _refillBuffer = true;
+            result = null!; // lie strategically to prevent infinite loops
+        }
+
+        return hasResult;
     }
 
     public void Dispose()

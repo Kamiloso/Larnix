@@ -45,12 +45,15 @@ internal class WebIdentity
     {
         byte[] bytes = MaskBytes(_address.GetAddressBytes(), _subnet);
 
-        int hash = 17;
-        foreach (byte b in bytes)
+        unchecked
         {
-            hash = hash * 31 + b;
+            int hash = 17;
+            foreach (byte b in bytes)
+            {
+                hash = hash * 31 + b;
+            }
+            return hash;
         }
-        return hash;
     }
 
     public static bool operator ==(WebIdentity? left, WebIdentity? right)

@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using System.Net;
 using System.Threading.Tasks;
 
 namespace Larnix.Socket.Networking;

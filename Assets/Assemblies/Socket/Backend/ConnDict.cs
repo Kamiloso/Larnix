@@ -23,7 +23,7 @@ internal class ConnDict : ITickable, IDisposable
     private readonly QuickServer _server;
 
     private readonly BiMap<IPEndPoint, string> _nickAndEp = new();
-    private readonly Dictionary<IPEndPoint, Connection> _connections = new();
+    private readonly Dictionary<IPEndPoint, Connection_Legacy> _connections = new();
     private readonly Dictionary<IPEndPoint, PreLoginBuffer> _preLogins = new();
 
     private readonly LimiterOf<WebIdentity> _connLimiter = new(3);
@@ -47,7 +47,7 @@ internal class ConnDict : ITickable, IDisposable
         return TryGetEndPoint(nickname, out _);
     }
 
-    public bool TryGetConnectionObject(IPEndPoint endPoint, out Connection connection)
+    public bool TryGetConnectionObject(IPEndPoint endPoint, out Connection_Legacy connection)
     {
         return _connections.TryGetValue(endPoint, out connection);
     }
@@ -93,7 +93,7 @@ internal class ConnDict : ITickable, IDisposable
 
             // ----- Real Promote Connection -----
 
-            Connection newConn = Connection.CreateServer(_socket, endPoint, keyAES);
+            Connection_Legacy newConn = Connection_Legacy.CreateServer(_socket, endPoint, keyAES);
 
             byte[] bytes;
             while ((bytes = preLogin.TryReceive(out var isSyn)) != null)

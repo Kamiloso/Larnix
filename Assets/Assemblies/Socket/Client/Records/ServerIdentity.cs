@@ -1,6 +1,6 @@
 #nullable enable
 
-namespace Larnix.Socket.Helpers.Records;
+namespace Larnix.Socket.Client.Records;
 
 public record ServerIdentity(
     string Address,

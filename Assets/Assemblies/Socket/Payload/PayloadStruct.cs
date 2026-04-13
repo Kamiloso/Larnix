@@ -33,7 +33,7 @@ internal readonly record struct PayloadStruct<T> : ISanitizable<PayloadStruct<T>
 
     public PayloadStruct(in T contents)
     {
-        CmdId = Cmd.Value<T>();
+        CmdId = Cmd.Id<T>();
         Contents = contents is ISanitizable<T> sanitizable ? sanitizable.Sanitize() : contents;
     }
 

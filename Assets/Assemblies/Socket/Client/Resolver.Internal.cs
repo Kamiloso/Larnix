@@ -2,13 +2,13 @@
 using Larnix.Core.Serialization;
 using Larnix.Socket.Payload.Packets;
 using Larnix.Socket.Payload.Structs;
-using Larnix.Socket.Helpers.Records;
+using Larnix.Socket.Client.Records;
 using Larnix.Socket.Security;
 using Larnix.Socket.Security.Keys;
 using System.Threading.Tasks;
 using ServerInfoStruct = Larnix.Socket.Payload.Structs.ServerInfo;
 
-namespace Larnix.Socket.Requests;
+namespace Larnix.Socket.Client;
 
 public static partial class Resolver
 {

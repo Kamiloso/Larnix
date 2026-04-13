@@ -12,7 +12,7 @@ using Larnix.Socket.Payload;
 
 namespace Larnix.Socket;
 
-internal class Connection : ITickable, IDisposable
+internal class Connection_Legacy : ITickable, IDisposable
 {
     private const uint BUFFER_LIMIT = 128;
     private const int SEQ_TOLERANCE_FAST = 128;
@@ -44,19 +44,19 @@ internal class Connection : ITickable, IDisposable
     private bool _connClosed = false; // blocks socket
     private bool _disposed = false;
 
-    public static Connection CreateClient(
+    public static Connection_Legacy CreateClient(
         INetworkInteractions udp, IPEndPoint target, KeyAES aesKey, KeyRSA rsaKey, Payload_Legacy synPacket)
     {
         return new(udp, target, aesKey, ConnectionRole.Client, synPacket, rsaKey);
     }
 
-    public static Connection CreateServer(
+    public static Connection_Legacy CreateServer(
         INetworkInteractions udp, IPEndPoint target, KeyAES aesKey)
     {
         return new(udp, target, aesKey, ConnectionRole.Server, null, null);
     }
 
-    private Connection(
+    private Connection_Legacy(
         INetworkInteractions udp, IPEndPoint target, KeyAES aesKey,
         ConnectionRole role, Payload_Legacy synPacket = null, KeyRSA rsaKey = null)
     {
