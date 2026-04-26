@@ -2,7 +2,7 @@
 using Larnix.Core.Serialization;
 using System;
 
-namespace Larnix.Socket.Security.Keys;
+namespace Larnix.Socket.Payload.Tools;
 
 /// <summary>
 /// This is used to compress payload ending with nulls.

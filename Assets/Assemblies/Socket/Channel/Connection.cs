@@ -1,8 +1,10 @@
 #nullable enable
 using Larnix.Core;
+using Larnix.Socket.Helpers;
 using Larnix.Socket.Networking;
 using Larnix.Socket.Payload;
 using Larnix.Socket.Payload.Packets;
+using Larnix.Socket.Payload.Tools;
 using Larnix.Socket.Security.Keys;
 using System;
 using System.Collections.Generic;
@@ -10,21 +12,23 @@ using System.Net;
 
 namespace Larnix.Socket.Channel;
 
-internal class QuickConnection : ITickable, IDisposable
+internal class Connection : ITickable, IDisposable
 {
-    public float AvgRTT => _transmitter.AvgRTT;
+    public long AvgRtt => _transmitter.AvgRtt;
     public bool IsDead { get; private set; }
-    public IPEndPoint Target => _udp.Destination ?? // TODO: create two interfaces instead of this hacky solution
-        throw new InvalidOperationException("No target available for the provided socket interface.");
+    public IPEndPoint Target => _socket.Target;
 
     private readonly Seqs _seqs = new();
 
-    private readonly INetworkInteractions _udp;
+    private readonly ITargetedSocket _socket;
     private readonly KeyAES _aes;
 
     private readonly HeaderProvider _headerProvider;
     private readonly ReliableReceiver _receiver;
     private readonly ReliableTransmitter _transmitter;
+
+    private readonly CycleTimer _timerFast = new(100);
+    private readonly CycleTimer _timerSlow = new(500);
 
     private readonly Queue<byte[]> _readyBuffer = new();
     private byte[] _current = Array.Empty<byte>();
@@ -42,17 +46,20 @@ internal class QuickConnection : ITickable, IDisposable
         Full
     }
 
-    public QuickConnection(INetworkInteractions udp, KeyAES aes)
+    public Connection(ITargetedSocket socket, KeyAES aes)
     {
-        _udp = udp;
+        _socket = socket;
         _aes = aes;
 
         _headerProvider = new HeaderProvider(_seqs);
         _receiver = new ReliableReceiver(_seqs);
-        _transmitter = new ReliableTransmitter(_seqs, bytes =>
-        {
-            _udp.Send(new DataBox(Target, bytes));
-        });
+        _transmitter = new ReliableTransmitter(_seqs,
+            sendAction: _socket.Send,
+            closeAction: Close
+            );
+
+        _timerFast.OnTick += () => Send(new None(), safemode: false);
+        _timerSlow.OnTick += () => Send(new None(), safemode: true);
     }
 
     public void SendHandshake(in AllowConnection payload, KeyRSA rsa)
@@ -97,6 +104,9 @@ internal class QuickConnection : ITickable, IDisposable
         if (IsDead) return;
 
         _transmitter.Tick(deltaTime);
+
+        _timerFast.Tick(deltaTime);
+        _timerSlow.Tick(deltaTime);
 
         while (_receiver.TryPop(out byte[] decrypted))
         {

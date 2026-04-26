@@ -7,7 +7,7 @@ namespace Larnix.Socket.Networking;
 
 // WARNING: This class should be fully thread-safe!
 
-internal class RelayClient : INetworkInteractions, IDisposable
+internal class RelayClient : ISocket, IDisposable
 {
     public Task<string?> ForeignAddressTask { get; }
 

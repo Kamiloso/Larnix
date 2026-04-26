@@ -10,7 +10,7 @@ namespace Larnix.Socket.Networking;
 
 // This class is not thread-safe... but it doesn't need to be
 
-internal class TripleSocket : INetworkInteractions, IDisposable
+internal class TripleSocket : ISocket, IDisposable
 {
     private ushort PrefDynamicPort => 50_000;
     private int EpCacheCapacity => 65_536;

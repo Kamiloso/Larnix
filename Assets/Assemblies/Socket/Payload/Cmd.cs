@@ -8,6 +8,7 @@ using Larnix.Core.Utils;
 namespace Larnix.Socket.Payload;
 
 public delegate void CmdHandler<T>(in T cmd) where T : unmanaged;
+public delegate void CmdSenderHandler<T>(in T cmd, string sender) where T : unmanaged;
 
 [AttributeUsage(AttributeTargets.Struct, AllowMultiple = false)]
 public class CmdIdAttribute : Attribute

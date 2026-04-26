@@ -10,7 +10,7 @@ using Larnix.Core;
 using Larnix.Core.Utils;
 using Larnix.Core.Limiters;
 
-namespace Larnix.Socket.Backend;
+namespace Larnix.Socket.Backend_Legacy;
 
 internal class ConnDict : ITickable, IDisposable
 {

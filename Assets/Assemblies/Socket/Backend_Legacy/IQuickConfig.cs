@@ -1,7 +1,7 @@
 using System.Net;
 using Larnix.Core.Serialization;
 
-namespace Larnix.Socket.Backend;
+namespace Larnix.Socket.Backend_Legacy;
 
 public interface IQuickConfig
 {

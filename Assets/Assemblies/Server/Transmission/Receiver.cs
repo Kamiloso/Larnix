@@ -7,7 +7,7 @@ using Larnix.Server.Chunks.Scripts;
 using Larnix.Server.Commands;
 using Larnix.Server.Entities;
 using Larnix.Server.Packets;
-using Larnix.Socket.Backend;
+using Larnix.Socket.Backend_Legacy;
 using Larnix.Socket.Packets;
 using Larnix.Socket.Packets.Control;
 using System;

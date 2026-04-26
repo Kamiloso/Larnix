@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Larnix.Socket.Security.Keys;
 using System;
 
-namespace Larnix.Socket.Backend;
+namespace Larnix.Socket.Backend_Legacy;
 
 internal class PreLoginBuffer
 {

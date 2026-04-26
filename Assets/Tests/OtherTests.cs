@@ -9,7 +9,7 @@ using System;
 using Larnix.Core.Serialization;
 using Larnix.Model.Blocks.Structs;
 using Larnix.Model.Blocks;
-using Larnix.Socket.Payload;
+using Larnix.Socket.Payload.Tools;
 
 [CmdId(1)]
 [StructLayout(LayoutKind.Sequential, Pack = 1)]

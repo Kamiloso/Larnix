@@ -10,7 +10,7 @@ using Larnix.Model;
 using Larnix.Model.Database;
 using Larnix.Core.Limiters;
 
-namespace Larnix.Socket.Backend;
+namespace Larnix.Socket.Backend_Legacy;
 
 public interface IUserManager
 {

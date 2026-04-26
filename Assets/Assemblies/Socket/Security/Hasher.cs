@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Larnix.Core.Utils;
-using Larnix.Model.Utils;
 
 namespace Larnix.Socket.Security;
 
@@ -11,8 +10,8 @@ internal static class Hasher
 {
     private const int MAX_CACHE_COUNT = 256;
 
-    private static Dictionary<string, byte[]> _hashingCache = new();
-    private static object _lock = new();
+    private static readonly Dictionary<string, byte[]> _hashingCache = new();
+    private static readonly object _lock = new();
 
     private static string InputHashingString(string str, byte[] salt)
     {
@@ -34,20 +33,19 @@ internal static class Hasher
                 return cached;
         }
 
-        using (var pbkdf2 = new Rfc2898DeriveBytes(str, salt, 100_000, HashAlgorithmName.SHA256))
+        using var pbkdf2 = new Rfc2898DeriveBytes(str, salt, 100_000, HashAlgorithmName.SHA256);
+        
+        byte[] hash = pbkdf2.GetBytes(32);
+
+        lock (_lock)
         {
-            byte[] hash = pbkdf2.GetBytes(32);
+            if (_hashingCache.Count > MAX_CACHE_COUNT)
+                _hashingCache.Clear();
 
-            lock (_lock)
-            {
-                if (_hashingCache.Count > MAX_CACHE_COUNT)
-                    _hashingCache.Clear();
-
-                _hashingCache[ihs] = hash;
-            }
-
-            return hash;
+            _hashingCache[ihs] = hash;
         }
+
+        return hash;
     }
 
     private static bool SplitSaltedHash(string storedSaltedHash, out byte[] salt, out byte[] storedHash)

@@ -8,6 +8,8 @@ using Larnix.Core;
 using Larnix.Core.Utils;
 using Larnix.Model;
 using Larnix.Socket.Payload;
+using Larnix.Socket.Payload.Structs;
+using Larnix.Socket.Payload.Tools;
 
 namespace Larnix.Socket.Client;
 
@@ -28,13 +30,13 @@ internal static class Prompter
             destination: target
             );
 
-        int id = RandUtils.SecureInt();
+        Seq seq = new(RandUtils.SecureInt());
 
         byte flags = 0;
         flags |= (byte)PacketFlag.NCN;
         flags |= (byte)(key != null ? PacketFlag.RSA : 0);
 
-        PayloadHeader header = new(id, 0, flags);
+        PayloadHeader header = new(seq, flags);
         byte[] data = NetworkSerializer.ToBytes(header, prompt, key);
 
         udp.Send(new DataBox(target, data));
@@ -47,7 +49,7 @@ internal static class Prompter
                 byte[] networkBytes = item.Data;
 
                 if (!NetworkSerializer.TryNetworkBytesAs(networkBytes, KeyEmpty.Instance, out PayloadHeader inHeader, out TAnswer answer)) continue;
-                if (inHeader.SeqNum != id) continue;
+                if (inHeader.SeqNum != seq) continue;
 
                 return answer;
             }

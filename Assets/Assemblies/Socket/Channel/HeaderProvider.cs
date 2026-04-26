@@ -1,4 +1,6 @@
 #nullable enable
+using Larnix.Socket.Channel;
+using Larnix.Socket.Helpers;
 using Larnix.Socket.Payload;
 
 namespace Larnix.Socket.Channel;

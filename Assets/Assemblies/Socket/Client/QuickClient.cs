@@ -17,13 +17,15 @@ namespace Larnix.Socket.Client;
 
 public class QuickClient : ITickable, IDisposable
 {
-    public float Ping => _conn.AvgRTT * 1000f; // ms
+    public long AvgRtt => _conn.AvgRtt; // ms
     public bool IsDead => _conn.IsDead;
-    public IPEndPoint Target => _conn.Target;
+    public IPEndPoint Target => _conn.Target; // modifying this may cause unexpected behaviour!
 
     private readonly UdpClient2 _udp;
     private readonly KeyRSA _rsa;
-    private readonly QuickConnection _conn;
+    private readonly Connection _conn;
+
+    private readonly ITargetedSocket _socket;
 
     private event Action? _listeners;
 
@@ -76,6 +78,8 @@ public class QuickClient : ITickable, IDisposable
             destination: target
             );
 
+        _socket = new TargetedSocket(_udp, target);
+
         Credentials credentials = new(
             nickname: nickname,
             password: password,
@@ -90,7 +94,7 @@ public class QuickClient : ITickable, IDisposable
         KeyAES aes = KeyAES.GenerateNew();
         byte[] aesBytes = aes.ExportKey();
 
-        _conn = new QuickConnection(_udp, aes);
+        _conn = new Connection(_socket, aes);
         _conn.SendHandshake(
             new AllowConnection(credentials, aesBytes), _rsa
             );
@@ -114,9 +118,8 @@ public class QuickClient : ITickable, IDisposable
 
     public void Tick(float deltaTime)
     {
-        while (_udp.TryReceive(out DataBox result))
+        while (_socket.TryReceive(out byte[] bytes))
         {
-            byte[] bytes = result.Data;
             _conn.PushFromWeb(bytes);
         }
 

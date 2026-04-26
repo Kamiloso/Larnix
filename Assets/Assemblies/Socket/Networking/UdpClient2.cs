@@ -11,7 +11,7 @@ namespace Larnix.Socket.Networking;
 
 // WARNING: This class should be fully thread safe!
 
-internal class UdpClient2 : INetworkInteractions, IDisposable
+internal class UdpClient2 : ISocket, IDisposable
 {
     public ushort Port { get; }
     public IPEndPoint? Destination => _destination;

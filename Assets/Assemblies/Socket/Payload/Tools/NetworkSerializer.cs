@@ -2,13 +2,14 @@
 using Larnix.Core.Serialization;
 using Larnix.Core.Utils;
 using Larnix.Socket.Security.Keys;
+using System;
 
-namespace Larnix.Socket.Payload;
+namespace Larnix.Socket.Payload.Tools;
 
 internal static class NetworkSerializer
 {
     private static int I0 => 0; // checksum
-    private static int I1 => I0 + sizeof(ushort); // header
+    private static int I1 => I0 + Binary<ushort>.Size; // header
     private static int I2 => I1 + Binary<PayloadHeader>.Size; // encrypted contents
 
     public static byte[] ToBytes<T>(
@@ -88,18 +89,14 @@ internal static class NetworkSerializer
         header = default;
         payload = default;
 
-        if (EndCompressor.SizeAfterDecompression(decrypted) != Binary<PayloadSafe<T>>.Size)
+        if (EndCompressor.SizeAfterDecompression(decrypted) != Binary<PayloadSafe<T>>.Size ||
+            CmdIdFromDecryptedBytesFast(decrypted) != Cmd.Id<T>())
         {
             return false;
         }
 
         byte[] withNulls = EndCompressor.Decompress(decrypted);
-
         PayloadSafe<T> readSafe = Binary<PayloadSafe<T>>.Deserialize(withNulls);
-        if (readSafe.Payload.CmdId != Cmd.Id<T>())
-        {
-            return false;
-        }
 
         header = readSafe.Header;
         payload = readSafe.Payload.Contents;
@@ -127,12 +124,30 @@ internal static class NetworkSerializer
     public static byte[] PackAsIfDecrypted<T>(in T payload) where T : unmanaged
     {
         var safe = new PayloadSafe<T>(
-            new PayloadHeader(),
+            new PayloadHeader(), // dummy header
             new PayloadStruct<T>(payload)
             );
 
         byte[] withNulls = Binary<PayloadSafe<T>>.Serialize(safe);
         return EndCompressor.Compress(withNulls);
+    }
+
+    private static short CmdIdFromDecryptedBytesFast(byte[] decrypted)
+    {
+        // WARNING: if too small to read cmdid, will return 0
+
+        int I = Binary<PayloadHeader>.Size; // cmdid
+
+        int plainLength = decrypted.Length > 2
+            ? decrypted.Length - 2
+            : decrypted.Length;
+
+        byte byte1 = plainLength > I ? decrypted[I] : (byte)0;
+        byte byte2 = plainLength > I + 1 ? decrypted[I + 1] : (byte)0;
+
+        return BitConverter.IsLittleEndian // will probably always be true, but just in case
+            ? (short)(byte2 << 8 | byte1)
+            : (short)(byte1 << 8 | byte2);
     }
 
     private static ushort CalculateChecksum(byte[] bytes)

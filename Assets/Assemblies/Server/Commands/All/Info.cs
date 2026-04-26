@@ -1,6 +1,6 @@
 #nullable enable
 using System.Collections.Generic;
-using Larnix.Socket.Backend;
+using Larnix.Socket.Backend_Legacy;
 using Larnix.Model.Worldgen;
 using Larnix.Core;
 using Larnix.Model;

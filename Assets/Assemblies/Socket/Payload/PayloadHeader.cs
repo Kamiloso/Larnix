@@ -31,6 +31,8 @@ internal readonly record struct PayloadHeader
         Flags = flags;
     }
 
+    public PayloadHeader(Seq seqNum, byte flags) : this(seqNum, new Seq(0), flags) { }
+
     public bool HasFlag(PacketFlag flag) => (Flags & (byte)flag) != 0;
     public PayloadHeader WithFlag(PacketFlag flag) => new(SeqNum, AckNum, (byte)(Flags | (byte)flag));
     public PayloadHeader WithoutFlag(PacketFlag flag) => new(SeqNum, AckNum, (byte)(Flags & (byte)~flag));

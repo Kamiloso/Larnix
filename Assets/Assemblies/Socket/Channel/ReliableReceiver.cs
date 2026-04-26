@@ -9,9 +9,9 @@ internal class ReliableReceiver
 {
     private int WindowSize => 128;
 
+    private readonly Seqs _seqs;
     private readonly Queue<byte[]> _fastBuffer = new();
     private readonly Dictionary<Seq, byte[]> _buffer = new();
-    private readonly Seqs _seqs;
 
     private Seq _nextSeq = new(1);
 

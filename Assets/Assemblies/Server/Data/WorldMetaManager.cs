@@ -3,7 +3,7 @@ using Larnix.Core;
 using Larnix.Core.Serialization;
 using Larnix.Model;
 using Larnix.Model.Utils;
-using Larnix.Socket.Backend;
+using Larnix.Socket.Backend_Legacy;
 using System;
 using Version = Larnix.Core.Version;
 

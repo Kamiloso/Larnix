@@ -12,7 +12,7 @@ namespace Larnix.Socket.Networking;
 
 // WARNING: This class should be fully thread safe!
 
-internal class RelayConnection : INetworkInteractions, IDisposable
+internal class RelayConnection : ISocket, IDisposable
 {
     private static int RelayTimeout => 1500; // ms
     private static int KeepAliveInterval => 3000; // ms

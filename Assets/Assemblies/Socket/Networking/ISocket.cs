@@ -5,9 +5,8 @@ namespace Larnix.Socket.Networking;
 
 internal record DataBox(IPEndPoint Target, byte[] Data);
 
-internal interface INetworkInteractions
+internal interface ISocket
 {
-    IPEndPoint? Destination => null;
     void Send(DataBox payload);
     bool TryReceive(out DataBox result);
 }

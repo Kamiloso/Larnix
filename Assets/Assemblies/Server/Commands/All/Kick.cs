@@ -1,6 +1,6 @@
 using Larnix.Model.Utils;
 using Larnix.Server.Entities;
-using Larnix.Socket.Backend;
+using Larnix.Socket.Backend_Legacy;
 using Larnix.Core;
 using Larnix.Model;
 
