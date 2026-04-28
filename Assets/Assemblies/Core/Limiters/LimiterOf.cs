@@ -11,16 +11,16 @@ public interface ILimiterOf<T>
 
 public class LimiterOf<T> : ILimiterOf<T>
 {
-    public ulong Max { get; }
+    public long Max { get; }
 
     private readonly Dictionary<T, Limiter> _limiters = new();
 
-    public LimiterOf(ulong max)
+    public LimiterOf(long max)
     {
         Max = max;
     }
 
-    public ulong Current(T key)
+    public long Current(T key)
     {
         return _limiters.TryGetValue(key, out var limiter) ? limiter.Current : 0;
     }

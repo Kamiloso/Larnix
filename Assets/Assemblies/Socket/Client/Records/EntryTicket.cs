@@ -1,5 +1,6 @@
 #nullable enable
 using Larnix.Socket.Payload.Structs;
+using Larnix.Socket.Security.KeyStructs;
 
 namespace Larnix.Socket.Client.Records;
 

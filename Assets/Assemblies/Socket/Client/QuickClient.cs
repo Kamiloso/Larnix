@@ -8,6 +8,7 @@ using Larnix.Socket.Payload;
 using Larnix.Socket.Payload.Packets;
 using Larnix.Socket.Payload.Structs;
 using Larnix.Socket.Security.Keys;
+using Larnix.Socket.Security.KeyStructs;
 using System;
 using System.Net;
 using System.Net.Sockets;
@@ -22,7 +23,8 @@ public class QuickClient : ITickable, IDisposable
     public IPEndPoint Target => _conn.Target; // modifying this may cause unexpected behaviour!
 
     private readonly UdpClient2 _udp;
-    private readonly KeyRSA _rsa;
+    private readonly KeyRsa _rsa;
+    private readonly KeyAes _aes;
     private readonly Connection _conn;
 
     private readonly ITargetedSocket _socket;
@@ -89,14 +91,14 @@ public class QuickClient : ITickable, IDisposable
             runId: ticket.RunId
             );
 
-        _rsa = new KeyRSA(ticket.RsaPublicKey.Bytes264);
+        _rsa = KeyRsa.FromPublicStruct(ticket.RsaPublicKey);
+        _aes = KeyAes.GenerateNew();
 
-        KeyAES aes = KeyAES.GenerateNew();
-        byte[] aesBytes = aes.ExportKey();
+        FixedAes aesKey = _aes.ExportKey();
 
-        _conn = new Connection(_socket, aes);
+        _conn = new Connection(_socket, aesKey);
         _conn.SendHandshake(
-            new AllowConnection(credentials, aesBytes), _rsa
+            new AllowConnection(credentials, aesKey), _rsa
             );
     }
 
@@ -136,8 +138,9 @@ public class QuickClient : ITickable, IDisposable
         if (_disposed) return;
         _disposed = true;
 
-        _conn?.Dispose();
-        _rsa?.Dispose();
-        _udp?.Dispose();
+        _conn.Dispose();
+        _aes.Dispose();
+        _rsa.Dispose();
+        _udp.Dispose();
     }
 }

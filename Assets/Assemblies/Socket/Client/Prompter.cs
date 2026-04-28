@@ -9,14 +9,14 @@ using Larnix.Core.Utils;
 using Larnix.Model;
 using Larnix.Socket.Payload;
 using Larnix.Socket.Payload.Structs;
-using Larnix.Socket.Payload.Tools;
+using Larnix.Socket.Tools;
 
 namespace Larnix.Socket.Client;
 
 internal static class Prompter
 {
     public static async Task<TAnswer?> PromptAsync<TPrompt, TAnswer>(
-        string address, TPrompt prompt, KeyRSA? key, int timeout = 3000) where TPrompt : unmanaged where TAnswer : unmanaged
+        string address, TPrompt prompt, KeyRsa? key, int timeout = 3000) where TPrompt : unmanaged where TAnswer : unmanaged
     {
         IPEndPoint? target = await DnsResolver.ResolveAsync(address, GameInfo.DefaultPort);
         if (target == null) return null;
@@ -48,7 +48,7 @@ internal static class Prompter
             {
                 byte[] networkBytes = item.Data;
 
-                if (!NetworkSerializer.TryNetworkBytesAs(networkBytes, KeyEmpty.Instance, out PayloadHeader inHeader, out TAnswer answer)) continue;
+                if (!NetworkSerializer.TryNetworkBytesAs(networkBytes, null, out PayloadHeader inHeader, out TAnswer answer)) continue;
                 if (inHeader.SeqNum != seq) continue;
 
                 return answer;

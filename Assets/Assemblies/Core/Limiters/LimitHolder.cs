@@ -10,12 +10,25 @@ public class LimitHolder : IDisposable
 
     private bool _disposed;
 
-    public LimitHolder(ILimiter limiter, out bool acquired)
+    private LimitHolder(ILimiter limiter, out bool acquired)
     {
         _limiter = limiter;
         _acquired = _limiter.TryAdd();
 
         acquired = _acquired;
+    }
+
+    public static LimitHolder Acquire(ILimiter limiter, out bool acquired)
+    {
+        return new LimitHolder(
+            limiter,
+            out acquired
+            );
+    }
+
+    public static LimitHolder Acquire<T>(ILimiterOf<T> limiter, T key, out bool acquired)
+    {
+        return Acquire(new SpecificLimiter<T>(limiter, key), out acquired);
     }
 
     public void Dispose()

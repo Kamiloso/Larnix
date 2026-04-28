@@ -2,7 +2,7 @@
 using Larnix.Core.Serialization;
 using System.Runtime.InteropServices;
 using Larnix.Socket.Payload.Structs;
-using Larnix.Socket.Payload;
+using Larnix.Socket.Security.KeyStructs;
 
 namespace Larnix.Socket.Payload.Packets;
 
@@ -11,24 +11,17 @@ namespace Larnix.Socket.Payload.Packets;
 internal readonly record struct AllowConnection : ISanitizable<AllowConnection>
 {
     private readonly Credentials _credentials;
-    private readonly FixedBuffer32<byte> _aesBuffer;
+    private readonly FixedAes _aesKey;
 
     private readonly byte _padding = 0xFF; // prevents null-trimming optimizations at the end
 
     public Credentials Credentials => _credentials;
-    public byte[] AesKey => _aesBuffer.ToArray();
+    public FixedAes AesKey => _aesKey;
 
-    public AllowConnection(in Credentials credentials, byte[] aesKey)
+    public AllowConnection(in Credentials credentials, in FixedAes aesKey)
     {
         _credentials = credentials.Sanitize();
-
-        FixedBuffer32<byte> aesBuffer = new();
-        for (int i = 0; i < aesBuffer.Capacity; i++)
-        {
-            bool isSafe = i < aesKey.Length;
-            aesBuffer.Push(isSafe ? aesKey[i] : (byte)0);
-        }
-        _aesBuffer = aesBuffer;
+        _aesKey = aesKey.Sanitize();
     }
 
     public AllowConnection Sanitize()

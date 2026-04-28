@@ -1,11 +1,12 @@
 #nullable enable
 using Larnix.Core;
-using Larnix.Socket.Helpers;
+using Larnix.Socket.Channel.Components;
 using Larnix.Socket.Networking;
 using Larnix.Socket.Payload;
 using Larnix.Socket.Payload.Packets;
-using Larnix.Socket.Payload.Tools;
 using Larnix.Socket.Security.Keys;
+using Larnix.Socket.Security.KeyStructs;
+using Larnix.Socket.Tools;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -16,12 +17,15 @@ internal class Connection : ITickable, IDisposable
 {
     public long AvgRtt => _transmitter.AvgRtt;
     public bool IsDead { get; private set; }
+    public bool StartEmitted { get; private set; }
+    public bool StopEmitted { get; private set; }
+
     public IPEndPoint Target => _socket.Target;
 
     private readonly Seqs _seqs = new();
 
     private readonly ITargetedSocket _socket;
-    private readonly KeyAES _aes;
+    private readonly KeyAes _aes;
 
     private readonly HeaderProvider _headerProvider;
     private readonly ReliableReceiver _receiver;
@@ -34,9 +38,6 @@ internal class Connection : ITickable, IDisposable
     private byte[] _current = Array.Empty<byte>();
     private CastPermission _castPermission = CastPermission.None;
 
-    private bool _startEmitted;
-    private bool _stopEmitted;
-
     private bool _disposed;
 
     private enum CastPermission
@@ -46,10 +47,10 @@ internal class Connection : ITickable, IDisposable
         Full
     }
 
-    public Connection(ITargetedSocket socket, KeyAES aes)
+    public Connection(ITargetedSocket socket, in FixedAes aesKey)
     {
         _socket = socket;
-        _aes = aes;
+        _aes = KeyAes.FromStruct(aesKey);
 
         _headerProvider = new HeaderProvider(_seqs);
         _receiver = new ReliableReceiver(_seqs);
@@ -58,11 +59,11 @@ internal class Connection : ITickable, IDisposable
             closeAction: Close
             );
 
-        _timerFast.OnTick += () => Send(new None(), safemode: false);
-        _timerSlow.OnTick += () => Send(new None(), safemode: true);
+        _timerFast.OnInterval += () => Send(new None(), safemode: false);
+        _timerSlow.OnInterval += () => Send(new None(), safemode: true);
     }
 
-    public void SendHandshake(in AllowConnection payload, KeyRSA rsa)
+    public void SendHandshake(in AllowConnection payload, KeyRsa rsa)
     {
         if (IsDead) return;
 
@@ -116,9 +117,9 @@ internal class Connection : ITickable, IDisposable
 
     public bool MoveNext()
     {
-        if (!_startEmitted)
+        if (!StartEmitted)
         {
-            _startEmitted = true;
+            StartEmitted = true;
             _current = NetworkSerializer.PackAsIfDecrypted(new Start());
             _castPermission = CastPermission.Full;
             return true;
@@ -131,9 +132,9 @@ internal class Connection : ITickable, IDisposable
             return true;
         }
 
-        if (_disposed && !_stopEmitted)
+        if (IsDead && !StopEmitted)
         {
-            _stopEmitted = true;
+            StopEmitted = true;
             _current = NetworkSerializer.PackAsIfDecrypted(new Stop());
             _castPermission = CastPermission.Full;
             return true;
@@ -146,9 +147,14 @@ internal class Connection : ITickable, IDisposable
 
     public bool TryCastCurrent<T>(out T result) where T : unmanaged
     {
+        bool isInternalPacket =
+            typeof(T) == typeof(Start) ||
+            typeof(T) == typeof(Stop) ||
+            typeof(T) == typeof(AllowConnection);
+
         bool deny = false;
         deny |= _castPermission == CastPermission.None;
-        deny |= _castPermission == CastPermission.Normal && (typeof(T) == typeof(Start) || typeof(T) == typeof(Stop));
+        deny |= _castPermission == CastPermission.Normal && isInternalPacket;
 
         if (deny)
         {
@@ -173,6 +179,8 @@ internal class Connection : ITickable, IDisposable
             _transmitter.Transmit(header, bytes);
         }
 
+        _readyBuffer.Clear(); // discard any pending packets
+
         IsDead = true;
     }
 
@@ -182,5 +190,7 @@ internal class Connection : ITickable, IDisposable
         _disposed = true;
 
         Close();
+
+        _aes.Dispose();
     }
 }

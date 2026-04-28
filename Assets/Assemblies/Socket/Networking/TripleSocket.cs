@@ -113,7 +113,7 @@ internal class TripleSocket : ISocket, IDisposable
 
             if (ex.SocketErrorCode == SocketError.AddressAlreadyInUse)
             {
-                sockets = new INetworkInteractions[0];
+                sockets = new ISocket[0];
                 return false;
             }
 

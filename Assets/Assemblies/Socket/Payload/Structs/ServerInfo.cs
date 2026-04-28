@@ -1,8 +1,8 @@
 #nullable enable
-using Larnix.Core;
 using Larnix.Core.Serialization;
 using Larnix.Model;
 using Larnix.Model.Utils;
+using Larnix.Socket.Security.KeyStructs;
 using System.Runtime.InteropServices;
 using Version = Larnix.Core.Version;
 
@@ -21,7 +21,7 @@ internal readonly record struct ServerInfo : ISanitizable<ServerInfo>
     private readonly FixedString32 _hostUser;
     private readonly FixedRsaPublic _rsaPublicKey;
 
-    public bool MayRegister => _mayRegister != 0;
+    public bool MayRegister => _mayRegister != 0; // is registration enabled in socket settings?
     public ushort Players => _players;
     public ushort MaxPlayers => _maxPlayers;
     public Version GameVersion => _gameVersion;

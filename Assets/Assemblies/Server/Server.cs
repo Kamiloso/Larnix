@@ -1,11 +1,10 @@
+#nullable enable
 using Larnix.Core;
 using Larnix.Model;
-using Larnix.Model.Utils;
-using Larnix.Socket.Backend_Legacy;
-using Larnix.Socket.Packets;
+using Larnix.Socket.Payload;
+using Larnix.Socket.Server;
 using System;
 using System.IO;
-using Version = Larnix.Core.Version;
 
 namespace Larnix.Server;
 
@@ -20,10 +19,12 @@ internal interface IServer
 
     void PrintHelloToConsole();
 
-    void Send(string nickname, Payload_Legacy payload);
-    void Broadcast(Payload_Legacy payload);
-    void SendFast(string nickname, Payload_Legacy payload);
-    void BroadcastFast(Payload_Legacy payload);
+    void Send<T>(string nickname, T payload) where T : unmanaged;
+    void Broadcast<T>(T payload) where T : unmanaged;
+    void SendUnreliable<T>(string nickname, T payload) where T : unmanaged;
+    void BroadcastUnreliable<T>(T payload) where T : unmanaged;
+    void OnReceive<T>(CmdSenderHandler<T>? execute) where T : unmanaged;
+
     void Close();
 }
 
@@ -33,7 +34,7 @@ internal class Server : IServer
     public string WorldPath { get; }
     private Action CloseServer { get; }
 
-    public ushort Port => QuickServer.Port;
+    public ushort Port => QuickServer.Settings.Port;
     public string LocalAddress => "localhost:" + Port;
     public string Authcode => QuickServer.Authcode;
     public string SocketPath => Path.Combine(WorldPath, "Socket");
@@ -64,9 +65,11 @@ internal class Server : IServer
         }
     }
 
-    public void Send(string nickname, Payload_Legacy payload) => QuickServer.Send(nickname, payload);
-    public void Broadcast(Payload_Legacy payload) => QuickServer.Broadcast(payload);
-    public void SendFast(string nickname, Payload_Legacy payload) => QuickServer.Send(nickname, payload, false);
-    public void BroadcastFast(Payload_Legacy payload) => QuickServer.Broadcast(payload, false);
+    public void Send<T>(string nickname, T payload) where T : unmanaged => QuickServer.Send(nickname, payload);
+    public void Broadcast<T>(T payload) where T : unmanaged => QuickServer.Broadcast(payload);
+    public void SendUnreliable<T>(string nickname, T payload) where T : unmanaged => QuickServer.SendUnreliable(nickname, payload);
+    public void BroadcastUnreliable<T>(T payload) where T : unmanaged => QuickServer.BroadcastUnreliable(payload);
+    public void OnReceive<T>(CmdSenderHandler<T>? execute) where T : unmanaged => QuickServer.OnReceive(execute);
+
     public void Close() => CloseServer();
 }

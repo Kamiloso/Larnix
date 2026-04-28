@@ -11,7 +11,8 @@ public record ServerInfo(
     ushort MaxPlayers,
     Version GameVersion,
     FixedString256 Motd,
-    FixedString32 HostUser
+    FixedString32 HostUser,
+    bool MayRegister
     )
 {
     internal static ServerInfo FromStruct(string address, in ServerInfoStruct source)
@@ -22,7 +23,8 @@ public record ServerInfo(
             source.MaxPlayers,
             source.GameVersion,
             source.Motd,
-            source.HostUser
+            source.HostUser,
+            source.MayRegister
             );
     }
 }

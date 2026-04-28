@@ -7,6 +7,8 @@ using Larnix.Socket.Security;
 using Larnix.Socket.Security.Keys;
 using System.Threading.Tasks;
 using ServerInfoStruct = Larnix.Socket.Payload.Structs.ServerInfo;
+using System;
+using Larnix.Socket.Security.KeyStructs;
 
 namespace Larnix.Socket.Client;
 
@@ -76,8 +78,8 @@ public static partial class Resolver
                 return ResolveError.LoginNotAllowed;
             }
 
-            byte[] keyBytes = ainfo.Info.RsaPublicKey.Bytes264;
-            using KeyRSA rsa = new(keyBytes);
+            FixedRsaPublic keyStruct = ainfo.Info.RsaPublicKey;
+            using var rsa = KeyRsa.FromPublicStruct(keyStruct);
 
             long serverSecret = Authcode.GetSecretFromAuthCode(authcode);
             long timestamp = _timestamps.Get(fullLogin.ToServerIdentity());

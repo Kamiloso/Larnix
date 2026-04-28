@@ -2,22 +2,22 @@
 
 namespace Larnix.Core.Limiters;
 
-public class TrafficLimiter<T>
+public class TrafficLimiter<T> : ILimiterOf<T>
 {
-    public ulong MaxLocal => _localLimiter.Max;
-    public ulong MaxGlobal => _globalLimiter.Max;
+    public long MaxLocal => _localLimiter.Max;
+    public long MaxGlobal => _globalLimiter.Max;
 
     private readonly LimiterOf<T> _localLimiter;
     private readonly Limiter _globalLimiter;
 
-    public TrafficLimiter(ulong maxTrafficLocal, ulong maxTrafficGlobal)
+    public TrafficLimiter(long maxTrafficLocal, long maxTrafficGlobal)
     {
         _localLimiter = new LimiterOf<T>(maxTrafficLocal);
         _globalLimiter = new Limiter(maxTrafficGlobal);
     }
 
-    public ulong CurrentLocal(T key) => _localLimiter.Current(key);
-    public ulong CurrentGlobal() => _globalLimiter.Current;
+    public long CurrentLocal(T key) => _localLimiter.Current(key);
+    public long CurrentGlobal() => _globalLimiter.Current;
 
     public bool TryAdd(T key)
     {

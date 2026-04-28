@@ -1,17 +1,16 @@
 #nullable enable
 
-using System.Threading;
-
 namespace Larnix.Socket.Security.Keys;
 
-internal class KeyEmpty : IEncryptionKey
+internal class KeyEmpty : IKey
 {
-    private static readonly ThreadLocal<KeyEmpty> _keyProvider = new(() => new());
-
     private KeyEmpty() { }
 
-    public static KeyEmpty Instance => _keyProvider.Value;
+    public static KeyEmpty Instance { get; } = new KeyEmpty(); // stateless = thread-safe
 
     public byte[] Encrypt(byte[] plaintext) => plaintext[..];
     public byte[] Decrypt(byte[] ciphertext) => ciphertext[..];
+
+    public T CloneKey<T>() where T : IKey => (T)(IKey)this;
+    public void Dispose() { }
 }

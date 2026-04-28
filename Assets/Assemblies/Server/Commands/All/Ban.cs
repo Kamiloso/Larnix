@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Larnix.Core;
 using Larnix.Server.Data;
 using Larnix.Server.Entities;
-using Larnix.Socket.Backend_Legacy;
+using Larnix.Socket.Server;
 using Larnix.Model.Json;
 using Larnix.Model;
 

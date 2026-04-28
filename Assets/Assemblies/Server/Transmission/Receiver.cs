@@ -7,9 +7,8 @@ using Larnix.Server.Chunks.Scripts;
 using Larnix.Server.Commands;
 using Larnix.Server.Entities;
 using Larnix.Server.Packets;
-using Larnix.Socket.Backend_Legacy;
-using Larnix.Socket.Packets;
-using Larnix.Socket.Packets.Control;
+using Larnix.Socket.Payload.Packets;
+using Larnix.Socket.Server;
 using System;
 using System.Collections.Generic;
 using static Larnix.Server.Packets.CodeInfo;
@@ -31,7 +30,7 @@ internal class Receiver
 
     public Receiver()
     {
-        Subscribe<AllowConnection>(_AllowConnection); // START (server validated)
+        Subscribe<Start>(_AllowConnection); // START (server generated)
         Subscribe<Stop>(_Stop); // STOP (server generated)
 
         // Assumptions:
@@ -45,9 +44,9 @@ internal class Receiver
     }
 
     private void Subscribe<T>(Action<T, string> callback, int maxPerSecond = 0,
-        bool softLimit = false) where T : Payload_Legacy
+        bool softLimit = false) where T : unmanaged
     {
-        QuickServer.Subscribe<T>((msg, owner) =>
+        Server.OnReceive<T>((in T msg, string owner) =>
         {
             if (typeof(T) != typeof(Stop) && _limitedBlacklist.Contains(owner))
                 return; // discard packets from kicked clients
@@ -89,22 +88,14 @@ internal class Receiver
         }
     }
 
-    private void _AllowConnection(AllowConnection msg, string owner)
+    private void _AllowConnection(Start msg, string owner)
     {
-        // WARNING:
-        // AllowConnection executes in a non-synchronized player context.
-        // No player data methods are reliable here.
-
         ConnectedPlayers.JoinPlayer(owner);
         Echo.Log($"{owner} joined the game.");
     }
 
     private void _Stop(Stop msg, string owner)
     {
-        // WARNING:
-        // Stop executes in a non-synchronized player context.
-        // No player data methods are reliable here.
-
         ConnectedPlayers.DisconnectPlayer(owner);
         _limitedBlacklist.Remove(owner);
         Echo.Log($"{owner} disconnected.");

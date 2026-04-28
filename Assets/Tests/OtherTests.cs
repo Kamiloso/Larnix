@@ -9,7 +9,7 @@ using System;
 using Larnix.Core.Serialization;
 using Larnix.Model.Blocks.Structs;
 using Larnix.Model.Blocks;
-using Larnix.Socket.Payload.Tools;
+using Larnix.Socket.Tools;
 
 [CmdId(1)]
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -45,7 +45,7 @@ internal unsafe struct TestCommand3
     }
 }
 
-internal class DummyKey : IEncryptionKey
+internal class DummyKey : IKey
 {
     public static DummyKey Instance { get; } = new();
     public byte[] Decrypt(byte[] ciphertext) => ciphertext[..].Reverse().ToArray();

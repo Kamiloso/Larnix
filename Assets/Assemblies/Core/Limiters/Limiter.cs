@@ -11,10 +11,10 @@ public interface ILimiter
 
 public class Limiter : ILimiter
 {
-    public ulong Max { get; }
-    public ulong Current { get; private set; }
+    public long Max { get; }
+    public long Current { get; private set; }
 
-    public Limiter(ulong max)
+    public Limiter(long max)
     {
         Max = max;
         Current = 0;

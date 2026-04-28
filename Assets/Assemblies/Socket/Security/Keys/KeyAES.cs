@@ -1,52 +1,64 @@
+#nullable enable
 using System;
 using Larnix.Core.Utils;
+using Larnix.Socket.Security.KeyStructs;
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Modes;
 using Org.BouncyCastle.Crypto.Parameters;
 
 namespace Larnix.Socket.Security.Keys;
 
-internal class KeyAES : IEncryptionKey
+// WARNING: returning byte[0] is for efficiency, not convenience.
+// AES may be in the hot loop, so avoid throwing exceptions.
+
+internal class KeyAes : IKey
 {
     private const int KEY_SIZE = 32;
     private const int NONCE_SIZE = 12;
     private const int TAG_SIZE = 16;
 
-    private readonly byte[] _key;
+    private readonly byte[] _key; // immutable by convention
 
-    public KeyAES(byte[] keyBytes)
+    private bool _disposed;
+
+    private KeyAes(in FixedAes aesKey)
     {
-        if (keyBytes.Length != KEY_SIZE)
-            throw new ArgumentException($"AES key length must be {KEY_SIZE} bytes (256-bit)!", nameof(keyBytes));
-
-        _key = keyBytes;
+        _key = aesKey.Bytes32;
     }
 
-    public static KeyAES GenerateNew()
+    public static KeyAes GenerateNew()
     {
         byte[] bytes = RandUtils.SecureBytes(KEY_SIZE);
-        return new KeyAES(bytes);
+        FixedAes aesKey = new(bytes);
+        Array.Fill(bytes, (byte)0);
+        return new KeyAes(aesKey);
     }
 
-    public byte[] ExportKey()
+    public static KeyAes FromStruct(in FixedAes aesKey)
     {
-        byte[] exported = new byte[_key.Length];
-        Array.Copy(_key, exported, _key.Length);
-        return exported;
+        return new KeyAes(aesKey);
+    }
+
+    public FixedAes ExportKey()
+    {
+        return new FixedAes(_key);
+    }
+
+    public T CloneKey<T>() where T : IKey
+    {
+        FixedAes aesKey = ExportKey();
+        return (T)(IKey)new KeyAes(aesKey);
     }
 
     public byte[] Encrypt(byte[] plaintext)
     {
-        if (plaintext == null)
-            throw new ArgumentNullException(nameof(plaintext));
-
         byte[] nonce = RandUtils.SecureBytes(NONCE_SIZE);
 
         var cipher = new GcmBlockCipher(new AesEngine());
         var parameters = new AeadParameters(
-            new KeyParameter(_key),
-            TAG_SIZE * 8,
-            nonce
+            key: new KeyParameter(_key),
+            macSize: TAG_SIZE * 8,
+            nonce: nonce
         );
 
         cipher.Init(true, parameters);
@@ -60,11 +72,8 @@ internal class KeyAES : IEncryptionKey
 
     public byte[] Decrypt(byte[] ciphertext)
     {
-        if (ciphertext == null)
-            throw new ArgumentNullException(nameof(ciphertext));
-
         if (ciphertext.Length < NONCE_SIZE + TAG_SIZE)
-            return new byte[0];
+            return Array.Empty<byte>();
 
         byte[] nonce = new byte[NONCE_SIZE];
         byte[] encrypted = new byte[ciphertext.Length - NONCE_SIZE];
@@ -72,11 +81,14 @@ internal class KeyAES : IEncryptionKey
         Array.Copy(ciphertext, 0, nonce, 0, NONCE_SIZE);
         Array.Copy(ciphertext, NONCE_SIZE, encrypted, 0, encrypted.Length);
 
-        var cipher = new GcmBlockCipher(new AesEngine());
+        var cipher = new GcmBlockCipher(
+            new AesEngine()
+            );
+
         var parameters = new AeadParameters(
-            new KeyParameter(_key),
-            TAG_SIZE * 8,
-            nonce
+            key: new KeyParameter(_key),
+            macSize: TAG_SIZE * 8,
+            nonce: nonce
         );
 
         cipher.Init(false, parameters);
@@ -91,7 +103,15 @@ internal class KeyAES : IEncryptionKey
         }
         catch
         {
-            return new byte[0];
+            return Array.Empty<byte>(); // for efficiency, not convenience
         }
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        Array.Fill<byte>(_key, 0);
     }
 }

@@ -10,7 +10,6 @@ using Larnix.Server.Data;
 using Larnix.Model.Database.Connection;
 using Larnix.Server.Chunks;
 using Larnix.Server.Transmission;
-using Larnix.Socket.Backend_Legacy;
 using System;
 using System.IO;
 using System.Threading.Tasks;
@@ -23,6 +22,7 @@ using Larnix.Server.Chunks.Scripts;
 using Larnix.Model.Blocks;
 using static Larnix.Server.ServerRunner;
 using Larnix.Model;
+using Larnix.Socket.Server;
 
 namespace Larnix.Server;
 

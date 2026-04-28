@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
 using Larnix.Core.Utils;
@@ -23,11 +24,12 @@ public class CmdIdAttribute : Attribute
 
 internal static class Cmd
 {
-    // read from dictionary is thread-safe
-    private static readonly Dictionary<Type, short> _idByType = new();
+    private static readonly ReadOnlyDictionary<Type, short> _idByType;
 
-    static Cmd() // static ctor guarantees this runs only once and is thread-safe
+    static Cmd()
     {
+        Dictionary<Type, short> idByType = new();
+
         AppDomain.CurrentDomain
             .GetAssemblies()
             .SelectMany(a => ReflectionUtils.GetLoadableTypes(a))
@@ -37,20 +39,22 @@ internal static class Cmd
             .ForEach(type =>
             {
                 short id = type.GetCustomAttribute<CmdIdAttribute>()!.Id;
-                if (!_idByType.ContainsKey(type))
+                if (!idByType.ContainsKey(type))
                 {
-                    if (_idByType.ContainsValue(id))
+                    if (idByType.ContainsValue(id))
                     {
-                        string exstName = _idByType.First(kv => kv.Value == id).Key.FullName;
+                        string exstName = idByType.First(kv => kv.Value == id).Key.FullName;
                         string typeName = type.FullName;
 
                         throw new InvalidOperationException(
                             $"Duplicate CmdID {id} for types {exstName} and {typeName}.");
                     }
 
-                    _idByType[type] = id;
+                    idByType[type] = id;
                 }
             });
+
+        _idByType = new ReadOnlyDictionary<Type, short>(idByType);
     }
 
     public static short Id<T>() where T : unmanaged
