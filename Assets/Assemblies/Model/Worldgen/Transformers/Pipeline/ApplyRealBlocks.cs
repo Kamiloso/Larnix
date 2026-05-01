@@ -2,7 +2,6 @@ using System;
 using Larnix.Model.Blocks;
 using Larnix.Model.Blocks.Structs;
 using Larnix.Core.Vectors;
-using Larnix.Model.Utils;
 
 namespace Larnix.Model.Worldgen.Transformers.Pipeline;
 
@@ -15,7 +14,7 @@ internal class ApplyRealBlocks : Transformer<BlockHeader2, BlockData2>
 
     public override BlockData2[,] Rebuild(Vec2Int chunk, BlockHeader2[,] chunkIn)
     {
-        BlockData2[,] result = ChunkIterator.Array2D<BlockData2>();
+        BlockData2[,] result = ChunkIterator.Array16x16<BlockData2>();
 
         ChunkIterator.Iterate((x, y) =>
         {

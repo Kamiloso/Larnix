@@ -7,7 +7,7 @@ namespace Larnix.Socket.Payload.Packets;
 
 [CmdId(-5)]
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-internal readonly record struct A_ServerInfo : ISanitizable<A_ServerInfo>
+internal readonly struct A_ServerInfo : ISanitizable<A_ServerInfo>
 {
     public ServerInfo Info { get; }
     public long ChallengeId { get; }
@@ -17,8 +17,8 @@ internal readonly record struct A_ServerInfo : ISanitizable<A_ServerInfo>
 
     public A_ServerInfo(in ServerInfo info, long challengeId)
     {
-        Info = info.Sanitize();
-        ChallengeId = challengeId;
+        Info = Sanitizer.Filter(info);
+        ChallengeId = Sanitizer.Filter(challengeId);
     }
 
     public A_ServerInfo Sanitize()

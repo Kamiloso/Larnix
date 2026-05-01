@@ -22,7 +22,6 @@ internal class WebReceiver : ITickable, IDisposable
     private readonly QuickConfig _settings;
 
     private readonly AsyncDecryptor _asyncDecryptor;
-
     private readonly ConnReceiver _connReceiver;
     private readonly RequestReceiver _requestReceiver;
 
@@ -31,7 +30,15 @@ internal class WebReceiver : ITickable, IDisposable
     private readonly TrafficLimiter<string> _heavyLimiter;
     private readonly CycleTimer _heavyCleanupTimer;
 
-    public WebReceiver(ISocket socket, KeyRsa rsa, IClients clients, IAsyncLogins asyncLogins, IInfoProvider infoProvider, Coroutines coroutines, QuickConfig settings)
+    public WebReceiver(
+        ISocket socket,
+        KeyRsa rsa,
+        IClients clients,
+        IAsyncLogins asyncLogins,
+        IInfoProvider infoProvider,
+        Coroutines coroutines,
+        QuickConfig settings
+        )
     {
         _socket = socket;
         _rsa = rsa;
@@ -40,7 +47,6 @@ internal class WebReceiver : ITickable, IDisposable
         _settings = settings;
 
         _asyncDecryptor = new AsyncDecryptor(settings);
-
         _connReceiver = new ConnReceiver(socket, clients, asyncLogins, coroutines, settings);
         _requestReceiver = new RequestReceiver(socket, asyncLogins, infoProvider, coroutines, settings);
 

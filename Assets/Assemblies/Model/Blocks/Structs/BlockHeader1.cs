@@ -10,13 +10,13 @@ public readonly record struct BlockHeader1 : ISanitizable<BlockHeader1>
     public BlockID Id { get; }
     public byte Variant { get; }
 
-    public static BlockHeader1 Air => new(BlockID.Air);
+    public static BlockHeader1 Air => default;
     public static BlockHeader1 UltimateTool => new(BlockID.UltimateTool);
 
     public BlockHeader1(BlockID id, byte variant = 0)
     {
-        Id = id;
-        Variant = (byte)(variant & 0x0F);
+        Id = Sanitizer.Filter(id);
+        Variant = Sanitizer.ToHalfByte(variant);
     }
 
     public BlockHeader1 Sanitize()

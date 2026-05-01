@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 namespace Larnix.Model.Entities.Structs;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct EntityHeader : ISanitizable<EntityHeader>
+public readonly struct EntityHeader : ISanitizable<EntityHeader>
 {
     public EntityID Id { get; }
     public Vec2 Position { get; }
@@ -14,9 +14,9 @@ public readonly record struct EntityHeader : ISanitizable<EntityHeader>
 
     public EntityHeader(EntityID id, Vec2 position, float rotation)
     {
-        Id = id;
-        Position = position.Sanitize();
-        Rotation = float.IsFinite(rotation) ? rotation : 0f;
+        Id = Sanitizer.Filter(id);
+        Position = Sanitizer.Filter(position);
+        Rotation = Sanitizer.ToFinite(rotation);
     }
 
     public EntityHeader Sanitize()

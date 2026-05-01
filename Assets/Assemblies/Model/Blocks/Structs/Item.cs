@@ -1,5 +1,4 @@
 #nullable enable
-using System;
 
 namespace Larnix.Model.Blocks.Structs;
 
@@ -10,7 +9,7 @@ public class Item
 
     public Item(BlockData1 block, int count)
     {
-        Block = block ?? throw new ArgumentNullException(nameof(block));
+        Block = block;
         Count = count;
     }
 

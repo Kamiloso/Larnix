@@ -1,14 +1,14 @@
 using System;
 using Larnix.Model.Blocks.Structs;
 using Larnix.Core.Vectors;
-using Larnix.Model.Utils;
+using Larnix.Model.Blocks;
 
 namespace Larnix.Model.Worldgen.Transformers;
 
 internal class GenPipeline
 {
-    private Func<Vec2Int, Array> _function = _ => ChunkIterator.Array2D<object>();
-    private Type _lastType = typeof(object);
+    private readonly Func<Vec2Int, Array> _function = _ => ChunkIterator.Array16x16<object>();
+    private readonly Type _lastType = typeof(object);
 
     public GenPipeline(params ITransformer[] transformers)
     {

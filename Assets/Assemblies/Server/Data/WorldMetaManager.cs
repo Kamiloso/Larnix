@@ -3,7 +3,6 @@ using Larnix.Core;
 using Larnix.Core.Serialization;
 using Larnix.Model;
 using Larnix.Model.Utils;
-using Larnix.Socket.Server;
 using System;
 using Version = Larnix.Core.Version;
 
@@ -22,22 +21,18 @@ internal class WorldMetaManager : IWorldMetaManager
     private WorldMeta WorldMeta
     {
         get => _worldMeta;
-        set
-        {
-            _worldMeta = value;
-            WorldMeta.SaveToFolder(Server.WorldPath, _worldMeta);
-        }
+        set => WorldMeta.SaveToFolder(Server.WorldPath, _worldMeta = value);
     }
 
     public Version Version => WorldMeta.Version;
     public FixedString32 HostNickname
     {
-        get => (FixedString32)WorldMeta.Nickname;
+        get => new(WorldMeta.Nickname);
         private set => WorldMeta = new WorldMeta(WorldMeta.Version, value);
     }
 
     private IServer Server => GlobRef.Get<IServer>();
-    private IUserManager UserManager => GlobRef.Get<IUserManager>();
+    private IUserRepository UserRepository => GlobRef.Get<IUserRepository>();
 
     public WorldMetaManager()
     {
@@ -64,13 +59,13 @@ internal class WorldMetaManager : IWorldMetaManager
 
             if (Validation.IsGoodPassword(password))
             {
-                UserManager.TryChangePasswordOrAddUserSync(HostNickname, password);
+                UserRepository.SetPasswordSync(HostNickname, password);
                 HostNickname = new FixedString32(GameInfo.ReservedNickname);
                 changeSuccess = true;
             }
             else
             {
-                Echo.LogRaw(Validation.WrongPasswordInfo + "\n");
+                Echo.LogRaw($"{Validation.WrongPasswordInfo}\n");
             }
 
         } while (!changeSuccess);

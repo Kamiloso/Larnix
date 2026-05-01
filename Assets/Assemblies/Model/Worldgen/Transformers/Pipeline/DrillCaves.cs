@@ -1,7 +1,7 @@
 using Larnix.Core.Vectors;
 using Larnix.Model.Worldgen.Noise;
 using Larnix.Model.Worldgen.Providers;
-using Larnix.Model.Utils;
+using Larnix.Model.Blocks;
 
 namespace Larnix.Model.Worldgen.Transformers.Pipeline;
 

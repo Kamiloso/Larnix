@@ -16,26 +16,34 @@ internal enum PacketFlag : byte
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 internal readonly record struct PayloadHeader
 {
-    private const ushort PROTOCOL_VERSION = 5;
+    private const short PROTOCOL_VERSION = 5;
 
-    private readonly ushort ProtocolVersion;
+    public readonly short ProtocolVersion;
     public readonly Seq SeqNum;
     public readonly Seq AckNum;
     public readonly byte Flags;
 
-    public PayloadHeader(Seq seqNum, Seq ackNum, byte flags)
+    private PayloadHeader(short protocolVersion, Seq seqNum, Seq ackNum, byte flags)
     {
-        ProtocolVersion = PROTOCOL_VERSION;
+        ProtocolVersion = protocolVersion;
         SeqNum = seqNum;
         AckNum = ackNum;
         Flags = flags;
     }
 
-    public PayloadHeader(Seq seqNum, byte flags) : this(seqNum, new Seq(0), flags) { }
+    public PayloadHeader(Seq seqNum, Seq ackNum, byte flags)
+    {
+        this = new PayloadHeader(PROTOCOL_VERSION, seqNum, ackNum, flags);
+    }
+
+    public PayloadHeader(Seq seqNum, byte flags)
+    {
+        this = new PayloadHeader(PROTOCOL_VERSION, seqNum, new Seq(0), flags);
+    }
+
+    public bool CompatibleProtocolVersion() => ProtocolVersion == PROTOCOL_VERSION;
 
     public bool HasFlag(PacketFlag flag) => (Flags & (byte)flag) != 0;
     public PayloadHeader WithFlag(PacketFlag flag) => new(SeqNum, AckNum, (byte)(Flags | (byte)flag));
     public PayloadHeader WithoutFlag(PacketFlag flag) => new(SeqNum, AckNum, (byte)(Flags & (byte)~flag));
-
-    public bool CompatibleProtocolVersion() => ProtocolVersion == PROTOCOL_VERSION;
 }

@@ -1,6 +1,6 @@
 #nullable enable
 using Larnix.Core.Vectors;
-using Larnix.Model.Blocks.Structs;
+using Larnix.Model.Blocks.Chunks;
 using Larnix.Model.Database.Connection;
 
 namespace Larnix.Model.Database;
@@ -24,7 +24,9 @@ internal class ChunkAccess : IChunkAccess
                 VALUES ($p1, $p2, $p3, $p4);
         ";
 
-        _db.Execute(cmd, chunk.x, chunk.y, chunkData.Serialize(), chunkData.ExportData());
+        byte[] bytes = chunkData.Serialize(out string nbt);
+
+        _db.Execute(cmd, chunk.x, chunk.y, bytes, nbt);
     }
 
     public bool TryGetChunk(Vec2Int chunk, out ChunkData? chunkData)
@@ -43,8 +45,7 @@ internal class ChunkAccess : IChunkAccess
 
             if (bytes is not null && nbt is not null)
             {
-                chunkData = ChunkData.Deserialize(bytes);
-                chunkData.ImportData(nbt);
+                chunkData = new ChunkData(bytes, nbt);
                 return true;
             }
         }

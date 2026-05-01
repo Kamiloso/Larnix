@@ -1,36 +1,35 @@
+#nullable enable
 using Larnix.Core.Vectors;
 using Larnix.Model.Utils;
-using Larnix.Socket.Packets;
 using Larnix.Model.Blocks.Structs;
-using Larnix.Core.Utils;
 using Larnix.Core.Serialization;
+using Larnix.Socket.Payload;
+using System.Runtime.InteropServices;
 
 namespace Larnix.Server.Packets;
 
-public sealed class RetBlockChange : Payload_Legacy
+[CmdId(0x0A)]
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public readonly record struct RetBlockChange : ISanitizable<RetBlockChange>
 {
-    private static int SIZE => Binary<Vec2Int>.Size + sizeof(long) + Binary<BlockHeader2>.Size + sizeof(byte);
+    public Vec2Int POS { get; }
+    public long Operation { get; }
+    public BlockHeader2 CurrentBlock { get; }
 
-    public Vec2Int BlockPosition => Binary<Vec2Int>.Deserialize(Bytes, 0); // Binary<Vec2>.Size
-    public long Operation => Binary<long>.Deserialize(Bytes, 8); // sizeof(long)
-    public BlockHeader2 CurrentBlock => Binary<BlockHeader2>.Deserialize(Bytes, 16); // BlockHeader2.SIZE
-    public bool Front => (Bytes[21] & 0b01) != 0; // flag
-    public bool Success => (Bytes[21] & 0b10) != 0; // flag
+    private readonly byte _flags;
+    public bool Front => (_flags & 0b01) != 0;
+    public bool Success => (_flags & 0b10) != 0;
 
-    public RetBlockChange(Vec2Int blockPosition, long operation, BlockHeader2 currentBlock, bool front, bool success, byte code = 0)
+    public RetBlockChange(Vec2Int POS_, long operation, BlockHeader2 currentBlock, bool front, bool success)
     {
-        InitializePayload(ArrayUtils.MegaConcat(
-            Binary<Vec2Int>.Serialize(blockPosition),
-            Binary<long>.Serialize(operation),
-            Binary<BlockHeader2>.Serialize(currentBlock),
-            new byte[] { (byte)((front ? 0b01 : 0b00) | (success ? 0b10 : 0b00)) }
-            ), code);
+        POS = BlockUtils.BlockInWorld(POS_) ? POS_ : Vec2Int.Zero;
+        Operation = operation;
+        CurrentBlock = currentBlock;
+        _flags = (byte)((front ? 0b01 : 0b00) | (success ? 0b10 : 0b00));
     }
 
-    protected override bool IsValid()
+    public RetBlockChange Sanitize()
     {
-        return Bytes.Length == SIZE &&
-            BlockPosition.x >= BlockUtils.MIN_BLOCK && BlockPosition.x <= BlockUtils.MAX_BLOCK &&
-            BlockPosition.y >= BlockUtils.MIN_BLOCK && BlockPosition.y <= BlockUtils.MAX_BLOCK;
+        return new RetBlockChange(POS, Operation, CurrentBlock, Front, Success);
     }
 }

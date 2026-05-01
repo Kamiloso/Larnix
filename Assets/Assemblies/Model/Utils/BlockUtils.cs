@@ -17,6 +17,18 @@ public static class BlockUtils
 
     public const int LOADING_DISTANCE = 2; // chunks
 
+    public static bool BlockInWorld(Vec2Int POS)
+    {
+        return POS.x >= MIN_BLOCK && POS.x <= MAX_BLOCK &&
+               POS.y >= MIN_BLOCK && POS.y <= MAX_BLOCK;
+    }
+
+    public static bool ChunkInWorld(Vec2Int chunkpos)
+    {
+        return chunkpos.x >= MIN_CHUNK && chunkpos.x <= MAX_CHUNK &&
+               chunkpos.y >= MIN_CHUNK && chunkpos.y <= MAX_CHUNK;
+    }
+
     public static Vec2Int CoordsToChunk(Vec2 position)
     {
         return CoordsToBlock(position, 16.0);

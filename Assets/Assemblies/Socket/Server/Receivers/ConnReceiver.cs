@@ -53,11 +53,8 @@ internal class ConnReceiver : ITickable, IDisposable
             Credentials credentials = allowConnection.Credentials;
             string nickname = credentials.Nickname;
 
-            long uid = _settings.Interfaces.UserRepository.FindByNickname(nickname)?.Uid ??
-                _settings.Interfaces.UserRepository.NextFreeUid();
-
             _coroutines.Start(
-                method: _asyncLogins.Login(uid, credentials),
+                method: _asyncLogins.Login(credentials),
                 onResult: success =>
                 {
                     if (!success) return;

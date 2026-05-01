@@ -1,53 +1,54 @@
+#nullable enable
 using System;
-using Larnix.Socket.Packets;
 using System.Linq;
-using Larnix.Core.Utils;
-using LogType = Larnix.Core.Echo.LogType;
 using Larnix.Core.Serialization;
+using Larnix.Socket.Payload;
+using System.Runtime.InteropServices;
+using Larnix.Core.Vectors;
 
 namespace Larnix.Server.Packets;
 
-public sealed class ChatMessage : Payload_Legacy
+[CmdId(0x02)]
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public readonly struct ChatMessage : ISanitizable<ChatMessage>
 {
-    private static int SIZE => sizeof(LogType) + Binary<FixedString64>.Size + Binary<FixedString512>.Size;
+    public Col32 Color { get; }
+    public ChatCode MsgCode { get; }
+    public FixedString64 Sender { get; }
+    public FixedString512 Message { get; }
 
-    public LogType LogType => Binary<LogType>.Deserialize(Bytes, 0);
-    public FixedString64 Sender => Binary<FixedString64>.Deserialize(Bytes, 1);
-    public FixedString512 Message => Binary<FixedString512>.Deserialize(Bytes, 67);
-    public ChatCode MsgCode => (ChatCode)Code;
+    private readonly byte _padding = 0xFF; // avoids end-compression
 
     public enum ChatCode : byte
     {
         Default = 0,
         ClearChat = 1,
         PlayerToServer = 2,
-        Incomplete = 3, // client caches incomplete messages and merges them until a complete one is found
+        Incomplete = 3, // client caches and merges split messages
     }
 
-    public ChatMessage(LogType logType, FixedString64 sender, in FixedString512 message, ChatCode msgCode = ChatCode.Default)
+    public ChatMessage(Col32 color, ChatCode msgCode, in FixedString64 sender, in FixedString512 message)
     {
-        InitializePayload(ArrayUtils.MegaConcat(
-            Binary<LogType>.Serialize(logType),
-            Binary<FixedString64>.Serialize(sender),
-            Binary<FixedString512>.Serialize(message)
-            ), (byte)msgCode);
+        Color = color;
+        MsgCode = Sanitizer_Legacy.SanitizeEnum(msgCode);
+        Sender = sender;
+        Message = message;
     }
 
-    public ChatMessage(in FixedString512 message, ChatCode msgCode) :
-        this(LogType.Raw, default, message, msgCode) { }
+    public ChatMessage(in FixedString512 message, ChatCode msgCode)
+    {
+        Color = Col32.White;
+        Sender = new FixedString64();
+        Message = message;
+        MsgCode = Enum.IsDefined(typeof(ChatCode), msgCode) ? msgCode : ChatCode.Default;
+    }
 
     public bool TryAppendPrefix(string raw, out string msgText)
     {
         if (MsgCode == ChatCode.ClearChat || MsgCode == ChatCode.PlayerToServer)
         {
-            msgText = default;
+            msgText = null!;
             return false;
-        }
-
-        if (LogType == LogType.Raw)
-        {
-            msgText = raw;
-            return true;
         }
 
         string sender = Sender;
@@ -59,9 +60,8 @@ public sealed class ChatMessage : Payload_Legacy
         return true;
     }
 
-    protected override bool IsValid()
+    public ChatMessage Sanitize()
     {
-        return Bytes.Length == SIZE &&
-            Enum.IsDefined(typeof(ChatCode), MsgCode);
+        return new ChatMessage(Color, MsgCode, Sender, Message);
     }
 }

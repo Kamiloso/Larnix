@@ -2,7 +2,7 @@ using System;
 using Larnix.Core.Vectors;
 using Larnix.Model.Worldgen.Noise;
 using Larnix.Model.Worldgen.Providers;
-using Larnix.Model.Utils;
+using Larnix.Model.Blocks;
 
 namespace Larnix.Model.Worldgen.Transformers.Pipeline;
 
@@ -37,7 +37,7 @@ internal class BuildBaseTerrain : Transformer<object, ProtoBlock>
 
     public override ProtoBlock[,] Rebuild(Vec2Int chunk, object[,] _)
     {
-        ProtoBlock[,] blocks = ChunkIterator.Array2D<ProtoBlock>();
+        ProtoBlock[,] blocks = ChunkIterator.Array16x16<ProtoBlock>();
 
         ChunkIterator.IterateWithPOS(chunk, (POS, x, y) =>
         {

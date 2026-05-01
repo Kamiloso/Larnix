@@ -1,4 +1,5 @@
 #nullable enable
+using System;
 using System.Runtime.InteropServices;
 
 namespace Larnix.Core.Serialization;
@@ -10,23 +11,23 @@ public interface IFixedString
 
 /*
 AUTOGEN BEGIN
-#SIZE = 8 16 32 64 128 256 512 1024 2048 4096 8192 16384 32768
+#SIZE = 8 16 32 64 128 256 512 1024
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct FixedString#SIZE : IFixedString
+public readonly struct FixedString#SIZE : IFixedString, IEquatable<FixedString8>
 {
     private readonly FixedBuffer#SIZE<char> _buffer;
 
     public int Capacity => #SIZE / 2;
 
-    public FixedString#SIZE(string value)
+    public FixedString8(string value)
     {
-        FixedBuffer#SIZE<char> buffer = new();
+        FixedBuffer8<char> buffer = new();
 
         int lngt = value.Length;
         for (int i = 0; i < lngt && !buffer.IsFull; i++)
         {
-            buffer.Push(value[i]);
+            buffer.Add(value[i]);
         }
         _buffer = buffer;
     }
@@ -38,12 +39,50 @@ public readonly record struct FixedString#SIZE : IFixedString
 
     public static implicit operator string(in FixedString#SIZE value)
     {
-        char[] chars = value._buffer.ToArray();
+        Span<char> chars = stackalloc char[value._buffer.Count];
+        value._buffer.ReadInto(chars);
+
         return new string(chars);
     }
 
     public override string ToString() => this;
+
+    public bool Equals(FixedString#SIZE other)
+    {
+        Span<char> chars1 = stackalloc char[_buffer.Count];
+        _buffer.ReadInto(chars1);
+
+        Span<char> chars2 = stackalloc char[other._buffer.Count];
+        other._buffer.ReadInto(chars2);
+
+        return chars1.SequenceEqual(chars2);
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is FixedString#SIZE other && Equals(other);
+    }
+
+    public override int GetHashCode()
+    {
+        Span<char> chars = stackalloc char[_buffer.Count];
+        _buffer.ReadInto(chars);
+
+        HashCode hashcode = new();
+
+        hashcode.Add(chars.Length);
+        foreach (char c in chars)
+        {
+            hashcode.Add(c);
+        }
+
+        return hashcode.ToHashCode();
+    }
+
+    public static bool operator ==(in FixedString#SIZE left, in FixedString#SIZE right) => left.Equals(right);
+    public static bool operator !=(in FixedString#SIZE left, in FixedString#SIZE right) => !left.Equals(right);
 }
+
 AUTOGEN END
 */
 
@@ -55,7 +94,7 @@ AUTOGEN END
 
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct FixedString8 : IFixedString
+public readonly struct FixedString8 : IFixedString, IEquatable<FixedString8>
 {
     private readonly FixedBuffer8<char> _buffer;
 
@@ -68,7 +107,7 @@ public readonly record struct FixedString8 : IFixedString
         int lngt = value.Length;
         for (int i = 0; i < lngt && !buffer.IsFull; i++)
         {
-            buffer.Push(value[i]);
+            buffer.Add(value[i]);
         }
         _buffer = buffer;
     }
@@ -80,16 +119,53 @@ public readonly record struct FixedString8 : IFixedString
 
     public static implicit operator string(in FixedString8 value)
     {
-        char[] chars = value._buffer.ToArray();
+        Span<char> chars = stackalloc char[value._buffer.Count];
+        value._buffer.ReadInto(chars);
+
         return new string(chars);
     }
 
     public override string ToString() => this;
+
+    public bool Equals(FixedString8 other)
+    {
+        Span<char> chars1 = stackalloc char[_buffer.Count];
+        _buffer.ReadInto(chars1);
+
+        Span<char> chars2 = stackalloc char[other._buffer.Count];
+        other._buffer.ReadInto(chars2);
+
+        return chars1.SequenceEqual(chars2);
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is FixedString8 other && Equals(other);
+    }
+
+    public override int GetHashCode()
+    {
+        Span<char> chars = stackalloc char[_buffer.Count];
+        _buffer.ReadInto(chars);
+
+        HashCode hashcode = new();
+
+        hashcode.Add(chars.Length);
+        foreach (char c in chars)
+        {
+            hashcode.Add(c);
+        }
+
+        return hashcode.ToHashCode();
+    }
+
+    public static bool operator ==(in FixedString8 left, in FixedString8 right) => left.Equals(right);
+    public static bool operator !=(in FixedString8 left, in FixedString8 right) => !left.Equals(right);
 }
 
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct FixedString16 : IFixedString
+public readonly struct FixedString16 : IFixedString, IEquatable<FixedString16>
 {
     private readonly FixedBuffer16<char> _buffer;
 
@@ -102,7 +178,7 @@ public readonly record struct FixedString16 : IFixedString
         int lngt = value.Length;
         for (int i = 0; i < lngt && !buffer.IsFull; i++)
         {
-            buffer.Push(value[i]);
+            buffer.Add(value[i]);
         }
         _buffer = buffer;
     }
@@ -114,16 +190,53 @@ public readonly record struct FixedString16 : IFixedString
 
     public static implicit operator string(in FixedString16 value)
     {
-        char[] chars = value._buffer.ToArray();
+        Span<char> chars = stackalloc char[value._buffer.Count];
+        value._buffer.ReadInto(chars);
+
         return new string(chars);
     }
 
     public override string ToString() => this;
+
+    public bool Equals(FixedString16 other)
+    {
+        Span<char> chars1 = stackalloc char[_buffer.Count];
+        _buffer.ReadInto(chars1);
+
+        Span<char> chars2 = stackalloc char[other._buffer.Count];
+        other._buffer.ReadInto(chars2);
+
+        return chars1.SequenceEqual(chars2);
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is FixedString16 other && Equals(other);
+    }
+
+    public override int GetHashCode()
+    {
+        Span<char> chars = stackalloc char[_buffer.Count];
+        _buffer.ReadInto(chars);
+
+        HashCode hashcode = new();
+
+        hashcode.Add(chars.Length);
+        foreach (char c in chars)
+        {
+            hashcode.Add(c);
+        }
+
+        return hashcode.ToHashCode();
+    }
+
+    public static bool operator ==(in FixedString16 left, in FixedString16 right) => left.Equals(right);
+    public static bool operator !=(in FixedString16 left, in FixedString16 right) => !left.Equals(right);
 }
 
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct FixedString32 : IFixedString
+public readonly struct FixedString32 : IFixedString, IEquatable<FixedString32>
 {
     private readonly FixedBuffer32<char> _buffer;
 
@@ -136,7 +249,7 @@ public readonly record struct FixedString32 : IFixedString
         int lngt = value.Length;
         for (int i = 0; i < lngt && !buffer.IsFull; i++)
         {
-            buffer.Push(value[i]);
+            buffer.Add(value[i]);
         }
         _buffer = buffer;
     }
@@ -148,16 +261,53 @@ public readonly record struct FixedString32 : IFixedString
 
     public static implicit operator string(in FixedString32 value)
     {
-        char[] chars = value._buffer.ToArray();
+        Span<char> chars = stackalloc char[value._buffer.Count];
+        value._buffer.ReadInto(chars);
+
         return new string(chars);
     }
 
     public override string ToString() => this;
+
+    public bool Equals(FixedString32 other)
+    {
+        Span<char> chars1 = stackalloc char[_buffer.Count];
+        _buffer.ReadInto(chars1);
+
+        Span<char> chars2 = stackalloc char[other._buffer.Count];
+        other._buffer.ReadInto(chars2);
+
+        return chars1.SequenceEqual(chars2);
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is FixedString32 other && Equals(other);
+    }
+
+    public override int GetHashCode()
+    {
+        Span<char> chars = stackalloc char[_buffer.Count];
+        _buffer.ReadInto(chars);
+
+        HashCode hashcode = new();
+
+        hashcode.Add(chars.Length);
+        foreach (char c in chars)
+        {
+            hashcode.Add(c);
+        }
+
+        return hashcode.ToHashCode();
+    }
+
+    public static bool operator ==(in FixedString32 left, in FixedString32 right) => left.Equals(right);
+    public static bool operator !=(in FixedString32 left, in FixedString32 right) => !left.Equals(right);
 }
 
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct FixedString64 : IFixedString
+public readonly struct FixedString64 : IFixedString, IEquatable<FixedString64>
 {
     private readonly FixedBuffer64<char> _buffer;
 
@@ -170,7 +320,7 @@ public readonly record struct FixedString64 : IFixedString
         int lngt = value.Length;
         for (int i = 0; i < lngt && !buffer.IsFull; i++)
         {
-            buffer.Push(value[i]);
+            buffer.Add(value[i]);
         }
         _buffer = buffer;
     }
@@ -182,16 +332,53 @@ public readonly record struct FixedString64 : IFixedString
 
     public static implicit operator string(in FixedString64 value)
     {
-        char[] chars = value._buffer.ToArray();
+        Span<char> chars = stackalloc char[value._buffer.Count];
+        value._buffer.ReadInto(chars);
+
         return new string(chars);
     }
 
     public override string ToString() => this;
+
+    public bool Equals(FixedString64 other)
+    {
+        Span<char> chars1 = stackalloc char[_buffer.Count];
+        _buffer.ReadInto(chars1);
+
+        Span<char> chars2 = stackalloc char[other._buffer.Count];
+        other._buffer.ReadInto(chars2);
+
+        return chars1.SequenceEqual(chars2);
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is FixedString64 other && Equals(other);
+    }
+
+    public override int GetHashCode()
+    {
+        Span<char> chars = stackalloc char[_buffer.Count];
+        _buffer.ReadInto(chars);
+
+        HashCode hashcode = new();
+
+        hashcode.Add(chars.Length);
+        foreach (char c in chars)
+        {
+            hashcode.Add(c);
+        }
+
+        return hashcode.ToHashCode();
+    }
+
+    public static bool operator ==(in FixedString64 left, in FixedString64 right) => left.Equals(right);
+    public static bool operator !=(in FixedString64 left, in FixedString64 right) => !left.Equals(right);
 }
 
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct FixedString128 : IFixedString
+public readonly struct FixedString128 : IFixedString, IEquatable<FixedString128>
 {
     private readonly FixedBuffer128<char> _buffer;
 
@@ -204,7 +391,7 @@ public readonly record struct FixedString128 : IFixedString
         int lngt = value.Length;
         for (int i = 0; i < lngt && !buffer.IsFull; i++)
         {
-            buffer.Push(value[i]);
+            buffer.Add(value[i]);
         }
         _buffer = buffer;
     }
@@ -216,16 +403,53 @@ public readonly record struct FixedString128 : IFixedString
 
     public static implicit operator string(in FixedString128 value)
     {
-        char[] chars = value._buffer.ToArray();
+        Span<char> chars = stackalloc char[value._buffer.Count];
+        value._buffer.ReadInto(chars);
+
         return new string(chars);
     }
 
     public override string ToString() => this;
+
+    public bool Equals(FixedString128 other)
+    {
+        Span<char> chars1 = stackalloc char[_buffer.Count];
+        _buffer.ReadInto(chars1);
+
+        Span<char> chars2 = stackalloc char[other._buffer.Count];
+        other._buffer.ReadInto(chars2);
+
+        return chars1.SequenceEqual(chars2);
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is FixedString128 other && Equals(other);
+    }
+
+    public override int GetHashCode()
+    {
+        Span<char> chars = stackalloc char[_buffer.Count];
+        _buffer.ReadInto(chars);
+
+        HashCode hashcode = new();
+
+        hashcode.Add(chars.Length);
+        foreach (char c in chars)
+        {
+            hashcode.Add(c);
+        }
+
+        return hashcode.ToHashCode();
+    }
+
+    public static bool operator ==(in FixedString128 left, in FixedString128 right) => left.Equals(right);
+    public static bool operator !=(in FixedString128 left, in FixedString128 right) => !left.Equals(right);
 }
 
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct FixedString256 : IFixedString
+public readonly struct FixedString256 : IFixedString, IEquatable<FixedString256>
 {
     private readonly FixedBuffer256<char> _buffer;
 
@@ -238,7 +462,7 @@ public readonly record struct FixedString256 : IFixedString
         int lngt = value.Length;
         for (int i = 0; i < lngt && !buffer.IsFull; i++)
         {
-            buffer.Push(value[i]);
+            buffer.Add(value[i]);
         }
         _buffer = buffer;
     }
@@ -250,16 +474,53 @@ public readonly record struct FixedString256 : IFixedString
 
     public static implicit operator string(in FixedString256 value)
     {
-        char[] chars = value._buffer.ToArray();
+        Span<char> chars = stackalloc char[value._buffer.Count];
+        value._buffer.ReadInto(chars);
+
         return new string(chars);
     }
 
     public override string ToString() => this;
+
+    public bool Equals(FixedString256 other)
+    {
+        Span<char> chars1 = stackalloc char[_buffer.Count];
+        _buffer.ReadInto(chars1);
+
+        Span<char> chars2 = stackalloc char[other._buffer.Count];
+        other._buffer.ReadInto(chars2);
+
+        return chars1.SequenceEqual(chars2);
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is FixedString256 other && Equals(other);
+    }
+
+    public override int GetHashCode()
+    {
+        Span<char> chars = stackalloc char[_buffer.Count];
+        _buffer.ReadInto(chars);
+
+        HashCode hashcode = new();
+
+        hashcode.Add(chars.Length);
+        foreach (char c in chars)
+        {
+            hashcode.Add(c);
+        }
+
+        return hashcode.ToHashCode();
+    }
+
+    public static bool operator ==(in FixedString256 left, in FixedString256 right) => left.Equals(right);
+    public static bool operator !=(in FixedString256 left, in FixedString256 right) => !left.Equals(right);
 }
 
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct FixedString512 : IFixedString
+public readonly struct FixedString512 : IFixedString, IEquatable<FixedString512>
 {
     private readonly FixedBuffer512<char> _buffer;
 
@@ -272,7 +533,7 @@ public readonly record struct FixedString512 : IFixedString
         int lngt = value.Length;
         for (int i = 0; i < lngt && !buffer.IsFull; i++)
         {
-            buffer.Push(value[i]);
+            buffer.Add(value[i]);
         }
         _buffer = buffer;
     }
@@ -284,16 +545,53 @@ public readonly record struct FixedString512 : IFixedString
 
     public static implicit operator string(in FixedString512 value)
     {
-        char[] chars = value._buffer.ToArray();
+        Span<char> chars = stackalloc char[value._buffer.Count];
+        value._buffer.ReadInto(chars);
+
         return new string(chars);
     }
 
     public override string ToString() => this;
+
+    public bool Equals(FixedString512 other)
+    {
+        Span<char> chars1 = stackalloc char[_buffer.Count];
+        _buffer.ReadInto(chars1);
+
+        Span<char> chars2 = stackalloc char[other._buffer.Count];
+        other._buffer.ReadInto(chars2);
+
+        return chars1.SequenceEqual(chars2);
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is FixedString512 other && Equals(other);
+    }
+
+    public override int GetHashCode()
+    {
+        Span<char> chars = stackalloc char[_buffer.Count];
+        _buffer.ReadInto(chars);
+
+        HashCode hashcode = new();
+
+        hashcode.Add(chars.Length);
+        foreach (char c in chars)
+        {
+            hashcode.Add(c);
+        }
+
+        return hashcode.ToHashCode();
+    }
+
+    public static bool operator ==(in FixedString512 left, in FixedString512 right) => left.Equals(right);
+    public static bool operator !=(in FixedString512 left, in FixedString512 right) => !left.Equals(right);
 }
 
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct FixedString1024 : IFixedString
+public readonly struct FixedString1024 : IFixedString, IEquatable<FixedString1024>
 {
     private readonly FixedBuffer1024<char> _buffer;
 
@@ -306,7 +604,7 @@ public readonly record struct FixedString1024 : IFixedString
         int lngt = value.Length;
         for (int i = 0; i < lngt && !buffer.IsFull; i++)
         {
-            buffer.Push(value[i]);
+            buffer.Add(value[i]);
         }
         _buffer = buffer;
     }
@@ -318,181 +616,48 @@ public readonly record struct FixedString1024 : IFixedString
 
     public static implicit operator string(in FixedString1024 value)
     {
-        char[] chars = value._buffer.ToArray();
+        Span<char> chars = stackalloc char[value._buffer.Count];
+        value._buffer.ReadInto(chars);
+
         return new string(chars);
     }
 
     public override string ToString() => this;
-}
 
-
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct FixedString2048 : IFixedString
-{
-    private readonly FixedBuffer2048<char> _buffer;
-
-    public int Capacity => 2048 / 2;
-
-    public FixedString2048(string value)
+    public bool Equals(FixedString1024 other)
     {
-        FixedBuffer2048<char> buffer = new();
+        Span<char> chars1 = stackalloc char[_buffer.Count];
+        _buffer.ReadInto(chars1);
 
-        int lngt = value.Length;
-        for (int i = 0; i < lngt && !buffer.IsFull; i++)
+        Span<char> chars2 = stackalloc char[other._buffer.Count];
+        other._buffer.ReadInto(chars2);
+
+        return chars1.SequenceEqual(chars2);
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is FixedString1024 other && Equals(other);
+    }
+
+    public override int GetHashCode()
+    {
+        Span<char> chars = stackalloc char[_buffer.Count];
+        _buffer.ReadInto(chars);
+
+        HashCode hashcode = new();
+
+        hashcode.Add(chars.Length);
+        foreach (char c in chars)
         {
-            buffer.Push(value[i]);
+            hashcode.Add(c);
         }
-        _buffer = buffer;
+
+        return hashcode.ToHashCode();
     }
 
-    public static explicit operator FixedString2048(string value)
-    {
-        return new FixedString2048(value);
-    }
-
-    public static implicit operator string(in FixedString2048 value)
-    {
-        char[] chars = value._buffer.ToArray();
-        return new string(chars);
-    }
-
-    public override string ToString() => this;
-}
-
-
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct FixedString4096 : IFixedString
-{
-    private readonly FixedBuffer4096<char> _buffer;
-
-    public int Capacity => 4096 / 2;
-
-    public FixedString4096(string value)
-    {
-        FixedBuffer4096<char> buffer = new();
-
-        int lngt = value.Length;
-        for (int i = 0; i < lngt && !buffer.IsFull; i++)
-        {
-            buffer.Push(value[i]);
-        }
-        _buffer = buffer;
-    }
-
-    public static explicit operator FixedString4096(string value)
-    {
-        return new FixedString4096(value);
-    }
-
-    public static implicit operator string(in FixedString4096 value)
-    {
-        char[] chars = value._buffer.ToArray();
-        return new string(chars);
-    }
-
-    public override string ToString() => this;
-}
-
-
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct FixedString8192 : IFixedString
-{
-    private readonly FixedBuffer8192<char> _buffer;
-
-    public int Capacity => 8192 / 2;
-
-    public FixedString8192(string value)
-    {
-        FixedBuffer8192<char> buffer = new();
-
-        int lngt = value.Length;
-        for (int i = 0; i < lngt && !buffer.IsFull; i++)
-        {
-            buffer.Push(value[i]);
-        }
-        _buffer = buffer;
-    }
-
-    public static explicit operator FixedString8192(string value)
-    {
-        return new FixedString8192(value);
-    }
-
-    public static implicit operator string(in FixedString8192 value)
-    {
-        char[] chars = value._buffer.ToArray();
-        return new string(chars);
-    }
-
-    public override string ToString() => this;
-}
-
-
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct FixedString16384 : IFixedString
-{
-    private readonly FixedBuffer16384<char> _buffer;
-
-    public int Capacity => 16384 / 2;
-
-    public FixedString16384(string value)
-    {
-        FixedBuffer16384<char> buffer = new();
-
-        int lngt = value.Length;
-        for (int i = 0; i < lngt && !buffer.IsFull; i++)
-        {
-            buffer.Push(value[i]);
-        }
-        _buffer = buffer;
-    }
-
-    public static explicit operator FixedString16384(string value)
-    {
-        return new FixedString16384(value);
-    }
-
-    public static implicit operator string(in FixedString16384 value)
-    {
-        char[] chars = value._buffer.ToArray();
-        return new string(chars);
-    }
-
-    public override string ToString() => this;
-}
-
-
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct FixedString32768 : IFixedString
-{
-    private readonly FixedBuffer32768<char> _buffer;
-
-    public int Capacity => 32768 / 2;
-
-    public FixedString32768(string value)
-    {
-        FixedBuffer32768<char> buffer = new();
-
-        int lngt = value.Length;
-        for (int i = 0; i < lngt && !buffer.IsFull; i++)
-        {
-            buffer.Push(value[i]);
-        }
-        _buffer = buffer;
-    }
-
-    public static explicit operator FixedString32768(string value)
-    {
-        return new FixedString32768(value);
-    }
-
-    public static implicit operator string(in FixedString32768 value)
-    {
-        char[] chars = value._buffer.ToArray();
-        return new string(chars);
-    }
-
-    public override string ToString() => this;
+    public static bool operator ==(in FixedString1024 left, in FixedString1024 right) => left.Equals(right);
+    public static bool operator !=(in FixedString1024 left, in FixedString1024 right) => !left.Equals(right);
 }
 
 #endregion

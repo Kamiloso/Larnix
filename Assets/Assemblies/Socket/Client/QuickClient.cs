@@ -8,7 +8,6 @@ using Larnix.Socket.Payload;
 using Larnix.Socket.Payload.Packets;
 using Larnix.Socket.Payload.Structs;
 using Larnix.Socket.Security.Keys;
-using Larnix.Socket.Security.KeyStructs;
 using System;
 using System.Net;
 using System.Net.Sockets;

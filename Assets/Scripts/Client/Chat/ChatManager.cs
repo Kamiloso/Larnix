@@ -4,9 +4,9 @@ using Larnix.Core;
 using Larnix.Server.Packets;
 using System.Collections.Generic;
 using Larnix.Scoping;
-using static Larnix.Server.Packets.ChatMessage;
 using Larnix.Core.Serialization;
 using Larnix.Core.Utils;
+using static Larnix.Server.Packets.ChatMessage;
 
 namespace Larnix.Client.Chat
 {
@@ -72,7 +72,7 @@ namespace Larnix.Client.Chat
             InputPanel.SetActive(IsChatOpen);
         }
 
-        public void AddMessage(ChatMessage message)
+        public void AddMessage(in ChatMessage message)
         {
             _incompleteMsgs.Add(message.Message);
 
@@ -88,18 +88,22 @@ namespace Larnix.Client.Chat
 
                 if (message.TryAppendPrefix(fullMsg, out string msgText))
                 {
-                    ChatOrigin.AddMessage(msgText, message.LogType);
+                    ChatOrigin.AddMessage(msgText, message.Color);
                 }
             }
         }
 
         public void ApplyMessage(string message)
         {
-            if (string.IsNullOrEmpty(message))
-                return; // Don't trim! This condition is ok.
+            // Don't trim! This condition is ok.
+            if (string.IsNullOrEmpty(message)) return;
 
-            var msg = new ChatMessage(new FixedString512(message), ChatCode.PlayerToServer);
-            Client.Send(msg);
+            ChatMessage payload = new(
+                message: new FixedString512(message),
+                msgCode: ChatCode.PlayerToServer
+                );
+
+            Client.Send(payload);
         }
     }
 }

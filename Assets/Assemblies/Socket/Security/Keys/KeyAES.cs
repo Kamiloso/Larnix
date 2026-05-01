@@ -1,15 +1,12 @@
 #nullable enable
 using System;
 using Larnix.Core.Utils;
-using Larnix.Socket.Security.KeyStructs;
+using Larnix.Socket.Payload.Structs;
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Modes;
 using Org.BouncyCastle.Crypto.Parameters;
 
 namespace Larnix.Socket.Security.Keys;
-
-// WARNING: returning byte[0] is for efficiency, not convenience.
-// AES may be in the hot loop, so avoid throwing exceptions.
 
 internal class KeyAes : IKey
 {
@@ -17,20 +14,20 @@ internal class KeyAes : IKey
     private const int NONCE_SIZE = 12;
     private const int TAG_SIZE = 16;
 
-    private readonly byte[] _key; // immutable by convention
+    private readonly byte[] _key;
 
     private bool _disposed;
 
     private KeyAes(in FixedAes aesKey)
     {
-        _key = aesKey.Bytes32;
+        _key = aesKey.Bytes32();
     }
 
     public static KeyAes GenerateNew()
     {
         byte[] bytes = RandUtils.SecureBytes(KEY_SIZE);
-        FixedAes aesKey = new(bytes);
-        Array.Fill(bytes, (byte)0);
+        FixedAes aesKey = FixedAes.FromBytes(bytes);
+        Array.Fill<byte>(bytes, 0);
         return new KeyAes(aesKey);
     }
 
@@ -41,7 +38,7 @@ internal class KeyAes : IKey
 
     public FixedAes ExportKey()
     {
-        return new FixedAes(_key);
+        return FixedAes.FromBytes(_key);
     }
 
     public T CloneKey<T>() where T : IKey
@@ -103,7 +100,7 @@ internal class KeyAes : IKey
         }
         catch
         {
-            return Array.Empty<byte>(); // for efficiency, not convenience
+            return Array.Empty<byte>(); // for simplicity
         }
     }
 

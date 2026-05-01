@@ -1,4 +1,5 @@
 #nullable enable
+using Larnix.Core.Serialization;
 using Larnix.Socket.Payload.Structs;
 using Larnix.Socket.Security;
 using Larnix.Socket.Server.Utility;
@@ -9,9 +10,10 @@ namespace Larnix.Socket.Server;
 
 internal interface IAsyncLogins
 {
-    long GetChallengeId(string nickname); // info for clients, 0 = no account
-    IEnumerable<bool?> Login(long uid, Credentials credentials);
-    IEnumerable<bool?> SetPassword(long uid, string nickname, string newPassword);
+    long GetChallengeId(in FixedString32 nickname); // 0 = no user
+    IEnumerable<bool?> Login(Credentials credentials);
+    IEnumerable<bool?> Register(Credentials credentials);
+    IEnumerable<bool?> SetPassword(FixedString32 nickname, FixedString64 newPassword);
 }
 
 internal class AsyncLogins : IAsyncLogins
@@ -20,7 +22,7 @@ internal class AsyncLogins : IAsyncLogins
     private readonly QuickConfig _settings;
 
     private readonly IBanProvider _bans;
-    private readonly IUserRepository _users;
+    private readonly IQuickUserRepository _users;
 
     public AsyncLogins(IInfoProvider infoProvider, QuickConfig settings)
     {
@@ -31,76 +33,126 @@ internal class AsyncLogins : IAsyncLogins
         _users = _settings.Interfaces.UserRepository;
     }
 
-    public long GetChallengeId(string nickname)
+    public long GetChallengeId(in FixedString32 nickname) // 0 = no user
     {
-        long? uid = _settings.Interfaces.UserRepository
-            .FindByNickname(nickname)?.Uid;
+        QuickUser? user = _settings.Interfaces.UserRepository
+            .FindByNickname(nickname);
 
-        long? challengeId = uid.HasValue
-             ? _settings.Interfaces.UserRepository.FindByUid(uid.Value)?.ChallengeId
+        long? challengeId = (user?.Uid).HasValue
+             ? user?.ChallengeId
              : null;
 
         return challengeId ?? 0;
     }
 
-    public IEnumerable<bool?> Login(long uid, Credentials credentials)
+    public IEnumerable<bool?> Login(Credentials credentials)
     {
-        bool isLogin = credentials.IsLogin();
-        bool isRegister = credentials.IsRegister();
+        var (nickname, password, challengeId) = credentials.Extract();
 
-        string nickname = credentials.Nickname;
-        string password = credentials.Password;
+        if (!credentials.IsLogin())
+            yield return false;
 
-        if (!_infoProvider.CheckGlobalCredentials(credentials) ||
-            _bans.IsBannedNickname(nickname))
+        if (!_infoProvider.CheckGlobalCredentials(credentials))
+            yield return false;
+
+        if (_bans.IsBannedNickname(nickname))
+            yield return false;
+
+
+        QuickUser? user1 = _users.FindByNickname(nickname);
+        if (user1 == null)
+        {
+            yield return false; // user not found
+        }
+
+        if (user1 == null ||
+            nickname != user1!.Nickname ||
+            challengeId != user1.ChallengeId)
+        {
+            yield return false; // basic credentials mismatch
+        }
+
+        Task<bool> hashing = Task.Run(() => Hasher.VerifyPassword(password, user1!.PasswordHash));
+        while (!hashing.IsCompleted)
+        {
+            yield return null;
+        }
+
+        QuickUser? user2 = _users.FindByNickname(nickname);
+        if (user1 != user2)
+        {
+            yield return false; // user was modified during hashing
+        }
+
+        bool success = hashing.Result;
+        if (success)
+        {
+            _users.SaveUser(user1!.AfterLogin());
+            yield return true;
+        }
+        else
         {
             yield return false;
         }
-
-        User? user = _users.FindByUid(uid);
-
-        if (isLogin)
-        {
-            if (user == null ||
-                user.Nickname != nickname ||
-                credentials.ChallengeId != user.ChallengeId)
-            {
-                yield return false;
-            }
-
-            Task<bool> hashing = Task.Run(() => Hasher.VerifyPassword(password, user!.PasswordHash));
-            while (!hashing.IsCompleted)
-            {
-                yield return null;
-            }
-
-            _users.SaveUser(user!.AfterLogin());
-
-            yield return hashing.Result;
-        }
-
-        if (isRegister)
-        {
-            if (!_settings.EnableRegister ||
-                user != null)
-            {
-                yield return false;
-            }
-
-            IEnumerator<bool?> passchange = SetPassword(uid, nickname, password).GetEnumerator();
-            while (passchange.MoveNext())
-            {
-                yield return passchange.Current;
-            }
-        }
     }
 
-    public IEnumerable<bool?> SetPassword(long uid, string nickname, string newPassword)
+    public IEnumerable<bool?> Register(Credentials credentials)
     {
-        User? user1 = _users.FindByUid(uid); // before hashing
-        if (user1 != null && user1.Nickname != nickname)
+        var (nickname, password, challengeId) = credentials.Extract();
+
+        if (!_settings.EnableRegister)
+            yield return false;
+
+        if (!credentials.IsRegister())
+            yield return false;
+
+        if (!_infoProvider.CheckGlobalCredentials(credentials))
+            yield return false;
+
+        if (_bans.IsBannedNickname(nickname))
+            yield return false;
+
+        QuickUser? user1 = _users.FindByNickname(nickname);
+        if (user1 != null)
         {
-            yield return false; // nickname does not match
+            yield return false; // nickname already exists
+        }
+
+        Task<string> hashing = Task.Run(() => Hasher.HashPassword(password));
+        while (!hashing.IsCompleted)
+        {
+            yield return null;
+        }
+
+        QuickUser? user2 = _users.FindByNickname(nickname);
+        if (user2 != null)
+        {
+            yield return false; // nickname was taken during hashing
+        }
+
+        long nextUid = _users.NextFreeUid();
+        string passwordHash = hashing.Result;
+
+        _users.SaveUser(
+            QuickUser.CreateAccount(nextUid, nickname, passwordHash)
+            );
+
+        yield return true;
+    }
+
+    public IEnumerable<bool?> SetPassword(FixedString32 nickname, FixedString64 newPassword)
+    {
+        QuickUser? user1 = _users.FindByNickname(nickname);
+        if (user1 == null)
+        {
+            IEnumerator<bool?> registration = Register(
+                _infoProvider.CreateCredentials(nickname, newPassword, 0)
+                ).GetEnumerator();
+
+            while (registration.MoveNext())
+            {
+                yield return registration.Current;
+            }
         }
 
         Task<string> hashing = Task.Run(() => Hasher.HashPassword(newPassword));
@@ -109,7 +161,7 @@ internal class AsyncLogins : IAsyncLogins
             yield return null;
         }
 
-        User? user2 = _users.FindByUid(uid); // after hashing
+        QuickUser? user2 = _users.FindByNickname(nickname);
         if (user1 != user2)
         {
             yield return false; // user was modified during hashing
@@ -117,10 +169,9 @@ internal class AsyncLogins : IAsyncLogins
 
         string newPasswordHash = hashing.Result;
 
-        User user = user1?.AfterPasswordChange(newPasswordHash) ??
-            User.CreateAccount(uid, nickname, newPasswordHash);
-
-        _users.SaveUser(user);
+        _users.SaveUser(
+            user1!.AfterPasswordChange(newPasswordHash)
+            );
 
         yield return true;
     }

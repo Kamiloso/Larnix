@@ -7,8 +7,8 @@ using Larnix.Core;
 using Larnix.Core.Vectors;
 using Larnix.Background;
 using Larnix.Model.Enums;
-using Larnix.Model.Blocks.Structs;
 using Larnix.Core.Utils;
+using Larnix.Model.Blocks.Chunks;
 
 namespace Larnix.Menu
 {

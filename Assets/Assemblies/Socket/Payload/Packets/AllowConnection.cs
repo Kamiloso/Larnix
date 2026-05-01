@@ -2,26 +2,22 @@
 using Larnix.Core.Serialization;
 using System.Runtime.InteropServices;
 using Larnix.Socket.Payload.Structs;
-using Larnix.Socket.Security.KeyStructs;
 
 namespace Larnix.Socket.Payload.Packets;
 
 [CmdId(-1)]
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-internal readonly record struct AllowConnection : ISanitizable<AllowConnection>
+internal readonly struct AllowConnection : ISanitizable<AllowConnection>
 {
-    private readonly Credentials _credentials;
-    private readonly FixedAes _aesKey;
+    public Credentials Credentials { get; }
+    public FixedAes AesKey { get; }
 
     private readonly byte _padding = 0xFF; // prevents null-trimming optimizations at the end
 
-    public Credentials Credentials => _credentials;
-    public FixedAes AesKey => _aesKey;
-
     public AllowConnection(in Credentials credentials, in FixedAes aesKey)
     {
-        _credentials = credentials.Sanitize();
-        _aesKey = aesKey.Sanitize();
+        Credentials = Sanitizer.Filter(credentials);
+        AesKey = Sanitizer.Filter(aesKey);
     }
 
     public AllowConnection Sanitize()

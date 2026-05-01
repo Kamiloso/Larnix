@@ -4,11 +4,12 @@ using System.Runtime.InteropServices;
 using System;
 using Larnix.Model.Entities;
 using Larnix.Model.Entities.Structs;
+using Larnix.Core.Serialization;
 
 namespace Larnix.Server.Packets.Structs;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct EntityHeaderCompressed
+public readonly struct EntityHeaderCompressed : ISanitizable<EntityHeaderCompressed>
 {
     private readonly EntityID _id;
     private readonly int _xi;
@@ -28,7 +29,7 @@ public readonly record struct EntityHeaderCompressed
 
     public EntityHeaderCompressed(in EntityHeader header)
     {
-        _id = header.Id;
+        _id = Sanitizer.Filter(header.Id);
 
         double px = Math.Clamp(header.Position.x, int.MinValue + 1, int.MaxValue - 1);
         double py = Math.Clamp(header.Position.y, int.MinValue + 1, int.MaxValue - 1);
@@ -56,5 +57,10 @@ public readonly record struct EntityHeaderCompressed
     public override string ToString()
     {
         return Id.ToString();
+    }
+
+    public EntityHeaderCompressed Sanitize()
+    {
+        return new EntityHeaderCompressed(Header);
     }
 }

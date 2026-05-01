@@ -34,7 +34,7 @@ public class BlockData1
     {
         return new BlockData1(
             Header, NBT.DeepCopy()
-        );
+            );
     }
 
     public override string ToString()

@@ -1,5 +1,6 @@
 #nullable enable
 using Larnix.Core;
+using Larnix.Core.Serialization;
 using Larnix.Core.Utils;
 using Larnix.Model;
 using Larnix.Socket.Helpers;
@@ -16,6 +17,7 @@ internal interface IInfoProvider
     string Authcode { get; }
     string GetCIDR(IPEndPoint target);
     bool CheckGlobalCredentials(in Credentials credentials);
+    Credentials CreateCredentials(in FixedString32 nickname, in FixedString64 password, long challengeId);
 }
 
 internal class InfoProvider : IInfoProvider
@@ -45,7 +47,7 @@ internal class InfoProvider : IInfoProvider
         }
 
         Authcode = Security.Authcode.ProduceAuthCodeRSA(
-            key: _rsa.ExportPublicKey().Bytes264,
+            key: _rsa.ExportPublicKey().Bytes264(),
             secret: _serverSecret
             );
     }
@@ -77,5 +79,17 @@ internal class InfoProvider : IInfoProvider
         return credentials.ServerSecret == _serverSecret
             && credentials.RunId == _runId
             && Timestamp.IsWithin(credentials.Timestamp);
+    }
+
+    public Credentials CreateCredentials(in FixedString32 nickname, in FixedString64 password, long challengeId)
+    {
+        return new Credentials(
+            nickname: nickname,
+            password: password,
+            serverSecret: _serverSecret,
+            runId: _runId,
+            timestamp: Timestamp.Now(),
+            challengeId: challengeId
+            );
     }
 }

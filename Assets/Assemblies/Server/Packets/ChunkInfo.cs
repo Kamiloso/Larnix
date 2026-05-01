@@ -1,39 +1,70 @@
 #nullable enable
 using Larnix.Core.Vectors;
 using Larnix.Model.Utils;
-using Larnix.Model.Blocks.Structs;
-using Larnix.Socket.Packets;
 using System;
 using Larnix.Core.Utils;
 using Larnix.Core.Serialization;
+using Larnix.Socket.Payload;
+using System.Runtime.InteropServices;
 
 namespace Larnix.Server.Packets;
 
-public sealed class ChunkInfo : Payload_Legacy
+[CmdId(0x03)]
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public readonly struct ChunkInfo : ISanitizable<ChunkInfo>
 {
-    private static int CHUNK_SIZE => BlockUtils.CHUNK_SIZE;
-    private static int MIN_SIZE => Binary<Vec2Int>.Size;
-    private static int MAX_SIZE => Binary<Vec2Int>.Size + CHUNK_SIZE * CHUNK_SIZE * Binary<BlockHeader2>.Size;
+    public Vec2Int Chunk { get; }
 
-    public Vec2Int Chunkpos => Binary<Vec2Int>.Deserialize(Bytes, 0);
-    public ChunkView? Chunk => Bytes.Length != MIN_SIZE ?
-        ChunkView.Deserialize(Bytes, Binary<Vec2Int>.Size) : null; // 0B - 1280B
+    private readonly byte _isLoad;
+    public bool IsLoad => _isLoad != 0;
 
-    /// <summary>
-    /// Chunk load / unload packet constructor. Unload when chunk is null, load otherwise.
-    /// </summary>
-    public ChunkInfo(Vec2Int chunkpos, ChunkView? chunk, byte code = 0)
+    private FixedBuffer1024<byte> Buffer1 { get; }
+    private FixedBuffer256<byte> Buffer2 { get; }
+
+    public byte[] ChunkBytes() => ArrayUtils.MegaConcat(
+        Buffer1.ToArray(),
+        Buffer2.ToArray()
+        );
+
+    private ChunkInfo(Vec2Int chunk, bool isLoad, in FixedBuffer1024<byte> buffer1, in FixedBuffer256<byte> buffer2)
     {
-        InitializePayload(ArrayUtils.MegaConcat(
-            Binary<Vec2Int>.Serialize(chunkpos),
-            chunk?.Serialize() ?? Array.Empty<byte>()
-            ), code);
+        Chunk = BlockUtils.ChunkInWorld(chunk) ? chunk : Vec2Int.Zero;
+        _isLoad = (byte)(isLoad ? 1 : 0);
+        Buffer1 = buffer1;
+        Buffer2 = buffer2;
     }
 
-    protected override bool IsValid()
+    public static ChunkInfo MakeLoadInfo(Vec2Int chunk, byte[] chunkBytes)
     {
-        return Bytes.Length >= MIN_SIZE && Bytes.Length <= MAX_SIZE &&
-            Chunkpos.x >= BlockUtils.MIN_CHUNK && Chunkpos.x <= BlockUtils.MAX_CHUNK &&
-            Chunkpos.y >= BlockUtils.MIN_CHUNK && Chunkpos.y <= BlockUtils.MAX_CHUNK;
+        if (chunkBytes.Length > 1280)
+            throw new ArgumentException($"Chunk bytes cannot exceed {1280} bytes.");
+
+        FixedBuffer1024<byte> buffer1 = new();
+        for (int ptr = 0; ptr < 1024 && ptr < chunkBytes.Length; ptr++)
+        {
+            buffer1.Add(chunkBytes[ptr]);
+        }
+
+        FixedBuffer256<byte> buffer2 = new();
+        for (int ptr = 1024; ptr < 1280 && ptr < chunkBytes.Length; ptr++)
+        {
+            buffer2.Add(chunkBytes[ptr]);
+        }
+
+        return new ChunkInfo(chunk, true, buffer1, buffer2);
+    }
+
+    public static ChunkInfo MakeUnloadInfo(Vec2Int chunk)
+    {
+        return new ChunkInfo(
+            chunk, false,
+            new FixedBuffer1024<byte>(),
+            new FixedBuffer256<byte>()
+            );
+    }
+
+    public ChunkInfo Sanitize()
+    {
+        return new ChunkInfo(Chunk, IsLoad, Buffer1, Buffer2);
     }
 }

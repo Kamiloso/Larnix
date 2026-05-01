@@ -8,6 +8,7 @@ using Larnix.Model.Utils;
 using Larnix.Model.Blocks;
 using Larnix.Model.Blocks.All;
 using Larnix.Core;
+using Larnix.Model.Blocks.Chunks;
 
 namespace Larnix.Client.Terrain
 {

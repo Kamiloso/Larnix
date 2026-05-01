@@ -1,31 +1,31 @@
+#nullable enable
 using Larnix.Core.Vectors;
-using Larnix.Socket.Packets;
 using Larnix.Model.Enums;
-using Larnix.Core.Utils;
 using Larnix.Core.Serialization;
+using Larnix.Socket.Payload;
+using System.Runtime.InteropServices;
 
 namespace Larnix.Server.Packets;
 
-public sealed class SpawnParticles : Payload_Legacy
+[CmdId(0x05)]
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public readonly record struct SpawnParticles : ISanitizable<SpawnParticles>
 {
-	private static int SIZE => Binary<Vec2>.Size + sizeof(ParticleID) + sizeof(ulong);
+    public Vec2 Position { get; }
+    public ParticleID ParticleID { get; }
+    public ulong EntityUid { get; }
 
-    public Vec2 Position => Binary<Vec2>.Deserialize(Bytes, 0); // Binary<Vec2>.Size
-    public ParticleID ParticleID => Binary<ParticleID>.Deserialize(Bytes, 16); // ParticleID size
-    public ulong EntityUid => Binary<ulong>.Deserialize(Bytes, 18); // ulong size
-    public bool IsEntityParticle => EntityUid != 0;
+    public bool IsEntityParticle() => EntityUid != 0;
 
-    public SpawnParticles(Vec2 position, ParticleID particleID, ulong entityUid = 0, byte code = 0)
+    public SpawnParticles(Vec2 position, ParticleID particleID, ulong entityUid = 0)
     {
-        InitializePayload(ArrayUtils.MegaConcat(
-            Binary<Vec2>.Serialize(position),
-            Binary<ParticleID>.Serialize(particleID),
-            Binary<ulong>.Serialize(entityUid)
-            ), code);
+        Position = position.Sanitize();
+        ParticleID = Sanitizer_Legacy.SanitizeEnum(particleID);
+        EntityUid = entityUid;
     }
 
-    protected override bool IsValid()
+    public SpawnParticles Sanitize()
     {
-        return Bytes.Length == SIZE;
+        return new SpawnParticles(Position, ParticleID, EntityUid);
     }
 }

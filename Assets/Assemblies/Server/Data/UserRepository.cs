@@ -3,10 +3,11 @@ using System;
 using Larnix.Core;
 using Larnix.Model;
 using Larnix.Model.Database;
+using Larnix.Socket.Server.Utility;
 
 namespace Larnix.Server.Data;
 
-internal interface IUserRepository
+internal interface IUserRepository : IQuickUserRepository
 {
     ulong GetUserUid(string nickname);
 }

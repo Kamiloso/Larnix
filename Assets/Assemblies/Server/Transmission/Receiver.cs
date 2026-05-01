@@ -127,7 +127,7 @@ internal class Receiver
     {
         Vec2Int POS = msg.BlockPosition;
         Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
-        bool front = msg.Front;
+        bool front = msg.IsFront;
         byte code = msg.Code;
 
         if (code == 0) // place item

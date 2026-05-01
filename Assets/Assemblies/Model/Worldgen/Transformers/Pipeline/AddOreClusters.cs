@@ -2,8 +2,8 @@ using Larnix.Core.Vectors;
 using Larnix.Model.Worldgen.Biomes;
 using Larnix.Model.Worldgen.Biomes.All;
 using Larnix.Model.Worldgen.Ores;
-using Larnix.Model.Utils;
 using Larnix.Model.Blocks.Structs;
+using Larnix.Model.Blocks;
 
 namespace Larnix.Model.Worldgen.Transformers.Pipeline;
 

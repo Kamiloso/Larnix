@@ -1,26 +1,24 @@
 #nullable enable
 using Larnix.Core.Vectors;
-using Larnix.Socket.Packets;
-using Larnix.Core.Utils;
 using Larnix.Core.Serialization;
+using Larnix.Socket.Payload;
+using System.Runtime.InteropServices;
 
 namespace Larnix.Server.Packets;
 
-public sealed class Teleport : Payload_Legacy
+[CmdId(0x06)]
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public readonly record struct Teleport : ISanitizable<Teleport>
 {
-    private static int SIZE => Binary<Vec2>.Size;
+    public Vec2 Position { get; }
 
-    public Vec2 TargetPosition => Binary<Vec2>.Deserialize(Bytes, 0); // Binary<Vec2>.Size
-
-    public Teleport(Vec2 targetPosition, byte code = 0)
+    public Teleport(Vec2 position)
     {
-        InitializePayload(ArrayUtils.MegaConcat(
-            Binary<Vec2>.Serialize(targetPosition)
-            ), code);
+        Position = position.Sanitize();
     }
 
-    protected override bool IsValid()
+    public Teleport Sanitize()
     {
-        return Bytes.Length == SIZE;
+        return new Teleport(Position);
     }
 }

@@ -29,7 +29,7 @@ internal class AsyncDecryptor
             yield break; // couldn't acquire, ignore request
         }
 
-        IKey? keyClone = key?.CloneKey();
+        IKey? keyClone = key?.CloneKey(); // clone to avoid race conditions
 
         Task<(bool, byte[])> decryption = Task.Run(() =>
         {

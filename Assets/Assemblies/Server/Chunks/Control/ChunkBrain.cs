@@ -12,6 +12,7 @@ using Larnix.Server.Packets.Structs;
 using Larnix.Model.Blocks.All;
 using Larnix.Core;
 using Larnix.Server.Commands;
+using Larnix.Model.Blocks.Chunks;
 using static Larnix.Model.Blocks.IWorldAPI;
 
 namespace Larnix.Server.Chunks.Control;
@@ -20,8 +21,10 @@ internal class ChunkBrain : IDisposable
 {
     private readonly Vec2Int _chunkpos;
     private readonly ChunkEvents _chunkEvents;
-    private readonly Block[,] _blocksFront = ChunkIterator.Array2D<Block>();
-    private readonly Block[,] _blocksBack = ChunkIterator.Array2D<Block>();
+
+    private readonly Block[,] _blocksFront = ChunkIterator.Array16x16<Block>();
+    private readonly Block[,] _blocksBack = ChunkIterator.Array16x16<Block>();
+
     private readonly Dictionary<Vec2Int, StaticCollider[]> _colliderCollections = new();
 
     public event Action<BlockUpdateRecord>? OnBlockUpdate;
@@ -82,10 +85,10 @@ internal class ChunkBrain : IDisposable
 
     public Block UpdateBlock(Vec2Int pos, bool isFront, BlockData1 newBlock, BreakMode breakMode)
     {
-        BlockHeader2 oldHeader = ActiveChunkReference[pos.x, pos.y].Header;
+        BlockHeader2 oldHeader = ActiveChunkReference.Headers[pos.x, pos.y];
         Block result = RefreshBlock(pos, newBlock, isFront);
         RefreshCollider(pos);
-        BlockHeader2 newHeader = ActiveChunkReference[pos.x, pos.y].Header;
+        BlockHeader2 newHeader = ActiveChunkReference.Headers[pos.x, pos.y];
 
         if (breakMode == BreakMode.Weak)
         {
@@ -107,7 +110,7 @@ internal class ChunkBrain : IDisposable
     {
         Block result = GetBlock(pos, isFront);
         RefreshCollider(pos);
-        BlockHeader2 newHeader = ActiveChunkReference[pos.x, pos.y].Header;
+        BlockHeader2 newHeader = ActiveChunkReference.Headers[pos.x, pos.y];
 
         Vec2Int POS = BlockUtils.GlobalBlockCoords(_chunkpos, pos);
         OnBlockUpdate?.Invoke(

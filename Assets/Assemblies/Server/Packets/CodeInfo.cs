@@ -1,29 +1,31 @@
+#nullable enable
+using Larnix.Core.Serialization;
+using Larnix.Socket.Payload;
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using Larnix.Socket.Packets;
+using System.Runtime.InteropServices;
 
 namespace Larnix.Server.Packets;
 
-public sealed class CodeInfo : Payload_Legacy
+[CmdId(0x04)]
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public readonly record struct CodeInfo : ISanitizable<CodeInfo>
 {
-    private const int SIZE = 0;
-
-    public new Info Code => (Info)base.Code;
+    public Info Code { get; }
 
     public enum Info : byte
     {
-        YouDie,
-        RespawnMe,
+        Empty = 0,
+        YouDie = 1,
+        RespawnMe = 2,
     }
 
     public CodeInfo(Info code)
     {
-        InitializePayload(new byte[0], (byte)code);
+        Code = Enum.IsDefined(typeof(Info), code) ? code : Info.Empty;
     }
 
-    protected override bool IsValid()
+    public CodeInfo Sanitize()
     {
-        return Bytes.Length == SIZE;
+        return new CodeInfo(Code);
     }
 }

@@ -51,9 +51,9 @@ public class FixedBufferTests
     {
         var buffer = new FixedBuffer32<int>();
 
-        buffer.Push(10);
-        buffer.Push(20);
-        buffer.Push(30);
+        buffer.Add(10);
+        buffer.Add(20);
+        buffer.Add(30);
 
         Assert.That(buffer.Count, Is.EqualTo(3));
         Assert.That(buffer.IsFull, Is.False);
@@ -67,8 +67,8 @@ public class FixedBufferTests
     {
         var buffer = new FixedBuffer32<TestEnum>();
 
-        buffer.Push(TestEnum.Alpha);
-        buffer.Push(TestEnum.Gamma);
+        buffer.Add(TestEnum.Alpha);
+        buffer.Add(TestEnum.Gamma);
 
         Assert.That(buffer.Count, Is.EqualTo(2));
 
@@ -83,8 +83,8 @@ public class FixedBufferTests
         var s1 = new TestStruct(1, 255);
         var s2 = new TestStruct(2, 128);
 
-        buffer.Push(s1);
-        buffer.Push(s2);
+        buffer.Add(s1);
+        buffer.Add(s2);
 
         Assert.That(buffer.Count, Is.EqualTo(2));
 
@@ -99,19 +99,19 @@ public class FixedBufferTests
 
         for (int i = 0; i < 8; i++)
         {
-            buffer.Push(i);
+            buffer.Add(i);
         }
 
         Assert.That(buffer.IsFull, Is.True);
-        Assert.Throws<InvalidOperationException>(() => buffer.Push(99));
+        Assert.Throws<InvalidOperationException>(() => buffer.Add(99));
     }
 
     [Test]
     public void Clear_ResetsSizeAndMemory()
     {
         var buffer = new FixedBuffer32<int>();
-        buffer.Push(42);
-        buffer.Push(84);
+        buffer.Add(42);
+        buffer.Add(84);
 
         buffer.Clear();
 
@@ -126,11 +126,11 @@ public class FixedBufferTests
         var buffer1 = new FixedBuffer32<int>();
         var buffer2 = new FixedBuffer32<int>();
 
-        buffer1.Push(10);
-        buffer1.Push(20);
+        buffer1.Add(10);
+        buffer1.Add(20);
 
-        buffer2.Push(10);
-        buffer2.Push(20);
+        buffer2.Add(10);
+        buffer2.Add(20);
 
         Assert.That(buffer1.Equals(buffer2), Is.True);
         Assert.That(buffer1 == buffer2, Is.True);
@@ -143,10 +143,10 @@ public class FixedBufferTests
         var buffer1 = new FixedBuffer32<int>();
         var buffer2 = new FixedBuffer32<int>();
 
-        buffer1.Push(10);
+        buffer1.Add(10);
 
-        buffer2.Push(10);
-        buffer2.Push(20);
+        buffer2.Add(10);
+        buffer2.Add(20);
 
         Assert.That(buffer1.Equals(buffer2), Is.False);
         Assert.That(buffer1 != buffer2, Is.True);
@@ -158,8 +158,8 @@ public class FixedBufferTests
         var buffer1 = new FixedBuffer32<int>();
         var buffer2 = new FixedBuffer32<int>();
 
-        buffer1.Push(10);
-        buffer2.Push(99);
+        buffer1.Add(10);
+        buffer2.Add(99);
 
         Assert.That(buffer1.Equals(buffer2), Is.False);
         Assert.That(buffer1 != buffer2, Is.True);
@@ -169,15 +169,15 @@ public class FixedBufferTests
     public void EqualsAndHashCode_IgnoreGarbageDataAfterClear()
     {
         var cleanBuffer = new FixedBuffer32<int>();
-        cleanBuffer.Push(5);
+        cleanBuffer.Add(5);
 
         var dirtyBuffer = new FixedBuffer32<int>();
-        dirtyBuffer.Push(5);
-        dirtyBuffer.Push(999);
-        dirtyBuffer.Push(1234);
+        dirtyBuffer.Add(5);
+        dirtyBuffer.Add(999);
+        dirtyBuffer.Add(1234);
 
         dirtyBuffer.Clear();
-        dirtyBuffer.Push(5);
+        dirtyBuffer.Add(5);
 
         Assert.That(dirtyBuffer.Equals(cleanBuffer), Is.True);
         Assert.That(dirtyBuffer == cleanBuffer, Is.True);
@@ -188,10 +188,10 @@ public class FixedBufferTests
     public void Equals_WithObjectBox_WorksCorrectly()
     {
         var buffer1 = new FixedBuffer32<int>();
-        buffer1.Push(7);
+        buffer1.Add(7);
 
         var buffer2 = new FixedBuffer32<int>();
-        buffer2.Push(7);
+        buffer2.Add(7);
 
         object boxedBuffer2 = buffer2;
 

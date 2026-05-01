@@ -2,16 +2,10 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
-using System.Reflection;
 
 namespace Larnix.Core.Serialization;
 
-public interface ISanitizable<T> where T : unmanaged
-{
-    T Sanitize();
-}
-
-public static unsafe class Binary<T> where T : unmanaged
+public static unsafe partial class Binary<T> where T : unmanaged
 {
     public static int Size => sizeof(T);
 
@@ -36,12 +30,9 @@ public static unsafe class Binary<T> where T : unmanaged
         if (offset < 0 || offset > bytes.Length - sizeof(T))
             throw new ArgumentOutOfRangeException(nameof(offset), "Byte array size mismatch.");
 
-        T item = MemoryMarshal.Read<T>(bytes.AsSpan(offset));
-        
-        if (item is ISanitizable<T> sanitizable)
-            item = sanitizable.Sanitize();
-
-        return item;
+        return Sanitizer.Filter(
+            MemoryMarshal.Read<T>(bytes.AsSpan(offset))
+            );
     }
 
     public static byte[] SerializeArray(T[] array)
@@ -63,61 +54,9 @@ public static unsafe class Binary<T> where T : unmanaged
 
         foreach (ref T item in array.AsSpan())
         {
-            if (item is ISanitizable<T> sanitizable)
-                item = sanitizable.Sanitize();
+            item = Sanitizer.Filter(item);
         }
 
         return array;
-    }
-
-    private static bool IsSupportedType(Type type)
-    {
-        if (type == typeof(bool) || type == typeof(decimal))
-        {
-            return false;
-        }
-
-        if (type.IsPrimitive || type.IsEnum)
-        {
-            return true;
-        }
-
-        if (!type.IsValueType)
-        {
-            return false;
-        }
-
-        FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        if (fields.Length == 0)
-        {
-            return false; // something weird, better not allow it
-        }
-
-        foreach (FieldInfo field in fields)
-        {
-            FixedBufferAttribute? fixedBuffer = field.GetCustomAttribute<FixedBufferAttribute>();
-            if (fixedBuffer == null) // normal struct field
-            {
-                if (!IsSupportedType(field.FieldType))
-                {
-                    return false;
-                }
-            }
-            else // fixed-size buffer field
-            {
-                if (!IsSupportedType(fixedBuffer.ElementType))
-                {
-                    return false;
-                }
-            }
-        }
-
-        StructLayoutAttribute? layout = type.StructLayoutAttribute;
-        if (layout == null || layout.Value != LayoutKind.Sequential || layout.Pack != 1)
-        {
-            return false;
-        }
-
-        return true;
     }
 }

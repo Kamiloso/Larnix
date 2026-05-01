@@ -1,74 +1,63 @@
-using System;
+#nullable enable
 using System.Collections.Generic;
-using Larnix.Socket.Packets;
-using Larnix.Core.Utils;
 using Larnix.Core.Serialization;
+using System.Runtime.InteropServices;
+using Larnix.Socket.Payload;
 
 namespace Larnix.Server.Packets;
 
-public sealed class NearbyEntities : Payload_Legacy
+[CmdId(0x08)]
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public readonly record struct NearbyEntities : ISanitizable<NearbyEntities>
 {
-    private static int HEADER_SIZE => sizeof(uint) + 2 * sizeof(ushort);
-    private static int ENTRY_SIZE => sizeof(ulong);
-    private static int MAX_RECORDS => (1400 - HEADER_SIZE) / (2 * ENTRY_SIZE);
+    public uint FixedFrame { get; }
+    public FixedBuffer512<ulong> AddEntities { get; }
+    public FixedBuffer512<ulong> RemoveEntities { get; }
 
-    public uint FixedFrame => Binary<uint>.Deserialize(Bytes, 0); // sizeof(uint)
-    public ushort AddLength => Binary<ushort>.Deserialize(Bytes, 4); // sizeof(ushort)
-    public ushort RemoveLength => Binary<ushort>.Deserialize(Bytes, 6); // sizeof(ushort)
-    public ulong[] AddEntities => Binary<ulong>.DeserializeArray(Bytes, AddLength, HEADER_SIZE); // n * ENTRY_SIZE
-    public ulong[] RemoveEntities => Binary<ulong>.DeserializeArray(Bytes, RemoveLength, HEADER_SIZE + AddLength * ENTRY_SIZE); // n * ENTRY_SIZE
-
-    private NearbyEntities(uint fixedFrame, ulong[] addEntities, ulong[] removeEntities, byte code = 0)
+    private NearbyEntities(uint fixedFrame, in FixedBuffer512<ulong> addEntities, in FixedBuffer512<ulong> removeEntities)
     {
-        addEntities ??= Array.Empty<ulong>();
-        removeEntities ??= Array.Empty<ulong>();
-
-        InitializePayload(ArrayUtils.MegaConcat(
-            Binary<uint>.Serialize(fixedFrame),
-            Binary<ushort>.Serialize((ushort)addEntities.Length),
-            Binary<ushort>.Serialize((ushort)removeEntities.Length),
-            Binary<ulong>.SerializeArray(addEntities),
-            Binary<ulong>.SerializeArray(removeEntities)
-            ), code);
+        FixedFrame = fixedFrame;
+        AddEntities = addEntities;
+        RemoveEntities = removeEntities;
     }
 
     public static NearbyEntities CreateBootstrap(uint fixedFrame)
     {
         return new NearbyEntities(
             fixedFrame,
-            Array.Empty<ulong>(),
-            Array.Empty<ulong>()
+            new FixedBuffer512<ulong>(),
+            new FixedBuffer512<ulong>()
             );
     }
 
-    public static List<NearbyEntities> CreateList(uint fixedFrame, ulong[] addEntities, ulong[] removeEntities, byte code = 0)
+    public static IEnumerable<NearbyEntities> GenerateList(uint fixedFrame, ulong[] addEntities, ulong[] removeEntities)
     {
-        addEntities ??= Array.Empty<ulong>();
-        removeEntities ??= Array.Empty<ulong>();
-
-        List<NearbyEntities> result = new();
-
-        int eyes = 0;
-        while (eyes < addEntities.Length || eyes < removeEntities.Length)
+        int s1 = 0, s2 = 0; // start
+        int l1 = 0, l2 = 0; // length
+        do
         {
-            ulong[] add = eyes < addEntities.Length ?
-                addEntities[eyes..Math.Min(addEntities.Length, eyes + MAX_RECORDS)] :
-                Array.Empty<ulong>();
+            (s1, s2) = (s1 + l1, s2 + l2);
+            (l1, l2) = (0, 0);
 
-            ulong[] remove = eyes < removeEntities.Length ?
-                removeEntities[eyes..Math.Min(removeEntities.Length, eyes + MAX_RECORDS)] :
-                Array.Empty<ulong>();
+            FixedBuffer512<ulong> addBuffer = new();
+            while (s1 + l1 < addEntities.Length)
+            {
+                addBuffer.Add(addEntities[s1 + l1++]);
+            }
 
-            result.Add(new NearbyEntities(fixedFrame, add, remove, code));
-            eyes += MAX_RECORDS;
-        }
+            FixedBuffer512<ulong> removeBuffer = new();
+            while (s2 + l2 < removeEntities.Length)
+            {
+                removeBuffer.Add(removeEntities[s2 + l2++]);
+            }
 
-        return result;
+            yield return new NearbyEntities(fixedFrame, addBuffer, removeBuffer);
+
+        } while (l1 > 0 || l2 > 0);
     }
 
-    protected override bool IsValid()
+    public NearbyEntities Sanitize()
     {
-        return Bytes.Length >= HEADER_SIZE &&
-               Bytes.Length == HEADER_SIZE + ((int)AddLength + (int)RemoveLength) * ENTRY_SIZE;
+        return new NearbyEntities(FixedFrame, AddEntities, RemoveEntities);
     }
 }

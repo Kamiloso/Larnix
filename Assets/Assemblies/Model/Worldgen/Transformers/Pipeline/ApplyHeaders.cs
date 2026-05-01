@@ -16,7 +16,7 @@ internal class ApplyHeaders : Transformer<ProtoBlock, BlockHeader2>
 
     public override BlockHeader2[,] Rebuild(Vec2Int chunk, ProtoBlock[,] chunkIn)
     {
-        BlockHeader2[,] blocks = ChunkIterator.Array2D<BlockHeader2>();
+        BlockHeader2[,] blocks = ChunkIterator.Array16x16<BlockHeader2>();
 
         ChunkIterator.IterateWithPOS(chunk, (POS, x, y) =>
         {

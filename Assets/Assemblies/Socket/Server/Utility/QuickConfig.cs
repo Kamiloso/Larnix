@@ -36,7 +36,7 @@ public record QuickConfig
 
     public record InterfacesStruct(
         ISecretRepository SecretRepository,
-        IUserRepository UserRepository,
+        IQuickUserRepository UserRepository,
         IBanProvider BanProvider
         );
 

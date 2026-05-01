@@ -9,8 +9,8 @@ public static class JsonUtils
     {
         try
         {
-            return JSON.Parse(json)
-                .AsObject ?? new JSONObject();
+            return JSON.Parse(json).AsObject
+                ?? new JSONObject();
         }
         catch
         {

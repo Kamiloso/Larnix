@@ -89,7 +89,7 @@ public class Receiver
     private void _RetBlockChange(RetBlockChange msg)
     {
         GridManager.UpdateBlock(
-            POS: msg.BlockPosition,
+            POS: msg.POS,
             data: msg.CurrentBlock,
             breakMode: IWorldAPI.BreakMode.Replace,
             unlock: msg.Operation
@@ -100,7 +100,7 @@ public class Receiver
     {
         if (MainPlayer.Alive)
         {
-            Vec2 targetPos = msg.TargetPosition;
+            Vec2 targetPos = msg.Position;
             MainPlayer.Teleport(targetPos);
             Echo.Log("Teleported");
         }
@@ -134,14 +134,14 @@ public class Receiver
             _lastFrameTick = frameTick;
 
             Sky.UpdateSky(
-                biomeID: msg.BiomeID,
+                biomeID: msg.BiomeId,
                 skyColor: msg.SkyColor,
-                weather: msg.Weather
+                weather: msg.WeatherId
                 );
 
             Debugger.InfoUpdate(
                 serverTick: msg.ServerTick,
-                biomeID: msg.BiomeID,
+                biomeID: msg.BiomeId,
                 tps: msg.Tps
             );
         }

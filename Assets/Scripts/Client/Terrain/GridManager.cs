@@ -13,6 +13,7 @@ using Larnix.Client.Particles;
 using Larnix.Model.Enums;
 using IHasCollider = Larnix.Model.Blocks.All.IHasCollider;
 using Larnix.Core.Utils;
+using Larnix.Model.Blocks.Chunks;
 
 namespace Larnix.Client.Terrain
 {

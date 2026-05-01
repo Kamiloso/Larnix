@@ -3,6 +3,7 @@ using TMPro;
 using UnityEngine;
 using Larnix.Core;
 using LogType = Larnix.Core.Echo.LogType;
+using Larnix.Core.Vectors;
 
 namespace Larnix.Client.Chat
 {
@@ -25,32 +26,19 @@ namespace Larnix.Client.Chat
 
         private bool _initialized = false;
 
-        private static Color GetColorByLogType(LogType logType)
-        {
-            return logType switch
-            {
-                LogType.Log or LogType.Raw => Color.white,
-                LogType.Info => Color.cyan,
-                LogType.Warning => Color.yellow,
-                LogType.Error => Color.red,
-                LogType.Success => Color.green,
-                _ => Color.white
-            };
-        }
-
         private void Awake()
         {
             BaseHeight = Panel.rect.height;
         }
         
-        public void Initialize(string message, LogType logType, ChatNode next)
+        public void Initialize(string message, Col32 color, ChatNode next)
         {
             if (_initialized)
                 throw new InvalidOperationException($"{nameof(ChatNode)} is already initialized.");
 
             transform.localPosition = Vector3.zero;
             TextField.text = message;
-            TextField.color = GetColorByLogType(logType);
+            TextField.color = color.ToUnity();
             Next = next;
             DisplayMoment = 0f;
 

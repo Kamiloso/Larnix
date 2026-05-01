@@ -7,8 +7,6 @@ using Larnix.Socket.Security;
 using Larnix.Socket.Security.Keys;
 using System.Threading.Tasks;
 using ServerInfoStruct = Larnix.Socket.Payload.Structs.ServerInfo;
-using System;
-using Larnix.Socket.Security.KeyStructs;
 
 namespace Larnix.Socket.Client;
 
@@ -38,7 +36,7 @@ public static partial class Resolver
 
             var answer = n_answer.Value;
 
-            byte[] keyBytes = answer.Info.RsaPublicKey.Bytes264;
+            byte[] keyBytes = answer.Info.RsaPublicKey.Bytes264();
             if (!Authcode.VerifyPublicKey(keyBytes, authcode))
             {
                 return ResolveError.PublicKeyInvalid;
@@ -95,7 +93,10 @@ public static partial class Resolver
 
             FixedString64? newPassword = (fullLogin as PasswordChangeData)?.NewPassword ?? null;
 
-            var prompt = new P_LoginTry(credentials, newPassword);
+            var prompt = newPassword.HasValue
+                ? P_LoginTry.AsPasswordChange(credentials, newPassword.Value)
+                : P_LoginTry.AsLogin(credentials);
+
             var n_answer = await Prompter.PromptAsync<P_LoginTry, A_LoginTry>(address, prompt, rsa);
 
             _cache.Remove(discovery); // challengeId may have changed
@@ -107,7 +108,7 @@ public static partial class Resolver
 
             var answer = n_answer.Value;
 
-            return answer.Success;
+            return (bool)answer.Success;
         }
         catch
         {

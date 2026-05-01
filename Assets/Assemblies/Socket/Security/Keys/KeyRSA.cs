@@ -6,13 +6,13 @@ using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Security;
 using Larnix.Core.Utils;
 using Larnix.Socket.Server.Utility;
-using Larnix.Socket.Security.KeyStructs;
+using Larnix.Socket.Payload.Structs;
 
 namespace Larnix.Socket.Security.Keys;
 
 internal class KeyRsa : IKey
 {
-    private readonly RSA? _rsa; // immutable by convention
+    private readonly RSA? _rsa;
     private readonly KeyMode _mode;
 
     private bool _disposed;
@@ -63,7 +63,7 @@ internal class KeyRsa : IKey
     {
         RSA rsa = RSA.Create();
 
-        byte[] keyBytes = rsaPublicKey.Bytes264;
+        byte[] keyBytes = rsaPublicKey.Bytes264();
 
         try
         {
@@ -101,7 +101,7 @@ internal class KeyRsa : IKey
             ArrayUtils.AddLeadingZeros(parameters.Exponent, 8)
             );
 
-        return new FixedRsaPublic(bytes264);
+        return FixedRsaPublic.FromBytes(bytes264);
     }
 
     public T CloneKey<T>() where T : IKey
@@ -145,7 +145,7 @@ internal class KeyRsa : IKey
         }
         catch (CryptographicException)
         {
-            return new byte[0];
+            return Array.Empty<byte>();
         }
     }
 

@@ -6,6 +6,7 @@ using Larnix.Model.Worldgen.Biomes;
 using System.Collections.ObjectModel;
 using Larnix.Model.Worldgen.Transformers;
 using Larnix.Model.Worldgen.Transformers.Pipeline;
+using Larnix.Model.Blocks.Chunks;
 
 namespace Larnix.Model.Worldgen;
 
@@ -58,10 +59,7 @@ public class Generator : IGenerator
     public ChunkData GenerateChunk(Vec2Int chunk)
     {
         BlockData2[,] blocks = _genPipeline.Run(chunk);
-
-        ChunkData chunkData = new();
-        ChunkIterator.Iterate((x, y) => chunkData[x, y] = blocks[x, y]);
-        return chunkData;
+        return new ChunkData((x, y) => blocks[x, y]);
     }
 
     public Col32 SkyColorAt(Vec2 position)

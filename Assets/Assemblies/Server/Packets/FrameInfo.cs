@@ -1,35 +1,34 @@
+#nullable enable
 using Larnix.Core.Vectors;
-using Larnix.Socket.Packets;
 using Larnix.Model.Enums;
 using Larnix.Model.Worldgen.Biomes;
-using Larnix.Core.Utils;
+using Larnix.Socket.Payload;
+using System.Runtime.InteropServices;
 using Larnix.Core.Serialization;
 
 namespace Larnix.Server.Packets;
 
-public sealed class FrameInfo : Payload_Legacy
+[CmdId(0x07)]
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public readonly record struct FrameInfo
 {
-    private static int SIZE => sizeof(long) + Binary<Col32>.Size + sizeof(BiomeID) + sizeof(WeatherID) + sizeof(float);
+    public long ServerTick { get; }
+    public Col32 SkyColor { get; }
+    public BiomeID BiomeId { get; }
+    public WeatherID WeatherId { get; }
+    public float Tps { get; }
 
-    public long ServerTick => Binary<long>.Deserialize(Bytes, 0);
-    public Col32 SkyColor => Binary<Col32>.Deserialize(Bytes, 8);
-    public BiomeID BiomeID => Binary<BiomeID>.Deserialize(Bytes, 12);
-    public WeatherID Weather => Binary<WeatherID>.Deserialize(Bytes, 14);
-    public float Tps => Binary<float>.Deserialize(Bytes, 16);
-
-    public FrameInfo(long serverTick, Col32 skyColor, BiomeID biomeID, WeatherID weather, float tps, byte code = 0)
+    public FrameInfo(long serverTick, Col32 skyColor, BiomeID biomeId, WeatherID weatherId, float tps)
     {
-        InitializePayload(ArrayUtils.MegaConcat(
-            Binary<long>.Serialize(serverTick),
-            Binary<Col32>.Serialize(skyColor),
-            Binary<BiomeID>.Serialize(biomeID),
-            Binary<WeatherID>.Serialize(weather),
-            Binary<float>.Serialize(tps)
-        ), code);
+        ServerTick = serverTick;
+        SkyColor = skyColor;
+        BiomeId = Sanitizer_Legacy.SanitizeEnum(biomeId);
+        WeatherId = Sanitizer_Legacy.SanitizeEnum(weatherId);
+        Tps = Sanitizer_Legacy.SanitizeFloat(tps);
     }
 
-    protected override bool IsValid()
+    public FrameInfo Sanitize()
     {
-        return Bytes.Length == SIZE;
+        return new FrameInfo(ServerTick, SkyColor, BiomeId, WeatherId, Tps);
     }
 }

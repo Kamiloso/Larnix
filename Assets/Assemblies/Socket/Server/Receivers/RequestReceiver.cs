@@ -8,7 +8,6 @@ using Larnix.Socket.Payload.Packets;
 using Larnix.Socket.Tools;
 using System.Net;
 using Larnix.Socket.Payload.Structs;
-using Larnix.Core.Utils;
 
 namespace Larnix.Socket.Server.Receivers;
 
@@ -38,12 +37,12 @@ internal class RequestReceiver : ITickable
         _settings = settings;
 
         _requestLimiter = new TrafficLimiter<string>(
-            maxTrafficLocal: settings.Security.Limiters.Requests.PerNetwork,
-            maxTrafficGlobal: settings.Security.Limiters.Requests.Global
+            maxTrafficLocal: _settings.Security.Limiters.Requests.PerNetwork,
+            maxTrafficGlobal: _settings.Security.Limiters.Requests.Global
             );
 
         _requestCleanupTimer = new CycleTimer(
-            interval: settings.Security.Limiters.Requests.ResetPeriodMs
+            interval: _settings.Security.Limiters.Requests.ResetPeriodMs
             );
 
         _requestCleanupTimer.OnInterval += _requestLimiter.Reset;
@@ -88,24 +87,21 @@ internal class RequestReceiver : ITickable
 
         Credentials credentials = loginTry.Credentials;
 
-        long uid = _settings.Interfaces.UserRepository.FindByNickname(credentials.Nickname)?.Uid
-            ?? _settings.Interfaces.UserRepository.NextFreeUid();
-
         _coroutines.Start(
-            method: _asyncLogins.Login(uid, credentials),
+            method: _asyncLogins.Login(credentials),
             onResult: success =>
             {
                 if (!success)
                 {
                     InformResult(false);
                 }
-                else if (loginTry.IsPasswordChangeRequest())
+                else if (loginTry.IsPasswordChange)
                 {
-                    string nickname = credentials.Nickname;
-                    string newPassword = loginTry.NewPassword!.Value;
+                    var nickname = credentials.Nickname;
+                    var newPassword = loginTry.NewPassword;
 
                     _coroutines.Start(
-                        method: _asyncLogins.SetPassword(uid, nickname, newPassword),
+                        method: _asyncLogins.SetPassword(nickname, newPassword),
                         onResult: success =>
                         {
                             InformResult(success);

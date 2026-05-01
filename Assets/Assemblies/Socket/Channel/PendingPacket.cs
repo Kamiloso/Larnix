@@ -1,6 +1,5 @@
 #nullable enable
 using Larnix.Core;
-using System;
 
 namespace Larnix.Socket.Channel;
 

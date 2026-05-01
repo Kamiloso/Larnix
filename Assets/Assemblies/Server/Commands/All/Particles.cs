@@ -1,10 +1,10 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using Larnix.Model.Enums;
 using Larnix.Model.Utils;
 using Larnix.Core.Vectors;
 using Larnix.Server.Packets;
-using Larnix.Socket.Packets;
 using Larnix.Core;
 using Larnix.Server.Entities;
 using System.Linq;
@@ -65,7 +65,7 @@ internal class Particles : BaseCmd
 
     public override (CmdResult, string) Execute(string sender, PrivilegeLevel privilege)
     {
-        Payload_Legacy packet = new SpawnParticles(_position, _particleID, _uid);
+        SpawnParticles payload = new(_position, _particleID, _uid);
 
         List<string> nearbyPlayers = ConnectedPlayers.AllPlayers
             .Where(nickname => Vec2.Distance(ConnectedPlayers[nickname].RenderPosition, _position) <= Common.ViewDistance)
@@ -73,7 +73,7 @@ internal class Particles : BaseCmd
 
         foreach (string nickname in nearbyPlayers)
         {
-            Server.Send(nickname, packet);
+            Server.Send(nickname, payload);
         }
 
         if (_uid == 0)

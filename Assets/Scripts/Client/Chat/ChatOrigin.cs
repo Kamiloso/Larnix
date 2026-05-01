@@ -1,4 +1,5 @@
 using Larnix.Core;
+using Larnix.Core.Vectors;
 using UnityEngine;
 using LogType = Larnix.Core.Echo.LogType;
 
@@ -18,10 +19,10 @@ namespace Larnix.Client.Chat
             GlobRef.Set(this);
         }
 
-        public void AddMessage(string message, LogType logType)
+        public void AddMessage(string message, Col32 color)
         {
             ChatNode node = Instantiate(ChatNodePrefab, transform).GetComponent<ChatNode>();
-            node.Initialize(message, logType, Head);
+            node.Initialize(message, color, Head);
             Head = node;
         }
 

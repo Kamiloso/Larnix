@@ -1,17 +1,31 @@
 #nullable enable
 using System;
-using System.IO.Hashing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Larnix.Core.Serialization;
 
+public interface IFixedBuffer<T> where T : unmanaged
+{
+    int Count { get; }
+    int Capacity { get; }
+    bool IsFull { get; }
+
+    T At(int index);
+    void Add(in T value);
+    void AddRange(ReadOnlySpan<T> values);
+    void ReadInto(Span<T> target);
+    T[] ToArray(); // allocates!
+
+    void Clear();
+}
+
 /*
 AUTOGEN BEGIN
-#SIZE = 8 16 32 64 128 256 512 1024 2048 4096 8192 16384 32768
+#SIZE = 8 16 32 64 128 256 512 1024
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public unsafe struct FixedBuffer#SIZE<T> : IEquatable<FixedBuffer#SIZE<T>> where T : unmanaged
+public unsafe struct FixedBuffer#SIZE<T> : IFixedBuffer<T> where T : unmanaged
 {
     private ushort _count;
     private fixed byte _buffer[#SIZE];
@@ -25,7 +39,20 @@ public unsafe struct FixedBuffer#SIZE<T> : IEquatable<FixedBuffer#SIZE<T>> where
         _ = Binary<T>.Size; // throw exception instantly when trying to use with an incompatible type
     }
 
-    public void Push(in T value)
+    public readonly T At(int index)
+    {
+        if (index < 0 || index >= Count)
+        {
+            throw new ArgumentOutOfRangeException(nameof(index), $"Cannot access element with index {index}.");
+        }
+
+        fixed (byte* ptr = _buffer)
+        {
+            return Unsafe.ReadUnaligned<T>(ref ptr[index * sizeof(T)]);
+        }
+    }
+
+    public void Add(in T value)
     {
         if (IsFull)
         {
@@ -39,59 +66,50 @@ public unsafe struct FixedBuffer#SIZE<T> : IEquatable<FixedBuffer#SIZE<T>> where
         }
     }
 
-    public T[] ToArray()
+    public void AddRange(ReadOnlySpan<T> values)
     {
-        if (Count == 0) return Array.Empty<T>();
+        if (Count + values.Length > Capacity)
+        {
+            throw new InvalidOperationException($"Not enough capacity to add range to a fixed buffer.");
+        }
 
         fixed (byte* ptr = _buffer)
         {
-            return new ReadOnlySpan<T>(ptr, Count).ToArray();
+            for (int i = 0; i < values.Length; i++)
+            {
+                Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], values[i]);
+                _count++;
+            }
         }
+    }
+
+    public readonly void ReadInto(Span<T> target)
+    {
+        if (target.Length != Count)
+        {
+            throw new ArgumentException($"Target span length must be equal to the number of elements in the fixed buffer.", nameof(target));
+        }
+
+        fixed (byte* ptr = _buffer)
+        {
+            for (int i = 0; i < Count; i++)
+            {
+                target[i] = Unsafe.ReadUnaligned<T>(ref ptr[i * sizeof(T)]);
+            }
+        }
+    }
+
+    public readonly T[] ToArray()
+    {
+        Span<T> buffer = stackalloc T[Count];
+        ReadInto(buffer);
+        return buffer.ToArray();
     }
 
     public void Clear()
     {
         this = default;
     }
-
-    public readonly bool Equals(FixedBuffer#SIZE<T> other)
-    {
-        if (Count != other.Count)
-        {
-            return false;
-        }
-
-        fixed (byte* beg1 = _buffer)
-        {
-            byte* beg2 = other._buffer;
-
-            var span1 = new ReadOnlySpan<byte>(beg1, Count * sizeof(T));
-            var span2 = new ReadOnlySpan<byte>(beg2, other.Count * sizeof(T));
-
-            return span1.SequenceEqual(span2);
-        }
-    }
-
-    public override readonly bool Equals(object? obj)
-    {
-        return obj is FixedBuffer#SIZE<T> other && Equals(other);
-    }
-
-    public override readonly int GetHashCode()
-    {
-        fixed (byte* beg = _buffer)
-        {
-            var span = new ReadOnlySpan<byte>(beg, Count * sizeof(T));
-
-            int hash1 = (int)XxHash32.HashToUInt32(span);
-            int hash2 = Count.GetHashCode();
-
-            return hash1 ^ hash2;
-        }
-    }
-
-    public static bool operator ==(in FixedBuffer#SIZE<T> left, in FixedBuffer#SIZE<T> right) => left.Equals(right);
-    public static bool operator !=(in FixedBuffer#SIZE<T> left, in FixedBuffer#SIZE<T> right) => !left.Equals(right);
 }
 
 AUTOGEN END
@@ -103,9 +121,8 @@ AUTOGEN END
 // Instead, modify the payload between the AUTOGEN BEGIN and AUTOGEN END markers to change the generated code
 // and then regenerate the code from the Unity Editor window (Automation/Tools/Regenerate Code).
 
-
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public unsafe struct FixedBuffer8<T> : IEquatable<FixedBuffer8<T>> where T : unmanaged
+public unsafe struct FixedBuffer8<T> : IFixedBuffer<T> where T : unmanaged
 {
     private ushort _count;
     private fixed byte _buffer[8];
@@ -116,10 +133,23 @@ public unsafe struct FixedBuffer8<T> : IEquatable<FixedBuffer8<T>> where T : unm
 
     static FixedBuffer8()
     {
-        _ = Binary<T>.Size; // throw exception instantly when trying to use with an incompatible type
+        _ = Binary<T>.Size;
     }
 
-    public void Push(in T value)
+    public readonly T At(int index)
+    {
+        if (index < 0 || index >= Count)
+        {
+            throw new ArgumentOutOfRangeException(nameof(index), $"Cannot access element with index {index}.");
+        }
+
+        fixed (byte* ptr = _buffer)
+        {
+            return Unsafe.ReadUnaligned<T>(ref ptr[index * sizeof(T)]);
+        }
+    }
+
+    public void Add(in T value)
     {
         if (IsFull)
         {
@@ -133,64 +163,55 @@ public unsafe struct FixedBuffer8<T> : IEquatable<FixedBuffer8<T>> where T : unm
         }
     }
 
-    public T[] ToArray()
+    public void AddRange(ReadOnlySpan<T> values)
     {
-        if (Count == 0) return Array.Empty<T>();
+        if (Count + values.Length > Capacity)
+        {
+            throw new InvalidOperationException($"Not enough capacity to add range to a fixed buffer.");
+        }
 
         fixed (byte* ptr = _buffer)
         {
-            return new ReadOnlySpan<T>(ptr, Count).ToArray();
+            for (int i = 0; i < values.Length; i++)
+            {
+                Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], values[i]);
+                _count++;
+            }
         }
+    }
+
+    public readonly void ReadInto(Span<T> target)
+    {
+        if (target.Length != Count)
+        {
+            throw new ArgumentException($"Target span length must be equal to the number of elements in the fixed buffer.", nameof(target));
+        }
+
+        fixed (byte* ptr = _buffer)
+        {
+            for (int i = 0; i < Count; i++)
+            {
+                target[i] = Unsafe.ReadUnaligned<T>(ref ptr[i * sizeof(T)]);
+            }
+        }
+    }
+
+    public readonly T[] ToArray()
+    {
+        Span<T> buffer = stackalloc T[Count];
+        ReadInto(buffer);
+        return buffer.ToArray();
     }
 
     public void Clear()
     {
         this = default;
     }
-
-    public readonly bool Equals(FixedBuffer8<T> other)
-    {
-        if (Count != other.Count)
-        {
-            return false;
-        }
-
-        fixed (byte* beg1 = _buffer)
-        {
-            byte* beg2 = other._buffer;
-
-            var span1 = new ReadOnlySpan<byte>(beg1, Count * sizeof(T));
-            var span2 = new ReadOnlySpan<byte>(beg2, other.Count * sizeof(T));
-
-            return span1.SequenceEqual(span2);
-        }
-    }
-
-    public override readonly bool Equals(object? obj)
-    {
-        return obj is FixedBuffer8<T> other && Equals(other);
-    }
-
-    public override readonly int GetHashCode()
-    {
-        fixed (byte* beg = _buffer)
-        {
-            var span = new ReadOnlySpan<byte>(beg, Count * sizeof(T));
-
-            int hash1 = (int)XxHash32.HashToUInt32(span);
-            int hash2 = Count.GetHashCode();
-
-            return hash1 ^ hash2;
-        }
-    }
-
-    public static bool operator ==(in FixedBuffer8<T> left, in FixedBuffer8<T> right) => left.Equals(right);
-    public static bool operator !=(in FixedBuffer8<T> left, in FixedBuffer8<T> right) => !left.Equals(right);
 }
 
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public unsafe struct FixedBuffer16<T> : IEquatable<FixedBuffer16<T>> where T : unmanaged
+public unsafe struct FixedBuffer16<T> : IFixedBuffer<T> where T : unmanaged
 {
     private ushort _count;
     private fixed byte _buffer[16];
@@ -201,10 +222,23 @@ public unsafe struct FixedBuffer16<T> : IEquatable<FixedBuffer16<T>> where T : u
 
     static FixedBuffer16()
     {
-        _ = Binary<T>.Size; // throw exception instantly when trying to use with an incompatible type
+        _ = Binary<T>.Size;
     }
 
-    public void Push(in T value)
+    public readonly T At(int index)
+    {
+        if (index < 0 || index >= Count)
+        {
+            throw new ArgumentOutOfRangeException(nameof(index), $"Cannot access element with index {index}.");
+        }
+
+        fixed (byte* ptr = _buffer)
+        {
+            return Unsafe.ReadUnaligned<T>(ref ptr[index * sizeof(T)]);
+        }
+    }
+
+    public void Add(in T value)
     {
         if (IsFull)
         {
@@ -218,64 +252,55 @@ public unsafe struct FixedBuffer16<T> : IEquatable<FixedBuffer16<T>> where T : u
         }
     }
 
-    public T[] ToArray()
+    public void AddRange(ReadOnlySpan<T> values)
     {
-        if (Count == 0) return Array.Empty<T>();
+        if (Count + values.Length > Capacity)
+        {
+            throw new InvalidOperationException($"Not enough capacity to add range to a fixed buffer.");
+        }
 
         fixed (byte* ptr = _buffer)
         {
-            return new ReadOnlySpan<T>(ptr, Count).ToArray();
+            for (int i = 0; i < values.Length; i++)
+            {
+                Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], values[i]);
+                _count++;
+            }
         }
+    }
+
+    public readonly void ReadInto(Span<T> target)
+    {
+        if (target.Length != Count)
+        {
+            throw new ArgumentException($"Target span length must be equal to the number of elements in the fixed buffer.", nameof(target));
+        }
+
+        fixed (byte* ptr = _buffer)
+        {
+            for (int i = 0; i < Count; i++)
+            {
+                target[i] = Unsafe.ReadUnaligned<T>(ref ptr[i * sizeof(T)]);
+            }
+        }
+    }
+
+    public readonly T[] ToArray()
+    {
+        Span<T> buffer = stackalloc T[Count];
+        ReadInto(buffer);
+        return buffer.ToArray();
     }
 
     public void Clear()
     {
         this = default;
     }
-
-    public readonly bool Equals(FixedBuffer16<T> other)
-    {
-        if (Count != other.Count)
-        {
-            return false;
-        }
-
-        fixed (byte* beg1 = _buffer)
-        {
-            byte* beg2 = other._buffer;
-
-            var span1 = new ReadOnlySpan<byte>(beg1, Count * sizeof(T));
-            var span2 = new ReadOnlySpan<byte>(beg2, other.Count * sizeof(T));
-
-            return span1.SequenceEqual(span2);
-        }
-    }
-
-    public override readonly bool Equals(object? obj)
-    {
-        return obj is FixedBuffer16<T> other && Equals(other);
-    }
-
-    public override readonly int GetHashCode()
-    {
-        fixed (byte* beg = _buffer)
-        {
-            var span = new ReadOnlySpan<byte>(beg, Count * sizeof(T));
-
-            int hash1 = (int)XxHash32.HashToUInt32(span);
-            int hash2 = Count.GetHashCode();
-
-            return hash1 ^ hash2;
-        }
-    }
-
-    public static bool operator ==(in FixedBuffer16<T> left, in FixedBuffer16<T> right) => left.Equals(right);
-    public static bool operator !=(in FixedBuffer16<T> left, in FixedBuffer16<T> right) => !left.Equals(right);
 }
 
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public unsafe struct FixedBuffer32<T> : IEquatable<FixedBuffer32<T>> where T : unmanaged
+public unsafe struct FixedBuffer32<T> : IFixedBuffer<T> where T : unmanaged
 {
     private ushort _count;
     private fixed byte _buffer[32];
@@ -286,10 +311,23 @@ public unsafe struct FixedBuffer32<T> : IEquatable<FixedBuffer32<T>> where T : u
 
     static FixedBuffer32()
     {
-        _ = Binary<T>.Size; // throw exception instantly when trying to use with an incompatible type
+        _ = Binary<T>.Size;
     }
 
-    public void Push(in T value)
+    public readonly T At(int index)
+    {
+        if (index < 0 || index >= Count)
+        {
+            throw new ArgumentOutOfRangeException(nameof(index), $"Cannot access element with index {index}.");
+        }
+
+        fixed (byte* ptr = _buffer)
+        {
+            return Unsafe.ReadUnaligned<T>(ref ptr[index * sizeof(T)]);
+        }
+    }
+
+    public void Add(in T value)
     {
         if (IsFull)
         {
@@ -303,64 +341,55 @@ public unsafe struct FixedBuffer32<T> : IEquatable<FixedBuffer32<T>> where T : u
         }
     }
 
-    public T[] ToArray()
+    public void AddRange(ReadOnlySpan<T> values)
     {
-        if (Count == 0) return Array.Empty<T>();
+        if (Count + values.Length > Capacity)
+        {
+            throw new InvalidOperationException($"Not enough capacity to add range to a fixed buffer.");
+        }
 
         fixed (byte* ptr = _buffer)
         {
-            return new ReadOnlySpan<T>(ptr, Count).ToArray();
+            for (int i = 0; i < values.Length; i++)
+            {
+                Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], values[i]);
+                _count++;
+            }
         }
+    }
+
+    public readonly void ReadInto(Span<T> target)
+    {
+        if (target.Length != Count)
+        {
+            throw new ArgumentException($"Target span length must be equal to the number of elements in the fixed buffer.", nameof(target));
+        }
+
+        fixed (byte* ptr = _buffer)
+        {
+            for (int i = 0; i < Count; i++)
+            {
+                target[i] = Unsafe.ReadUnaligned<T>(ref ptr[i * sizeof(T)]);
+            }
+        }
+    }
+
+    public readonly T[] ToArray()
+    {
+        Span<T> buffer = stackalloc T[Count];
+        ReadInto(buffer);
+        return buffer.ToArray();
     }
 
     public void Clear()
     {
         this = default;
     }
-
-    public readonly bool Equals(FixedBuffer32<T> other)
-    {
-        if (Count != other.Count)
-        {
-            return false;
-        }
-
-        fixed (byte* beg1 = _buffer)
-        {
-            byte* beg2 = other._buffer;
-
-            var span1 = new ReadOnlySpan<byte>(beg1, Count * sizeof(T));
-            var span2 = new ReadOnlySpan<byte>(beg2, other.Count * sizeof(T));
-
-            return span1.SequenceEqual(span2);
-        }
-    }
-
-    public override readonly bool Equals(object? obj)
-    {
-        return obj is FixedBuffer32<T> other && Equals(other);
-    }
-
-    public override readonly int GetHashCode()
-    {
-        fixed (byte* beg = _buffer)
-        {
-            var span = new ReadOnlySpan<byte>(beg, Count * sizeof(T));
-
-            int hash1 = (int)XxHash32.HashToUInt32(span);
-            int hash2 = Count.GetHashCode();
-
-            return hash1 ^ hash2;
-        }
-    }
-
-    public static bool operator ==(in FixedBuffer32<T> left, in FixedBuffer32<T> right) => left.Equals(right);
-    public static bool operator !=(in FixedBuffer32<T> left, in FixedBuffer32<T> right) => !left.Equals(right);
 }
 
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public unsafe struct FixedBuffer64<T> : IEquatable<FixedBuffer64<T>> where T : unmanaged
+public unsafe struct FixedBuffer64<T> : IFixedBuffer<T> where T : unmanaged
 {
     private ushort _count;
     private fixed byte _buffer[64];
@@ -371,10 +400,23 @@ public unsafe struct FixedBuffer64<T> : IEquatable<FixedBuffer64<T>> where T : u
 
     static FixedBuffer64()
     {
-        _ = Binary<T>.Size; // throw exception instantly when trying to use with an incompatible type
+        _ = Binary<T>.Size;
     }
 
-    public void Push(in T value)
+    public readonly T At(int index)
+    {
+        if (index < 0 || index >= Count)
+        {
+            throw new ArgumentOutOfRangeException(nameof(index), $"Cannot access element with index {index}.");
+        }
+
+        fixed (byte* ptr = _buffer)
+        {
+            return Unsafe.ReadUnaligned<T>(ref ptr[index * sizeof(T)]);
+        }
+    }
+
+    public void Add(in T value)
     {
         if (IsFull)
         {
@@ -388,64 +430,55 @@ public unsafe struct FixedBuffer64<T> : IEquatable<FixedBuffer64<T>> where T : u
         }
     }
 
-    public T[] ToArray()
+    public void AddRange(ReadOnlySpan<T> values)
     {
-        if (Count == 0) return Array.Empty<T>();
+        if (Count + values.Length > Capacity)
+        {
+            throw new InvalidOperationException($"Not enough capacity to add range to a fixed buffer.");
+        }
 
         fixed (byte* ptr = _buffer)
         {
-            return new ReadOnlySpan<T>(ptr, Count).ToArray();
+            for (int i = 0; i < values.Length; i++)
+            {
+                Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], values[i]);
+                _count++;
+            }
         }
+    }
+
+    public readonly void ReadInto(Span<T> target)
+    {
+        if (target.Length != Count)
+        {
+            throw new ArgumentException($"Target span length must be equal to the number of elements in the fixed buffer.", nameof(target));
+        }
+
+        fixed (byte* ptr = _buffer)
+        {
+            for (int i = 0; i < Count; i++)
+            {
+                target[i] = Unsafe.ReadUnaligned<T>(ref ptr[i * sizeof(T)]);
+            }
+        }
+    }
+
+    public readonly T[] ToArray()
+    {
+        Span<T> buffer = stackalloc T[Count];
+        ReadInto(buffer);
+        return buffer.ToArray();
     }
 
     public void Clear()
     {
         this = default;
     }
-
-    public readonly bool Equals(FixedBuffer64<T> other)
-    {
-        if (Count != other.Count)
-        {
-            return false;
-        }
-
-        fixed (byte* beg1 = _buffer)
-        {
-            byte* beg2 = other._buffer;
-
-            var span1 = new ReadOnlySpan<byte>(beg1, Count * sizeof(T));
-            var span2 = new ReadOnlySpan<byte>(beg2, other.Count * sizeof(T));
-
-            return span1.SequenceEqual(span2);
-        }
-    }
-
-    public override readonly bool Equals(object? obj)
-    {
-        return obj is FixedBuffer64<T> other && Equals(other);
-    }
-
-    public override readonly int GetHashCode()
-    {
-        fixed (byte* beg = _buffer)
-        {
-            var span = new ReadOnlySpan<byte>(beg, Count * sizeof(T));
-
-            int hash1 = (int)XxHash32.HashToUInt32(span);
-            int hash2 = Count.GetHashCode();
-
-            return hash1 ^ hash2;
-        }
-    }
-
-    public static bool operator ==(in FixedBuffer64<T> left, in FixedBuffer64<T> right) => left.Equals(right);
-    public static bool operator !=(in FixedBuffer64<T> left, in FixedBuffer64<T> right) => !left.Equals(right);
 }
 
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public unsafe struct FixedBuffer128<T> : IEquatable<FixedBuffer128<T>> where T : unmanaged
+public unsafe struct FixedBuffer128<T> : IFixedBuffer<T> where T : unmanaged
 {
     private ushort _count;
     private fixed byte _buffer[128];
@@ -456,10 +489,23 @@ public unsafe struct FixedBuffer128<T> : IEquatable<FixedBuffer128<T>> where T :
 
     static FixedBuffer128()
     {
-        _ = Binary<T>.Size; // throw exception instantly when trying to use with an incompatible type
+        _ = Binary<T>.Size;
     }
 
-    public void Push(in T value)
+    public readonly T At(int index)
+    {
+        if (index < 0 || index >= Count)
+        {
+            throw new ArgumentOutOfRangeException(nameof(index), $"Cannot access element with index {index}.");
+        }
+
+        fixed (byte* ptr = _buffer)
+        {
+            return Unsafe.ReadUnaligned<T>(ref ptr[index * sizeof(T)]);
+        }
+    }
+
+    public void Add(in T value)
     {
         if (IsFull)
         {
@@ -473,64 +519,55 @@ public unsafe struct FixedBuffer128<T> : IEquatable<FixedBuffer128<T>> where T :
         }
     }
 
-    public T[] ToArray()
+    public void AddRange(ReadOnlySpan<T> values)
     {
-        if (Count == 0) return Array.Empty<T>();
+        if (Count + values.Length > Capacity)
+        {
+            throw new InvalidOperationException($"Not enough capacity to add range to a fixed buffer.");
+        }
 
         fixed (byte* ptr = _buffer)
         {
-            return new ReadOnlySpan<T>(ptr, Count).ToArray();
+            for (int i = 0; i < values.Length; i++)
+            {
+                Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], values[i]);
+                _count++;
+            }
         }
+    }
+
+    public readonly void ReadInto(Span<T> target)
+    {
+        if (target.Length != Count)
+        {
+            throw new ArgumentException($"Target span length must be equal to the number of elements in the fixed buffer.", nameof(target));
+        }
+
+        fixed (byte* ptr = _buffer)
+        {
+            for (int i = 0; i < Count; i++)
+            {
+                target[i] = Unsafe.ReadUnaligned<T>(ref ptr[i * sizeof(T)]);
+            }
+        }
+    }
+
+    public readonly T[] ToArray()
+    {
+        Span<T> buffer = stackalloc T[Count];
+        ReadInto(buffer);
+        return buffer.ToArray();
     }
 
     public void Clear()
     {
         this = default;
     }
-
-    public readonly bool Equals(FixedBuffer128<T> other)
-    {
-        if (Count != other.Count)
-        {
-            return false;
-        }
-
-        fixed (byte* beg1 = _buffer)
-        {
-            byte* beg2 = other._buffer;
-
-            var span1 = new ReadOnlySpan<byte>(beg1, Count * sizeof(T));
-            var span2 = new ReadOnlySpan<byte>(beg2, other.Count * sizeof(T));
-
-            return span1.SequenceEqual(span2);
-        }
-    }
-
-    public override readonly bool Equals(object? obj)
-    {
-        return obj is FixedBuffer128<T> other && Equals(other);
-    }
-
-    public override readonly int GetHashCode()
-    {
-        fixed (byte* beg = _buffer)
-        {
-            var span = new ReadOnlySpan<byte>(beg, Count * sizeof(T));
-
-            int hash1 = (int)XxHash32.HashToUInt32(span);
-            int hash2 = Count.GetHashCode();
-
-            return hash1 ^ hash2;
-        }
-    }
-
-    public static bool operator ==(in FixedBuffer128<T> left, in FixedBuffer128<T> right) => left.Equals(right);
-    public static bool operator !=(in FixedBuffer128<T> left, in FixedBuffer128<T> right) => !left.Equals(right);
 }
 
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public unsafe struct FixedBuffer256<T> : IEquatable<FixedBuffer256<T>> where T : unmanaged
+public unsafe struct FixedBuffer256<T> : IFixedBuffer<T> where T : unmanaged
 {
     private ushort _count;
     private fixed byte _buffer[256];
@@ -541,10 +578,23 @@ public unsafe struct FixedBuffer256<T> : IEquatable<FixedBuffer256<T>> where T :
 
     static FixedBuffer256()
     {
-        _ = Binary<T>.Size; // throw exception instantly when trying to use with an incompatible type
+        _ = Binary<T>.Size;
     }
 
-    public void Push(in T value)
+    public readonly T At(int index)
+    {
+        if (index < 0 || index >= Count)
+        {
+            throw new ArgumentOutOfRangeException(nameof(index), $"Cannot access element with index {index}.");
+        }
+
+        fixed (byte* ptr = _buffer)
+        {
+            return Unsafe.ReadUnaligned<T>(ref ptr[index * sizeof(T)]);
+        }
+    }
+
+    public void Add(in T value)
     {
         if (IsFull)
         {
@@ -558,64 +608,55 @@ public unsafe struct FixedBuffer256<T> : IEquatable<FixedBuffer256<T>> where T :
         }
     }
 
-    public T[] ToArray()
+    public void AddRange(ReadOnlySpan<T> values)
     {
-        if (Count == 0) return Array.Empty<T>();
+        if (Count + values.Length > Capacity)
+        {
+            throw new InvalidOperationException($"Not enough capacity to add range to a fixed buffer.");
+        }
 
         fixed (byte* ptr = _buffer)
         {
-            return new ReadOnlySpan<T>(ptr, Count).ToArray();
+            for (int i = 0; i < values.Length; i++)
+            {
+                Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], values[i]);
+                _count++;
+            }
         }
+    }
+
+    public readonly void ReadInto(Span<T> target)
+    {
+        if (target.Length != Count)
+        {
+            throw new ArgumentException($"Target span length must be equal to the number of elements in the fixed buffer.", nameof(target));
+        }
+
+        fixed (byte* ptr = _buffer)
+        {
+            for (int i = 0; i < Count; i++)
+            {
+                target[i] = Unsafe.ReadUnaligned<T>(ref ptr[i * sizeof(T)]);
+            }
+        }
+    }
+
+    public readonly T[] ToArray()
+    {
+        Span<T> buffer = stackalloc T[Count];
+        ReadInto(buffer);
+        return buffer.ToArray();
     }
 
     public void Clear()
     {
         this = default;
     }
-
-    public readonly bool Equals(FixedBuffer256<T> other)
-    {
-        if (Count != other.Count)
-        {
-            return false;
-        }
-
-        fixed (byte* beg1 = _buffer)
-        {
-            byte* beg2 = other._buffer;
-
-            var span1 = new ReadOnlySpan<byte>(beg1, Count * sizeof(T));
-            var span2 = new ReadOnlySpan<byte>(beg2, other.Count * sizeof(T));
-
-            return span1.SequenceEqual(span2);
-        }
-    }
-
-    public override readonly bool Equals(object? obj)
-    {
-        return obj is FixedBuffer256<T> other && Equals(other);
-    }
-
-    public override readonly int GetHashCode()
-    {
-        fixed (byte* beg = _buffer)
-        {
-            var span = new ReadOnlySpan<byte>(beg, Count * sizeof(T));
-
-            int hash1 = (int)XxHash32.HashToUInt32(span);
-            int hash2 = Count.GetHashCode();
-
-            return hash1 ^ hash2;
-        }
-    }
-
-    public static bool operator ==(in FixedBuffer256<T> left, in FixedBuffer256<T> right) => left.Equals(right);
-    public static bool operator !=(in FixedBuffer256<T> left, in FixedBuffer256<T> right) => !left.Equals(right);
 }
 
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public unsafe struct FixedBuffer512<T> : IEquatable<FixedBuffer512<T>> where T : unmanaged
+public unsafe struct FixedBuffer512<T> : IFixedBuffer<T> where T : unmanaged
 {
     private ushort _count;
     private fixed byte _buffer[512];
@@ -626,10 +667,23 @@ public unsafe struct FixedBuffer512<T> : IEquatable<FixedBuffer512<T>> where T :
 
     static FixedBuffer512()
     {
-        _ = Binary<T>.Size; // throw exception instantly when trying to use with an incompatible type
+        _ = Binary<T>.Size;
     }
 
-    public void Push(in T value)
+    public readonly T At(int index)
+    {
+        if (index < 0 || index >= Count)
+        {
+            throw new ArgumentOutOfRangeException(nameof(index), $"Cannot access element with index {index}.");
+        }
+
+        fixed (byte* ptr = _buffer)
+        {
+            return Unsafe.ReadUnaligned<T>(ref ptr[index * sizeof(T)]);
+        }
+    }
+
+    public void Add(in T value)
     {
         if (IsFull)
         {
@@ -643,64 +697,55 @@ public unsafe struct FixedBuffer512<T> : IEquatable<FixedBuffer512<T>> where T :
         }
     }
 
-    public T[] ToArray()
+    public void AddRange(ReadOnlySpan<T> values)
     {
-        if (Count == 0) return Array.Empty<T>();
+        if (Count + values.Length > Capacity)
+        {
+            throw new InvalidOperationException($"Not enough capacity to add range to a fixed buffer.");
+        }
 
         fixed (byte* ptr = _buffer)
         {
-            return new ReadOnlySpan<T>(ptr, Count).ToArray();
+            for (int i = 0; i < values.Length; i++)
+            {
+                Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], values[i]);
+                _count++;
+            }
         }
+    }
+
+    public readonly void ReadInto(Span<T> target)
+    {
+        if (target.Length != Count)
+        {
+            throw new ArgumentException($"Target span length must be equal to the number of elements in the fixed buffer.", nameof(target));
+        }
+
+        fixed (byte* ptr = _buffer)
+        {
+            for (int i = 0; i < Count; i++)
+            {
+                target[i] = Unsafe.ReadUnaligned<T>(ref ptr[i * sizeof(T)]);
+            }
+        }
+    }
+
+    public readonly T[] ToArray()
+    {
+        Span<T> buffer = stackalloc T[Count];
+        ReadInto(buffer);
+        return buffer.ToArray();
     }
 
     public void Clear()
     {
         this = default;
     }
-
-    public readonly bool Equals(FixedBuffer512<T> other)
-    {
-        if (Count != other.Count)
-        {
-            return false;
-        }
-
-        fixed (byte* beg1 = _buffer)
-        {
-            byte* beg2 = other._buffer;
-
-            var span1 = new ReadOnlySpan<byte>(beg1, Count * sizeof(T));
-            var span2 = new ReadOnlySpan<byte>(beg2, other.Count * sizeof(T));
-
-            return span1.SequenceEqual(span2);
-        }
-    }
-
-    public override readonly bool Equals(object? obj)
-    {
-        return obj is FixedBuffer512<T> other && Equals(other);
-    }
-
-    public override readonly int GetHashCode()
-    {
-        fixed (byte* beg = _buffer)
-        {
-            var span = new ReadOnlySpan<byte>(beg, Count * sizeof(T));
-
-            int hash1 = (int)XxHash32.HashToUInt32(span);
-            int hash2 = Count.GetHashCode();
-
-            return hash1 ^ hash2;
-        }
-    }
-
-    public static bool operator ==(in FixedBuffer512<T> left, in FixedBuffer512<T> right) => left.Equals(right);
-    public static bool operator !=(in FixedBuffer512<T> left, in FixedBuffer512<T> right) => !left.Equals(right);
 }
 
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public unsafe struct FixedBuffer1024<T> : IEquatable<FixedBuffer1024<T>> where T : unmanaged
+public unsafe struct FixedBuffer1024<T> : IFixedBuffer<T> where T : unmanaged
 {
     private ushort _count;
     private fixed byte _buffer[1024];
@@ -711,10 +756,23 @@ public unsafe struct FixedBuffer1024<T> : IEquatable<FixedBuffer1024<T>> where T
 
     static FixedBuffer1024()
     {
-        _ = Binary<T>.Size; // throw exception instantly when trying to use with an incompatible type
+        _ = Binary<T>.Size;
     }
 
-    public void Push(in T value)
+    public readonly T At(int index)
+    {
+        if (index < 0 || index >= Count)
+        {
+            throw new ArgumentOutOfRangeException(nameof(index), $"Cannot access element with index {index}.");
+        }
+
+        fixed (byte* ptr = _buffer)
+        {
+            return Unsafe.ReadUnaligned<T>(ref ptr[index * sizeof(T)]);
+        }
+    }
+
+    public void Add(in T value)
     {
         if (IsFull)
         {
@@ -728,484 +786,50 @@ public unsafe struct FixedBuffer1024<T> : IEquatable<FixedBuffer1024<T>> where T
         }
     }
 
-    public T[] ToArray()
+    public void AddRange(ReadOnlySpan<T> values)
     {
-        if (Count == 0) return Array.Empty<T>();
+        if (Count + values.Length > Capacity)
+        {
+            throw new InvalidOperationException($"Not enough capacity to add range to a fixed buffer.");
+        }
 
         fixed (byte* ptr = _buffer)
         {
-            return new ReadOnlySpan<T>(ptr, Count).ToArray();
+            for (int i = 0; i < values.Length; i++)
+            {
+                Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], values[i]);
+                _count++;
+            }
         }
+    }
+
+    public readonly void ReadInto(Span<T> target)
+    {
+        if (target.Length != Count)
+        {
+            throw new ArgumentException($"Target span length must be equal to the number of elements in the fixed buffer.", nameof(target));
+        }
+
+        fixed (byte* ptr = _buffer)
+        {
+            for (int i = 0; i < Count; i++)
+            {
+                target[i] = Unsafe.ReadUnaligned<T>(ref ptr[i * sizeof(T)]);
+            }
+        }
+    }
+
+    public readonly T[] ToArray()
+    {
+        Span<T> buffer = stackalloc T[Count];
+        ReadInto(buffer);
+        return buffer.ToArray();
     }
 
     public void Clear()
     {
         this = default;
     }
-
-    public readonly bool Equals(FixedBuffer1024<T> other)
-    {
-        if (Count != other.Count)
-        {
-            return false;
-        }
-
-        fixed (byte* beg1 = _buffer)
-        {
-            byte* beg2 = other._buffer;
-
-            var span1 = new ReadOnlySpan<byte>(beg1, Count * sizeof(T));
-            var span2 = new ReadOnlySpan<byte>(beg2, other.Count * sizeof(T));
-
-            return span1.SequenceEqual(span2);
-        }
-    }
-
-    public override readonly bool Equals(object? obj)
-    {
-        return obj is FixedBuffer1024<T> other && Equals(other);
-    }
-
-    public override readonly int GetHashCode()
-    {
-        fixed (byte* beg = _buffer)
-        {
-            var span = new ReadOnlySpan<byte>(beg, Count * sizeof(T));
-
-            int hash1 = (int)XxHash32.HashToUInt32(span);
-            int hash2 = Count.GetHashCode();
-
-            return hash1 ^ hash2;
-        }
-    }
-
-    public static bool operator ==(in FixedBuffer1024<T> left, in FixedBuffer1024<T> right) => left.Equals(right);
-    public static bool operator !=(in FixedBuffer1024<T> left, in FixedBuffer1024<T> right) => !left.Equals(right);
-}
-
-
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
-public unsafe struct FixedBuffer2048<T> : IEquatable<FixedBuffer2048<T>> where T : unmanaged
-{
-    private ushort _count;
-    private fixed byte _buffer[2048];
-
-    public readonly int Count => Math.Min(_count, Capacity);
-    public readonly int Capacity => (ushort)(2048 / sizeof(T));
-    public readonly bool IsFull => Count == Capacity;
-
-    static FixedBuffer2048()
-    {
-        _ = Binary<T>.Size; // throw exception instantly when trying to use with an incompatible type
-    }
-
-    public void Push(in T value)
-    {
-        if (IsFull)
-        {
-            throw new InvalidOperationException($"Fixed buffer is full.");
-        }
-
-        fixed (byte* ptr = _buffer)
-        {
-            Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], value);
-            _count++;
-        }
-    }
-
-    public T[] ToArray()
-    {
-        if (Count == 0) return Array.Empty<T>();
-
-        fixed (byte* ptr = _buffer)
-        {
-            return new ReadOnlySpan<T>(ptr, Count).ToArray();
-        }
-    }
-
-    public void Clear()
-    {
-        this = default;
-    }
-
-    public readonly bool Equals(FixedBuffer2048<T> other)
-    {
-        if (Count != other.Count)
-        {
-            return false;
-        }
-
-        fixed (byte* beg1 = _buffer)
-        {
-            byte* beg2 = other._buffer;
-
-            var span1 = new ReadOnlySpan<byte>(beg1, Count * sizeof(T));
-            var span2 = new ReadOnlySpan<byte>(beg2, other.Count * sizeof(T));
-
-            return span1.SequenceEqual(span2);
-        }
-    }
-
-    public override readonly bool Equals(object? obj)
-    {
-        return obj is FixedBuffer2048<T> other && Equals(other);
-    }
-
-    public override readonly int GetHashCode()
-    {
-        fixed (byte* beg = _buffer)
-        {
-            var span = new ReadOnlySpan<byte>(beg, Count * sizeof(T));
-
-            int hash1 = (int)XxHash32.HashToUInt32(span);
-            int hash2 = Count.GetHashCode();
-
-            return hash1 ^ hash2;
-        }
-    }
-
-    public static bool operator ==(in FixedBuffer2048<T> left, in FixedBuffer2048<T> right) => left.Equals(right);
-    public static bool operator !=(in FixedBuffer2048<T> left, in FixedBuffer2048<T> right) => !left.Equals(right);
-}
-
-
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
-public unsafe struct FixedBuffer4096<T> : IEquatable<FixedBuffer4096<T>> where T : unmanaged
-{
-    private ushort _count;
-    private fixed byte _buffer[4096];
-
-    public readonly int Count => Math.Min(_count, Capacity);
-    public readonly int Capacity => (ushort)(4096 / sizeof(T));
-    public readonly bool IsFull => Count == Capacity;
-
-    static FixedBuffer4096()
-    {
-        _ = Binary<T>.Size; // throw exception instantly when trying to use with an incompatible type
-    }
-
-    public void Push(in T value)
-    {
-        if (IsFull)
-        {
-            throw new InvalidOperationException($"Fixed buffer is full.");
-        }
-
-        fixed (byte* ptr = _buffer)
-        {
-            Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], value);
-            _count++;
-        }
-    }
-
-    public T[] ToArray()
-    {
-        if (Count == 0) return Array.Empty<T>();
-
-        fixed (byte* ptr = _buffer)
-        {
-            return new ReadOnlySpan<T>(ptr, Count).ToArray();
-        }
-    }
-
-    public void Clear()
-    {
-        this = default;
-    }
-
-    public readonly bool Equals(FixedBuffer4096<T> other)
-    {
-        if (Count != other.Count)
-        {
-            return false;
-        }
-
-        fixed (byte* beg1 = _buffer)
-        {
-            byte* beg2 = other._buffer;
-
-            var span1 = new ReadOnlySpan<byte>(beg1, Count * sizeof(T));
-            var span2 = new ReadOnlySpan<byte>(beg2, other.Count * sizeof(T));
-
-            return span1.SequenceEqual(span2);
-        }
-    }
-
-    public override readonly bool Equals(object? obj)
-    {
-        return obj is FixedBuffer4096<T> other && Equals(other);
-    }
-
-    public override readonly int GetHashCode()
-    {
-        fixed (byte* beg = _buffer)
-        {
-            var span = new ReadOnlySpan<byte>(beg, Count * sizeof(T));
-
-            int hash1 = (int)XxHash32.HashToUInt32(span);
-            int hash2 = Count.GetHashCode();
-
-            return hash1 ^ hash2;
-        }
-    }
-
-    public static bool operator ==(in FixedBuffer4096<T> left, in FixedBuffer4096<T> right) => left.Equals(right);
-    public static bool operator !=(in FixedBuffer4096<T> left, in FixedBuffer4096<T> right) => !left.Equals(right);
-}
-
-
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
-public unsafe struct FixedBuffer8192<T> : IEquatable<FixedBuffer8192<T>> where T : unmanaged
-{
-    private ushort _count;
-    private fixed byte _buffer[8192];
-
-    public readonly int Count => Math.Min(_count, Capacity);
-    public readonly int Capacity => (ushort)(8192 / sizeof(T));
-    public readonly bool IsFull => Count == Capacity;
-
-    static FixedBuffer8192()
-    {
-        _ = Binary<T>.Size; // throw exception instantly when trying to use with an incompatible type
-    }
-
-    public void Push(in T value)
-    {
-        if (IsFull)
-        {
-            throw new InvalidOperationException($"Fixed buffer is full.");
-        }
-
-        fixed (byte* ptr = _buffer)
-        {
-            Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], value);
-            _count++;
-        }
-    }
-
-    public T[] ToArray()
-    {
-        if (Count == 0) return Array.Empty<T>();
-
-        fixed (byte* ptr = _buffer)
-        {
-            return new ReadOnlySpan<T>(ptr, Count).ToArray();
-        }
-    }
-
-    public void Clear()
-    {
-        this = default;
-    }
-
-    public readonly bool Equals(FixedBuffer8192<T> other)
-    {
-        if (Count != other.Count)
-        {
-            return false;
-        }
-
-        fixed (byte* beg1 = _buffer)
-        {
-            byte* beg2 = other._buffer;
-
-            var span1 = new ReadOnlySpan<byte>(beg1, Count * sizeof(T));
-            var span2 = new ReadOnlySpan<byte>(beg2, other.Count * sizeof(T));
-
-            return span1.SequenceEqual(span2);
-        }
-    }
-
-    public override readonly bool Equals(object? obj)
-    {
-        return obj is FixedBuffer8192<T> other && Equals(other);
-    }
-
-    public override readonly int GetHashCode()
-    {
-        fixed (byte* beg = _buffer)
-        {
-            var span = new ReadOnlySpan<byte>(beg, Count * sizeof(T));
-
-            int hash1 = (int)XxHash32.HashToUInt32(span);
-            int hash2 = Count.GetHashCode();
-
-            return hash1 ^ hash2;
-        }
-    }
-
-    public static bool operator ==(in FixedBuffer8192<T> left, in FixedBuffer8192<T> right) => left.Equals(right);
-    public static bool operator !=(in FixedBuffer8192<T> left, in FixedBuffer8192<T> right) => !left.Equals(right);
-}
-
-
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
-public unsafe struct FixedBuffer16384<T> : IEquatable<FixedBuffer16384<T>> where T : unmanaged
-{
-    private ushort _count;
-    private fixed byte _buffer[16384];
-
-    public readonly int Count => Math.Min(_count, Capacity);
-    public readonly int Capacity => (ushort)(16384 / sizeof(T));
-    public readonly bool IsFull => Count == Capacity;
-
-    static FixedBuffer16384()
-    {
-        _ = Binary<T>.Size; // throw exception instantly when trying to use with an incompatible type
-    }
-
-    public void Push(in T value)
-    {
-        if (IsFull)
-        {
-            throw new InvalidOperationException($"Fixed buffer is full.");
-        }
-
-        fixed (byte* ptr = _buffer)
-        {
-            Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], value);
-            _count++;
-        }
-    }
-
-    public T[] ToArray()
-    {
-        if (Count == 0) return Array.Empty<T>();
-
-        fixed (byte* ptr = _buffer)
-        {
-            return new ReadOnlySpan<T>(ptr, Count).ToArray();
-        }
-    }
-
-    public void Clear()
-    {
-        this = default;
-    }
-
-    public readonly bool Equals(FixedBuffer16384<T> other)
-    {
-        if (Count != other.Count)
-        {
-            return false;
-        }
-
-        fixed (byte* beg1 = _buffer)
-        {
-            byte* beg2 = other._buffer;
-
-            var span1 = new ReadOnlySpan<byte>(beg1, Count * sizeof(T));
-            var span2 = new ReadOnlySpan<byte>(beg2, other.Count * sizeof(T));
-
-            return span1.SequenceEqual(span2);
-        }
-    }
-
-    public override readonly bool Equals(object? obj)
-    {
-        return obj is FixedBuffer16384<T> other && Equals(other);
-    }
-
-    public override readonly int GetHashCode()
-    {
-        fixed (byte* beg = _buffer)
-        {
-            var span = new ReadOnlySpan<byte>(beg, Count * sizeof(T));
-
-            int hash1 = (int)XxHash32.HashToUInt32(span);
-            int hash2 = Count.GetHashCode();
-
-            return hash1 ^ hash2;
-        }
-    }
-
-    public static bool operator ==(in FixedBuffer16384<T> left, in FixedBuffer16384<T> right) => left.Equals(right);
-    public static bool operator !=(in FixedBuffer16384<T> left, in FixedBuffer16384<T> right) => !left.Equals(right);
-}
-
-
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
-public unsafe struct FixedBuffer32768<T> : IEquatable<FixedBuffer32768<T>> where T : unmanaged
-{
-    private ushort _count;
-    private fixed byte _buffer[32768];
-
-    public readonly int Count => Math.Min(_count, Capacity);
-    public readonly int Capacity => (ushort)(32768 / sizeof(T));
-    public readonly bool IsFull => Count == Capacity;
-
-    static FixedBuffer32768()
-    {
-        _ = Binary<T>.Size; // throw exception instantly when trying to use with an incompatible type
-    }
-
-    public void Push(in T value)
-    {
-        if (IsFull)
-        {
-            throw new InvalidOperationException($"Fixed buffer is full.");
-        }
-
-        fixed (byte* ptr = _buffer)
-        {
-            Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], value);
-            _count++;
-        }
-    }
-
-    public T[] ToArray()
-    {
-        if (Count == 0) return Array.Empty<T>();
-
-        fixed (byte* ptr = _buffer)
-        {
-            return new ReadOnlySpan<T>(ptr, Count).ToArray();
-        }
-    }
-
-    public void Clear()
-    {
-        this = default;
-    }
-
-    public readonly bool Equals(FixedBuffer32768<T> other)
-    {
-        if (Count != other.Count)
-        {
-            return false;
-        }
-
-        fixed (byte* beg1 = _buffer)
-        {
-            byte* beg2 = other._buffer;
-
-            var span1 = new ReadOnlySpan<byte>(beg1, Count * sizeof(T));
-            var span2 = new ReadOnlySpan<byte>(beg2, other.Count * sizeof(T));
-
-            return span1.SequenceEqual(span2);
-        }
-    }
-
-    public override readonly bool Equals(object? obj)
-    {
-        return obj is FixedBuffer32768<T> other && Equals(other);
-    }
-
-    public override readonly int GetHashCode()
-    {
-        fixed (byte* beg = _buffer)
-        {
-            var span = new ReadOnlySpan<byte>(beg, Count * sizeof(T));
-
-            int hash1 = (int)XxHash32.HashToUInt32(span);
-            int hash2 = Count.GetHashCode();
-
-            return hash1 ^ hash2;
-        }
-    }
-
-    public static bool operator ==(in FixedBuffer32768<T> left, in FixedBuffer32768<T> right) => left.Equals(right);
-    public static bool operator !=(in FixedBuffer32768<T> left, in FixedBuffer32768<T> right) => !left.Equals(right);
 }
 
 #endregion

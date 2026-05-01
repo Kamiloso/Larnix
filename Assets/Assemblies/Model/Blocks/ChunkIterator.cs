@@ -2,31 +2,40 @@
 using System;
 using Larnix.Core.Vectors;
 using Larnix.Core.Utils;
+using Larnix.Model.Utils;
 
-namespace Larnix.Model.Utils;
+namespace Larnix.Model.Blocks;
 
 public enum IterationOrder { XY, YX, Random }
+
 public static class ChunkIterator
 {
-    private const int CHUNK_SIZE = BlockUtils.CHUNK_SIZE;
-    public static T[,] Array2D<T>() => new T[CHUNK_SIZE, CHUNK_SIZE];
+    private const int C_16 = BlockUtils.CHUNK_SIZE;
+
+    public static T[,] Array16x16<T>(Func<T>? fill = null)
+    {
+        T[,] array = new T[C_16, C_16];
+
+        if (fill is null)
+        {
+            return array;
+        }
+
+        Iterate((x, y) => array[x, y] = fill.Invoke());
+        return array;
+    }
 
     public static void Iterate(Action<int, int> action, IterationOrder order = IterationOrder.XY)
     {
-        switch (order)
+        Action<Action<int, int>> iteration = order switch
         {
-            case IterationOrder.XY:
-                IterateXY(action);
-                break;
+            IterationOrder.XY => IterateXY,
+            IterationOrder.YX => IterateYX,
+            IterationOrder.Random => IterateRandom,
+            _ => throw new InvalidOperationException("Invalid iteration order: " + order)
+        };
 
-            case IterationOrder.YX:
-                IterateYX(action);
-                break;
-
-            case IterationOrder.Random:
-                IterateRandom(action);
-                break;
-        }
+        iteration.Invoke(action);
     }
 
     public static int Compare(Vec2Int a, Vec2Int b, IterationOrder order, bool suppressException = false)
@@ -47,8 +56,8 @@ public static class ChunkIterator
 
     private static void IterateXY(Action<int, int> action)
     {
-        for (int x = 0; x < CHUNK_SIZE; x++)
-            for (int y = 0; y < CHUNK_SIZE; y++)
+        for (int x = 0; x < C_16; x++)
+            for (int y = 0; y < C_16; y++)
             {
                 action(x, y);
             }
@@ -56,8 +65,8 @@ public static class ChunkIterator
 
     private static void IterateYX(Action<int, int> action)
     {
-        for (int y = 0; y < CHUNK_SIZE; y++)
-            for (int x = 0; x < CHUNK_SIZE; x++)
+        for (int y = 0; y < C_16; y++)
+            for (int x = 0; x < C_16; x++)
             {
                 action(x, y);
             }
@@ -65,7 +74,7 @@ public static class ChunkIterator
 
     private static void IterateRandom(Action<int, int> action)
     {
-        Span<int> indexes = stackalloc int[CHUNK_SIZE * CHUNK_SIZE];
+        Span<int> indexes = stackalloc int[C_16 * C_16];
         for (int i = 0; i < indexes.Length; i++)
         {
             indexes[i] = i;
@@ -82,7 +91,7 @@ public static class ChunkIterator
 
         foreach (int index in indexes)
         {
-            action(index % CHUNK_SIZE, index / CHUNK_SIZE);
+            action.Invoke(index % C_16, index / C_16);
         }
     }
 }

@@ -1,37 +1,34 @@
 #nullable enable
 using Larnix.Model.Utils;
 using Larnix.Core.Vectors;
-using Larnix.Socket.Packets;
 using Larnix.Model.Blocks.Structs;
-using Larnix.Core.Utils;
 using Larnix.Core.Serialization;
+using Larnix.Socket.Payload;
+using System.Runtime.InteropServices;
 
 namespace Larnix.Server.Packets;
 
-public sealed class BlockChange : Payload_Legacy
+[CmdId(1)]
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public readonly struct BlockChange : ISanitizable<BlockChange>
 {
-    private static int SIZE => Binary<Vec2Int>.Size + Binary<BlockHeader2>.Size + sizeof(long) + sizeof(byte);
+    public Vec2Int POS { get; }
+    public BlockHeader1 Item { get; }
+    public BlockHeader1 Tool { get; }
+    public long Operation { get; }
+    public boolsrl IsFront { get; }
 
-    public Vec2Int BlockPosition => Binary<Vec2Int>.Deserialize(Bytes, 0);
-    public BlockHeader1 Item => Binary<BlockHeader2>.Deserialize(Bytes, 8).Front;
-    public BlockHeader1 Tool => Binary<BlockHeader2>.Deserialize(Bytes, 8).Back;
-    public long Operation => Binary<long>.Deserialize(Bytes, 13);
-    public bool Front => (Bytes[21] & 0b1) != 0;
-
-    public BlockChange(Vec2Int blockPosition, BlockHeader1 item, BlockHeader1 tool, long operation, bool front, byte code = 0)
+    public BlockChange(Vec2Int POS_, BlockHeader1 item, BlockHeader1 tool, long operation, bool front)
     {
-        InitializePayload(ArrayUtils.MegaConcat(
-            Binary<Vec2Int>.Serialize(blockPosition),
-            Binary<BlockHeader2>.Serialize(new BlockHeader2(item, tool)),
-            Binary<long>.Serialize(operation),
-            new byte[] { (byte)(front ? 0b1 : 0b0) }
-            ), code);
+        POS = LarnixSanitizer.ToWorldPOS(POS_);
+        Item = Sanitizer.Filter(item);
+        Tool = Sanitizer.Filter(tool);
+        Operation = Sanitizer.Filter(operation);
+        IsFront = Sanitizer.Filter(front);
     }
 
-    protected override bool IsValid()
+    public BlockChange Sanitize()
     {
-        return Bytes.Length == SIZE &&
-            BlockPosition.x >= BlockUtils.MIN_BLOCK && BlockPosition.x <= BlockUtils.MAX_BLOCK &&
-            BlockPosition.y >= BlockUtils.MIN_BLOCK && BlockPosition.y <= BlockUtils.MAX_BLOCK;
+        return new BlockChange(POS, Item, Tool, Operation, IsFront);
     }
 }

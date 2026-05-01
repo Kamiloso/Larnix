@@ -1,21 +1,18 @@
 #nullable enable
 using Larnix.Core.Serialization;
-using Larnix.Socket.Payload;
 using System.Runtime.InteropServices;
 
 namespace Larnix.Socket.Payload.Packets;
 
 [CmdId(-7)]
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-internal readonly record struct A_LoginTry : ISanitizable<A_LoginTry>
+internal readonly struct A_LoginTry : ISanitizable<A_LoginTry>
 {
-    private readonly byte _success;
+    public boolsrl Success { get; }
 
-    public bool Success => _success != 0;
-
-    public A_LoginTry(bool success)
+    public A_LoginTry(boolsrl success)
     {
-        _success = (byte)(success ? 1 : 0);
+        Success = Sanitizer.Filter(success);
     }
 
     public A_LoginTry Sanitize()

@@ -1,34 +1,40 @@
 #nullable enable
 using Larnix.Core.Serialization;
 using Larnix.Socket.Payload.Structs;
+using Larnix.Socket.Tools;
 using System.Runtime.InteropServices;
 
 namespace Larnix.Socket.Payload.Packets;
 
 [CmdId(-6)]
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-internal readonly record struct P_LoginTry : ISanitizable<P_LoginTry>
+internal readonly struct P_LoginTry : ISanitizable<P_LoginTry>
 {
-    private readonly Credentials _credentials;
-    private readonly byte _hasNewPassword;
-    private readonly FixedString64 _newPassword;
+    public Credentials Credentials { get; }
+    public FixedString64 NewPassword { get; }
+    public boolsrl IsPasswordChange { get; }
 
     private readonly byte _padding = 0xFF; // prevent null-trimming optimizations at the end
 
-    public Credentials Credentials => _credentials;
-    public FixedString64? NewPassword => _hasNewPassword != 0 ? _newPassword : null;
-
-    public bool IsPasswordChangeRequest() => NewPassword.HasValue;
-
-    public P_LoginTry(Credentials credentials, in FixedString64? newPassword = null)
+    private P_LoginTry(Credentials credentials, in FixedString64 newPassword, boolsrl isPasswordChange)
     {
-        _credentials = credentials.Sanitize();
-        _hasNewPassword = (byte)(newPassword.HasValue ? 1 : 0);
-        _newPassword = newPassword ?? new FixedString64();
+        Credentials = Sanitizer.Filter(credentials);
+        NewPassword = SocketSanitizer.ToGoodPassword(newPassword);
+        IsPasswordChange = Sanitizer.Filter(isPasswordChange);
+    }
+
+    public static P_LoginTry AsLogin(in Credentials credentials)
+    {
+        return new P_LoginTry(credentials, default, false);
+    }
+
+    public static P_LoginTry AsPasswordChange(in Credentials credentials, in FixedString64 newPassword)
+    {
+        return new P_LoginTry(credentials, newPassword, true);
     }
 
     public P_LoginTry Sanitize()
     {
-        return new P_LoginTry(Credentials, NewPassword);
+        return new P_LoginTry(Credentials, NewPassword, IsPasswordChange);
     }
 }

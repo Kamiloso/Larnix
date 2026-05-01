@@ -1,17 +1,19 @@
 #nullable enable
-using Larnix.Core;
 using Larnix.Core.Serialization;
 using Larnix.Core.Utils;
 using Larnix.Model.Entities.Structs;
 using Larnix.Server.Packets.Structs;
-using Larnix.Socket.Packets;
+using Larnix.Socket.Payload;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace Larnix.Server.Packets;
 
-public sealed class EntityBroadcast : Payload_Legacy
+[CmdId(0x0C)]
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public readonly struct EntityBroadcast
 {
     private static int HEADER_SIZE => sizeof(uint) + sizeof(ushort) + sizeof(ushort);
     private static int ENTRY_A_SIZE => sizeof(ulong) + Binary<EntityHeaderCompressed>.Size; // entity transforms entry

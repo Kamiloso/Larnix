@@ -1,7 +1,6 @@
 #nullable enable
 using Larnix.Core.Serialization;
-using Larnix.Model;
-using Larnix.Model.Utils;
+using Larnix.Socket.Tools;
 using System.Runtime.InteropServices;
 
 namespace Larnix.Socket.Payload.Structs;
@@ -21,16 +20,21 @@ internal readonly record struct Credentials : ISanitizable<Credentials>
 
     public Credentials(in FixedString32 nickname, in FixedString64 password, long serverSecret, long challengeId, long timestamp, long runId)
     {
-        Nickname = Validation.IsGoodNickname(nickname) ? nickname : new FixedString32(GameInfo.ReservedNickname);
-        Password = Validation.IsGoodPassword(password) ? password : new FixedString64(GameInfo.ReservedPassword);
-        ServerSecret = serverSecret;
-        ChallengeId = challengeId;
-        Timestamp = timestamp;
-        RunId = runId;
+        Nickname = SocketSanitizer.ToGoodNickname(nickname);
+        Password = SocketSanitizer.ToGoodPassword(password);
+        ServerSecret = Sanitizer.Filter(serverSecret);
+        ChallengeId = Sanitizer.Filter(challengeId);
+        Timestamp = Sanitizer.Filter(timestamp);
+        RunId = Sanitizer.Filter(runId);
     }
 
     public Credentials Sanitize()
     {
         return new Credentials(Nickname, Password, ServerSecret, ChallengeId, Timestamp, RunId);
+    }
+
+    public (FixedString32 nickname, FixedString64 password, long challengeId) Extract()
+    {
+        return (Nickname, Password, ChallengeId);
     }
 }
