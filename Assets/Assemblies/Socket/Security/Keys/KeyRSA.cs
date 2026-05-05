@@ -5,8 +5,8 @@ using Org.BouncyCastle.Crypto.Generators;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Security;
 using Larnix.Core.Utils;
-using Larnix.Socket.Server.Utility;
 using Larnix.Socket.Payload.Structs;
+using Larnix.Socket.Server.Interfaces;
 
 namespace Larnix.Socket.Security.Keys;
 

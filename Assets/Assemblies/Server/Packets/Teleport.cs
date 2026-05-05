@@ -6,15 +6,15 @@ using System.Runtime.InteropServices;
 
 namespace Larnix.Server.Packets;
 
-[CmdId(0x06)]
+[CmdId(12)]
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct Teleport : ISanitizable<Teleport>
+public readonly struct Teleport : ISanitizable<Teleport>
 {
     public Vec2 Position { get; }
 
     public Teleport(Vec2 position)
     {
-        Position = position.Sanitize();
+        Position = Sanitizer.Filter(position);
     }
 
     public Teleport Sanitize()

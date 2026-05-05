@@ -1,28 +1,35 @@
 #nullable enable
 using Larnix.Core;
-using Larnix.Model;
+using Larnix.Server.Data;
+using Larnix.Server.Transmission;
 using Larnix.Socket.Payload;
 using Larnix.Socket.Server;
 using System;
-using System.IO;
+using System.Threading.Tasks;
+using Larnix.Socket.Server.Interfaces;
+using Larnix.Core.Serialization;
+using Larnix.Socket.Server.Utility;
+using RunSuggestions = Larnix.Server.ServerRunner.RunSuggestions;
+using Larnix.Model;
 
 namespace Larnix.Server;
 
-internal interface IServer
+internal interface IServer : ITickable, IDisposable
 {
-    ServerType ServerType { get; }
     ushort Port { get; }
     string LocalAddress { get; }
     string Authcode { get; }
-    string WorldPath { get; }
-    string SocketPath { get; }
-
-    void PrintHelloToConsole();
+    ushort PlayerCount { get; }
+    ushort MaxPlayers { get; }
 
     void Send<T>(string nickname, T payload) where T : unmanaged;
     void Broadcast<T>(T payload) where T : unmanaged;
     void SendUnreliable<T>(string nickname, T payload) where T : unmanaged;
     void BroadcastUnreliable<T>(T payload) where T : unmanaged;
+    void KickRequest(string nickname);
+
+    void OnConnected(ConnectedHandler execute);
+    void OnDisconnected(DisconnectedHandler execute);
     void OnReceive<T>(CmdSenderHandler<T>? execute) where T : unmanaged;
 
     void Close();
@@ -30,46 +37,82 @@ internal interface IServer
 
 internal class Server : IServer
 {
-    public ServerType ServerType { get; }
-    public string WorldPath { get; }
-    private Action CloseServer { get; }
+    public ushort Port => _quickServer.Port;
+    public string LocalAddress => $"localhost:{Port}";
+    public string Authcode => _quickServer.Authcode;
+    public ushort PlayerCount => _quickServer.PlayerCount;
+    public ushort MaxPlayers => _quickServer.MaxPlayers;
 
-    public ushort Port => QuickServer.Settings.Port;
-    public string LocalAddress => "localhost:" + Port;
-    public string Authcode => QuickServer.Authcode;
-    public string SocketPath => Path.Combine(WorldPath, "Socket");
+    private ServerConfig Config => GlobRef.Get<ServerConfig>();
+    private IServerInfo ServerInfo => GlobRef.Get<IServerInfo>();
+    private IWorldMetaManager WorldMetaManager => GlobRef.Get<IWorldMetaManager>();
 
-    private QuickServer QuickServer => GlobRef.Get<QuickServer>();
+    private readonly QuickServer _quickServer;
+    private readonly Receiver _receiver;
 
-    public Server(ServerType serverType, string worldPath, Action closeServer)
+    private readonly RunSuggestions _suggestions;
+    private readonly Action _closeServer;
+
+    public Server(RunSuggestions suggestions, Action closeServer, out Task<string?>? relayTask)
     {
-        ServerType = serverType;
-        WorldPath = worldPath;
-        CloseServer = closeServer;
+        _suggestions = suggestions;
+        _closeServer = closeServer;
+
+        Task<QuickServer> loadingServer = QuickServer.CreateServerAsync(
+            new QuickSettings(
+                port: Config.Port,
+                maxPlayers: Config.MaxPlayers,
+                isLoopback: ServerInfo.Type == ServerType.Local,
+                enableRegister: Config.Network_AllowRegistration,
+                motd: new FixedString256(Config.Motd),
+                hostUser: WorldMetaManager.HostNickname,
+                version: GameInfo.Version,
+                interfaces: new QuickSettings.InterfacesStruct(
+                    SecretRepository: GlobRef.Get<IValueRepository>(),
+                    UserRepository: GlobRef.Get<IUserRepository>(),
+                    PasswordHasher: GlobRef.Get<IPasswordHasher>(),
+                    BanProvider: GlobRef.Get<IBanProvider>()
+                    ),
+                security: null, // TODO: add configuration
+                relayAddress: suggestions.RelayAddress
+                ));
+
+        _quickServer = loadingServer.Result; // sync is temporary, for simplicity
+        _receiver = new Receiver();
+
+        relayTask = EstablishRelayTask(suggestions.RelayAddress);
     }
 
-    public void PrintHelloToConsole()
+    private Task<string?>? EstablishRelayTask(string? suggestion)
     {
-        if (ServerType == ServerType.Remote)
-        {
-            Echo.SetTitle("Larnix Server " + GameInfo.Version);
-            Echo.PrintBorder();
+        bool remoteUse = ServerInfo.Type == ServerType.Remote && Config.Network_UseRelay;
+        bool hostUse = ServerInfo.Type == ServerType.Host && suggestion != null;
 
-            Echo.LogRaw($"Socket created on port: {Port}\n");
-            Echo.LogRaw($"Authcode: {Authcode}\n");
-            Echo.PrintBorder();
-        }
-        else
-        {
-            Echo.Log($"Port: {Port} | Authcode: {Authcode}");
-        }
+        return remoteUse || hostUse
+            ? Task.FromResult(_quickServer.RelayAddress)
+            : null;
     }
 
-    public void Send<T>(string nickname, T payload) where T : unmanaged => QuickServer.Send(nickname, payload);
-    public void Broadcast<T>(T payload) where T : unmanaged => QuickServer.Broadcast(payload);
-    public void SendUnreliable<T>(string nickname, T payload) where T : unmanaged => QuickServer.SendUnreliable(nickname, payload);
-    public void BroadcastUnreliable<T>(T payload) where T : unmanaged => QuickServer.BroadcastUnreliable(payload);
-    public void OnReceive<T>(CmdSenderHandler<T>? execute) where T : unmanaged => QuickServer.OnReceive(execute);
+    public void Tick(float deltaTime)
+    {
+        _quickServer.Tick(deltaTime);
+        _receiver.Tick(deltaTime);
+    }
 
-    public void Close() => CloseServer();
+    public void Send<T>(string nickname, T payload) where T : unmanaged => _quickServer.Send(nickname, payload);
+    public void Broadcast<T>(T payload) where T : unmanaged => _quickServer.Broadcast(payload);
+    public void SendUnreliable<T>(string nickname, T payload) where T : unmanaged => _quickServer.SendUnreliable(nickname, payload);
+    public void BroadcastUnreliable<T>(T payload) where T : unmanaged => _quickServer.BroadcastUnreliable(payload);
+    public void KickRequest(string nickname) => _quickServer.KickRequest(nickname);
+
+    public void OnConnected(ConnectedHandler execute) => _quickServer.OnConnected(execute);
+    public void OnDisconnected(DisconnectedHandler execute) => _quickServer.OnDisconnected(execute);
+    public void OnReceive<T>(CmdSenderHandler<T>? execute) where T : unmanaged => _quickServer.OnReceive(execute);
+
+    public void Close() => _closeServer.Invoke();
+
+    public void Dispose()
+    {
+        _quickServer.Dispose();
+    }
 }

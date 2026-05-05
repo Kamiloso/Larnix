@@ -7,9 +7,9 @@ using System.Runtime.InteropServices;
 
 namespace Larnix.Server.Packets;
 
-[CmdId(0x05)]
+[CmdId(11)]
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct SpawnParticles : ISanitizable<SpawnParticles>
+public readonly struct SpawnParticles : ISanitizable<SpawnParticles>
 {
     public Vec2 Position { get; }
     public ParticleID ParticleID { get; }
@@ -19,8 +19,8 @@ public readonly record struct SpawnParticles : ISanitizable<SpawnParticles>
 
     public SpawnParticles(Vec2 position, ParticleID particleID, ulong entityUid = 0)
     {
-        Position = position.Sanitize();
-        ParticleID = Sanitizer_Legacy.SanitizeEnum(particleID);
+        Position = Sanitizer.Filter(position);
+        ParticleID = Sanitizer.Filter(particleID);
         EntityUid = entityUid;
     }
 

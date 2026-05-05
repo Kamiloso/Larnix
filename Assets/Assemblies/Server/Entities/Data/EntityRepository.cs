@@ -126,7 +126,7 @@ internal class EntityRepository : IEntityRepository
     {
         Db.Handle.AsTransaction(() =>
         {
-            Db.Entities.DeleteEntities(_deletedEntityData.Keys.ToList());
+            Db.Entities.DeleteEntities(_deletedEntityData.Keys.ToArray());
             _deletedEntityData.Clear();
 
             Db.Entities.FlushEntities(_entityData);

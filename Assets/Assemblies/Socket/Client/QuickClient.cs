@@ -1,6 +1,5 @@
 #nullable enable
 using Larnix.Core;
-using Larnix.Model;
 using Larnix.Socket.Channel;
 using Larnix.Socket.Client.Records;
 using Larnix.Socket.Networking;
@@ -39,7 +38,7 @@ public class QuickClient : ITickable, IDisposable
         ServerDiscovery discovery = fullLogin.ToServerDiscovery();
         ServerLogin loginData = fullLogin.ToServerLogin();
 
-        IPEndPoint? target = await DnsResolver.ResolveAsync(address, GameInfo.DefaultPort);
+        IPEndPoint? target = await DnsResolver.ResolveAsync(address, SocketInfo.DefaultPort);
         if (target == null)
         {
             Echo.LogWarning("Couldn't resolve address: " + address);

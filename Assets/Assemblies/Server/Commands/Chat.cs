@@ -1,12 +1,11 @@
 #nullable enable
 using Larnix.Core;
-using Larnix.Model.Utils;
-using Larnix.Server.Packets;
-using LogType = Larnix.Core.Echo.LogType;
-using ChatCode = Larnix.Server.Packets.ChatMessage.ChatCode;
-using Larnix.Model;
 using Larnix.Core.Serialization;
 using Larnix.Core.Utils;
+using Larnix.Core.Vectors;
+using Larnix.Model;
+using Larnix.Server.Packets;
+using ChatCode = Larnix.Server.Packets.ChatMessage.ChatCode;
 
 namespace Larnix.Server.Commands;
 
@@ -39,7 +38,7 @@ internal class Chat : IChat
 
         if (result != CmdResult.Ignore)
         {
-            LogType logType = ICmdExecutor.ConvertToLogType(result);
+            Col32 color = ICmdExecutor.ResultToCol32(result);
 
             FixedString512[] answerParts = FixedStringUtils.Cut<FixedString512>(answer, s => new(s));
             for (int i = 0; i < answerParts.Length; i++)
@@ -50,7 +49,7 @@ internal class Chat : IChat
                     ChatCode.Incomplete;
 
                 Server.Send(nickname, new ChatMessage(
-                    logType: logType,
+                    color: color,
                     sender: new FixedString64("<Server>"),
                     message: answerParts[i],
                     msgCode: msgCode
@@ -61,18 +60,19 @@ internal class Chat : IChat
 
     private void BroadcastMsg(string nickname, string message)
     {
-        var packet = new ChatMessage(
-                logType: LogType.Log,
-                sender: new FixedString64($"[{nickname}]"),
-                message: new FixedString512(message)
-            );
+        ChatMessage payload = new(
+            color: Col32.White,
+            sender: new FixedString64($"[{nickname}]"),
+            message: new FixedString512(message),
+            msgCode: ChatCode.Default
+        );
 
-        string fullMsg = packet.Message; // no fragmentation here
-        if (packet.TryAppendPrefix(fullMsg, out string msgText))
+        string fullMsg = payload.Message; // no fragmentation here
+        if (payload.TryAppendPrefix(fullMsg, out string msgText))
         {
             Echo.Log(msgText);
         }
 
-        Server.Broadcast(packet);
+        Server.Broadcast(payload);
     }
 }

@@ -22,10 +22,10 @@ internal class Ban : BaseCmd
         "ban list - Lists all ban entries.\n" +
         "ban clear - Clears the ban list.";
 
+    private IServerInfo ServerInfo => GlobRef.Get<IServerInfo>();
     private IServer Server => GlobRef.Get<IServer>();
     private IConnectedPlayers ConnectedPlayers => GlobRef.Get<IConnectedPlayers>();
     private ServerConfig ServerConfig => GlobRef.Get<ServerConfig>();
-    private QuickServer QuickServer => GlobRef.Get<QuickServer>();
 
     private string _subname;
     private string _target;
@@ -94,12 +94,12 @@ internal class Ban : BaseCmd
         if (!ServerConfig.Administration_Banned.Contains(_target))
         {
             ServerConfig.Administration_Banned.Add(_target);
-            Config.ToFile(Server.WorldPath, Common.ConfigFile, ServerConfig);
+            Config.ToFile(ServerInfo.WorldPath, Common.ConfigFile, ServerConfig);
 
             if (ConnectedPlayers.IsConnected(_target))
             {
                 // banning a player -> kick them immediately
-                QuickServer.KickRequest(_target);
+                Server.KickRequest(_target);
             }
 
             return (CmdResult.Success,
@@ -115,7 +115,7 @@ internal class Ban : BaseCmd
         if (ServerConfig.Administration_Banned.Contains(_target))
         {
             ServerConfig.Administration_Banned.Remove(_target);
-            Config.ToFile(Server.WorldPath, Common.ConfigFile, ServerConfig);
+            Config.ToFile(ServerInfo.WorldPath, Common.ConfigFile, ServerConfig);
 
             return (CmdResult.Success,
                 $"Successfully removed '{_target}' from the ban list.");
@@ -134,7 +134,7 @@ internal class Ban : BaseCmd
     private (CmdResult, string) ExecuteClear()
     {
         ServerConfig.Administration_Banned.Clear();
-        Config.ToFile(Server.WorldPath, Common.ConfigFile, ServerConfig);
+        Config.ToFile(ServerInfo.WorldPath, Common.ConfigFile, ServerConfig);
 
         return (CmdResult.Success,
             "Successfully cleared the ban list.");

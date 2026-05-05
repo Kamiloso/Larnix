@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using Larnix.Server.Entities;
-using Larnix.Socket.Server;
 using Larnix.Core;
 using Larnix.Model;
 
@@ -15,7 +14,6 @@ internal class Playerlist : BaseCmd
     public override string Pattern => $"{Name}";
     public override string ShortDescription => "Displays a list of all connected players.";
 
-    private QuickServer QuickServer => GlobRef.Get<QuickServer>();
     private IConnectedPlayers ConnectedPlayers => GlobRef.Get<IConnectedPlayers>();
 
     public override void Inject(string command)
@@ -28,12 +26,9 @@ internal class Playerlist : BaseCmd
 
     public override (CmdResult, string) Execute(string sender, PrivilegeLevel privilege)
     {
-        IPEndPoint? EndPointOf(string nick)
+        IPEndPoint EndPointOf(string nick)
         {
-            if (QuickServer.TryGetClientEndPoint(nick, out var endPoint))
-                return endPoint;
-
-            return null;
+            return ConnectedPlayers[nick].EndPoint;
         }
 
         string StateOf(string nick)

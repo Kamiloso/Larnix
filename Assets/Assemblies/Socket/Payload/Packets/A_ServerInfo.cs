@@ -18,7 +18,7 @@ internal readonly struct A_ServerInfo : ISanitizable<A_ServerInfo>
     public A_ServerInfo(in ServerInfo info, long challengeId)
     {
         Info = Sanitizer.Filter(info);
-        ChallengeId = Sanitizer.Filter(challengeId);
+        ChallengeId = challengeId;
     }
 
     public A_ServerInfo Sanitize()

@@ -1,6 +1,5 @@
 #nullable enable
 using Larnix.Core.Serialization;
-using Larnix.Core.Utils;
 using System;
 using System.Globalization;
 using System.Runtime.InteropServices;
@@ -13,8 +12,8 @@ public readonly struct Vec2 : ISanitizable<Vec2>
     public double x { get; }
     public double y { get; }
 
-    public double Magnitude => Math.Sqrt(x * x + y * y);
     public double SqrMagnitude => x * x + y * y;
+    public double Magnitude => Math.Sqrt(SqrMagnitude);
 
     public static Vec2 Zero => new(0, 0);
     public static Vec2 One => new(1, 1);

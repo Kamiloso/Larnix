@@ -1,7 +1,7 @@
 #nullable enable
 using Larnix.Core.Serialization;
 using Larnix.Socket.Payload.Structs;
-using Larnix.Socket.Security;
+using Larnix.Socket.Server.Interfaces;
 using Larnix.Socket.Server.Utility;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -11,26 +11,28 @@ namespace Larnix.Socket.Server;
 internal interface IAsyncLogins
 {
     long GetChallengeId(in FixedString32 nickname); // 0 = no user
-    IEnumerable<bool?> Login(Credentials credentials);
-    IEnumerable<bool?> Register(Credentials credentials);
+    IEnumerable<bool?> Login(Credentials credentials, bool isLoopback);
+    IEnumerable<bool?> Register(Credentials credentials, bool isLoopback);
     IEnumerable<bool?> SetPassword(FixedString32 nickname, FixedString64 newPassword);
 }
 
 internal class AsyncLogins : IAsyncLogins
 {
     private readonly IInfoProvider _infoProvider;
-    private readonly QuickConfig _settings;
+    private readonly QuickSettings _settings;
 
     private readonly IBanProvider _bans;
     private readonly IQuickUserRepository _users;
+    private readonly IPasswordHasher _hasher;
 
-    public AsyncLogins(IInfoProvider infoProvider, QuickConfig settings)
+    public AsyncLogins(IInfoProvider infoProvider, QuickSettings settings)
     {
         _infoProvider = infoProvider;
         _settings = settings;
 
         _bans = _settings.Interfaces.BanProvider;
         _users = _settings.Interfaces.UserRepository;
+        _hasher = _settings.Interfaces.PasswordHasher;
     }
 
     public long GetChallengeId(in FixedString32 nickname) // 0 = no user
@@ -45,11 +47,14 @@ internal class AsyncLogins : IAsyncLogins
         return challengeId ?? 0;
     }
 
-    public IEnumerable<bool?> Login(Credentials credentials)
+    public IEnumerable<bool?> Login(Credentials credentials, bool isLoopback)
     {
-        var (nickname, password, challengeId) = credentials.Extract();
+        var (nickname, password, challengeId) = credentials.ExtractLoginData();
 
         if (!credentials.IsLogin())
+            yield return false;
+
+        if (!isLoopback && credentials.IsLoopbackOnly())
             yield return false;
 
         if (!_infoProvider.CheckGlobalCredentials(credentials))
@@ -57,7 +62,6 @@ internal class AsyncLogins : IAsyncLogins
 
         if (_bans.IsBannedNickname(nickname))
             yield return false;
-
 
         QuickUser? user1 = _users.FindByNickname(nickname);
         if (user1 == null)
@@ -72,7 +76,7 @@ internal class AsyncLogins : IAsyncLogins
             yield return false; // basic credentials mismatch
         }
 
-        Task<bool> hashing = Task.Run(() => Hasher.VerifyPassword(password, user1!.PasswordHash));
+        Task<bool> hashing = Task.Run(() => _hasher.VerifyPassword(password, user1!.PasswordHash));
         while (!hashing.IsCompleted)
         {
             yield return null;
@@ -96,14 +100,17 @@ internal class AsyncLogins : IAsyncLogins
         }
     }
 
-    public IEnumerable<bool?> Register(Credentials credentials)
+    public IEnumerable<bool?> Register(Credentials credentials, bool isLoopback)
     {
-        var (nickname, password, challengeId) = credentials.Extract();
+        var (nickname, password, challengeId) = credentials.ExtractLoginData();
 
         if (!_settings.EnableRegister)
             yield return false;
 
         if (!credentials.IsRegister())
+            yield return false;
+
+        if (!isLoopback && credentials.IsLoopbackOnly())
             yield return false;
 
         if (!_infoProvider.CheckGlobalCredentials(credentials))
@@ -118,7 +125,7 @@ internal class AsyncLogins : IAsyncLogins
             yield return false; // nickname already exists
         }
 
-        Task<string> hashing = Task.Run(() => Hasher.HashPassword(password));
+        Task<string> hashing = Task.Run(() => _hasher.HashPassword(password));
         while (!hashing.IsCompleted)
         {
             yield return null;
@@ -128,7 +135,7 @@ internal class AsyncLogins : IAsyncLogins
         if (user2 != null)
         {
             yield return false; // nickname was taken during hashing
-        }
+        }   
 
         long nextUid = _users.NextFreeUid();
         string passwordHash = hashing.Result;
@@ -146,7 +153,8 @@ internal class AsyncLogins : IAsyncLogins
         if (user1 == null)
         {
             IEnumerator<bool?> registration = Register(
-                _infoProvider.CreateCredentials(nickname, newPassword, 0)
+                credentials: _infoProvider.CreateCredentials(nickname, newPassword, 0),
+                isLoopback: true // inner registration, so we assume it's loopback
                 ).GetEnumerator();
 
             while (registration.MoveNext())
@@ -155,7 +163,7 @@ internal class AsyncLogins : IAsyncLogins
             }
         }
 
-        Task<string> hashing = Task.Run(() => Hasher.HashPassword(newPassword));
+        Task<string> hashing = Task.Run(() => _hasher.HashPassword(newPassword));
         while (!hashing.IsCompleted)
         {
             yield return null;

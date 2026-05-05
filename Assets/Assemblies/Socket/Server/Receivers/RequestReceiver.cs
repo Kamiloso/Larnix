@@ -17,7 +17,7 @@ internal class RequestReceiver : ITickable
     private readonly IAsyncLogins _asyncLogins;
     private readonly IInfoProvider _infoProvider;
     private readonly Coroutines _coroutines;
-    private readonly QuickConfig _settings;
+    private readonly QuickSettings _settings;
 
     private readonly TrafficLimiter<string> _requestLimiter;
     private readonly CycleTimer _requestCleanupTimer;
@@ -27,7 +27,7 @@ internal class RequestReceiver : ITickable
         IAsyncLogins asyncLogins,
         IInfoProvider infoProvider,
         Coroutines coroutines,
-        QuickConfig settings
+        QuickSettings settings
         )
     {
         _socket = socket;
@@ -86,9 +86,10 @@ internal class RequestReceiver : ITickable
             => SendAnswer(target, header, new A_LoginTry(success));
 
         Credentials credentials = loginTry.Credentials;
+        bool isLoopback = IPAddress.IsLoopback(target.Address);
 
         _coroutines.Start(
-            method: _asyncLogins.Login(credentials),
+            method: _asyncLogins.Login(credentials, isLoopback),
             onResult: success =>
             {
                 if (!success)

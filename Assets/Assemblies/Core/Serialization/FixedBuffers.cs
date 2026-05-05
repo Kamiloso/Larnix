@@ -25,7 +25,7 @@ AUTOGEN BEGIN
 #SIZE = 8 16 32 64 128 256 512 1024
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public unsafe struct FixedBuffer#SIZE<T> : IFixedBuffer<T> where T : unmanaged
+public unsafe struct FixedBuffer#SIZE<T> : IFixedBuffer<T>, ISanitizable<FixedBuffer#SIZE<T>> where T : unmanaged
 {
     private ushort _count;
     private fixed byte _buffer[#SIZE];
@@ -61,7 +61,7 @@ public unsafe struct FixedBuffer#SIZE<T> : IFixedBuffer<T> where T : unmanaged
 
         fixed (byte* ptr = _buffer)
         {
-            Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], value);
+            Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], Serializer.Filter(value));
             _count++;
         }
     }
@@ -77,7 +77,7 @@ public unsafe struct FixedBuffer#SIZE<T> : IFixedBuffer<T> where T : unmanaged
         {
             for (int i = 0; i < values.Length; i++)
             {
-                Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], values[i]);
+                Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], Serializer.Filter(values[i]));
                 _count++;
             }
         }
@@ -110,6 +110,17 @@ public unsafe struct FixedBuffer#SIZE<T> : IFixedBuffer<T> where T : unmanaged
     {
         this = default;
     }
+
+    public readonly FixedBuffer#SIZE<T> Sanitize()
+    {
+        FixedBuffer#SIZE<T> sanitized = new();
+        for (int i = 0; i < Count; i++)
+        {
+            T filtered = Sanitizer.Filter(At(i));
+            sanitized.Add(filtered);
+        }
+        return sanitized;
+    }
 }
 
 AUTOGEN END
@@ -122,7 +133,7 @@ AUTOGEN END
 // and then regenerate the code from the Unity Editor window (Automation/Tools/Regenerate Code).
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public unsafe struct FixedBuffer8<T> : IFixedBuffer<T> where T : unmanaged
+public unsafe struct FixedBuffer8<T> : IFixedBuffer<T>, ISanitizable<FixedBuffer8<T>> where T : unmanaged
 {
     private ushort _count;
     private fixed byte _buffer[8];
@@ -207,11 +218,22 @@ public unsafe struct FixedBuffer8<T> : IFixedBuffer<T> where T : unmanaged
     {
         this = default;
     }
+
+    public readonly FixedBuffer8<T> Sanitize()
+    {
+        FixedBuffer8<T> sanitized = new();
+        for (int i = 0; i<Count; i++)
+        {
+            T filtered = Sanitizer.Filter(At(i));
+            sanitized.Add(filtered);
+        }
+        return sanitized;
+    }
 }
 
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public unsafe struct FixedBuffer16<T> : IFixedBuffer<T> where T : unmanaged
+public unsafe struct FixedBuffer16<T> : IFixedBuffer<T>, ISanitizable<FixedBuffer16<T>> where T : unmanaged
 {
     private ushort _count;
     private fixed byte _buffer[16];
@@ -296,11 +318,22 @@ public unsafe struct FixedBuffer16<T> : IFixedBuffer<T> where T : unmanaged
     {
         this = default;
     }
+
+    public readonly FixedBuffer16<T> Sanitize()
+    {
+        FixedBuffer16<T> sanitized = new();
+        for (int i = 0; i < Count; i++)
+        {
+            T filtered = Sanitizer.Filter(At(i));
+            sanitized.Add(filtered);
+        }
+        return sanitized;
+    }
 }
 
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public unsafe struct FixedBuffer32<T> : IFixedBuffer<T> where T : unmanaged
+public unsafe struct FixedBuffer32<T> : IFixedBuffer<T>, ISanitizable<FixedBuffer32<T>> where T : unmanaged
 {
     private ushort _count;
     private fixed byte _buffer[32];
@@ -385,11 +418,22 @@ public unsafe struct FixedBuffer32<T> : IFixedBuffer<T> where T : unmanaged
     {
         this = default;
     }
+
+    public readonly FixedBuffer32<T> Sanitize()
+    {
+        FixedBuffer32<T> sanitized = new();
+        for (int i = 0; i < Count; i++)
+        {
+            T filtered = Sanitizer.Filter(At(i));
+            sanitized.Add(filtered);
+        }
+        return sanitized;
+    }
 }
 
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public unsafe struct FixedBuffer64<T> : IFixedBuffer<T> where T : unmanaged
+public unsafe struct FixedBuffer64<T> : IFixedBuffer<T>, ISanitizable<FixedBuffer64<T>> where T : unmanaged
 {
     private ushort _count;
     private fixed byte _buffer[64];
@@ -474,11 +518,22 @@ public unsafe struct FixedBuffer64<T> : IFixedBuffer<T> where T : unmanaged
     {
         this = default;
     }
+
+    public readonly FixedBuffer64<T> Sanitize()
+    {
+        FixedBuffer64<T> sanitized = new();
+        for (int i = 0; i < Count; i++)
+        {
+            T filtered = Sanitizer.Filter(At(i));
+            sanitized.Add(filtered);
+        }
+        return sanitized;
+    }
 }
 
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public unsafe struct FixedBuffer128<T> : IFixedBuffer<T> where T : unmanaged
+public unsafe struct FixedBuffer128<T> : IFixedBuffer<T>, ISanitizable<FixedBuffer128<T>> where T : unmanaged
 {
     private ushort _count;
     private fixed byte _buffer[128];
@@ -563,11 +618,22 @@ public unsafe struct FixedBuffer128<T> : IFixedBuffer<T> where T : unmanaged
     {
         this = default;
     }
+
+    public readonly FixedBuffer128<T> Sanitize()
+    {
+        FixedBuffer128<T> sanitized = new();
+        for (int i = 0; i < Count; i++)
+        {
+            T filtered = Sanitizer.Filter(At(i));
+            sanitized.Add(filtered);
+        }
+        return sanitized;
+    }
 }
 
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public unsafe struct FixedBuffer256<T> : IFixedBuffer<T> where T : unmanaged
+public unsafe struct FixedBuffer256<T> : IFixedBuffer<T>, ISanitizable<FixedBuffer256<T>> where T : unmanaged
 {
     private ushort _count;
     private fixed byte _buffer[256];
@@ -652,11 +718,22 @@ public unsafe struct FixedBuffer256<T> : IFixedBuffer<T> where T : unmanaged
     {
         this = default;
     }
+
+    public readonly FixedBuffer256<T> Sanitize()
+    {
+        FixedBuffer256<T> sanitized = new();
+        for (int i = 0; i < Count; i++)
+        {
+            T filtered = Sanitizer.Filter(At(i));
+            sanitized.Add(filtered);
+        }
+        return sanitized;
+    }
 }
 
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public unsafe struct FixedBuffer512<T> : IFixedBuffer<T> where T : unmanaged
+public unsafe struct FixedBuffer512<T> : IFixedBuffer<T>, ISanitizable<FixedBuffer512<T>> where T : unmanaged
 {
     private ushort _count;
     private fixed byte _buffer[512];
@@ -741,11 +818,22 @@ public unsafe struct FixedBuffer512<T> : IFixedBuffer<T> where T : unmanaged
     {
         this = default;
     }
+
+    public readonly FixedBuffer512<T> Sanitize()
+    {
+        FixedBuffer512<T> sanitized = new();
+        for (int i = 0; i < Count; i++)
+        {
+            T filtered = Sanitizer.Filter(At(i));
+            sanitized.Add(filtered);
+        }
+        return sanitized;
+    }
 }
 
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public unsafe struct FixedBuffer1024<T> : IFixedBuffer<T> where T : unmanaged
+public unsafe struct FixedBuffer1024<T> : IFixedBuffer<T>, ISanitizable<FixedBuffer1024<T>> where T : unmanaged
 {
     private ushort _count;
     private fixed byte _buffer[1024];
@@ -829,6 +917,17 @@ public unsafe struct FixedBuffer1024<T> : IFixedBuffer<T> where T : unmanaged
     public void Clear()
     {
         this = default;
+    }
+
+    public readonly FixedBuffer1024<T> Sanitize()
+    {
+        FixedBuffer1024<T> sanitized = new();
+        for (int i = 0; i < Count; i++)
+        {
+            T filtered = Sanitizer.Filter(At(i));
+            sanitized.Add(filtered);
+        }
+        return sanitized;
     }
 }
 

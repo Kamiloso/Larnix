@@ -1,9 +1,11 @@
 #nullable enable
+using System;
 using System.Runtime.InteropServices;
 using Larnix.Socket.Payload.Structs;
 
 namespace Larnix.Socket.Payload;
 
+[Flags]
 internal enum PacketFlag : byte
 {
     SYN = 1 << 0, // start connection (client -> server)
@@ -23,7 +25,7 @@ internal readonly record struct PayloadHeader
     public readonly Seq AckNum;
     public readonly byte Flags;
 
-    private PayloadHeader(short protocolVersion, Seq seqNum, Seq ackNum, byte flags)
+    public PayloadHeader(short protocolVersion, Seq seqNum, Seq ackNum, byte flags)
     {
         ProtocolVersion = protocolVersion;
         SeqNum = seqNum;
@@ -33,12 +35,18 @@ internal readonly record struct PayloadHeader
 
     public PayloadHeader(Seq seqNum, Seq ackNum, byte flags)
     {
-        this = new PayloadHeader(PROTOCOL_VERSION, seqNum, ackNum, flags);
+        this = new PayloadHeader(
+            PROTOCOL_VERSION,
+            seqNum, ackNum, flags
+            );
     }
 
     public PayloadHeader(Seq seqNum, byte flags)
     {
-        this = new PayloadHeader(PROTOCOL_VERSION, seqNum, new Seq(0), flags);
+        this = new PayloadHeader(
+            PROTOCOL_VERSION,
+            seqNum, new Seq(0), flags
+            );
     }
 
     public bool CompatibleProtocolVersion() => ProtocolVersion == PROTOCOL_VERSION;

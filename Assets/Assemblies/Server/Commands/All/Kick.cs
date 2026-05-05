@@ -1,6 +1,5 @@
 using Larnix.Model.Utils;
 using Larnix.Server.Entities;
-using Larnix.Socket.Server;
 using Larnix.Core;
 using Larnix.Model;
 
@@ -12,7 +11,7 @@ internal class Kick : BaseCmd
     public override string Pattern => $"{Name} <nickname>";
     public override string ShortDescription => "Kicks a player.";
 
-    private QuickServer QuickServer => GlobRef.Get<QuickServer>();
+    private IServer Server => GlobRef.Get<IServer>();
     private IConnectedPlayers ConnectedPlayers => GlobRef.Get<IConnectedPlayers>();
 
     private string _nickname;
@@ -38,7 +37,7 @@ internal class Kick : BaseCmd
     {
         if (ConnectedPlayers.IsConnected(_nickname))
         {
-            QuickServer.KickRequest(_nickname);
+            Server.KickRequest(_nickname);
 
             return (CmdResult.Info,
                 $"Player {_nickname} is being kicked...");

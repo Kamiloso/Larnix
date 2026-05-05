@@ -1,6 +1,7 @@
 #nullable enable
+using Larnix.Socket.Server.Utility;
 
-namespace Larnix.Socket.Server.Utility;
+namespace Larnix.Socket.Server.Interfaces;
 
 public interface IQuickUserRepository
 {

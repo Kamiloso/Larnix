@@ -17,7 +17,7 @@ public interface IEntityAccess
     EntityData? FindEntity(ulong uid);
     Dictionary<ulong, EntityData> GetEntitiesByChunkNoPlayers(Vec2Int chunk);
     void FlushEntities(Dictionary<ulong, EntityData> entities);
-    void DeleteEntities(List<ulong> uids);
+    void DeleteEntities(ulong[] uids);
 }
 
 internal class EntityAccess : IEntityAccess
@@ -37,7 +37,7 @@ internal class EntityAccess : IEntityAccess
             DbRecord record = _db.QuerySingle(cmd)!;
 
             long minUid = record.Get<long>("scalar", 0);
-            _minUid = (ulong)Math.Min(minUid, 0) - 1;
+            unchecked { _minUid = (ulong)Math.Min(minUid, 0) - 1; }
         }
 
         return --_minUid;
@@ -87,21 +87,21 @@ internal class EntityAccess : IEntityAccess
         });
     }
 
-    public void DeleteEntities(List<ulong> uids)
+    public void DeleteEntities(ulong[] uids)
     {
-        if (uids.Count == 0) return;
+        if (uids.Length == 0) return;
 
         _db.AsTransaction(() =>
         {
             const int BATCH_SIZE = 500;
 
-            for (int i = 0; i < uids.Count; i += BATCH_SIZE)
+            for (int i = 0; i < uids.Length; i += BATCH_SIZE)
             {
-                int size = Math.Min(BATCH_SIZE, uids.Count - i);
+                int size = Math.Min(BATCH_SIZE, uids.Length - i);
 
-                List<long> batch = uids.GetRange(i, size)
+                long[] batch = uids[i..(i + size)]
                     .Select(uid => (long)uid)
-                    .ToList();
+                    .ToArray();
 
                 string cmd = $@"
                 DELETE FROM entities WHERE uid IN (

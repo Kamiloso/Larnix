@@ -18,13 +18,13 @@ public enum ServerType
 
 public sealed class ServerRunner : IDisposable
 {
-    private static float PERIOD => GameInfo.FixedTime;
-    private static long MAX_FRAME_DELAY => 5;
+    private static float Period => GameInfo.FixedTime;
+    private static long MaxFrameDelay => 5;
 
     public record ServerAnswer(
         string Address,
         string Authcode,
-        Task<string>? RelayEstablishment = null
+        Task<string?>? RelayTask = null
     );
 
     public record RunSuggestions(
@@ -39,7 +39,7 @@ public sealed class ServerRunner : IDisposable
     private Thread? _thread;
     private Exception? _threadException;
 
-    private volatile bool _stopFlag;
+    private volatile bool _stop;
 
     public ServerRunner() { } // can be instantiated and managed
     public static ServerRunner Instance { get; } = new(); // legacy singleton
@@ -55,7 +55,7 @@ public sealed class ServerRunner : IDisposable
 
         try
         {
-            void StopSignal() => _stopFlag = true;
+            void StopSignal() => _stop = true;
 
             _server = new ServerHandle(
                 type, worldPath, suggestions, StopSignal);
@@ -96,9 +96,9 @@ public sealed class ServerRunner : IDisposable
 
         try
         {
-            double lastTime = sw.Elapsed.TotalSeconds - PERIOD;
+            double lastTime = sw.Elapsed.TotalSeconds - Period;
 
-            while (!_stopFlag)
+            while (!_stop)
             {
                 double currentTime = sw.Elapsed.TotalSeconds;
                 double deltaTime = currentTime - lastTime;
@@ -106,14 +106,14 @@ public sealed class ServerRunner : IDisposable
                 _server!.Tick((float)deltaTime + float.Epsilon);
                 frame++;
 
-                while (sw.Elapsed.TotalSeconds > (frame + MAX_FRAME_DELAY) * PERIOD)
+                while (sw.Elapsed.TotalSeconds > (frame + MaxFrameDelay) * Period)
                 {
                     frame++;
                 }
 
-                while (sw.Elapsed.TotalSeconds < frame * PERIOD)
+                while (sw.Elapsed.TotalSeconds < frame * Period)
                 {
-                    double sleepTime = frame * PERIOD - sw.Elapsed.TotalSeconds;
+                    double sleepTime = frame * Period - sw.Elapsed.TotalSeconds;
                     if (sleepTime > 0.015)
                     {
                         Thread.Sleep(1);
@@ -145,7 +145,7 @@ public sealed class ServerRunner : IDisposable
         {
             try
             {
-                _stopFlag = true;
+                _stop = true;
                 _thread!.Join();
 
                 if (_threadException != null)
@@ -156,7 +156,7 @@ public sealed class ServerRunner : IDisposable
                 _server = null;
                 _thread = null;
                 _threadException = null;
-                _stopFlag = false;
+                _stop = false;
             }
         }
     }

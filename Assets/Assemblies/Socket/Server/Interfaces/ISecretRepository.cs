@@ -1,6 +1,6 @@
 #nullable enable
 
-namespace Larnix.Socket.Server.Utility;
+namespace Larnix.Socket.Server.Interfaces;
 
 public interface ISecretRepository
 {

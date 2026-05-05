@@ -35,7 +35,7 @@ internal readonly struct PayloadStruct<T> : ISanitizable<PayloadStruct<T>> where
 
     public PayloadStruct(in T contents)
     {
-        CmdId = Sanitizer.Filter(ExpectedCmdId);
+        CmdId = ExpectedCmdId;
         Contents = Sanitizer.Filter(contents);
     }
 

@@ -1,7 +1,7 @@
 #nullable enable
+using Larnix.Core.Vectors;
 using System.Collections.Generic;
 using System.Linq;
-using LogType = Larnix.Core.Echo.LogType;
 
 namespace Larnix.Model;
 
@@ -30,16 +30,16 @@ public interface ICmdExecutor
         }
     }
 
-    public static LogType ConvertToLogType(CmdResult result)
+    public static Col32 ResultToCol32(CmdResult result)
     {
         return result switch
         {
-            CmdResult.Log => LogType.Log,
-            CmdResult.Info => LogType.Info,
-            CmdResult.Success => LogType.Success,
-            CmdResult.Warning => LogType.Warning,
-            CmdResult.Error => LogType.Error,
-            _ => LogType.Raw
+            CmdResult.Log => Col32.White,
+            CmdResult.Info => Col32.Cyan,
+            CmdResult.Success => Col32.Green,
+            CmdResult.Warning => Col32.Yellow,
+            CmdResult.Error => Col32.Red,
+            _ => Col32.White
         };
     }
 }

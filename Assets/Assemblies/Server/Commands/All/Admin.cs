@@ -21,7 +21,7 @@ internal class Admin : BaseCmd
         "admin list - Lists all admin entries.\n" +
         "admin clear - Clears the admin list.";
 
-    private IServer Server => GlobRef.Get<IServer>();
+    private IServerInfo ServerInfo => GlobRef.Get<IServerInfo>();
     private ServerConfig ServerConfig => GlobRef.Get<ServerConfig>();
 
     private string _subname;
@@ -93,7 +93,7 @@ internal class Admin : BaseCmd
         if (!ServerConfig.Administration_Admins.Contains(_nickname))
         {
             ServerConfig.Administration_Admins.Add(_nickname);
-            Config.ToFile(Server.WorldPath, Common.ConfigFile, ServerConfig);
+            Config.ToFile(ServerInfo.WorldPath, Common.ConfigFile, ServerConfig);
 
             return (CmdResult.Success,
                 $"Successfully granted admin privileges to '{_nickname}'.");
@@ -108,7 +108,7 @@ internal class Admin : BaseCmd
         if (ServerConfig.Administration_Admins.Contains(_nickname))
         {
             ServerConfig.Administration_Admins.Remove(_nickname);
-            Config.ToFile(Server.WorldPath, Common.ConfigFile, ServerConfig);
+            Config.ToFile(ServerInfo.WorldPath, Common.ConfigFile, ServerConfig);
 
             return (CmdResult.Success,
                 $"Successfully revoked admin privileges from '{_nickname}'.");
@@ -127,7 +127,7 @@ internal class Admin : BaseCmd
     private (CmdResult, string) ExecuteClear()
     {
         ServerConfig.Administration_Admins.Clear();
-        Config.ToFile(Server.WorldPath, Common.ConfigFile, ServerConfig);
+        Config.ToFile(ServerInfo.WorldPath, Common.ConfigFile, ServerConfig);
 
         return (CmdResult.Success,
             "Successfully cleared the admin list.");

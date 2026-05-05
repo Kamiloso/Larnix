@@ -16,7 +16,7 @@ internal readonly struct P_LoginTry : ISanitizable<P_LoginTry>
 
     private readonly byte _padding = 0xFF; // prevent null-trimming optimizations at the end
 
-    private P_LoginTry(Credentials credentials, in FixedString64 newPassword, boolsrl isPasswordChange)
+    public P_LoginTry(Credentials credentials, in FixedString64 newPassword, boolsrl isPasswordChange)
     {
         Credentials = Sanitizer.Filter(credentials);
         NewPassword = SocketSanitizer.ToGoodPassword(newPassword);

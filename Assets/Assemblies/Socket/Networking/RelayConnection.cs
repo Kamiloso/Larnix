@@ -7,10 +7,19 @@ using System.Threading.Tasks;
 using Larnix.Core;
 using Larnix.Model;
 using Larnix.Socket.Client;
+using Larnix.Socket.Helpers;
 
 namespace Larnix.Socket.Networking;
 
 // WARNING: This class should be fully thread safe!
+
+// TODO IMPORTANT: Fix security flaw:
+// Malicious relay or MiTM may spoof localhost packets!
+//
+// 1. Drop such packets here.
+//
+// 2. On the relay side, translate loopback addresses
+// to some random unused IP range.
 
 internal class RelayConnection : ISocket, IDisposable
 {
@@ -40,7 +49,7 @@ internal class RelayConnection : ISocket, IDisposable
 
     public static async Task<RelayConnection?> EstablishRelayAsync(string address)
     {
-        IPEndPoint? target = await DnsResolver.ResolveAsync(address, GameInfo.DefaultRelayPort);
+        IPEndPoint? target = await DnsResolver.ResolveAsync(address, SocketInfo.DefaultRelayPort);
         if (target == null)
         {
             return null;
@@ -69,7 +78,7 @@ internal class RelayConnection : ISocket, IDisposable
                 if (bytes.Length == 2)
                 {
                     ushort port = (ushort)(bytes[0] << 8 | bytes[1]);
-                    relay.ForeignAddress = Common.FormatAddress(address, port);
+                    relay.ForeignAddress = AddressHelpers.FormatAddress(address, port);
                     
                     _ = Task.Run(relay.KeepAliveLoop);
 

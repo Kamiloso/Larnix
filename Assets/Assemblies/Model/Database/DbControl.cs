@@ -26,6 +26,7 @@ public class DbControl : IDbControl
     public IEntityAccess Entities => GetAccessor<IEntityAccess>();
     public IUserAccess Users => GetAccessor<IUserAccess>();
     public IValueAccess Values => GetAccessor<IValueAccess>();
+
     private static string FORMAT(string cmd) => cmd.Replace("#", "NOT NULL");
 
     public DbControl(IDbHandle db)
@@ -73,7 +74,7 @@ public class DbControl : IDbControl
 
             CREATE TABLE IF NOT EXISTS key_values (
                 key TEXT # PRIMARY KEY,
-                value INTEGER #
+                value TEXT #
             );
 
         "));

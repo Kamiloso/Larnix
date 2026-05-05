@@ -7,6 +7,7 @@ using Larnix.Model.Utils;
 using Larnix.Server.Entities;
 using Larnix.Model;
 using Larnix.Socket.Server;
+using Larnix.Server.Data;
 
 namespace Larnix.Server.Commands.All;
 
@@ -18,24 +19,21 @@ internal class User : BaseCmd
     public override string ShortDescription => "Manages user accounts.";
 
     public override string LongDescription => ShortDescription + " Usage:\n" +
-        $"user add <username> <password> - Registers a new user.\n" +
+        $"user set <username> <password> - Sets user's credentials.\n" +
         $"user rename <oldusername> <newusername> - Renames a user.\n" +
-        $"user changepass <username> <newpassword> - Changes a user's password.\n" +
         $"user delete <username> - Deletes a user.\n" +
         $"user resetlimits - Resets all hashing and registration user limits.\n" +
         $"user list - Lists all registered users.\n" +
         $"user deleteall - Deletes all users except host and '{GameInfo.ReservedNickname}'.";
 
-    private QuickServer QuickServer => GlobRef.Get<QuickServer>();
     private IConnectedPlayers ConnectedPlayers => GlobRef.Get<IConnectedPlayers>();
-    private IUserManager UserManager => GlobRef.Get<IUserManager>();
+    private IUserRepository UserRepository => GlobRef.Get<IUserRepository>();
 
     private string _subname;
     private string _username;
     private string _password;
     private string _oldusername;
     private string _newusername;
-    private string _newpassword;
 
     public override void Inject(string command)
     {
@@ -50,11 +48,10 @@ internal class User : BaseCmd
         _password = null;
         _oldusername = null;
         _newusername = null;
-        _newpassword = null;
 
         var commands = new Dictionary<string, Action<string[]>>
         {
-            ["add"] = args =>
+            ["set"] = args =>
             {
                 if (!Parsing.TryParseNickname(args[1], out string username)) throw FormatException(Validation.WrongNicknameInfo);
                 if (!Parsing.TryParsePassword(args[2], out string password)) throw FormatException(Validation.WrongPasswordInfo);
@@ -67,13 +64,6 @@ internal class User : BaseCmd
                 if (!Parsing.TryParseNickname(args[2], out string newusername)) throw FormatException(Validation.WrongNicknameInfo);
                 _oldusername = oldusername;
                 _newusername = newusername;
-            },
-            ["changepass"] = args =>
-            {
-                if (!Parsing.TryParseNickname(args[1], out string username)) throw FormatException(Validation.WrongNicknameInfo);
-                if (!Parsing.TryParsePassword(args[2], out string password)) throw FormatException(Validation.WrongPasswordInfo);
-                _username = username;
-                _newpassword = password;
             },
             ["delete"] = args =>
             {
@@ -90,7 +80,7 @@ internal class User : BaseCmd
 
         int expectedArgs = subname switch
         {
-            "add" or "rename" or "changepass" => 3,
+            "set" or "rename" => 3,
             "delete" => 2,
             "resetlimits" or "list" or "deleteall" => 1,
             _ => throw FormatException(InvalidCmdFormat)
@@ -106,9 +96,8 @@ internal class User : BaseCmd
     {
         var executes = new Dictionary<string, Func<(CmdResult, string)>>
         {
-            ["add"] = ExecuteAdd,
+            ["set"] = ExecuteSet,
             ["rename"] = ExecuteRename,
-            ["changepass"] = ExecuteChangePass,
             ["delete"] = ExecuteDelete,
             ["resetlimits"] = ExecuteResetLimits,
             ["list"] = ExecuteList,
@@ -122,17 +111,19 @@ internal class User : BaseCmd
 
         foreach (string nick in new[] { _username, _oldusername, _newusername })
         {
-            if (nick != null && UserManager.IsAutoManagedUser(nick))
+            if (nick != null && !UserRepository.Managable(nick))
                 return (CmdResult.Error, $"Nickname '{nick}' is reserved by server.");
         }
 
         return execute();
     }
 
-    private (CmdResult, string) ExecuteAdd()
+    private (CmdResult, string) ExecuteSet()
     {
-        if (UserManager.TryAddUserSync(_username, _password))
+        if (UserRepository.Managable(_username))
         {
+            UserRepository.SetUserSync(_username, _password);
+
             return (CmdResult.Success,
                 $"User '{_username}' added successfully.");
         }
@@ -143,8 +134,11 @@ internal class User : BaseCmd
 
     private (CmdResult, string) ExecuteRename()
     {
-        if (UserManager.TryRenameUser(_oldusername, _newusername))
+        if (UserRepository.Managable(_oldusername) && UserRepository.Managable(_newusername) && 
+            UserRepository.Exists(_oldusername) && !UserRepository.Exists(_newusername))
         {
+            UserRepository.RenameUser(_oldusername, _newusername);
+
             return (CmdResult.Success,
                 $"User '{_oldusername}' renamed to '{_newusername}' successfully.");
         }
@@ -153,22 +147,13 @@ internal class User : BaseCmd
             $"Failed to rename user '{_oldusername}' to '{_newusername}'.");
     }
 
-    private (CmdResult, string) ExecuteChangePass()
-    {
-        if (UserManager.TryChangePasswordSync(_username, _newpassword))
-        {
-            return (CmdResult.Success,
-                $"Password for user '{_username}' changed successfully.");
-        }
-
-        return (CmdResult.Error,
-            $"Failed to change password for user '{_username}'.");
-    }
-
     private (CmdResult, string) ExecuteDelete()
     {
-        if (UserManager.TryDeleteUserLink(_username))
+        if (UserRepository.Exists(_username) &&
+            UserRepository.Managable(_username))
         {
+            UserRepository.DeleteUser(_username);
+
             return (CmdResult.Success,
                 $"User '{_username}' deleted successfully.");
         }
@@ -179,18 +164,18 @@ internal class User : BaseCmd
 
     private (CmdResult, string) ExecuteResetLimits()
     {
-        UserManager.ResetLimits();
-        return (CmdResult.Success, "User limits have been reset.");
+        // Server.ResetLimits(); // TODO: move into separate command
+        // return (CmdResult.Success, "User limits have been reset.");
+
+        return (CmdResult.Error, "Resetting user limits is temporarily disabled.");
     }
 
     private (CmdResult, string) ExecuteList()
     {
-        IPEndPoint EndPointOf(string nick)
+        IPEndPoint EndpointOf(string nick)
         {
-            if (QuickServer.TryGetClientEndPoint(nick, out var endPoint))
-                return endPoint;
-
-            return null;
+            JoinedPlayer player = ConnectedPlayers.GetPlayer(nick);
+            return player?.EndPoint;
         }
 
         string StateOf(string nick)
@@ -201,19 +186,18 @@ internal class User : BaseCmd
                 .ToUpperInvariant();
         }
 
-        string NONE = PlayerState.None
-            .ToString().ToUpperInvariant();
+        string NONE = PlayerState.None.ToString().ToUpperInvariant();
 
-        IEnumerable<string> lines = UserManager.AllUsernames()
+        IEnumerable<string> lines = UserRepository.AllUsernames()
             .OrderBy(nick => StateOf(nick) == NONE ? 1 : 0)
             .ThenBy(nick => nick)
             .Select(nick =>
             {
-                IPEndPoint endPoint = EndPointOf(nick);
+                IPEndPoint endpoint = EndpointOf(nick);
                 string state = StateOf(nick);
 
                 return state != NONE ?
-                    $"{nick} from {endPoint} is {state}." :
+                    $"{nick} from {endpoint} is {state}." :
                     $"{nick} is OFFLINE.";
             });
 
@@ -223,11 +207,11 @@ internal class User : BaseCmd
 
     private (CmdResult, string) ExecuteDeleteAll()
     {
-        List<string> allUsers = UserManager.AllUsernames()
-            .Where(nick => !UserManager.IsAutoManagedUser(nick))
+        List<string> allUsers = UserRepository.AllUsernames()
+            .Where(nick => UserRepository.Managable(nick))
             .ToList();
 
-        if (allUsers.Any(nick => UserManager.IsOnline(nick)))
+        if (allUsers.Any(nick => ConnectedPlayers.IsConnected(nick)))
         {
             return (CmdResult.Error,
                 "Cannot delete all users while some are still online.");
@@ -236,7 +220,11 @@ internal class User : BaseCmd
         List<string> failed = new();
         foreach (string nick in allUsers)
         {
-            if (!UserManager.TryDeleteUserLink(nick))
+            if (UserRepository.Managable(nick))
+            {
+                UserRepository.DeleteUser(nick);
+            }
+            else
             {
                 failed.Add(nick);
             }

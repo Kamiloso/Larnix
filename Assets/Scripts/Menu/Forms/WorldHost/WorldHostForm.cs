@@ -27,7 +27,7 @@ namespace Larnix.Menu.Forms
         private string Address => _serverAnswer?.Address;
         private string Authcode => _serverAnswer?.Authcode;
         private ushort Port => PortFromAddress(Address);
-        private Task<string> RelayEstablishment => _serverAnswer?.RelayEstablishment;
+        private Task<string> RelayEstablishment => _serverAnswer?.RelayTask;
 
         private ServerAnswer _serverAnswer;
         private bool _relayEstablished;
@@ -97,7 +97,7 @@ namespace Larnix.Menu.Forms
                 );
 
                 _serverAnswer = ServerRunner.Instance.Start(
-                    Server.ServerType.Host, path, suggestions);
+                    ServerType.Host, path, suggestions);
 
                 OF_ServerAddress.text = _serverAnswer.Address;
                 OF_Authcode.text = _serverAnswer.Authcode;

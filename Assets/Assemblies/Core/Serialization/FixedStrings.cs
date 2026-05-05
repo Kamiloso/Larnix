@@ -7,6 +7,7 @@ namespace Larnix.Core.Serialization;
 public interface IFixedString
 {
     int Capacity { get; }
+    int Length { get; }
 }
 
 /*
@@ -14,16 +15,16 @@ AUTOGEN BEGIN
 #SIZE = 8 16 32 64 128 256 512 1024
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly struct FixedString#SIZE : IFixedString, IEquatable<FixedString8>
+public readonly struct FixedString#SIZE : IFixedString, IEquatable<FixedString#SIZE>
 {
     private readonly FixedBuffer#SIZE<char> _buffer;
 
     public int Capacity => #SIZE / 2;
+    public int Length => _buffer.Count;
 
-    public FixedString8(string value)
+    public FixedString#SIZE(string value)
     {
-        FixedBuffer8<char> buffer = new();
-
+        FixedBuffer#SIZE<char> buffer = new();
         int lngt = value.Length;
         for (int i = 0; i < lngt && !buffer.IsFull; i++)
         {
@@ -99,6 +100,7 @@ public readonly struct FixedString8 : IFixedString, IEquatable<FixedString8>
     private readonly FixedBuffer8<char> _buffer;
 
     public int Capacity => 8 / 2;
+    public int Length => _buffer.Count;
 
     public FixedString8(string value)
     {
@@ -170,6 +172,7 @@ public readonly struct FixedString16 : IFixedString, IEquatable<FixedString16>
     private readonly FixedBuffer16<char> _buffer;
 
     public int Capacity => 16 / 2;
+    public int Length => _buffer.Count;
 
     public FixedString16(string value)
     {
@@ -241,6 +244,7 @@ public readonly struct FixedString32 : IFixedString, IEquatable<FixedString32>
     private readonly FixedBuffer32<char> _buffer;
 
     public int Capacity => 32 / 2;
+    public int Length => _buffer.Count;
 
     public FixedString32(string value)
     {
@@ -312,6 +316,7 @@ public readonly struct FixedString64 : IFixedString, IEquatable<FixedString64>
     private readonly FixedBuffer64<char> _buffer;
 
     public int Capacity => 64 / 2;
+    public int Length => _buffer.Count;
 
     public FixedString64(string value)
     {
@@ -383,6 +388,7 @@ public readonly struct FixedString128 : IFixedString, IEquatable<FixedString128>
     private readonly FixedBuffer128<char> _buffer;
 
     public int Capacity => 128 / 2;
+    public int Length => _buffer.Count;
 
     public FixedString128(string value)
     {
@@ -454,6 +460,7 @@ public readonly struct FixedString256 : IFixedString, IEquatable<FixedString256>
     private readonly FixedBuffer256<char> _buffer;
 
     public int Capacity => 256 / 2;
+    public int Length => _buffer.Count;
 
     public FixedString256(string value)
     {
@@ -525,6 +532,7 @@ public readonly struct FixedString512 : IFixedString, IEquatable<FixedString512>
     private readonly FixedBuffer512<char> _buffer;
 
     public int Capacity => 512 / 2;
+    public int Length => _buffer.Count;
 
     public FixedString512(string value)
     {
@@ -596,6 +604,7 @@ public readonly struct FixedString1024 : IFixedString, IEquatable<FixedString102
     private readonly FixedBuffer1024<char> _buffer;
 
     public int Capacity => 1024 / 2;
+    public int Length => _buffer.Count;
 
     public FixedString1024(string value)
     {

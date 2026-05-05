@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using Larnix.Model.Worldgen;
 using Larnix.Core;
 using Larnix.Model;
-using Larnix.Socket.Server;
 
 namespace Larnix.Server.Commands.All;
 
@@ -13,7 +12,6 @@ internal class Info : BaseCmd
     public override string Pattern => $"{Name}";
     public override string ShortDescription => "Displays the server information.";
 
-    private QuickServer QuickServer => GlobRef.Get<QuickServer>();
     private IServer Server => GlobRef.Get<IServer>();
     private IGenerator Generator => GlobRef.Get<IGenerator>();
 
@@ -29,9 +27,9 @@ internal class Info : BaseCmd
     {
         IEnumerable<string> lines = new[] {
             $"Version: {GameInfo.Version}",
-            $"Players: {QuickServer.PlayerCount} / {QuickServer.PlayerLimit}",
+            $"Players: {Server.PlayerCount} / {Server.MaxPlayers}",
             $"Port: {Server.Port}",
-            $"Authcode: {QuickServer.Authcode}",
+            $"Authcode: {Server.Authcode}",
             $"Seed: {Generator.Seed}",
         };
 

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Net;
 using System.Reflection;
 using Larnix.Core.Utils;
 
@@ -10,6 +11,9 @@ namespace Larnix.Socket.Payload;
 
 public delegate void CmdHandler<T>(in T cmd) where T : unmanaged;
 public delegate void CmdSenderHandler<T>(in T cmd, string sender) where T : unmanaged;
+
+public delegate void ConnectedHandler(string nickname, IPEndPoint endpoint);
+public delegate void DisconnectedHandler(string nickname);
 
 [AttributeUsage(AttributeTargets.Struct, AllowMultiple = false)]
 public class CmdIdAttribute : Attribute

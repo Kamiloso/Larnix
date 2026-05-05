@@ -1,11 +1,11 @@
 #nullable enable
+using Larnix.Core;
 using Larnix.Core.Serialization;
-using Larnix.Socket.Helpers;
-using System.Net;
+using Larnix.Socket.Server.Interfaces;
 
 namespace Larnix.Socket.Server.Utility;
 
-public record QuickConfig
+public record QuickSettings
 {
     public ushort Port { get; }
     public ushort MaxPlayers { get; }
@@ -13,14 +13,19 @@ public record QuickConfig
     public bool EnableRegister { get; }
     public FixedString256 Motd { get; }
     public FixedString32 HostUser { get; }
+    public Version Version { get; }
     public InterfacesStruct Interfaces { get; }
     public SecurityStruct Security { get; }
     public string? RelayAddress { get; }
 
-    public QuickConfig(
+    public QuickSettings(
         ushort port,
         ushort maxPlayers,
         bool isLoopback,
+        bool enableRegister,
+        FixedString256 motd,
+        FixedString32 hostUser,
+        Version version,
         InterfacesStruct interfaces,
         SecurityStruct? security = default,
         string? relayAddress = null
@@ -29,6 +34,10 @@ public record QuickConfig
         Port = port;
         MaxPlayers = maxPlayers;
         IsLoopback = isLoopback;
+        EnableRegister = enableRegister;
+        Motd = motd;
+        HostUser = hostUser;
+        Version = version;
         Interfaces = interfaces;
         Security = security ?? SecurityStruct.Default;
         RelayAddress = relayAddress;
@@ -37,6 +46,7 @@ public record QuickConfig
     public record InterfacesStruct(
         ISecretRepository SecretRepository,
         IQuickUserRepository UserRepository,
+        IPasswordHasher PasswordHasher,
         IBanProvider BanProvider
         );
 

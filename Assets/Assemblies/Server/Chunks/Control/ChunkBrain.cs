@@ -85,10 +85,10 @@ internal class ChunkBrain : IDisposable
 
     public Block UpdateBlock(Vec2Int pos, bool isFront, BlockData1 newBlock, BreakMode breakMode)
     {
-        BlockHeader2 oldHeader = ActiveChunkReference.Headers[pos.x, pos.y];
+        BlockHeader2 oldHeader = ActiveChunkReference[pos.x, pos.y].Header;
         Block result = RefreshBlock(pos, newBlock, isFront);
         RefreshCollider(pos);
-        BlockHeader2 newHeader = ActiveChunkReference.Headers[pos.x, pos.y];
+        BlockHeader2 newHeader = ActiveChunkReference[pos.x, pos.y].Header;
 
         if (breakMode == BreakMode.Weak)
         {
@@ -110,7 +110,7 @@ internal class ChunkBrain : IDisposable
     {
         Block result = GetBlock(pos, isFront);
         RefreshCollider(pos);
-        BlockHeader2 newHeader = ActiveChunkReference.Headers[pos.x, pos.y];
+        BlockHeader2 newHeader = ActiveChunkReference[pos.x, pos.y].Header;
 
         Vec2Int POS = BlockUtils.GlobalBlockCoords(_chunkpos, pos);
         OnBlockUpdate?.Invoke(

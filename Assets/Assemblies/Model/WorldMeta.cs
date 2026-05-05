@@ -5,12 +5,12 @@ using Larnix.Core.Files;
 
 namespace Larnix.Model;
 
-public readonly struct WorldMeta
+public class WorldMeta
 {
-    // historically metadata was "version<newline>nickname".  New files now
-    // use "version:nickname".  Because nicknames cannot contain colons, the new
-    // format is unambiguous and parsing is straightforward.  Legacy files are
-    // still accepted during read.
+    // historically metadata was "version<newline>nickname".
+    // New files now use "version:nickname".
+    // Because nicknames cannot contain colons, the new format is unambiguous and parsing is straightforward.
+    // Legacy files are still accepted during read.
 
     private const char LEGACY_SEP = '\n';
     private const char NEW_SEP = ':';
@@ -18,7 +18,10 @@ public readonly struct WorldMeta
     public Version Version { get; }
     public string Nickname { get; }
 
-    public static WorldMeta Default => new(GameInfo.Version, GameInfo.ReservedNickname);
+    public static WorldMeta Default => new(
+        GameInfo.Version,
+        GameInfo.ReservedNickname
+        );
 
     public WorldMeta(Version version, string nickname)
     {
@@ -40,8 +43,7 @@ public readonly struct WorldMeta
             );
         }
 
-        return ParseFormat(text, text.Contains(NEW_SEP) ?
-            NEW_SEP : LEGACY_SEP);
+        return ParseFormat(text, text.Contains(NEW_SEP) ? NEW_SEP : LEGACY_SEP);
     }
 
     public static void SaveToWorldFolder(string worldName, WorldMeta mdata)

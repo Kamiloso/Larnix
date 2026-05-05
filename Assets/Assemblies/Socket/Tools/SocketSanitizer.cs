@@ -1,30 +1,31 @@
 #nullable enable
 using Larnix.Core.Serialization;
-using Larnix.Model;
-using Larnix.Model.Utils;
 
 namespace Larnix.Socket.Tools;
 
 public static class SocketSanitizer
 {
-    public static FixedString32 ToGoodNickname(in FixedString32 nickname)
+    public static FixedString32 ToGoodNickname(FixedString32 nickname)
     {
-        return Validation.IsGoodNickname(nickname)
+        nickname = Sanitizer.Filter(nickname);
+        return SocketInfo.IsValidNickname(nickname)
             ? nickname
-            : new FixedString32(GameInfo.ReservedNickname);
+            : new FixedString32(SocketInfo.ReservedNickname);
     }
 
-    public static FixedString64 ToGoodPassword(in FixedString64 password)
+    public static FixedString64 ToGoodPassword(FixedString64 password)
     {
-        return Validation.IsGoodPassword(password)
+        password = Sanitizer.Filter(password);
+        return SocketInfo.IsValidPassword(password)
             ? password
-            : new FixedString64(GameInfo.ReservedPassword);
+            : new FixedString64(SocketInfo.ReservedPassword);
     }
 
-    public static FixedString256 ToGoodMotd(in FixedString256 text)
+    public static FixedString256 ToGoodMotd(FixedString256 text)
     {
-        return Validation.IsGoodText<FixedString256>(text)
+        text = Sanitizer.Filter(text);
+        return SocketInfo.IsValidMotd(text)
             ? text
-            : new FixedString256(GameInfo.DefaultMotd);
+            : new FixedString256(SocketInfo.DefaultMotd);
     }
 }

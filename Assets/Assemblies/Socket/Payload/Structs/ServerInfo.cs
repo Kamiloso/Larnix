@@ -7,7 +7,7 @@ using Version = Larnix.Core.Version;
 namespace Larnix.Socket.Payload.Structs;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-internal readonly record struct ServerInfo : ISanitizable<ServerInfo>
+internal readonly struct ServerInfo : ISanitizable<ServerInfo>
 {
     public boolsrl MayRegister { get; } // is registration enabled?
     public ushort Players { get; }
@@ -22,11 +22,11 @@ internal readonly record struct ServerInfo : ISanitizable<ServerInfo>
     public ServerInfo(boolsrl mayRegister, ushort players, ushort maxPlayers, Version gameVersion, long timestamp, long runId, in FixedString256 motd, in FixedString32 hostUser, in FixedRsaPublic rsaPublicKey)
     {
         MayRegister = Sanitizer.Filter(mayRegister);
-        Players = Sanitizer.Filter(players);
-        MaxPlayers = Sanitizer.Filter(maxPlayers);
+        Players = players;
+        MaxPlayers = maxPlayers;
         GameVersion = Sanitizer.Filter(gameVersion);
-        Timestamp = Sanitizer.Filter(timestamp);
-        RunId = Sanitizer.Filter(runId);
+        Timestamp = timestamp;
+        RunId = runId;
         Motd = SocketSanitizer.ToGoodMotd(motd);
         HostUser = SocketSanitizer.ToGoodNickname(hostUser);
         RsaPublicKey = Sanitizer.Filter(rsaPublicKey);

@@ -29,17 +29,15 @@ public static class Sanitizer
         return (byte)(value % 16);
     }
 
-    public static T FilterToFull<T, U>(T buffer)
+    public static T FillAndFilter<T, U>(T buffer, U filler)
         where T : unmanaged, IFixedBuffer<U>
         where U : unmanaged
     {
-        buffer = Filter(buffer);
-
         while (!buffer.IsFull)
         {
-            buffer.Add(default);
+            buffer.Add(filler);
         }
 
-        return buffer;
+        return Filter(buffer);
     }
 }

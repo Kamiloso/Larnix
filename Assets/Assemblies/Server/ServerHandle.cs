@@ -2,27 +2,26 @@
 using Larnix.Core;
 using Larnix.Core.Files;
 using Larnix.Core.Utils;
+using Larnix.Model;
+using Larnix.Model.Blocks;
+using Larnix.Model.Database;
+using Larnix.Model.Database.Connection;
 using Larnix.Model.Json;
 using Larnix.Model.Physics;
 using Larnix.Model.Worldgen;
+using Larnix.Server.Chunks;
+using Larnix.Server.Chunks.Data;
+using Larnix.Server.Chunks.Scripts;
 using Larnix.Server.Commands;
 using Larnix.Server.Data;
-using Larnix.Model.Database.Connection;
-using Larnix.Server.Chunks;
-using Larnix.Server.Transmission;
-using System;
-using System.IO;
-using System.Threading.Tasks;
-using Larnix.Model.Database;
 using Larnix.Server.Entities;
 using Larnix.Server.Entities.Data;
 using Larnix.Server.Entities.Scripts;
-using Larnix.Server.Chunks.Data;
-using Larnix.Server.Chunks.Scripts;
-using Larnix.Model.Blocks;
+using Larnix.Socket.Server.Interfaces;
+using System;
+using System.IO;
+using System.Threading.Tasks;
 using static Larnix.Server.ServerRunner;
-using Larnix.Model;
-using Larnix.Socket.Server;
 
 namespace Larnix.Server;
 
@@ -37,95 +36,64 @@ internal class ServerHandle : IServerHandle
 {
     public ServerAnswer Answer { get; }
 
-    private ServerType ServerType { get; }
-    private string WorldPath { get; }
-    private RunSuggestions Suggestions { get; }
-    private Action StopSignal { get; }
-
-    private IDbControl Db => GlobRef.Get<IDbControl>();
-    private IServer Server => GlobRef.Get<IServer>();
-    private IClock Clock => GlobRef.Get<IClock>();
-    private QuickServer QuickServer => GlobRef.Get<QuickServer>();
-    private ServerConfig ServerConfig => GlobRef.Get<ServerConfig>();
-    private IWorldMetaManager WorldMetaManager => GlobRef.Get<IWorldMetaManager>();
-    private IDataSaver DataSaver => GlobRef.Get<IDataSaver>();
-
-    private readonly Locker? _locker;
-    private Receiver? _receiver;
-    private Scripts? _scripts;
+    private readonly Locker _locker;
+    private readonly ServerInfo _serverInfo;
+    private readonly DbControl _db;
+    private readonly WorldMetaManager _worldMetaManager;
+    private readonly Clock _clock;
+    private readonly DataSaver _dataSaver;
+    private readonly Server _server;
+    private readonly Scripts _scripts;
 
     private bool _disposed = false;
 
     public ServerHandle(ServerType serverType, string worldPath, RunSuggestions suggestions, Action stopSignal)
     {
-        ServerType = serverType;
-        WorldPath = worldPath;
-        Suggestions = suggestions;
-        StopSignal = stopSignal;
-
         if (GlobRef.Has<IServer>())
             throw new InvalidOperationException("Server is already running on current thread.");
         
-        if (ServerType == ServerType.Remote)
+        if (serverType == ServerType.Remote)
             Echo.LogRaw("Starting the server...\n");
 
-        _locker = Locker.LockOrException(WorldPath, "world_locker.lock", () =>
-            new IOException($"Trying to access world at \"{WorldPath}\" that is already open."));
-        
-        CreateSingletons();
+        _locker = Locker.LockOrException(worldPath, "world_locker.lock", () =>
+            new IOException($"Trying to access world at \"{worldPath}\" that is already open."));
 
-        Server.PrintHelloToConsole();
+        // ----------------------------------------------------------------------------------------
 
-        if (ServerType == ServerType.Remote)
-        {
-            WorldMetaManager.EnsureDetachedServer();
-        }
-
-        TryEstablishRelay(Suggestions.RelayAddress, out Task<string>? relayTask);
-
-        Answer = new ServerAnswer(
-            Address: Server.LocalAddress,
-            Authcode: Server.Authcode,
-            RelayEstablishment: relayTask
-            );
-
-        Echo.LogSuccess($"Server is running...");
-    }
-
-    private void CreateSingletons()
-    {
-        GlobRef.Set<IServer>(new Server(ServerType, WorldPath, StopSignal));
-
-        GlobRef.Set<ServerConfig>(
+        // Config
+        GlobRef.Set<IServerInfo>(_serverInfo = new ServerInfo(serverType, worldPath));
+        GlobRef.Set(
             Config.FromFile<ServerConfig>(
-                WorldPath, Common.ConfigFile
-                )
-            );
+                worldPath, Common.ConfigFile
+                ));
 
+        // Database
         GlobRef.Set<IDbControl>(
-            new DbControl(
-                new SqliteHandle(WorldPath, Common.DatabaseFile)
-                )
-            );
+            _db = new DbControl(
+                new SqliteHandle(worldPath, Common.DatabaseFile)
+                ));
+        GlobRef.Set<IDataSaver>(_dataSaver = new DataSaver());
+        GlobRef.Set<IWorldMetaManager>(_worldMetaManager = new WorldMetaManager());
+        GlobRef.New<IUserRepository, UserRepository>();
+        GlobRef.New<IValueRepository, ValueRepository>();
 
+        // Services
         GlobRef.Set<IGenerator>(
             new Generator(
-                Db.Values.GetOrPut("seed",
-                    () => Suggestions.Seed ?? RandUtils.SecureLong())
-                )
-            );
-
+                _db.Values.GetOrInsert("seed",
+                    () => suggestions.Seed ?? RandUtils.SecureLong())
+                ));
         GlobRef.Set<IPhysicsManager>(
-            new PhysicsManager(Common.PhysicsSectorSize)
-            );
-
-        GlobRef.New<IDataSaver, DataSaver>();
-
-        GlobRef.New<IClock, Clock>();
-        GlobRef.New<IWorldMetaManager, WorldMetaManager>();
-        GlobRef.New<IUserRepository, UserRepository>();
-
+            new PhysicsManager(
+                Common.PhysicsSectorSize
+                ));
+        GlobRef.Set<IClock>(_clock = new Clock());
         GlobRef.New<IChat, Chat>();
+
+        // Socket Management
+        GlobRef.New<IBanProvider, BanProvider>();
+        GlobRef.New<IPasswordHasher, PasswordHasher>();
+        GlobRef.Set<IServer>(_server = new Server(suggestions, stopSignal, out Task<string?>? relayTask));
 
         // Chunks
         GlobRef.New<IChunkRepository, ChunkRepository>();
@@ -139,6 +107,7 @@ internal class ServerHandle : IServerHandle
         GlobRef.New<IEntityControllers, EntityControllers>();
         GlobRef.New<IConnectedPlayers, ConnectedPlayers>();
 
+        // Scripts
         _scripts = new Scripts(
             (1, new IScript[] {
                 GlobRef.New<IChunkManager, ChunkManager>(),
@@ -153,61 +122,53 @@ internal class ServerHandle : IServerHandle
             })
         );
 
-        GlobRef.Set<QuickServer>(
-            new QuickServer(
-                userAccess: Db.Users,
-                config: new QuickSettings()
-            ));
+        // ----------------------------------------------------------------------------------------
 
-        GlobRef.Set<IUserManager>(
-            QuickServer.IUserManager
+        EnsureDetachedServer();
+        PrintHelloToConsole();
+
+        void EnsureDetachedServer()
+        {
+            if (serverType == ServerType.Remote)
+            {
+                _worldMetaManager.EnsureDetachedServer();
+            }
+        }
+
+        void PrintHelloToConsole()
+        {
+            if (_serverInfo.Type == ServerType.Remote)
+            {
+                Echo.SetTitle("Larnix Server " + GameInfo.Version);
+                Echo.PrintBorder();
+
+                Echo.LogRaw($"Socket created on port: {_server.Port}\n");
+                Echo.LogRaw($"Authcode: {_server.Authcode}\n");
+                Echo.PrintBorder();
+            }
+            else
+            {
+                Echo.Log($"Port: {_server.Port} | Authcode: {_server.Authcode}");
+            }
+        }
+
+        Answer = new ServerAnswer(
+            Address: _server.LocalAddress,
+            Authcode: _server.Authcode,
+            RelayTask: relayTask
             );
 
-        _receiver = new Receiver();
-    }
-
-    private bool TryEstablishRelay(string? relaySuggestion, out Task<string>? relayTask)
-    {
-        // WARNING: GlobRef should only be accessed from the main thread!
-        QuickServer quickServer = GlobRef.Get<QuickServer>();
-        string relayAddress = GlobRef.Get<ServerConfig>().Network_RelayAddress;
-
-        if (ServerType == ServerType.Remote)
-        {
-            if (ServerConfig.Network_UseRelay)
-            {
-                relayTask = Task.Run(
-                    () => quickServer.EstablishRelayAsync(relayAddress));
-                return true;
-            }
-        }
-        else
-        {
-            if (relaySuggestion != null)
-            {
-                relayTask = Task.Run(
-                    () => quickServer.EstablishRelayAsync(relaySuggestion));
-                return true;
-            }
-        }
-
-        relayTask = null;
-        return false;
+        Echo.LogSuccess($"Server is running...");
     }
 
     public void Tick(float deltaTime)
     {
-        Clock.Tick(deltaTime);
+        _clock.Tick(deltaTime);
 
-        // Server ticks
-        _receiver!.Tick(Clock.DeltaTime); // for limits
-        QuickServer.Tick(Clock.DeltaTime); // refresh & process packets
+        _server.Tick(deltaTime);
+        _scripts.Tick(_clock.DeltaTime);
 
-        // Process server logic
-        _scripts!.Tick(Clock.DeltaTime);
-
-        // Tick data saving
-        DataSaver.Tick(Clock.DeltaTime);
+        _dataSaver.Tick(_clock.DeltaTime);
     }
 
     public void Dispose(bool emergency)
@@ -215,16 +176,16 @@ internal class ServerHandle : IServerHandle
         if (_disposed) return;
         _disposed = true;
 
-        QuickServer?.Dispose();
+        _server.Dispose();
 
-        if (DataSaver != null && !emergency)
+        if (_dataSaver != null && !emergency)
         {
-            DataSaver.SaveAll();
+            _dataSaver.SaveAll();
             Echo.Log("Data has been saved.");
         }
 
-        Db?.Handle.Dispose();
-        _locker?.Dispose();
+        _db.Handle.Dispose();
+        _locker.Dispose();
 
         Echo.Log(emergency ?
             "Server has crashed!" :

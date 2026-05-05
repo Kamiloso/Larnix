@@ -8,6 +8,7 @@ using Larnix.Socket.Security.Keys;
 using Larnix.Socket.Tools;
 using System;
 using System.Net;
+using Larnix.Socket.Server.Interfaces;
 
 namespace Larnix.Socket.Server.Receivers;
 
@@ -19,7 +20,7 @@ internal class WebReceiver : ITickable, IDisposable
     private readonly KeyRsa _rsa;
     private readonly IInfoProvider _infoProvider;
     private readonly Coroutines _coroutines;
-    private readonly QuickConfig _settings;
+    private readonly QuickSettings _settings;
 
     private readonly AsyncDecryptor _asyncDecryptor;
     private readonly ConnReceiver _connReceiver;
@@ -37,7 +38,7 @@ internal class WebReceiver : ITickable, IDisposable
         IAsyncLogins asyncLogins,
         IInfoProvider infoProvider,
         Coroutines coroutines,
-        QuickConfig settings
+        QuickSettings settings
         )
     {
         _socket = socket;

@@ -1,16 +1,16 @@
 #nullable enable
+using Larnix.Core.Serialization;
 using Larnix.Core.Vectors;
 using Larnix.Model.Enums;
 using Larnix.Model.Worldgen.Biomes;
 using Larnix.Socket.Payload;
 using System.Runtime.InteropServices;
-using Larnix.Core.Serialization;
 
 namespace Larnix.Server.Packets;
 
-[CmdId(0x07)]
+[CmdId(6)]
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct FrameInfo
+public readonly struct FrameInfo : ISanitizable<FrameInfo>
 {
     public long ServerTick { get; }
     public Col32 SkyColor { get; }
@@ -21,10 +21,10 @@ public readonly record struct FrameInfo
     public FrameInfo(long serverTick, Col32 skyColor, BiomeID biomeId, WeatherID weatherId, float tps)
     {
         ServerTick = serverTick;
-        SkyColor = skyColor;
-        BiomeId = Sanitizer_Legacy.SanitizeEnum(biomeId);
-        WeatherId = Sanitizer_Legacy.SanitizeEnum(weatherId);
-        Tps = Sanitizer_Legacy.SanitizeFloat(tps);
+        SkyColor = Sanitizer.Filter(skyColor);
+        BiomeId = Sanitizer.Filter(biomeId);
+        WeatherId = Sanitizer.Filter(weatherId);
+        Tps = Sanitizer.ToFinite(tps);
     }
 
     public FrameInfo Sanitize()

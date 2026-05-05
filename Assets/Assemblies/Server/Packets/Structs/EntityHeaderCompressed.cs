@@ -27,9 +27,11 @@ public readonly struct EntityHeaderCompressed : ISanitizable<EntityHeaderCompres
     );
     public float Rotation => _rt * (360f / 256f);
 
-    public EntityHeaderCompressed(in EntityHeader header)
+    public EntityHeaderCompressed(EntityHeader header)
     {
-        _id = Sanitizer.Filter(header.Id);
+        header = Sanitizer.Filter(header);
+
+        _id = header.Id;
 
         double px = Math.Clamp(header.Position.x, int.MinValue + 1, int.MaxValue - 1);
         double py = Math.Clamp(header.Position.y, int.MinValue + 1, int.MaxValue - 1);

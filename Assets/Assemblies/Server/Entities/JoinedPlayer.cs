@@ -4,6 +4,7 @@ using Larnix.Core.Vectors;
 using Larnix.Server.Entities.Controllers;
 using Larnix.Server.Packets;
 using System.Collections.Generic;
+using System.Net;
 
 namespace Larnix.Server.Entities;
 
@@ -19,42 +20,51 @@ internal class JoinedPlayer
 {
     public ulong Uid { get; }
     public string Nickname { get; }
+    public IPEndPoint EndPoint { get; }
 
     public HashSet<ulong> NearbyEntityUids { get; set; } = new();
     public HashSet<Vec2Int> LoadedChunks { get; set; } = new();
 
-    private PlayerController? PlayerController => EntityControllers.GetController(Uid) as PlayerController;
+    public bool HasPlayerUpdate => _lastUpdate is not null;
+    public Vec2 RenderPosition => GetPlayerController()?.Position ?? _lastUpdate?.Position ?? Vec2.Zero;
+    public uint FixedFrame => _lastUpdate?.FixedFrame ?? 0;
 
-    public PlayerState State
-    {
-        get
-        {
-            if (PlayerController is null)
-                return PlayerState.Dead;
-
-            return PlayerController.IsActive
-                ? PlayerState.Alive
-                : PlayerState.Inactive;
-        }
-    }
-
-    public Vec2 RenderPosition => PlayerController?.Position ?? LastUpdate!.Position;
-    public PlayerUpdate? LastUpdate { get; private set; }
+    private PlayerUpdate? _lastUpdate;
 
     private IEntityControllers EntityControllers => GlobRef.Get<IEntityControllers>();
 
-    public JoinedPlayer(ulong uid, string nickname)
+    public JoinedPlayer(ulong uid, string nickname, IPEndPoint endpoint)
     {
         Uid = uid;
         Nickname = nickname;
+        EndPoint = endpoint;
     }
 
-    public void Update(PlayerUpdate msg)
+    public void Update(in PlayerUpdate msg)
     {
-        if (PlayerController is not null)
+        var controller = GetPlayerController();
+
+        if (controller is not null)
         {
-            PlayerController.UpdateTransform(msg);
-            LastUpdate = msg;
+            controller.UpdateTransform(msg);
+            _lastUpdate = msg;
         }
+    }
+
+    public PlayerState GetState()
+    {
+        var controller = GetPlayerController();
+
+        if (controller is null)
+            return PlayerState.Dead;
+
+        return controller.IsActive
+            ? PlayerState.Alive
+            : PlayerState.Inactive;
+    }
+
+    private PlayerController? GetPlayerController()
+    {
+        return EntityControllers.GetController(Uid) as PlayerController;
     }
 }

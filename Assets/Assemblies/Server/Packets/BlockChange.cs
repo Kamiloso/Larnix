@@ -17,18 +17,20 @@ public readonly struct BlockChange : ISanitizable<BlockChange>
     public BlockHeader1 Tool { get; }
     public long Operation { get; }
     public boolsrl IsFront { get; }
+    public boolsrl IsPlace { get; }
 
-    public BlockChange(Vec2Int POS_, BlockHeader1 item, BlockHeader1 tool, long operation, bool front)
+    public BlockChange(Vec2Int POS_, BlockHeader1 item, BlockHeader1 tool, long operation, boolsrl isFront, boolsrl isPlace)
     {
         POS = LarnixSanitizer.ToWorldPOS(POS_);
         Item = Sanitizer.Filter(item);
         Tool = Sanitizer.Filter(tool);
-        Operation = Sanitizer.Filter(operation);
-        IsFront = Sanitizer.Filter(front);
+        Operation = operation;
+        IsFront = Sanitizer.Filter(isFront);
+        IsPlace = Sanitizer.Filter(isPlace);
     }
 
     public BlockChange Sanitize()
     {
-        return new BlockChange(POS, Item, Tool, Operation, IsFront);
+        return new BlockChange(POS, Item, Tool, Operation, IsFront, IsPlace);
     }
 }

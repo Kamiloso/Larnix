@@ -9,14 +9,12 @@ using System.Runtime.InteropServices;
 
 namespace Larnix.Server.Packets;
 
-[CmdId(0x03)]
+[CmdId(3)]
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public readonly struct ChunkInfo : ISanitizable<ChunkInfo>
 {
     public Vec2Int Chunk { get; }
-
-    private readonly byte _isLoad;
-    public bool IsLoad => _isLoad != 0;
+    public boolsrl IsLoad { get; }
 
     private FixedBuffer1024<byte> Buffer1 { get; }
     private FixedBuffer256<byte> Buffer2 { get; }
@@ -26,30 +24,30 @@ public readonly struct ChunkInfo : ISanitizable<ChunkInfo>
         Buffer2.ToArray()
         );
 
-    private ChunkInfo(Vec2Int chunk, bool isLoad, in FixedBuffer1024<byte> buffer1, in FixedBuffer256<byte> buffer2)
+    private ChunkInfo(Vec2Int chunk, boolsrl isLoad, in FixedBuffer1024<byte> buffer1, in FixedBuffer256<byte> buffer2)
     {
-        Chunk = BlockUtils.ChunkInWorld(chunk) ? chunk : Vec2Int.Zero;
-        _isLoad = (byte)(isLoad ? 1 : 0);
-        Buffer1 = buffer1;
-        Buffer2 = buffer2;
+        Chunk = LarnixSanitizer.ToWorldChunk(chunk);
+        IsLoad = Sanitizer.Filter(isLoad);
+        Buffer1 = Sanitizer.Filter(buffer1);
+        Buffer2 = Sanitizer.Filter(buffer2);
     }
 
     public static ChunkInfo MakeLoadInfo(Vec2Int chunk, byte[] chunkBytes)
     {
         if (chunkBytes.Length > 1280)
-            throw new ArgumentException($"Chunk bytes cannot exceed {1280} bytes.");
+            throw new ArgumentException($"Chunk bytes cannot exceed size of {1280} bytes.");
 
         FixedBuffer1024<byte> buffer1 = new();
-        for (int ptr = 0; ptr < 1024 && ptr < chunkBytes.Length; ptr++)
-        {
-            buffer1.Add(chunkBytes[ptr]);
-        }
+        buffer1.AddRange(chunkBytes.AsSpan(
+            start: 0,
+            length: Math.Min(1024, chunkBytes.Length))
+            );
 
         FixedBuffer256<byte> buffer2 = new();
-        for (int ptr = 1024; ptr < 1280 && ptr < chunkBytes.Length; ptr++)
-        {
-            buffer2.Add(chunkBytes[ptr]);
-        }
+        buffer2.AddRange(chunkBytes.AsSpan(
+            start: 1024,
+            length: Math.Max(0, chunkBytes.Length - 1024))
+            );
 
         return new ChunkInfo(chunk, true, buffer1, buffer2);
     }

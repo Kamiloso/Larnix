@@ -19,7 +19,7 @@ internal interface ICmdManager : IScript, ICmdExecutor { }
 
 internal class CmdManager : ICmdManager
 {
-    private IServer Server => GlobRef.Get<IServer>();
+    private IServerInfo ServerInfo => GlobRef.Get<IServerInfo>();
     private IWorldMetaManager WorldMetaManager => GlobRef.Get<IWorldMetaManager>();
     private IConnectedPlayers ConnectedPlayers => GlobRef.Get<IConnectedPlayers>();
     private ServerConfig ServerConfig => GlobRef.Get<ServerConfig>();
@@ -129,7 +129,7 @@ internal class CmdManager : ICmdManager
             case "UNL0CKC0NS0L3":
 
                 ServerConfig.ElevateHostToAdmin = true;
-                Config.ToFile(Server.WorldPath, Common.ConfigFile, ServerConfig);
+                Config.ToFile(ServerInfo.WorldPath, Common.ConfigFile, ServerConfig);
 
                 result = (CmdResult.Success,
                     "Developer access granted. All commands unlocked.");

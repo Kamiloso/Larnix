@@ -53,8 +53,8 @@ internal class Tp : BaseCmd
         {
             Vec2 _realPosition = _position + Common.WorldEpsilonUp;
 
-            Payload_Legacy packet = new Teleport(_realPosition);
-            Server.Send(_nickname, packet);
+            Teleport payload = new(_realPosition);
+            Server.Send(_nickname, payload);
 
             ulong uid = ConnectedPlayers.UidByNickname(_nickname);
             var controller = (EntityControllers.GetController(uid) as PlayerController)!;

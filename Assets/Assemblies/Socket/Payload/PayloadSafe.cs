@@ -10,7 +10,7 @@ internal readonly struct PayloadSafe<T> : ISanitizable<PayloadSafe<T>> where T :
     public readonly PayloadHeader Header;
     public readonly PayloadStruct<T> Payload;
 
-    public PayloadSafe(in PayloadHeader header, in PayloadStruct<T> payload)
+    public PayloadSafe(PayloadHeader header, in PayloadStruct<T> payload)
     {
         Header = Sanitizer.Filter(header);
         Payload = Sanitizer.Filter(payload);

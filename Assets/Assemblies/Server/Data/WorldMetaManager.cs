@@ -17,11 +17,11 @@ internal interface IWorldMetaManager
 
 internal class WorldMetaManager : IWorldMetaManager
 {
-    private WorldMeta _worldMeta;
+    private WorldMeta _worldMeta = WorldMeta.Default;
     private WorldMeta WorldMeta
     {
         get => _worldMeta;
-        set => WorldMeta.SaveToFolder(Server.WorldPath, _worldMeta = value);
+        set => WorldMeta.SaveToFolder(ServerInfo.WorldPath, _worldMeta = value);
     }
 
     public Version Version => WorldMeta.Version;
@@ -31,18 +31,18 @@ internal class WorldMetaManager : IWorldMetaManager
         private set => WorldMeta = new WorldMeta(WorldMeta.Version, value);
     }
 
-    private IServer Server => GlobRef.Get<IServer>();
+    private IServerInfo ServerInfo => GlobRef.Get<IServerInfo>();
     private IUserRepository UserRepository => GlobRef.Get<IUserRepository>();
 
     public WorldMetaManager()
     {
-        var meta = WorldMeta.ReadFromFolder(Server.WorldPath);
+        WorldMeta? meta = WorldMeta.ReadFromFolder(ServerInfo.WorldPath);
         WorldMeta = new WorldMeta(GameInfo.Version, meta.Nickname);
     }
 
     public void EnsureDetachedServer()
     {
-        if (Server.ServerType != ServerType.Remote)
+        if (ServerInfo.Type != ServerType.Remote)
             throw new InvalidOperationException("EnsureDetachedServer() should only be called for headless servers.");
 
         if (HostNickname == GameInfo.ReservedNickname)
@@ -59,7 +59,7 @@ internal class WorldMetaManager : IWorldMetaManager
 
             if (Validation.IsGoodPassword(password))
             {
-                UserRepository.SetPasswordSync(HostNickname, password);
+                UserRepository.SetUserSync(HostNickname, password);
                 HostNickname = new FixedString32(GameInfo.ReservedNickname);
                 changeSuccess = true;
             }

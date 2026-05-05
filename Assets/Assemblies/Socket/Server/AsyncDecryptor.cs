@@ -12,7 +12,7 @@ internal class AsyncDecryptor
 {
     private readonly TrafficLimiter<string> _decryptionLimiter;
 
-    public AsyncDecryptor(QuickConfig settings)
+    public AsyncDecryptor(QuickSettings settings)
     {
         _decryptionLimiter = new TrafficLimiter<string>(
             maxTrafficLocal: settings.Security.Limiters.Decryptions.PerNetwork,

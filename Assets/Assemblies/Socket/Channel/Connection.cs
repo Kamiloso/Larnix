@@ -17,8 +17,6 @@ internal class Connection : ITickable, IDisposable
 {
     public long AvgRtt => _transmitter.AvgRtt;
     public bool IsDead { get; private set; }
-    public bool StartEmitted { get; private set; }
-    public bool StopEmitted { get; private set; }
 
     public IPEndPoint Target => _socket.Target;
 
@@ -36,16 +34,8 @@ internal class Connection : ITickable, IDisposable
 
     private readonly Queue<byte[]> _readyBuffer = new();
     private byte[] _current = Array.Empty<byte>();
-    private CastPermission _castPermission = CastPermission.None;
 
     private bool _disposed;
-
-    private enum CastPermission
-    {
-        None,
-        Normal,
-        Full
-    }
 
     public Connection(ITargetedSocket socket, in FixedAes aesKey)
     {
@@ -117,31 +107,13 @@ internal class Connection : ITickable, IDisposable
 
     public bool MoveNext()
     {
-        if (!StartEmitted)
-        {
-            StartEmitted = true;
-            _current = NetworkSerializer.PackAsIfDecrypted(new Start());
-            _castPermission = CastPermission.Full;
-            return true;
-        }
-
         if (_readyBuffer.TryDequeue(out byte[] next))
         {
             _current = next;
-            _castPermission = CastPermission.Normal;
-            return true;
-        }
-
-        if (IsDead && !StopEmitted)
-        {
-            StopEmitted = true;
-            _current = NetworkSerializer.PackAsIfDecrypted(new Stop());
-            _castPermission = CastPermission.Full;
             return true;
         }
 
         _current = Array.Empty<byte>();
-        _castPermission = CastPermission.None;
         return false;
     }
 
@@ -152,11 +124,7 @@ internal class Connection : ITickable, IDisposable
             typeof(T) == typeof(Stop) ||
             typeof(T) == typeof(AllowConnection);
 
-        bool deny = false;
-        deny |= _castPermission == CastPermission.None;
-        deny |= _castPermission == CastPermission.Normal && isInternalPacket;
-
-        if (deny)
+        if (!isInternalPacket) // block such packets, they are server-generated
         {
             result = default;
             return false;

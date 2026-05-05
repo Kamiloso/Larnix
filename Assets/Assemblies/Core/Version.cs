@@ -7,19 +7,12 @@ using System.Runtime.InteropServices;
 namespace Larnix.Core;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct Version
+public readonly record struct Version(uint Value)
 {
-    public uint Value { get; }
-
-    public Version(uint value)
-    {
-        Value = value;
-    }
-
     /// <summary>
     /// Examples: "1", "1.2", "1.2.3", "1.2.3.4". Fourth number doesn't affect compatibility.
     /// </summary>
-    public Version(string str)
+    public static Version FromString(string str)
     {
         try
         {
@@ -40,7 +33,8 @@ public readonly record struct Version
                 constructId <<= 8;
                 constructId |= b;
             }
-            Value = constructId;
+
+            return new Version(constructId);
         }
         catch
         {

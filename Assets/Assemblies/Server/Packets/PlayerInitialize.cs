@@ -6,9 +6,9 @@ using System.Runtime.InteropServices;
 
 namespace Larnix.Server.Packets;
 
-[CmdId(0x0B)]
+[CmdId(8)]
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct PlayerInitialize : ISanitizable<PlayerInitialize>
+public readonly struct PlayerInitialize : ISanitizable<PlayerInitialize>
 {
     public Vec2 Position { get; }
     public ulong Uid { get; }
@@ -16,7 +16,7 @@ public readonly record struct PlayerInitialize : ISanitizable<PlayerInitialize>
 
     public PlayerInitialize(Vec2 position, ulong uid, uint lastFixedFrame)
     {
-        Position = position.Sanitize();
+        Position = Sanitizer.Filter(position);
         Uid = uid;
         LastFixedFrame = lastFixedFrame;
     }

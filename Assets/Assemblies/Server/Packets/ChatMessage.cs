@@ -8,7 +8,7 @@ using Larnix.Core.Vectors;
 
 namespace Larnix.Server.Packets;
 
-[CmdId(0x02)]
+[CmdId(2)]
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public readonly struct ChatMessage : ISanitizable<ChatMessage>
 {
@@ -24,28 +24,26 @@ public readonly struct ChatMessage : ISanitizable<ChatMessage>
         Default = 0,
         ClearChat = 1,
         PlayerToServer = 2,
-        Incomplete = 3, // client caches and merges split messages
+        Incomplete = 3,
     }
 
     public ChatMessage(Col32 color, ChatCode msgCode, in FixedString64 sender, in FixedString512 message)
     {
-        Color = color;
-        MsgCode = Sanitizer_Legacy.SanitizeEnum(msgCode);
-        Sender = sender;
-        Message = message;
+        Color = Sanitizer.Filter(color);
+        MsgCode = Sanitizer.Filter(msgCode);
+        Sender = Sanitizer.Filter(sender);
+        Message = Sanitizer.Filter(message);
     }
 
-    public ChatMessage(in FixedString512 message, ChatCode msgCode)
+    public static ChatMessage CreateRaw(ChatCode msgCode, in FixedString512 message)
     {
-        Color = Col32.White;
-        Sender = new FixedString64();
-        Message = message;
-        MsgCode = Enum.IsDefined(typeof(ChatCode), msgCode) ? msgCode : ChatCode.Default;
+        return new ChatMessage(Col32.White, msgCode, new FixedString64(), message);
     }
 
     public bool TryAppendPrefix(string raw, out string msgText)
     {
-        if (MsgCode == ChatCode.ClearChat || MsgCode == ChatCode.PlayerToServer)
+        if (MsgCode == ChatCode.ClearChat ||
+            MsgCode == ChatCode.PlayerToServer)
         {
             msgText = null!;
             return false;

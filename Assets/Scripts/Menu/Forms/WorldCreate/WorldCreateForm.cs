@@ -39,7 +39,7 @@ namespace Larnix.Menu.Forms
             if (!Validation.IsGoodNickname(IF_Nickname.text))
                 return ErrorCode.NICKNAME_FORMAT;
 
-            if (!Validation.IsValidWorldName(IF_WorldName.text))
+            if (!Validation.IsGoodWorldName(IF_WorldName.text))
                 return ErrorCode.WORLD_NAME_FORMAT;
 
             string path = Path.Combine(WorldSelect.SavesPath, IF_WorldName.text);

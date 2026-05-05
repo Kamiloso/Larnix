@@ -2,7 +2,6 @@
 using Larnix.Core;
 using Larnix.Core.Serialization;
 using Larnix.Core.Utils;
-using Larnix.Model;
 using Larnix.Socket.Helpers;
 using Larnix.Socket.Payload.Structs;
 using Larnix.Socket.Security.Keys;
@@ -24,14 +23,14 @@ internal class InfoProvider : IInfoProvider
 {
     public string Authcode { get; }
 
-    private readonly QuickConfig _settings;
+    private readonly QuickSettings _settings;
     private readonly KeyRsa _rsa;
     private readonly IClients _clients;
 
     private readonly long _runId;
     private readonly long _serverSecret;
 
-    public InfoProvider(QuickConfig settings, KeyRsa rsa, IClients clients)
+    public InfoProvider(QuickSettings settings, KeyRsa rsa, IClients clients)
     {
         _settings = settings;
         _rsa = rsa;
@@ -39,11 +38,14 @@ internal class InfoProvider : IInfoProvider
 
         _runId = RandUtils.SecureLong();
 
-        string? readSecret = _settings.Interfaces.SecretRepository.ReadSecret("server-secret");
+        string? readSecret = _settings.Interfaces.SecretRepository.ReadSecret(SocketInfo.PathServerSecret);
         if (readSecret == null || !long.TryParse(readSecret, out _serverSecret))
         {
             _serverSecret = RandUtils.SecureLong();
-            _settings.Interfaces.SecretRepository.StoreSecret("server-secret", _serverSecret.ToString());
+            _settings.Interfaces.SecretRepository.StoreSecret(
+                SocketInfo.PathServerSecret,
+                _serverSecret.ToString()
+                );
         }
 
         Authcode = Security.Authcode.ProduceAuthCodeRSA(
@@ -56,7 +58,7 @@ internal class InfoProvider : IInfoProvider
         mayRegister: _settings.EnableRegister,
         players: _clients.Count,
         maxPlayers: _settings.MaxPlayers,
-        gameVersion: GameInfo.Version,
+        gameVersion: _settings.Version,
         timestamp: Timestamp.Now(),
         runId: _runId,
         motd: _settings.Motd,

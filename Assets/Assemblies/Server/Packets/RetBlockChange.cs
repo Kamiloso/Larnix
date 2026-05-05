@@ -8,24 +8,23 @@ using System.Runtime.InteropServices;
 
 namespace Larnix.Server.Packets;
 
-[CmdId(0x0A)]
+[CmdId(10)]
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct RetBlockChange : ISanitizable<RetBlockChange>
+public readonly struct RetBlockChange : ISanitizable<RetBlockChange>
 {
     public Vec2Int POS { get; }
     public long Operation { get; }
     public BlockHeader2 CurrentBlock { get; }
+    public boolsrl Front { get; }
+    public boolsrl Success { get; }
 
-    private readonly byte _flags;
-    public bool Front => (_flags & 0b01) != 0;
-    public bool Success => (_flags & 0b10) != 0;
-
-    public RetBlockChange(Vec2Int POS_, long operation, BlockHeader2 currentBlock, bool front, bool success)
+    public RetBlockChange(Vec2Int POS_, long operation, BlockHeader2 currentBlock, boolsrl front, boolsrl success)
     {
-        POS = BlockUtils.BlockInWorld(POS_) ? POS_ : Vec2Int.Zero;
+        POS = LarnixSanitizer.ToWorldPOS(POS_);
         Operation = operation;
-        CurrentBlock = currentBlock;
-        _flags = (byte)((front ? 0b01 : 0b00) | (success ? 0b10 : 0b00));
+        CurrentBlock = Sanitizer.Filter(currentBlock);
+        Front = Sanitizer.Filter(front);
+        Success = Sanitizer.Filter(success);
     }
 
     public RetBlockChange Sanitize()

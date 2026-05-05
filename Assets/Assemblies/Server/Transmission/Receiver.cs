@@ -7,10 +7,10 @@ using Larnix.Server.Chunks.Scripts;
 using Larnix.Server.Commands;
 using Larnix.Server.Entities;
 using Larnix.Server.Packets;
-using Larnix.Socket.Payload.Packets;
 using Larnix.Socket.Server;
 using System;
 using System.Collections.Generic;
+using System.Net;
 using static Larnix.Server.Packets.CodeInfo;
 
 namespace Larnix.Server.Transmission;
@@ -19,19 +19,18 @@ internal class Receiver
 {
     private record RateLimitID(string Owner, Type Type);
     private readonly Dictionary<RateLimitID, int> _rateLimits = new();
-    private readonly HashSet<string> _limitedBlacklist = new();
     private float _rateLimitTimer = 0f;
 
+    private IServer Server => GlobRef.Get<IServer>();
     private IWorldAPI WorldAPI => GlobRef.Get<IWorldAPI>();
-    private QuickServer QuickServer => GlobRef.Get<QuickServer>();
     private IConnectedPlayers ConnectedPlayers => GlobRef.Get<IConnectedPlayers>();
     private IChunkSender ChunkSender => GlobRef.Get<IChunkSender>();
     private IChat Chat => GlobRef.Get<IChat>();
 
     public Receiver()
     {
-        Subscribe<Start>(_AllowConnection); // START (server generated)
-        Subscribe<Stop>(_Stop); // STOP (server generated)
+        Server.OnConnected(__Start);
+        Server.OnDisconnected(__Stop);
 
         // Assumptions:
         // - limit packets to ~4x expected max rate
@@ -46,11 +45,8 @@ internal class Receiver
     private void Subscribe<T>(Action<T, string> callback, int maxPerSecond = 0,
         bool softLimit = false) where T : unmanaged
     {
-        Server.OnReceive<T>((in T msg, string owner) =>
+        Server.OnReceive((in T msg, string owner) =>
         {
-            if (typeof(T) != typeof(Stop) && _limitedBlacklist.Contains(owner))
-                return; // discard packets from kicked clients
-
             if (maxPerSecond > 0) // rate limit
             {
                 var id = new RateLimitID(owner, typeof(T));
@@ -66,8 +62,7 @@ internal class Receiver
                     if (!softLimit) // hard limit - disconnect client
                     {
                         Echo.Log($"Rate limit for packet {typeof(T).Name} from {owner} exceeded.");
-                        _limitedBlacklist.Add(owner);
-                        QuickServer.KickRequest(owner);
+                        Server.KickRequest(owner);
                     }
                 }
             }
@@ -88,23 +83,22 @@ internal class Receiver
         }
     }
 
-    private void _AllowConnection(Start msg, string owner)
+    private void __Start(string owner, IPEndPoint endpoint)
     {
-        ConnectedPlayers.JoinPlayer(owner);
+        ConnectedPlayers.JoinPlayer(owner, endpoint);
         Echo.Log($"{owner} joined the game.");
     }
 
-    private void _Stop(Stop msg, string owner)
+    private void __Stop(string owner)
     {
         ConnectedPlayers.DisconnectPlayer(owner);
-        _limitedBlacklist.Remove(owner);
         Echo.Log($"{owner} disconnected.");
     }
 
     private void _PlayerUpdate(PlayerUpdate msg, string owner)
     {
         JoinedPlayer player = ConnectedPlayers[owner];
-        if (player.LastUpdate is null || msg.FixedFrame > player.LastUpdate.FixedFrame)
+        if (!player.HasPlayerUpdate || msg.FixedFrame > player.FixedFrame)
         {
             ConnectedPlayers.UpdatePlayer(owner, msg);
         }
@@ -125,12 +119,12 @@ internal class Receiver
 
     private void _BlockChange(BlockChange msg, string owner)
     {
-        Vec2Int POS = msg.BlockPosition;
+        Vec2Int POS = msg.POS;
         Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
         bool front = msg.IsFront;
-        byte code = msg.Code;
+        bool place = msg.IsPlace;
 
-        if (code == 0) // place item
+        if (place) // place item
         {
             bool hasItem = true;
             bool hasChunk = ConnectedPlayers[owner].LoadedChunks.Contains(chunk);
@@ -146,7 +140,7 @@ internal class Receiver
             ChunkSender.AddRetBlockChange(new BlockChangeItem(owner, msg.Operation, POS, front, success));
         }
 
-        else if (code == 1) // break using item
+        else // break using item
         {
             bool hasTool = true;
             bool hasChunk = ConnectedPlayers[owner].LoadedChunks.Contains(chunk);

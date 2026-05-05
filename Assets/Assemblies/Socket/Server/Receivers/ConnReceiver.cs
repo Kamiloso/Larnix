@@ -20,7 +20,7 @@ internal class ConnReceiver : ITickable, IDisposable
     private readonly IClients _clients;
     private readonly IAsyncLogins _asyncLogins;
     private readonly Coroutines _coroutines;
-    private readonly QuickConfig _settings;
+    private readonly QuickSettings _settings;
 
     private readonly TrafficLimiter<string> _cidrLimiter;
 
@@ -28,7 +28,7 @@ internal class ConnReceiver : ITickable, IDisposable
     private readonly Dictionary<IPEndPoint, string> _cidrs = new();
     private readonly BiMap<IPEndPoint, string> _bimap = new();
 
-    public ConnReceiver(ISocket socket, IClients clients, IAsyncLogins asyncLogins, Coroutines coroutines, QuickConfig settings)
+    public ConnReceiver(ISocket socket, IClients clients, IAsyncLogins asyncLogins, Coroutines coroutines, QuickSettings settings)
     {
         _socket = socket;
         _clients = clients;
@@ -51,10 +51,11 @@ internal class ConnReceiver : ITickable, IDisposable
                 return;
 
             Credentials credentials = allowConnection.Credentials;
+            bool isLoopback = IPAddress.IsLoopback(target.Address);
             string nickname = credentials.Nickname;
 
             _coroutines.Start(
-                method: _asyncLogins.Login(credentials),
+                method: _asyncLogins.Login(credentials, isLoopback),
                 onResult: success =>
                 {
                     if (!success) return;
@@ -90,7 +91,7 @@ internal class ConnReceiver : ITickable, IDisposable
         foreach (var (target, conn) in _conns)
         {
             conn.Tick(deltaTime);
-            if (conn.StopEmitted)
+            if (conn.IsDead)
             {
                 toRemove.Add(target);
             }

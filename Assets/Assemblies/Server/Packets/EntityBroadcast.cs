@@ -1,147 +1,79 @@
 #nullable enable
 using Larnix.Core.Serialization;
-using Larnix.Core.Utils;
 using Larnix.Model.Entities.Structs;
 using Larnix.Server.Packets.Structs;
 using Larnix.Socket.Payload;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace Larnix.Server.Packets;
 
-[CmdId(0x0C)]
+[CmdId(5)]
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly struct EntityBroadcast
+public readonly struct EntityBroadcast : ISanitizable<EntityBroadcast>
 {
-    private static int HEADER_SIZE => sizeof(uint) + sizeof(ushort) + sizeof(ushort);
-    private static int ENTRY_A_SIZE => sizeof(ulong) + Binary<EntityHeaderCompressed>.Size; // entity transforms entry
-    private static int ENTRY_B_SIZE => sizeof(ulong) + sizeof(uint); // player fixed indexes entry
-    private static int MAX_PAYLOAD_SIZE => 1400 - HEADER_SIZE; // max payload bytes excluding header
+    public uint PacketFixedIndex { get; }
+    public FixedBuffer1024<BroadcastRecord> BroadcastRecords { get; }
 
-    public uint PacketFixedIndex => Binary<uint>.Deserialize(Bytes, 0); // 4B
-    public ushort EntityLength => Binary<ushort>.Deserialize(Bytes, 4); // 2B
-    public ushort PlayerFixedLength => Binary<ushort>.Deserialize(Bytes, 6); // 2B
-    public Dictionary<ulong, EntityHeader> EntityTransforms => GetDictionaryA(Bytes, EntityLength, HEADER_SIZE); // n * ENTRY_A_SIZE
-    public Dictionary<ulong, uint> PlayerFixedIndexes => GetDictionaryB(Bytes, PlayerFixedLength, HEADER_SIZE + EntityLength * ENTRY_A_SIZE); // n * ENTRY_B_SIZE
-
-
-    private EntityBroadcast(uint packetFixedIndex, Dictionary<ulong, EntityHeader> entityTransforms, Dictionary<ulong, uint> playerFixedIndexes, byte code = 0)
+    private EntityBroadcast(uint packetFixedIndex, in FixedBuffer1024<BroadcastRecord> broadcastRecords)
     {
-        entityTransforms ??= new();
-        playerFixedIndexes ??= new();
-
-        InitializePayload(ArrayUtils.MegaConcat(
-            Binary<uint>.Serialize(packetFixedIndex),
-            Binary<ushort>.Serialize((ushort)entityTransforms.Count),
-            Binary<ushort>.Serialize((ushort)playerFixedIndexes.Count),
-            SerializeDictionaryA(entityTransforms),
-            SerializeDictionaryB(playerFixedIndexes)
-            ), code);
+        PacketFixedIndex = packetFixedIndex;
+        BroadcastRecords = Sanitizer.Filter(broadcastRecords);
     }
 
-    public static List<EntityBroadcast> CreateList(uint packetFixedIndex, Dictionary<ulong, EntityHeader> entityTransforms, Dictionary<ulong, uint> playerFixedIndexes, byte code = 0)
+    public static IEnumerable<EntityBroadcast> CreateList(uint packetFixedIndex, BroadcastRecord[] broadcastRecords)
     {
-        entityTransforms ??= new();
-        playerFixedIndexes ??= new();
-
-        List<EntityBroadcast> result = new();
-        List<ulong> sendUIDs = entityTransforms.Keys.ToList();
-
-        int idx = 0;
-        while (idx < sendUIDs.Count)
+        int s1 = 0; // start
+        int l1 = 0; // length
+        do
         {
-            Dictionary<ulong, EntityHeader> fragmentEntities = new();
-            Dictionary<ulong, uint> fragmentFixed = new();
+            s1 += l1;
+            l1 = 0;
 
-            int payloadBytes = 0; // current payload size in bytes
-
-            // pack as many UIDs as possible until we hit MAX_PAYLOAD_SIZE
-            while (idx < sendUIDs.Count)
+            FixedBuffer1024<BroadcastRecord> buffer = new();
+            while (s1 + l1 < broadcastRecords.Length)
             {
-                ulong uid = sendUIDs[idx];
-                int added = ENTRY_A_SIZE;
-                bool hasFixed = playerFixedIndexes.ContainsKey(uid);
-                if (hasFixed) added += ENTRY_B_SIZE;
-
-                if (payloadBytes + added > MAX_PAYLOAD_SIZE)
-                    break; // can't add more without exceeding max payload size
-
-                fragmentEntities[uid] = entityTransforms[uid];
-                if (hasFixed) fragmentFixed[uid] = playerFixedIndexes[uid];
-
-                payloadBytes += added;
-                idx++;
+                buffer.Add(broadcastRecords[s1 + l1++]);
             }
 
-            result.Add(new EntityBroadcast(packetFixedIndex, fragmentEntities, fragmentFixed, code));
-        }
+            yield return new EntityBroadcast(packetFixedIndex, buffer);
 
-        return result;
+        } while (l1 > 0);
     }
 
-    private static Dictionary<ulong, EntityHeader> GetDictionaryA(byte[] bytes, int count, int offset = 0)
+    public Dictionary<ulong, EntityHeader> ToHeaderDictionary()
     {
-        var result = new Dictionary<ulong, EntityHeader>();
-        for (int i = 0; i < count; i++)
+        var buffer = BroadcastRecords;
+
+        Span<BroadcastRecord> span = stackalloc BroadcastRecord[buffer.Count];
+        buffer.ReadInto(span);
+
+        Dictionary<ulong, EntityHeader> dict = new();
+        foreach (var record in span)
         {
-            ulong key = Binary<ulong>.Deserialize(bytes, i * ENTRY_A_SIZE + 0 + offset);
-            EntityHeader value = Binary<EntityHeaderCompressed>.Deserialize(bytes, i * ENTRY_A_SIZE + sizeof(ulong) + offset).Header;
-            result[key] = value;
+            dict.Add(record.Uid, record.Header);
         }
-        return result;
+        return dict;
     }
 
-    private static Dictionary<ulong, uint> GetDictionaryB(byte[] bytes, int count, int offset = 0)
+    public Dictionary<ulong, uint> ToFixedFrameDictionary()
     {
-        var result = new Dictionary<ulong, uint>();
-        for (int i = 0; i < count; i++)
+        var buffer = BroadcastRecords;
+
+        Span<BroadcastRecord> span = stackalloc BroadcastRecord[buffer.Count];
+        buffer.ReadInto(span);
+
+        Dictionary<ulong, uint> dict = new();
+        foreach (var record in span)
         {
-            ulong key = Binary<ulong>.Deserialize(bytes, i * ENTRY_B_SIZE + 0 + offset);
-            uint value = Binary<uint>.Deserialize(bytes, i * ENTRY_B_SIZE + sizeof(ulong) + offset);
-            result[key] = value;
+            dict.Add(record.Uid, record.FixedFrame);
         }
-        return result;
+        return dict;
     }
 
-    private static byte[] SerializeDictionaryA(Dictionary<ulong, EntityHeader> dictA)
+    public EntityBroadcast Sanitize()
     {
-        byte[] buffer = new byte[dictA.Count * ENTRY_A_SIZE];
-        int i = 0;
-        foreach (var kvp in dictA)
-        {
-            byte[] keyBytes = Binary<ulong>.Serialize(kvp.Key);
-            byte[] valueBytes = Binary<EntityHeaderCompressed>.Serialize(new EntityHeaderCompressed(kvp.Value));
-
-            Buffer.BlockCopy(keyBytes, 0, buffer, 0 + i * ENTRY_A_SIZE, sizeof(ulong));
-            Buffer.BlockCopy(valueBytes, 0, buffer, sizeof(ulong) + i * ENTRY_A_SIZE, Binary<EntityHeaderCompressed>.Size);
-
-            i++;
-        }
-        return buffer;
-    }
-
-    private static byte[] SerializeDictionaryB(Dictionary<ulong, uint> dictB)
-    {
-        byte[] buffer = new byte[dictB.Count * ENTRY_B_SIZE];
-        int i = 0;
-        foreach (var kvp in dictB)
-        {
-            byte[] keyBytes = Binary<ulong>.Serialize(kvp.Key);
-            byte[] valueBytes = Binary<uint>.Serialize(kvp.Value);
-
-            Buffer.BlockCopy(keyBytes, 0, buffer, 0 + i * ENTRY_B_SIZE, sizeof(ulong));
-            Buffer.BlockCopy(valueBytes, 0, buffer, sizeof(ulong) + i * ENTRY_B_SIZE, sizeof(uint));
-
-            i++;
-        }
-        return buffer;
-    }
-
-    protected override bool IsValid()
-    {
-        return Bytes.Length >= HEADER_SIZE &&
-               Bytes.Length == HEADER_SIZE + (int)EntityLength * ENTRY_A_SIZE + (int)PlayerFixedLength * ENTRY_B_SIZE;
+        return new EntityBroadcast(PacketFixedIndex, BroadcastRecords);
     }
 }

@@ -6,9 +6,9 @@ using Larnix.Socket.Payload;
 
 namespace Larnix.Server.Packets;
 
-[CmdId(0x08)]
+[CmdId(7)]
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct NearbyEntities : ISanitizable<NearbyEntities>
+public readonly struct NearbyEntities : ISanitizable<NearbyEntities>
 {
     public uint FixedFrame { get; }
     public FixedBuffer512<ulong> AddEntities { get; }
@@ -17,8 +17,8 @@ public readonly record struct NearbyEntities : ISanitizable<NearbyEntities>
     private NearbyEntities(uint fixedFrame, in FixedBuffer512<ulong> addEntities, in FixedBuffer512<ulong> removeEntities)
     {
         FixedFrame = fixedFrame;
-        AddEntities = addEntities;
-        RemoveEntities = removeEntities;
+        AddEntities = Sanitizer.Filter(addEntities);
+        RemoveEntities = Sanitizer.Filter(removeEntities);
     }
 
     public static NearbyEntities CreateBootstrap(uint fixedFrame)
@@ -30,7 +30,7 @@ public readonly record struct NearbyEntities : ISanitizable<NearbyEntities>
             );
     }
 
-    public static IEnumerable<NearbyEntities> GenerateList(uint fixedFrame, ulong[] addEntities, ulong[] removeEntities)
+    public static IEnumerable<NearbyEntities> CreateList(uint fixedFrame, ulong[] addEntities, ulong[] removeEntities)
     {
         int s1 = 0, s2 = 0; // start
         int l1 = 0, l2 = 0; // length

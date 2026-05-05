@@ -1,14 +1,13 @@
 #nullable enable
 using Larnix.Core.Serialization;
 using Larnix.Socket.Payload;
-using System;
 using System.Runtime.InteropServices;
 
 namespace Larnix.Server.Packets;
 
-[CmdId(0x04)]
+[CmdId(4)]
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct CodeInfo : ISanitizable<CodeInfo>
+public readonly struct CodeInfo : ISanitizable<CodeInfo>
 {
     public Info Code { get; }
 
@@ -21,7 +20,7 @@ public readonly record struct CodeInfo : ISanitizable<CodeInfo>
 
     public CodeInfo(Info code)
     {
-        Code = Enum.IsDefined(typeof(Info), code) ? code : Info.Empty;
+        Code = Sanitizer.Filter(code);
     }
 
     public CodeInfo Sanitize()

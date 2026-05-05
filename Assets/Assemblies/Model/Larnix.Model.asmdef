@@ -2,7 +2,8 @@
     "name": "Larnix.Model",
     "rootNamespace": "Larnix.Model",
     "references": [
-        "GUID:b9668968ef3fc7d40adac0aa4237498e"
+        "GUID:b9668968ef3fc7d40adac0aa4237498e",
+        "GUID:e47ec16989832dc49bbccde857433a2f"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

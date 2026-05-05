@@ -8,17 +8,11 @@ public interface IValueAccess
 {
     void Put(string key, long value);
     long? Get(string key);
+    long GetOrInsert(string key, Func<long> fallback);
 
-    long GetOrPut(string key, Func<long> valueFactory)
-    {
-        long? value = Get(key);
-        if (value is null)
-        {
-            value = valueFactory();
-            Put(key, value.Value);
-        }
-        return value.Value;
-    }
+    void PutString(string key, string value);
+    string? GetString(string key);
+    string GetStringOrInsert(string key, Func<string> fallback);
 }
 
 internal class ValueAccess : IValueAccess
@@ -27,6 +21,32 @@ internal class ValueAccess : IValueAccess
     public ValueAccess(IDbHandle db) => _db = db;
 
     public void Put(string key, long value)
+    {
+        PutString(key, value.ToString());
+    }
+
+    public long? Get(string key)
+    {
+        string? strValue = GetString(key);
+        if (strValue != null && long.TryParse(strValue, out long value))
+        {
+            return value;
+        }
+        return null;
+    }
+
+    public long GetOrInsert(string key, Func<long> fallback)
+    {
+        long? value = Get(key);
+        if (value is null)
+        {
+            Put(key, fallback());
+            return Get(key)!.Value;
+        }
+        return value.Value;
+    }
+
+    public void PutString(string key, string value)
     {
         string cmd = @"
             INSERT OR REPLACE INTO key_values
@@ -37,7 +57,7 @@ internal class ValueAccess : IValueAccess
         _db.Execute(cmd, key, value);
     }
 
-    public long? Get(string key)
+    public string? GetString(string key)
     {
         string cmd = @"
             SELECT value
@@ -49,9 +69,20 @@ internal class ValueAccess : IValueAccess
 
         if (record is not null)
         {
-            return record.Get<long>("value");
+            return record.Get<string>("value");
         }
 
         return null;
+    }
+
+    public string GetStringOrInsert(string key, Func<string> fallback)
+    {
+        string? value = GetString(key);
+        if (value is null)
+        {
+            PutString(key, fallback());
+            return GetString(key)!;
+        }
+        return value;
     }
 }

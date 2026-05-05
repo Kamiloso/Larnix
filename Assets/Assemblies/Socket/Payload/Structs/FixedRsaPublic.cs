@@ -3,13 +3,13 @@ using Larnix.Core.Serialization;
 using Larnix.Core.Utils;
 using System;
 using System.Runtime.InteropServices;
-using Buf256 = Larnix.Core.Serialization.FixedBuffer256<byte>;
 using Buf8 = Larnix.Core.Serialization.FixedBuffer8<byte>;
+using Buf256 = Larnix.Core.Serialization.FixedBuffer256<byte>;
 
 namespace Larnix.Socket.Payload.Structs;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-internal readonly record struct FixedRsaPublic : ISanitizable<FixedRsaPublic>
+internal readonly struct FixedRsaPublic : ISanitizable<FixedRsaPublic>
 {
     private Buf256 BufferPublicRsa1 { get; }
     private Buf8 BufferPublicRsa2 { get; }
@@ -21,8 +21,8 @@ internal readonly record struct FixedRsaPublic : ISanitizable<FixedRsaPublic>
 
     private FixedRsaPublic(in Buf256 bufferPublicRsa1, in Buf8 bufferPublicRsa2)
     {
-        BufferPublicRsa1 = Sanitizer.FilterToFull<Buf256, byte>(bufferPublicRsa1);
-        BufferPublicRsa2 = Sanitizer.FilterToFull<Buf8, byte>(bufferPublicRsa2);
+        BufferPublicRsa1 = Sanitizer.FillAndFilter<Buf256, byte>(bufferPublicRsa1, 0);
+        BufferPublicRsa2 = Sanitizer.FillAndFilter<Buf8, byte>(bufferPublicRsa2, 0);
     }
 
     public static FixedRsaPublic FromBytes(byte[] bytes264)

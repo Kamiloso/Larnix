@@ -28,18 +28,19 @@ internal class Clients : IClients, ITickable
 
     private event Action<string, Connection>? _listeners;
 
+    private event ConnectedHandler? _onClientStart; // start auto-generated
+    private event DisconnectedHandler? _onClientStop; // stop auto-generated
+
     public void AddClient(string nickname, Connection connection)
     {
         if (Count >= ushort.MaxValue)
             throw new InvalidOperationException("Cannot add more clients, maximum limit reached.");
 
-        if (connection.StartEmitted)
-            throw new InvalidOperationException("Cannot add already running connection.");
-
         if (_conns.Values.Any(conn => ReferenceEquals(conn, connection)))
             throw new InvalidOperationException("Unable to add the same connection twice.");
 
         _conns.Add(nickname, connection);
+        _onClientStart?.Invoke(nickname, connection.Target);
     }
 
     public bool RemoveClient(string nickname)
@@ -48,7 +49,7 @@ internal class Clients : IClients, ITickable
 
         IfHas(nickname, conn =>
         {
-            if (!conn.StopEmitted)
+            if (!conn.IsDead)
                 throw new InvalidOperationException("Cannot remove still running connection.");
 
             _conns.Remove(nickname);
@@ -58,6 +59,8 @@ internal class Clients : IClients, ITickable
                 _kickCallbacks.Remove(nickname);
                 onKickList.ForEach(action => action());
             }
+
+            _onClientStop?.Invoke(nickname);
 
             removed = true;
         });
@@ -103,6 +106,16 @@ internal class Clients : IClients, ITickable
         {
             conn.Send(payload, safemode);
         }
+    }
+
+    public void OnConnected(ConnectedHandler? execute)
+    {
+        _onClientStart += execute;
+    }
+
+    public void OnDisconnected(DisconnectedHandler? execute)
+    {
+        _onClientStop += execute;
     }
 
     public void OnReceive<T>(CmdSenderHandler<T>? execute) where T : unmanaged

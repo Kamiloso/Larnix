@@ -6,9 +6,9 @@ using System.Runtime.InteropServices;
 
 namespace Larnix.Server.Packets;
 
-[CmdId(0x09)]
+[CmdId(9)]
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct PlayerUpdate : ISanitizable<PlayerUpdate>
+public readonly struct PlayerUpdate : ISanitizable<PlayerUpdate>
 {
     public Vec2 Position { get; }
     public float Rotation { get; }
@@ -16,8 +16,8 @@ public readonly record struct PlayerUpdate : ISanitizable<PlayerUpdate>
 
     public PlayerUpdate(Vec2 position, float rotation, uint fixedFrame)
     {
-        Position = position.Sanitize();
-        Rotation = Sanitizer_Legacy.SanitizeFloat(rotation);
+        Position = Sanitizer.Filter(position);
+        Rotation = Sanitizer.ToFinite(rotation);
         FixedFrame = fixedFrame;
     }
 

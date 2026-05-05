@@ -6,7 +6,6 @@ using Larnix.Socket.Security.Keys;
 using Larnix.Socket.Networking;
 using Larnix.Core;
 using Larnix.Core.Utils;
-using Larnix.Model;
 using Larnix.Socket.Payload;
 using Larnix.Socket.Payload.Structs;
 using Larnix.Socket.Tools;
@@ -18,7 +17,7 @@ internal static class Prompter
     public static async Task<TAnswer?> PromptAsync<TPrompt, TAnswer>(
         string address, TPrompt prompt, KeyRsa? key, int timeout = 3000) where TPrompt : unmanaged where TAnswer : unmanaged
     {
-        IPEndPoint? target = await DnsResolver.ResolveAsync(address, GameInfo.DefaultPort);
+        IPEndPoint? target = await DnsResolver.ResolveAsync(address, SocketInfo.DefaultPort);
         if (target == null) return null;
 
         using UdpClient2 udp = new(

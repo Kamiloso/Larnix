@@ -11,6 +11,7 @@ using Larnix.Server.Data;
 using Larnix.Server.Entities;
 using Larnix.Server.Entities.Controllers;
 using Larnix.Server.Packets;
+using Larnix.Server.Packets.Structs;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -26,8 +27,7 @@ internal class EntitySender : IEntitySender
     private ServerConfig ServerConfig => GlobRef.Get<ServerConfig>();
 
     private record PlayerContext(
-        Dictionary<ulong, EntityHeader> Headers,
-        Dictionary<ulong, uint> PlayerFixedIndexes,
+        List<BroadcastRecord> Broadcasts,
         HashSet<ulong> NearbyUids
     );
 
@@ -46,18 +46,21 @@ internal class EntitySender : IEntitySender
 
         foreach (string nickname in ConnectedPlayers.AllPlayers)
         {
-            var player = ConnectedPlayers[nickname];
-            ulong playerUID = ConnectedPlayers.UidByNickname(nickname);
-            Vec2 playerPos = player.RenderPosition;
+            JoinedPlayer player = ConnectedPlayers[nickname];
 
-            var context = BuildPlayerContext(playerUID, playerPos);
+            ulong uid = ConnectedPlayers.UidByNickname(nickname);
+            Vec2 position = player.RenderPosition;
+
+            var context = BuildPlayerContext(uid, position);
 
             SendNearbyDiff(nickname, player, context.NearbyUids);
 
-            foreach (var packet in EntityBroadcast.CreateList(
+            var payloads = EntityBroadcast.CreateList(
                 Clock.FixedFrame,
-                context.Headers,
-                context.PlayerFixedIndexes))
+                context.Broadcasts.ToArray()
+                );
+
+            foreach (var packet in payloads)
             {
                 result.Add((nickname, packet));
             }
@@ -65,14 +68,13 @@ internal class EntitySender : IEntitySender
 
         foreach (var (nickname, packet) in result.OrderBy(_ => RandUtils.NextInt()))
         {
-            Server.SendFast(nickname, packet);
+            Server.SendUnreliable(nickname, packet);
         }
     }
 
     private PlayerContext BuildPlayerContext(ulong playerUID, Vec2 playerPos)
     {
-        var headers = new Dictionary<ulong, EntityHeader>();
-        var fixedIndexes = new Dictionary<ulong, uint>();
+        var broadcasts = new List<BroadcastRecord>();
         var nearby = new HashSet<ulong>();
 
         foreach (ulong uid in EntityControllers.Uids)
@@ -86,18 +88,18 @@ internal class EntitySender : IEntitySender
 
             if (controller.IsActive)
             {
-                headers[uid] = controller.ActiveData.Header;
                 nearby.Add(uid);
 
-                if (controller is PlayerController pc)
-                {
-                    var update = ConnectedPlayers[pc.Nickname].LastUpdate!;
-                    fixedIndexes[uid] = update.FixedFrame;
-                }
+                EntityHeader header = controller.ActiveData.Header;
+
+                broadcasts.Add(controller is PlayerController pc
+                    ? BroadcastRecord.CreatePlayer(uid, header, ConnectedPlayers[pc.Nickname].FixedFrame)
+                    : BroadcastRecord.CreateEntity(uid, header)
+                );
             }
         }
 
-        return new PlayerContext(headers, fixedIndexes, nearby);
+        return new PlayerContext(broadcasts, nearby);
     }
 
     private void SendNearbyDiff(string nickname, JoinedPlayer player, HashSet<ulong> newUids)
@@ -107,17 +109,14 @@ internal class EntitySender : IEntitySender
         ulong[] toAdd = newUids.Except(old).ToArray();
         ulong[] toRemove = old.Except(newUids).ToArray();
 
-        var packets = NearbyEntities.CreateList(Clock.FixedFrame, toAdd, toRemove);
+        var payloads = NearbyEntities.CreateList(Clock.FixedFrame, toAdd, toRemove).ToList();
 
-        if (Clock.FixedFrame % 6 == 0 && packets.Count == 0)
+        if (Clock.FixedFrame % 6 == 0 && payloads.Count == 0)
         {
-            packets.Add(NearbyEntities.CreateBootstrap(Clock.FixedFrame));
+            payloads.Add(NearbyEntities.CreateBootstrap(Clock.FixedFrame));
         }
 
-        foreach (var p in packets)
-        {
-            Server.Send(nickname, p);
-        }
+        payloads.ForEach(payload => Server.Send(nickname, payload));
 
         player.NearbyEntityUids = newUids;
     }
@@ -129,15 +128,15 @@ internal class EntitySender : IEntitySender
             var player = ConnectedPlayers[nickname];
             Vec2 position = player.RenderPosition;
 
-            FrameInfo packet = new(
+            var payload = new FrameInfo(
                 serverTick: Clock.ServerTick,
                 skyColor: Generator.SkyColorAt(position),
-                biomeID: Generator.BiomeAt(position),
-                weather: WeatherID.Clear,
+                biomeId: Generator.BiomeAt(position),
+                weatherId: WeatherID.Clear,
                 tps: Clock.TPS
             );
 
-            Server.SendFast(nickname, packet);
+            Server.SendUnreliable(nickname, payload);
         }
     }
 }

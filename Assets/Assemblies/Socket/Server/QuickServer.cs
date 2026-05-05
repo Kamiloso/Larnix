@@ -12,7 +12,9 @@ namespace Larnix.Socket.Server;
 
 public class QuickServer : ITickable, IDisposable
 {
-    public QuickConfig Settings => _settings;
+    public ushort Port => _triple.LocalPort;
+    public ushort PlayerCount => _clients.Count;
+    public ushort MaxPlayers => _settings.MaxPlayers;
     public string Authcode => _infoProvider.Authcode;
     public string? RelayAddress => _triple.RelayForeignAddressTask.Result;
 
@@ -23,16 +25,16 @@ public class QuickServer : ITickable, IDisposable
     private readonly InfoProvider _infoProvider;
     private readonly AsyncLogins _asyncLogins;
     private readonly WebReceiver _webReceiver;
-    private readonly QuickConfig _settings;
+    private readonly QuickSettings _settings;
 
-    public static async Task<QuickServer> CreateServerAsync(QuickConfig settings)
+    public static async Task<QuickServer> CreateServerAsync(QuickSettings settings)
     {
         QuickServer server = new(settings, out Task<string?> relayTask);
         await relayTask;
         return server;
     }
 
-    private QuickServer(QuickConfig settings, out Task<string?> relayTask)
+    private QuickServer(QuickSettings settings, out Task<string?> relayTask)
     {
         _triple = new TripleSocket(
             settings.Port,
@@ -40,7 +42,10 @@ public class QuickServer : ITickable, IDisposable
             settings.RelayAddress
             );
 
-        _rsa = KeyRsa.FromSecretRepo(settings.Interfaces.SecretRepository, "key-rsa");
+        _rsa = KeyRsa.FromSecretRepo(
+            settings.Interfaces.SecretRepository,
+            SocketInfo.PathPrivateKey
+            );
 
         _coroutines = new Coroutines();
         _clients = new Clients();
@@ -52,6 +57,8 @@ public class QuickServer : ITickable, IDisposable
 
         relayTask = _triple.RelayForeignAddressTask;
     }
+
+    // ---------- SENDING ----------
 
     public void Send<T>(string nickname, in T payload) where T : unmanaged
         => _clients.Send(nickname, payload, true);
@@ -65,8 +72,21 @@ public class QuickServer : ITickable, IDisposable
     public void BroadcastUnreliable<T>(in T payload) where T : unmanaged
         => _clients.Broadcast(payload, false);
 
+    // ---------- RECEIVING ----------
+
+    public void OnConnected(ConnectedHandler? execute)
+        => _clients.OnConnected(execute);
+
+    public void OnDisconnected(DisconnectedHandler? execute)
+        => _clients.OnDisconnected(execute);
+
     public void OnReceive<T>(CmdSenderHandler<T>? execute) where T : unmanaged
         => _clients.OnReceive(execute);
+
+    // ---------- OTHER ----------
+
+    public void KickRequest(string nickname, Action? onKick = null)
+        => _clients.KickRequest(nickname, onKick);
 
     public void Tick(float deltaTime)
     {

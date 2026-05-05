@@ -7,34 +7,31 @@ namespace Larnix.Model.Blocks.Structs;
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public readonly record struct BlockHeader2 : ISanitizable<BlockHeader2>
 {
-    private BlockID IdFront { get; }
-    private BlockID IdBack { get; }
-    private byte InfoByte { get; }
+    private readonly BlockID _idFront;
+    private readonly BlockID _idBack;
+    private readonly byte _infoByte;
 
-    public BlockHeader1 Front => new(IdFront, (byte)(InfoByte >> 4));
-    public BlockHeader1 Back => new(IdBack, (byte)(InfoByte & 0x0F));
+    public BlockHeader1 Front => new(_idFront, (byte)(_infoByte >> 4));
+    public BlockHeader1 Back => new(_idBack, (byte)(_infoByte & 0x0F));
 
-    public static BlockHeader2 Empty => default;
-
-    private BlockHeader2(BlockID idFront, BlockID idBack, byte infoByte)
-    {
-        IdFront = Sanitizer.Filter(idFront);
-        IdBack = Sanitizer.Filter(idBack);
-        InfoByte = Sanitizer.Filter(infoByte);
-    }
+    public static BlockHeader2 Empty => new(
+        BlockHeader1.Air,
+        BlockHeader1.Air
+        );
 
     public BlockHeader2(BlockHeader1 front, BlockHeader1 back)
     {
-        byte b1 = Sanitizer.ToHalfByte(front.Variant);
-        byte b2 = Sanitizer.ToHalfByte(back.Variant);
-        byte infoByte = (byte)((b1 << 4) | b2);
+        front = Sanitizer.Filter(front);
+        back = Sanitizer.Filter(back);
 
-        this = new BlockHeader2(front.Id, back.Id, infoByte);
+        _idFront = front.Id;
+        _idBack = back.Id;
+        _infoByte = (byte)((front.Variant << 4) | back.Variant);
     }
 
     public BlockHeader2 Sanitize()
     {
-        return new BlockHeader2(IdFront, IdBack, InfoByte);
+        return new BlockHeader2(Front, Back);
     }
 
     public override string ToString()

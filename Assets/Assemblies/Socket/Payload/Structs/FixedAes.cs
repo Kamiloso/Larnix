@@ -15,7 +15,7 @@ internal readonly struct FixedAes : ISanitizable<FixedAes>
 
     private FixedAes(in Buf32 bufferAes)
     {
-        BufferAes = Sanitizer.FilterToFull<Buf32, byte>(bufferAes);
+        BufferAes = Sanitizer.FillAndFilter<Buf32, byte>(bufferAes, 0);
     }
 
     public static FixedAes FromBytes(byte[] bytes32)

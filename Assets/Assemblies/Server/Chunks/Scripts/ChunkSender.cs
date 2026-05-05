@@ -9,7 +9,6 @@ using Larnix.Server.Packets.Structs;
 using Larnix.Core;
 using Larnix.Server.Entities;
 using Larnix.Model.Blocks;
-using Larnix.Model.Blocks.Chunks;
 
 namespace Larnix.Server.Chunks.Scripts;
 
@@ -71,15 +70,18 @@ internal class ChunkSender : IChunkSender
 
             foreach (var chunk in added)
             {
-                ChunkView chunkData = ChunkHolders.GetChunkBrain(chunk)!.ActiveChunkReference.HeaderView;
-                Payload_Legacy packet = new ChunkInfo(chunk, chunkData);
-                Server.Send(nickname, packet);
+                byte[] chunkBytes = ChunkHolders
+                    .GetChunkBrain(chunk)!.ActiveChunkReference
+                    .Serialize(out _);
+
+                ChunkInfo payload = ChunkInfo.MakeLoadInfo(chunk, chunkBytes);
+                Server.Send(nickname, payload);
             }
 
             foreach (var chunk in removed)
             {
-                Payload_Legacy packet = new ChunkInfo(chunk, null);
-                Server.Send(nickname, packet);
+                ChunkInfo payload = ChunkInfo.MakeUnloadInfo(chunk);
+                Server.Send(nickname, payload);
             }
 
             ConnectedPlayers[nickname].LoadedChunks = chunksNearby;
@@ -110,8 +112,8 @@ internal class ChunkSender : IChunkSender
             var changes = individualUpdates[nickname];
             BlockUpdateRecord[] records = changes.ToArray();
 
-            List<BlockUpdate> packets = BlockUpdate.CreateList(records);
-            foreach (Payload_Legacy packet in packets)
+            var payloads = BlockUpdate.CreateList(records).ToList();
+            foreach (var packet in payloads)
             {
                 Server.Send(nickname, packet);
             }
@@ -132,8 +134,8 @@ internal class ChunkSender : IChunkSender
                 ConnectedPlayers[elm.Nickname].LoadedChunks.Contains(chunk))
             {
                 BlockHeader2 currentBlock = new(blockFront.Header, blockBack.Header);
-                Payload_Legacy packet = new RetBlockChange(POS, elm.Operation, currentBlock, elm.Front, elm.Success);
-                Server.Send(elm.Nickname, packet);
+                RetBlockChange payload = new(POS, elm.Operation, currentBlock, elm.Front, elm.Success);
+                Server.Send(elm.Nickname, payload);
             }
         }
     }

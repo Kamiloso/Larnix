@@ -43,18 +43,6 @@ public static class Common
             return string.Equals(full1, full2, StringComparison.Ordinal);
     }
 
-    public static string FormatAddress(string address, ushort port)
-    {
-        UriBuilder uri = new("udp://" + address)
-        {
-            Port = port
-        };
-
-        return uri.ToString()
-            .Replace("udp://", "")
-            .Replace("/", "");
-    }
-
     public static bool IsInNetworkString(IPAddress address, string networkString)
     {
         int index = networkString.IndexOf('/');
