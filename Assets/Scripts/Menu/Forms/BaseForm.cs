@@ -1,10 +1,6 @@
-using System.Collections;
-using System.Collections.Generic;
-using System.IO;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using System;
 using Larnix.Model.Utils;
 using Larnix.Model;
 
@@ -27,7 +23,6 @@ namespace Larnix.Menu.Forms
             AUTHCODE_FORMAT = 7,
             ADDRESS_EMPTY = 8,
             PASSWORDS_NOT_MATCH = 9,
-            PASSWORDS_MATCH = 10,
         }
 
         protected static string GetErrorInfo(ErrorCode code) => code switch
@@ -42,16 +37,18 @@ namespace Larnix.Menu.Forms
             ErrorCode.AUTHCODE_FORMAT => "It is not a correct authcode.",
             ErrorCode.ADDRESS_EMPTY => "Server address cannot be empty.",
             ErrorCode.PASSWORDS_NOT_MATCH => "Passwords must match.",
-            ErrorCode.PASSWORDS_MATCH => "New password cannot be the same as the old password.",
             _ => "Unknown error.",
         };
 
         public void Submit()
         {
             ErrorCode code = GetErrorCode();
+
             string errorInfo = GetErrorInfo(code);
             if (errorInfo != null)
+            {
                 TX_ErrorText.text = errorInfo;
+            }
 
             if (code == ErrorCode.SUCCESS) // everything ok
             {
@@ -61,10 +58,7 @@ namespace Larnix.Menu.Forms
 
         public static T GetInstance<T>() where T : BaseForm
         {
-            T found = FindAnyObjectByType<T>();
-            if (found == null)
-                throw new NotImplementedException("Cannot find object of type " + typeof(T).ToString());
-            return found;
+            return FindAnyObjectByType<T>();
         }
 
         public abstract void EnterForm(params string[] args);

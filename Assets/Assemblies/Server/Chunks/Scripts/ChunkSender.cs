@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using Larnix.Model.Utils;
 using Larnix.Model.Blocks.Structs;
-using Larnix.Server.Packets;
+using Larnix.Model.Packets;
 using Larnix.Core.Vectors;
 using Larnix.Server.Packets.Structs;
 using Larnix.Core;
 using Larnix.Server.Entities;
 using Larnix.Model.Blocks;
+using Larnix.Server.Network;
 
 namespace Larnix.Server.Chunks.Scripts;
 
@@ -41,7 +42,7 @@ internal class ChunkSender : IChunkSender
         };
     }
 
-    void IScript.PostLateFrameUpdate()
+    void IScript.PostLateUpdate()
     {
         BroadcastChunkChanges(); // updating chunks loaded by players
         SendBlockUpdate(); // common block updates (server / players)

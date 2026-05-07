@@ -1,5 +1,5 @@
 using Larnix.Core.Vectors;
-using Larnix.Server.Packets;
+using Larnix.Model.Packets;
 using Larnix.Server.Packets.Structs;
 using Larnix.Client.Entities;
 using Larnix.Client.Terrain;
@@ -10,6 +10,7 @@ using Larnix.Background;
 using Larnix.Client.Chat;
 using Larnix.Model.Blocks;
 using Larnix.Socket.Client;
+using Larnix.Model.Blocks.Chunks;
 
 namespace Larnix.Client;
 
@@ -26,36 +27,36 @@ public class Receiver
 
     public Receiver(QuickClient client)
     {
-        client.Subscribe<PlayerInitialize>(_PlayerInitialize);
-        client.Subscribe<EntityBroadcast>(_EntityBroadcast);
-        client.Subscribe<NearbyEntities>(_NearbyEntities);
-        client.Subscribe<CodeInfo>(_CodeInfo);
-        client.Subscribe<ChunkInfo>(_ChunkInfo);
-        client.Subscribe<BlockUpdate>(_BlockUpdate);
-        client.Subscribe<RetBlockChange>(_RetBlockChange);
-        client.Subscribe<Teleport>(_Teleport);
-        client.Subscribe<SpawnParticles>(_SpawnParticles);
-        client.Subscribe<FrameInfo>(_FrameInfo);
-        client.Subscribe<ChatMessage>(_ChatMessage);
+        client.OnReceive<PlayerInitialize>(_PlayerInitialize);
+        client.OnReceive<EntityBroadcast>(_EntityBroadcast);
+        client.OnReceive<NearbyEntities>(_NearbyEntities);
+        client.OnReceive<CodeInfo>(_CodeInfo);
+        client.OnReceive<ChunkInfo>(_ChunkInfo);
+        client.OnReceive<BlockUpdate>(_BlockUpdate);
+        client.OnReceive<RetBlockChange>(_RetBlockChange);
+        client.OnReceive<Teleport>(_Teleport);
+        client.OnReceive<SpawnParticles>(_SpawnParticles);
+        client.OnReceive<FrameInfo>(_FrameInfo);
+        client.OnReceive<ChatMessage>(_ChatMessage);
     }
 
-    private void _PlayerInitialize(PlayerInitialize msg)
+    private void _PlayerInitialize(in PlayerInitialize msg)
     {
-        MainPlayer.LoadPlayerData(msg.Position, msg.MyUid);
+        MainPlayer.LoadPlayerData(msg.Position, msg.Uid);
         Loading.StartWaitingFrom(msg.LastFixedFrame);
     }
 
-    private void _EntityBroadcast(EntityBroadcast msg)
+    private void _EntityBroadcast(in EntityBroadcast msg)
     {
         EntityProjections.InterpretEntityBroadcast(msg);
     }
 
-    private void _NearbyEntities(NearbyEntities msg)
+    private void _NearbyEntities(in NearbyEntities msg)
     {
         EntityProjections.ChangeNearbyUIDs(msg);
     }
 
-    private void _CodeInfo(CodeInfo msg)
+    private void _CodeInfo(in CodeInfo msg)
     {
         switch (msg.Code)
         {
@@ -65,28 +66,29 @@ public class Receiver
         }
     }
 
-    private void _ChunkInfo(ChunkInfo msg)
+    private void _ChunkInfo(in ChunkInfo msg)
     {
         if (msg.Chunk != null) // activation packet
         {
-            GridManager.AddChunk(msg.Chunkpos, msg.Chunk);
+            ChunkData chunkData = new(msg.ChunkBytes());
+            GridManager.AddChunk(msg.Chunk, chunkData);
         }
         else // removal packet
         {
-            GridManager.RemoveChunk(msg.Chunkpos);
+            GridManager.RemoveChunk(msg.Chunk);
         }
     }
 
-    private void _BlockUpdate(BlockUpdate msg)
+    private void _BlockUpdate(in BlockUpdate msg)
     {
-        BlockUpdateRecord[] records = msg.BlockUpdates;
+        BlockUpdateRecord[] records = msg.BlockRecords.ToArray();
         foreach (var rec in records)
         {
             GridManager.UpdateBlock(rec.Position, rec.Block, rec.BreakMode);
         }
     }
 
-    private void _RetBlockChange(RetBlockChange msg)
+    private void _RetBlockChange(in RetBlockChange msg)
     {
         GridManager.UpdateBlock(
             POS: msg.POS,
@@ -96,7 +98,7 @@ public class Receiver
         ); // unlock and update block
     }
 
-    private void _Teleport(Teleport msg)
+    private void _Teleport(in Teleport msg)
     {
         if (MainPlayer.Alive)
         {
@@ -106,9 +108,9 @@ public class Receiver
         }
     }
 
-    private void _SpawnParticles(SpawnParticles msg)
+    private void _SpawnParticles(in SpawnParticles msg)
     {
-        if (msg.IsEntityParticle)
+        if (msg.IsEntityParticle())
         {
             ParticleManager.SpawnEntityParticles(
                 msg.ParticleID,
@@ -126,7 +128,7 @@ public class Receiver
     }
 
     private long _lastFrameTick = 0;
-    private void _FrameInfo(FrameInfo msg)
+    private void _FrameInfo(in FrameInfo msg)
     {
         long frameTick = msg.ServerTick;
         if (frameTick > _lastFrameTick)
@@ -147,7 +149,7 @@ public class Receiver
         }
     }
 
-    private void _ChatMessage(ChatMessage msg)
+    private void _ChatMessage(in ChatMessage msg)
     {
         ChatManager.AddMessage(msg);
     }

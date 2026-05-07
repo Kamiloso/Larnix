@@ -29,7 +29,7 @@ public static class SocketInfo
     public static bool IsValidPassword(string password)
     {
         if (password.Length is < 7 or > 32) return false;
-        if (password.Any(c => !(char.IsWhiteSpace(c) || c == '\0'))) return false;
+        if (password.Any(c => char.IsWhiteSpace(c) || c == '\0')) return false;
         return true;
     }
 

@@ -98,18 +98,6 @@ public class SerializationTests
     }
 
     [Test]
-    public void SerializeDeserializeArray_MatchesOriginal()
-    {
-        var original = new[] { new Vector3(1, 0, 0), new Vector3(0, 1, 0) };
-
-        var bytes = Binary<Vector3>.SerializeArray(original);
-        var deserialized = Binary<Vector3>.DeserializeArray(bytes, original.Length);
-
-        Assert.That(deserialized, Has.Length.EqualTo(2));
-        Assert.That(deserialized, Is.EquivalentTo(original));
-    }
-
-    [Test]
     public void Deserialize_ValidOffset_ExtractsCorrectly()
     {
         var combined = Binary<Vector3>.Serialize(new Vector3(1, 1, 1))
@@ -127,25 +115,5 @@ public class SerializationTests
     {
         var bytes = new byte[Binary<int>.Size];
         Assert.Throws<ArgumentOutOfRangeException>(() => Binary<int>.Deserialize(bytes, offset));
-    }
-
-    [Test]
-    public void DeserializeArray_ValidOffset_ExtractsSubset()
-    {
-        var bytes = Binary<int>.SerializeArray(new[] { 10, 20, 30, 40 });
-
-        var result = Binary<int>.DeserializeArray(bytes, 2, Binary<int>.Size * 1);
-
-        Assert.That(result, Is.EquivalentTo(new[] { 20, 30 }));
-    }
-
-    [TestCase(-1, 0)]
-    [TestCase(10, 0)]
-    [TestCase(2, -1)]
-    [TestCase(2, 20)]
-    public void DeserializeArray_InvalidParams_ThrowsArgumentOutOfRangeException(int count, int offset)
-    {
-        var bytes = new byte[16]; // 4 ints
-        Assert.Throws<ArgumentOutOfRangeException>(() => Binary<int>.DeserializeArray(bytes, count, offset));
     }
 }

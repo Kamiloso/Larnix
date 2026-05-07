@@ -1,15 +1,15 @@
 #nullable enable
+using Larnix.Core;
+using Larnix.Core.Collections;
+using Larnix.Core.Vectors;
+using Larnix.Model.Blocks;
+using Larnix.Model.Blocks.All;
+using Larnix.Model.Utils;
+using Larnix.Server.Chunks.Scripts;
+using Larnix.Server.Data;
 using System;
 using System.Collections.Generic;
-using Larnix.Model.Utils;
-using Larnix.Core.Vectors;
-using Larnix.Model.Blocks.All;
-using Larnix.Model.Blocks;
 using System.Collections.ObjectModel;
-using Larnix.Core.Collections;
-using Larnix.Server.Data;
-using Larnix.Core;
-using Larnix.Server.Chunks.Scripts;
 
 namespace Larnix.Server.Chunks;
 
@@ -28,9 +28,9 @@ internal class AtomicChunks : IAtomicChunks
     private const int CHUNK_SIZE = BlockUtils.CHUNK_SIZE;
     private static Vec2Int WARN_CHUNK => new(int.MinValue, int.MinValue);
 
-    private int MaxAtomicArea => ServerConfig.Electricity_MaxContraptionChunks;
+    private int MaxAtomicArea => Config.Electricity_MaxContraptionChunks;
     private int WarningPeriod => 750; // 15 seconds at 50 TPS
-    private bool WarningSuppress => ServerConfig.Electricity_SizeWarningSuppress;
+    private bool WarningSuppress => Config.Electricity_SizeWarningSuppress;
 
     const int MIN = 0;
     const int MAX = CHUNK_SIZE - 1;
@@ -65,7 +65,7 @@ internal class AtomicChunks : IAtomicChunks
 
     private IChunkHolders ChunkHolders => GlobRef.Get<IChunkHolders>();
     private IWorldAPI WorldAPI => GlobRef.Get<IWorldAPI>();
-    private ServerConfig ServerConfig => GlobRef.Get<ServerConfig>();
+    private Config Config => GlobRef.Get<Config>();
 
     public void Reset()
     {

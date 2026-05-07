@@ -9,8 +9,7 @@ namespace Larnix.Socket.Tools;
 
 internal static class NetworkSerializer
 {
-    private static int I0 => 0; // checksum
-    private static int I1 => I0 + Binary<ushort>.Size; // header
+    private static int I1 => Binary<ushort>.Size; // plain header
     private static int I2 => I1 + Binary<PayloadHeader>.Size; // encrypted contents
 
     public static byte[] ToBytes<T>(
@@ -56,26 +55,27 @@ internal static class NetworkSerializer
             return false;
         }
 
-        ushort checksum = Binary<ushort>.Deserialize(bytes, I0);
-        if (checksum != CalculateChecksum(bytes) - CalculateChecksum(bytes[..2]))
+        ushort checksum = Binary<ushort>.Deserialize(bytes);
+        if (checksum != CalculateChecksum(bytes.AsSpan(2..)))
         {
             return false;
         }
 
-        PayloadHeader readHeader = Binary<PayloadHeader>.Deserialize(bytes, I1);
-        if (!readHeader.CompatibleProtocolVersion())
+        PayloadHeader plainHeader = Binary<PayloadHeader>.Deserialize(bytes, I1);
+        if (!plainHeader.CompatibleProtocolVersion())
         {
             return false;
         }
 
         byte[] decr = key.Decrypt(bytes[I2..]);
-        if (decr.Length < Binary<PayloadHeader>.Size)
+        if (EndCompressor.SizeAfterDecompression(decr) < Binary<PayloadHeader>.Size)
         {
             return false;
         }
 
-        PayloadHeader encrHeader = Binary<PayloadHeader>.Deserialize(decr);
-        if (encrHeader != readHeader)
+        byte[] headerBytes = EndCompressor.PartialDecompress(decr, 0, Binary<PayloadHeader>.Size);
+        PayloadHeader encrHeader = Binary<PayloadHeader>.Deserialize(headerBytes);
+        if (encrHeader != plainHeader)
         {
             return false;
         }
@@ -151,7 +151,7 @@ internal static class NetworkSerializer
             : (short)(byte1 << 8 | byte2);
     }
 
-    private static ushort CalculateChecksum(byte[] bytes)
+    private static ushort CalculateChecksum(Span<byte> bytes)
     {
         unchecked
         {

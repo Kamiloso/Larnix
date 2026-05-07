@@ -65,15 +65,10 @@ public record QuickSettings
                     PerNetwork: 6,
                     ResetPeriodMs: 3000 // 3 seconds
                     ),
-                Registers: new LimiterStruct(
+                Registers: new LimiterStruct( // TODO: implement register limiter
                     Global: 50,
                     PerNetwork: 6,
                     ResetPeriodMs: 3_600_000 // 1 hour
-                    ),
-                Requests: new LimiterStruct(
-                    Global: long.MaxValue,
-                    PerNetwork: 10,
-                    ResetPeriodMs: 60_000 // 1 minute
                     ),
                 Decryptions: new ConcurrentLimiterStruct(
                     Global: 12,
@@ -90,7 +85,6 @@ public record QuickSettings
     public record LimiterRepoStruct(
         LimiterStruct HeavyPackets,
         LimiterStruct Registers,
-        LimiterStruct Requests,
         ConcurrentLimiterStruct Decryptions,
         ConcurrentLimiterStruct Connections
         );

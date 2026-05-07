@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 using System.Diagnostics;
-using Larnix.Server.Packets;
+using Larnix.Model.Packets;
 using Larnix.Core;
 using Larnix.Model.Entities.Structs;
 
@@ -12,11 +12,10 @@ namespace Larnix.Client.Entities
     {
         private record DelayedEntity(EntityHeader EntityHeader, double Time);
 
-        private HashSet<ulong> _nearbyUIDs = new();
-        private Dictionary<ulong, EntityProjection> _projections = new();
-        private Dictionary<ulong, DelayedEntity> _delayedProjections = new();
+        private readonly HashSet<ulong> _nearbyUIDs = new();
+        private readonly Dictionary<ulong, EntityProjection> _projections = new();
+        private readonly Dictionary<ulong, DelayedEntity> _delayedProjections = new();
 
-        private Client Client => GlobRef.Get<Client>();
         private MainPlayer MainPlayer => GlobRef.Get<MainPlayer>();
 
         private uint? _startFixed = null;
@@ -29,37 +28,37 @@ namespace Larnix.Client.Entities
 
         public void ChangeNearbyUIDs(NearbyEntities msg)
         {
-            ulong[] add = msg.AddEntities;
-            ulong[] remove = msg.RemoveEntities;
+            ulong[] add = msg.AddEntities.ToArray();
+            ulong[] remove = msg.RemoveEntities.ToArray();
 
-            foreach(ulong uid in add)
+            foreach (ulong uid in add)
+            {
                 _nearbyUIDs.Add(uid);
+            }
 
-            foreach(ulong uid in remove)
-                if(_nearbyUIDs.Contains(uid))
-                    _nearbyUIDs.Remove(uid);
+            foreach (ulong uid in remove)
+            {
+                _nearbyUIDs.Remove(uid);
+            }
 
             _nearbyFrameFixed = msg.FixedFrame;
         }
 
         public void InterpretEntityBroadcast(EntityBroadcast msg)
         {
-            if (_startFixed == null)
-                _startFixed = msg.PacketFixedIndex;
+            _startFixed ??= msg.PacketFixedIndex; // set start fixed if not set yet
 
-            uint relativeFixedFrame = msg.PacketFixedIndex - (uint)_startFixed;
+            uint relativeFixedFrame = msg.PacketFixedIndex - _startFixed.Value;
 
-            Dictionary<ulong, EntityHeader> dict = msg.EntityTransforms;
-            Dictionary<ulong, uint> fixeds = msg.PlayerFixedIndexes;
+            Dictionary<ulong, EntityHeader> dict = msg.ToHeaderDictionary();
+            Dictionary<ulong, uint> fixeds = msg.ToFixedFrameDictionary();
 
-            // Update data
-            foreach(var kvp in dict)
+            foreach(var (uid, entity) in dict)
             {
-                ulong uid = kvp.Key;
-                EntityHeader entity = kvp.Value;
-
                 if (!_nearbyUIDs.Contains(uid))
+                {
                     continue; // not nearby - ignore
+                }
 
                 double time_fixed = (double)(relativeFixedFrame * Time.fixedDeltaTime);
 
@@ -95,18 +94,20 @@ namespace Larnix.Client.Entities
             List<ulong> delayed_uids = _delayedProjections.Keys.ToList();
 
             foreach(ulong uid in active_uids)
-                if (!_nearbyUIDs.Contains(uid))
-                {
-                    EntityProjection projection = _projections[uid];
-                    Destroy(projection.gameObject);
-                    _projections.Remove(uid);
-                }
+            {
+                if (_nearbyUIDs.Contains(uid)) break;
+
+                EntityProjection projection = _projections[uid];
+                Destroy(projection.gameObject);
+                _projections.Remove(uid);
+            }
 
             foreach(ulong uid in delayed_uids)
-                if(!_nearbyUIDs.Contains(uid))
-                {
-                    _delayedProjections.Remove(uid);
-                }
+            {
+                if (_nearbyUIDs.Contains(uid)) break;
+
+                _delayedProjections.Remove(uid);
+            }
 
             // Spawn delayed projections
 
@@ -115,8 +116,7 @@ namespace Larnix.Client.Entities
 
             foreach (ulong uid in _delayedProjections.Keys.ToList())
             {
-                if (timer.Elapsed.TotalMilliseconds >= MAX_CREATION_MS)
-                    break;
+                if (timer.Elapsed.TotalMilliseconds >= MAX_CREATION_MS) break;
 
                 DelayedEntity delayedEntity = _delayedProjections[uid];
                 _delayedProjections.Remove(uid);
@@ -136,7 +136,7 @@ namespace Larnix.Client.Entities
             if (_nearbyFrameFixed == null)
                 return false; // no messages yet
 
-            int overtime = (int)((uint)_nearbyFrameFixed - atFrame);
+            uint overtime = _nearbyFrameFixed.Value - atFrame;
 
             if (overtime < MIN_DELAY)
                 return false; // no information yet

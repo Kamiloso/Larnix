@@ -24,4 +24,6 @@ public readonly record struct boolsrl : ISanitizable<boolsrl>
 
     public static implicit operator boolsrl(bool value) => new(value);
     public static implicit operator bool(boolsrl value) => value.Value;
+
+    public override string ToString() => Value.ToString();
 }

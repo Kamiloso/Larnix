@@ -6,10 +6,10 @@ using Larnix.Model.Entities;
 using Larnix.Model.Entities.Structs;
 using Larnix.Model.Utils;
 using Larnix.Server.Entities.Controllers;
-using Larnix.Server.Entities.Data;
 using System.Collections.Generic;
 using System.Linq;
 using Larnix.Model;
+using Larnix.Server.Repositories;
 
 namespace Larnix.Server.Entities;
 

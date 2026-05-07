@@ -1,8 +1,8 @@
 #nullable enable
-using System.Collections.Generic;
 using Larnix.Model.Worldgen;
 using Larnix.Core;
 using Larnix.Model;
+using Larnix.Server.Network;
 
 namespace Larnix.Server.Commands.All;
 
@@ -25,7 +25,7 @@ internal class Info : BaseCmd
 
     public override (CmdResult, string) Execute(string sender, PrivilegeLevel privilege)
     {
-        IEnumerable<string> lines = new[] {
+        string[] lines = {
             $"Version: {GameInfo.Version}",
             $"Players: {Server.PlayerCount} / {Server.MaxPlayers}",
             $"Port: {Server.Port}",

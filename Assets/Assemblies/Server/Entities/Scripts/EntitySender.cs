@@ -6,34 +6,34 @@ using Larnix.Model;
 using Larnix.Model.Entities.Structs;
 using Larnix.Model.Enums;
 using Larnix.Model.Worldgen;
-using Larnix.Server;
-using Larnix.Server.Data;
 using Larnix.Server.Entities;
 using Larnix.Server.Entities.Controllers;
-using Larnix.Server.Packets;
+using Larnix.Model.Packets;
 using Larnix.Server.Packets.Structs;
 using System.Collections.Generic;
 using System.Linq;
+using Larnix.Server.Network;
+using Larnix.Server;
 
 internal interface IEntitySender : IScript { }
 
 internal class EntitySender : IEntitySender
 {
+    private Config Config => GlobRef.Get<Config>();
     private IServer Server => GlobRef.Get<IServer>();
     private IClock Clock => GlobRef.Get<IClock>();
     private IEntityControllers EntityControllers => GlobRef.Get<IEntityControllers>();
     private IConnectedPlayers ConnectedPlayers => GlobRef.Get<IConnectedPlayers>();
     private IGenerator Generator => GlobRef.Get<IGenerator>();
-    private ServerConfig ServerConfig => GlobRef.Get<ServerConfig>();
 
     private record PlayerContext(
         List<BroadcastRecord> Broadcasts,
         HashSet<ulong> NearbyUids
     );
 
-    void IScript.PostLateFrameUpdate()
+    void IScript.PostLateUpdate()
     {
-        if (Clock.FixedFrame % ServerConfig.PeriodicTasks_EntityBroadcastPeriodFrames == 0)
+        if (Clock.FixedFrame % Config.PeriodicTasks_EntityBroadcastPeriodFrames == 0)
         {
             SendBroadcasts();
             SendFrameInfo();

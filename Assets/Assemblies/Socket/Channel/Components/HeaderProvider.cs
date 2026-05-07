@@ -30,13 +30,10 @@ internal class HeaderProvider
 
     public PayloadHeader NextFast()
     {
-        byte flags = 0;
-        flags |= (byte)PacketFlag.FAS;
-
         return new PayloadHeader(
             seqNum: _seqs.SeqNum,
             ackNum: _seqs.RcvNum,
-            flags: flags
+            flags: (byte)PacketFlag.FAS
             );
     }
 

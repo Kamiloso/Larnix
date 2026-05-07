@@ -12,11 +12,13 @@ namespace Larnix.Socket.Server;
 
 internal interface IInfoProvider
 {
-    ServerInfo ServerInfo { get; }
     string Authcode { get; }
-    string GetCIDR(IPEndPoint target);
-    bool CheckGlobalCredentials(in Credentials credentials);
+
+    ServerInfo CreateServerInfo();
     Credentials CreateCredentials(in FixedString32 nickname, in FixedString64 password, long challengeId);
+
+    bool CheckGlobalCredentials(in Credentials credentials);
+    string GetCIDR(IPEndPoint target);
 }
 
 internal class InfoProvider : IInfoProvider
@@ -54,33 +56,19 @@ internal class InfoProvider : IInfoProvider
             );
     }
 
-    public ServerInfo ServerInfo => new(
-        mayRegister: _settings.EnableRegister,
-        players: _clients.Count,
-        maxPlayers: _settings.MaxPlayers,
-        gameVersion: _settings.Version,
-        timestamp: Timestamp.Now(),
-        runId: _runId,
-        motd: _settings.Motd,
-        hostUser: _settings.HostUser,
-        rsaPublicKey: _rsa.ExportPublicKey()
-        );
-
-    public string GetCIDR(IPEndPoint target)
+    public ServerInfo CreateServerInfo()
     {
-        return WebIdentity.GetCIDR(
-            address: target.Address,
-            subnet: target.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork
-                ? _settings.Security.IdentityMaskIPv4
-                : _settings.Security.IdentityMaskIPv6
+        return new ServerInfo(
+            mayRegister: _settings.EnableRegister,
+            players: _clients.Count,
+            maxPlayers: _settings.MaxPlayers,
+            gameVersion: _settings.Version,
+            timestamp: Timestamp.Now(),
+            runId: _runId,
+            motd: _settings.Motd,
+            hostUser: _settings.HostUser,
+            rsaPublicKey: _rsa.ExportPublicKey()
             );
-    }
-
-    public bool CheckGlobalCredentials(in Credentials credentials)
-    {
-        return credentials.ServerSecret == _serverSecret
-            && credentials.RunId == _runId
-            && Timestamp.IsWithin(credentials.Timestamp);
     }
 
     public Credentials CreateCredentials(in FixedString32 nickname, in FixedString64 password, long challengeId)
@@ -92,6 +80,23 @@ internal class InfoProvider : IInfoProvider
             runId: _runId,
             timestamp: Timestamp.Now(),
             challengeId: challengeId
+            );
+    }
+
+    public bool CheckGlobalCredentials(in Credentials credentials)
+    {
+        return credentials.ServerSecret == _serverSecret
+            && credentials.RunId == _runId
+            && Timestamp.IsWithin(credentials.Timestamp);
+    }
+
+    public string GetCIDR(IPEndPoint target)
+    {
+        return WebIdentity.GetCIDR(
+            address: target.Address,
+            subnet: target.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork
+                ? _settings.Security.IdentityMaskIPv4
+                : _settings.Security.IdentityMaskIPv6
             );
     }
 }

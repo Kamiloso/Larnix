@@ -3,16 +3,21 @@ using SimpleJSON;
 
 namespace Larnix.Model.Json;
 
-public class Storage
+public partial class Storage
 {
     private JSONObject? _root;
     private JSONObject Root => _root ??= new JSONObject();
 
+    public Node this[string key] => IterateNode(key);
+
     public Storage() {}
     private Storage(JSONObject root) => _root = root;
 
-
-    public Node this[string key] => IterateNode(key);
+    public static Storage FromString(string? json)
+    {
+        JSONObject jsonObject = JsonUtils.ToJsonObject(json);
+        return new Storage(jsonObject);
+    }
 
     private Node IterateNode(string key)
     {
@@ -45,26 +50,13 @@ public class Storage
 
     public Storage DeepCopy()
     {
-        if (_root != null)
-        {
-            return new Storage(
-                Root.Clone().AsObject
-                );
-        }
-        else
-        {
-            return new Storage();
-        }
+        return _root != null
+            ? new Storage(Root.Clone().AsObject)
+            : new Storage();
     }
 
     public override string ToString()
     {
         return _root?.ToString() ?? "{}";
-    }
-
-    public static Storage FromString(string? json)
-    {
-        JSONObject jsonObject = JsonUtils.ToJsonObject(json);
-        return new Storage(jsonObject);
     }
 }

@@ -1,11 +1,12 @@
 #nullable enable
-using Larnix.Server.Packets;
+using Larnix.Model.Packets;
 using Larnix.Model.Utils;
 using Larnix.Core.Vectors;
 using Larnix.Core;
 using Larnix.Server.Entities;
 using Larnix.Server.Entities.Controllers;
 using Larnix.Model;
+using Larnix.Server.Network;
 
 namespace Larnix.Server.Commands.All;
 

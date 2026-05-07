@@ -19,7 +19,7 @@ internal class EntityManager : IEntityManager
         ChunkHolders.OnUnloaded += chunk => EntityControllers.UnloadEntityControllers(chunk);
     }
 
-    void IScript.FrameUpdate()
+    void IScript.Update()
     {
         // Frame update
         foreach (ulong uid in EntityControllers.Uids)
@@ -38,7 +38,7 @@ internal class EntityManager : IEntityManager
             if (controller.IsActive)
             {
                 Storage storage = controller.ActiveData.NBT;
-                if (Tags.TryConsume(storage, "tags", Tags.TO_BE_KILLED))
+                if (storage.RemoveFlag('K', true))
                 {
                     EntityControllers.KillController(uid);
                 }

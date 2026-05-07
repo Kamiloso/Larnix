@@ -7,6 +7,7 @@ using Larnix.Socket.Security.Keys;
 using System;
 using System.Threading.Tasks;
 using Larnix.Socket.Server.Receivers;
+using Larnix.Socket.Client;
 
 namespace Larnix.Socket.Server;
 
@@ -88,6 +89,9 @@ public class QuickServer : ITickable, IDisposable
     public void KickRequest(string nickname, Action? onKick = null)
         => _clients.KickRequest(nickname, onKick);
 
+    public void ResetLimiters()
+        => throw new NotImplementedException("TODO: implement");
+
     public void Tick(float deltaTime)
     {
         _coroutines.Tick(deltaTime);
@@ -97,6 +101,11 @@ public class QuickServer : ITickable, IDisposable
 
     public void Dispose()
     {
+        // stop server -> clean local cache about it
+        string authcode = _infoProvider.Authcode;
+        LocalCache.RemoveWhere(discovery => discovery.Authcode == authcode);
+
+        // dispose resources
         _webReceiver.Dispose();
         _coroutines.Dispose();
         _rsa.Dispose();

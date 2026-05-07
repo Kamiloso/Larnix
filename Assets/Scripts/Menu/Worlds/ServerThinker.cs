@@ -1,9 +1,10 @@
 using System.Collections;
 using System.Threading.Tasks;
 using UnityEngine;
-using Larnix.Socket.Packets;
 using Larnix.Model;
 using Larnix.Socket.Client;
+using Larnix.Socket.Client.Records;
+using Larnix.Core.Serialization;
 
 namespace Larnix.Menu.Worlds
 {
@@ -39,7 +40,7 @@ namespace Larnix.Menu.Worlds
     {
         public ThinkerState State { get; private set; } = ThinkerState.None;
         public ServerData serverData = new(); // input
-        public ServerInfo_Legacy serverInfo = null; // output
+        public ServerInfo serverInfo = null; // output
 
         Coroutine loginCoroutine = null;
         public bool? LoginSuccess { get; private set; } = null;
@@ -100,7 +101,11 @@ namespace Larnix.Menu.Worlds
         private void Login(bool isRegistration)
         {
             if (State == ThinkerState.Ready)
-                loginCoroutine = StartCoroutine(LoginCoroutine(isRegistration));
+            {
+                loginCoroutine = StartCoroutine(
+                    LoginCoroutine(isRegistration)
+                    );
+            }
         }
 
         public void Logout()
@@ -117,13 +122,19 @@ namespace Larnix.Menu.Worlds
         public void SafeRefresh()
         {
             if (State != ThinkerState.Waiting)
-                StartCoroutine(RefreshCoroutine());
+            {
+                StartCoroutine(
+                    RefreshCoroutine()
+                    );
+            }
         }
 
         public LoginState GetLoginState()
         {
             if (State != ThinkerState.Ready)
+            {
                 return LoginState.None;
+            }
 
             if (LoginSuccess != null)
             {
@@ -141,8 +152,10 @@ namespace Larnix.Menu.Worlds
 
         public bool MayRegister()
         {
-            return State == ThinkerState.Ready &&
-                   serverInfo?.MayRegister == true;
+            bool ready = State == ThinkerState.Ready;
+            bool mayRegister = serverInfo?.MayRegister == true;
+
+            return ready && mayRegister;
         }
 
         private IEnumerator RefreshCoroutine()
@@ -161,15 +174,26 @@ namespace Larnix.Menu.Worlds
 
             bool knowsUserData = nickname != "" && password != "";
 
+            ServerDiscovery discovery = new(
+                address,
+                authcode,
+                new FixedString32(knowsUserData
+                    ? nickname
+                    : GameInfo.ReservedNickname
+                    )
+                );
+
             var downloading = Task.Run(() =>
-                Resolver.DownloadServerInfoAsync(address, authcode, knowsUserData ? nickname : GameInfo.ReservedNickname, true));
+                Resolver.DownloadServerInfoAsync(discovery, ignoreCache: true));
 
             while (!downloading.IsCompleted)
-                yield return null;
-
-            if (downloading.Result.info == null)
             {
-                if (downloading.Result.error == ResolveError.PublicKeyInvalid) // public key problems fail
+                yield return null;
+            }
+
+            if (downloading.Result.Error != ResolveError.None)
+            {
+                if (downloading.Result.Error == ResolveError.PublicKeyInvalid) // public key problems fail
                 {
                     serverInfo = null;
                     State = ThinkerState.WrongPublicKey;
@@ -184,7 +208,7 @@ namespace Larnix.Menu.Worlds
             }
             else // success
             {
-                serverInfo = downloading.Result.info;
+                serverInfo = downloading.Result.Result;
                 State = GameInfo.Version.CompatibleWith(serverInfo.GameVersion) ?
                     ThinkerState.Ready :
                     ThinkerState.Incompatible;
@@ -199,21 +223,26 @@ namespace Larnix.Menu.Worlds
 
         private IEnumerator LoginCoroutine(bool isRegistration)
         {
-            string address = serverData.Address;
-            string authcode = serverData.AuthCodeRSA;
-            string nickname = serverData.Nickname;
-            string password = serverData.Password;
+            FullLoginData loginData = new(
+                Address: serverData.Address,
+                Authcode: serverData.AuthCodeRSA,
+                Nickname: new FixedString32(serverData.Nickname),
+                Password: new FixedString64(serverData.Password)
+                );
 
             WasRegistration = isRegistration;
 
             var login = isRegistration ?
-                Task.Run(() => Resolver.TryRegisterAsync(address, authcode, nickname, password)) :
-                Task.Run(() => Resolver.TryLoginAsync(address, authcode, nickname, password));
+                Task.Run(() => Resolver.TryRegisterAsync(loginData)) :
+                Task.Run(() => Resolver.TryLoginAsync(loginData));
 
             while (!login.IsCompleted)
+            {
                 yield return null;
+            }
 
-            if (login.Result.success == true)
+            ResolveAnswer<bool> resolved = login.Result;
+            if (resolved.Error == ResolveError.None && resolved.Result)
             {
                 if (isRegistration) // apply data
                 {

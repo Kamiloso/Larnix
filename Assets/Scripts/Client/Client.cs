@@ -2,12 +2,11 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using Larnix.Socket.Packets;
 using System.Threading.Tasks;
 using Larnix.Model.Physics;
 using Larnix.Server;
 using Larnix.Patches;
-using Larnix.Server.Packets;
+using Larnix.Model.Packets;
 using Larnix.Client.UI;
 using Larnix.Client.Terrain.Selector;
 using Larnix.Client.Entities;
@@ -15,24 +14,14 @@ using Larnix.Scoping;
 using Larnix.Core;
 using Larnix.Model;
 using Larnix.Socket.Client;
+using System;
+using Larnix.Socket.Client.Records;
+using Larnix.Core.Serialization;
 
 namespace Larnix.Client
 {
     public class Client : MonoBehaviour
     {
-        private record DelayedPacket(Payload_Legacy Packet, bool Safemode);
-
-        private QuickClient _larnixClient;
-        private Task<QuickClient> _connectingTask;
-        private Queue<DelayedPacket> _delayedPackets = new();
-
-        private Loading Loading => GlobRef.Get<Loading>();
-        private Inventory Inventory => GlobRef.Get<Inventory>();
-        private TileSelector TileSelector => GlobRef.Get<TileSelector>();
-        private EntityProjections EntityProjections => GlobRef.Get<EntityProjections>();
-        private MainPlayer MainPlayer => GlobRef.Get<MainPlayer>();
-        private Screenshots Screenshots => GlobRef.Get<Screenshots>();
-
         // --- CONSTANT VALUES ---
         public string Address { get; private set; }
         public string Authcode { get; private set; }
@@ -44,7 +33,18 @@ namespace Larnix.Client
         // --- CHANGABLE PROPERTIES ---
         public bool IsGameFocused { get; private set; } = true; // start focused
         public uint FixedFrame { get; private set; }
-        public float Ping => _larnixClient?.GetPing() ?? 0f;
+        public float Ping => _larnixClient?.AvgRtt ?? 0f;
+
+        private Loading Loading => GlobRef.Get<Loading>();
+        private Inventory Inventory => GlobRef.Get<Inventory>();
+        private TileSelector TileSelector => GlobRef.Get<TileSelector>();
+        private EntityProjections EntityProjections => GlobRef.Get<EntityProjections>();
+        private MainPlayer MainPlayer => GlobRef.Get<MainPlayer>();
+        private Screenshots Screenshots => GlobRef.Get<Screenshots>();
+
+        private readonly Queue<Action> _delayedActions = new();
+        private Task<QuickClient> _connectingTask;
+        private QuickClient _larnixClient;
 
         void Awake()
         {
@@ -81,8 +81,15 @@ namespace Larnix.Client
             Nickname = WorldLoad.Nickname;
             Password = WorldLoad.Password;
 
+            FullLoginData loginData = new(
+                Address: Address,
+                Authcode: Authcode,
+                Nickname: new FixedString32(Nickname),
+                Password: new FixedString64(Password)
+                );
+
             _connectingTask = Task.Run(() =>
-                QuickClient.CreateClientAsync(Address, Authcode, Nickname, Password).Result);
+                QuickClient.CreateClientAsync(loginData).Result);
 
             while (!_connectingTask.IsCompleted)
             {
@@ -119,15 +126,14 @@ namespace Larnix.Client
         {
             if(_larnixClient != null)
             {
-                while (_delayedPackets.Count > 0)
+                while (_delayedActions.Count > 0)
                 {
-                    DelayedPacket pack = _delayedPackets.Dequeue();
-                    _larnixClient.Send(pack.Packet, pack.Safemode);
+                    _delayedActions.Dequeue().Invoke();
                 }
                 
                 _larnixClient.Tick(Time.deltaTime);
 
-                if (_larnixClient.IsDead())
+                if (_larnixClient.IsDead)
                 {
                     BackToMenu();
                     return;
@@ -145,8 +151,8 @@ namespace Larnix.Client
             {
                 if (!MainPlayer.gameObject.activeInHierarchy)
                 {
-                    Payload_Legacy packet = new CodeInfo(CodeInfo.Info.RespawnMe);
-                    Send(packet);
+                    CodeInfo payload = new(CodeInfo.Info.RespawnMe);
+                    Send(payload);
 
                     Loading.StartLoading("Respawning...");
                 }
@@ -161,12 +167,32 @@ namespace Larnix.Client
             }
         }
 
-        public void Send(Payload_Legacy packet, bool safemode = true)
+        public void Send<T>(in T payload) where T : unmanaged
         {
-            if (_larnixClient != null && _delayedPackets.Count == 0)
-                _larnixClient.Send(packet, safemode);
+            if (_larnixClient != null && _delayedActions.Count == 0)
+            {
+                _larnixClient.Send(payload);
+            }
             else
-                _delayedPackets.Enqueue(new DelayedPacket(packet, safemode));
+            {
+                T payloadCopy = payload;
+                _delayedActions.Enqueue(
+                    () => _larnixClient.Send(payloadCopy));
+            }
+        }
+
+        public void SendUnreliable<T>(in T payload) where T : unmanaged
+        {
+            if (_larnixClient != null && _delayedActions.Count == 0)
+            {
+                _larnixClient.SendUnreliable(payload);
+            }
+            else
+            {
+                T payloadCopy = payload;
+                _delayedActions.Enqueue(
+                    () => _larnixClient.SendUnreliable(payloadCopy));
+            }
         }
 
         public void BackToMenu()

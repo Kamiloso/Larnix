@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 using Larnix.Model.Utils;
 using Larnix.Core;
 using Larnix.Socket.Client;
+using Larnix.Socket.Client.Records;
+using Larnix.Core.Serialization;
 
 namespace Larnix.Menu.Forms
 {
@@ -22,8 +24,8 @@ namespace Larnix.Menu.Forms
         private ServerThinker _thinker = null;
         private InputSwapper _swapper = null;
 
-        private string ActionState = null;
-        private bool? Result = null;
+        private string _actionState = null;
+        private bool? _result = null;
 
         private void Awake()
         {
@@ -51,14 +53,13 @@ namespace Larnix.Menu.Forms
 
         protected override ErrorCode GetErrorCode()
         {
-            if (ActionState == "RESULT")
-                return ErrorCode.SUCCESS;
-
-            string address = IF_Address.text;
             string nickname = IF_Nickname.text;
             string oldPassword = _thinker.serverData.Password;
             string newPassword = IF_Password.text;
             string confirm = IF_Confirm.text;
+
+            if (_actionState == "RESULT")
+                return ErrorCode.SUCCESS;
 
             if (!Validation.IsGoodNickname(nickname))
                 return ErrorCode.NICKNAME_FORMAT;
@@ -66,10 +67,7 @@ namespace Larnix.Menu.Forms
             if (!Validation.IsGoodPassword(newPassword))
                 return ErrorCode.PASSWORD_FORMAT;
 
-            if (oldPassword == newPassword)
-                return ErrorCode.PASSWORDS_MATCH;
-
-            if (ActionState == "TYPING_2")
+            if (_actionState == "TYPING_2")
             {
                 if (newPassword != confirm)
                     return ErrorCode.PASSWORDS_NOT_MATCH;
@@ -85,23 +83,29 @@ namespace Larnix.Menu.Forms
             string oldPassword = _thinker.serverData.Password;
             string newPassword = IF_Password.text;
 
-            if (ActionState == "TYPING_1") // before submit 1
+            if (_actionState == "TYPING_1") // before submit 1
             {
                 ChangeState("TYPING_2");
             }
-            else if (ActionState == "TYPING_2") // before submit 2
+            else if (_actionState == "TYPING_2") // before submit 2
             {
                 TX_ErrorText.text = "Changing password...";
                 ChangeState("WAITING");
 
-                StartCoroutine(ChangePassword(address, nickname, oldPassword, newPassword));
+                StartCoroutine(
+                    ChangePassword(address, nickname, oldPassword, newPassword)
+                    );
             }
-            else if (ActionState == "RESULT")
+            else if (_actionState == "RESULT")
             {
-                if (Result == false)
+                if (_result == false)
+                {
                     EnterForm(IF_Address.text, IF_Nickname.text);
+                }
                 else
+                {
                     Menu.GoBack();
+                }
             }
         }
 
@@ -109,26 +113,34 @@ namespace Larnix.Menu.Forms
         {
             string authcode = _thinker.serverData.AuthCodeRSA;
 
-            var changeTask = Task.Run(() =>
-            Resolver.TryChangePasswordAsync(address, authcode, nickname, oldPassword, newPassword));
+            PasswordChangeData loginData = new(
+                Address: address,
+                Authcode: authcode,
+                Nickname: new FixedString32(nickname),
+                Password: new FixedString64(oldPassword),
+                NewPassword: new FixedString64(newPassword)
+                );
 
-            while (!changeTask.IsCompleted)
+            var passchange = Task.Run(() => Resolver.TryChangePasswordAsync(loginData));
+
+            while (!passchange.IsCompleted)
+            {
                 yield return null;
+            }
 
-            Result = changeTask.Result.success;
+            ResolveAnswer<bool> resolved = passchange.Result;
+            _result = resolved.Error == ResolveError.None && resolved.Result;
 
-            if (Result == true)
+            TX_ErrorText.text = _result switch
             {
-                TX_ErrorText.text = "Password changed.";
+                true => "Password changed.",
+                false => "Password change failed.",
+                null => "Connection error. Cannot check if password change was successful.",
+            };
+
+            if (_result == true)
+            {
                 _thinker.SubmitUserOnlyData(nickname, newPassword);
-            }
-            else if (Result == false)
-            {
-                TX_ErrorText.text = "Password change failed.";
-            }
-            else
-            {
-                TX_ErrorText.text = "Connection error. Cannot check if password change was successful.";
             }
 
             ChangeState("RESULT");
@@ -159,7 +171,7 @@ namespace Larnix.Menu.Forms
                     BT_Submit.interactable = true;
                     break;
             }
-            ActionState = state;
+            _actionState = state;
         }
     }
 }

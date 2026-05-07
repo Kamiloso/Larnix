@@ -1,7 +1,7 @@
 #nullable enable
 using Larnix.Core;
 using Larnix.Core.Collections;
-using Larnix.Core.Limiters;
+using Larnix.Socket.Limiters;
 using Larnix.Socket.Server.Utility;
 using Larnix.Socket.Channel;
 using Larnix.Socket.Networking;
@@ -44,44 +44,45 @@ internal class ConnReceiver : ITickable, IDisposable
 
     public void EstablishConnection(IPEndPoint target, string cidr, byte[] decrypted)
     {
-        IfHas(target, conn =>
-        {
-            if (!NetworkSerializer.TryDecryptedBytesAs(
-                decrypted, out _, out AllowConnection allowConnection))
-                return;
+        if (!NetworkSerializer.TryDecryptedBytesAs(
+            decrypted, out _, out AllowConnection allowConnection))
+            return;
 
-            Credentials credentials = allowConnection.Credentials;
-            bool isLoopback = IPAddress.IsLoopback(target.Address);
-            string nickname = credentials.Nickname;
+        Credentials credentials = allowConnection.Credentials;
+        bool isLoopback = IPAddress.IsLoopback(target.Address);
 
-            _coroutines.Start(
-                method: _asyncLogins.Login(credentials, isLoopback),
-                onResult: success =>
+        _coroutines.Start(
+            method: _asyncLogins.LoginOrRegister(credentials, isLoopback),
+            onResult: success =>
+            {
+                string nickname = credentials.Nickname;
+
+                if (!success) return;
+                if (_bimap.ContainsValue(nickname)) return;
+                if (_bimap.Count >= _settings.MaxPlayers) return;
+
+                if (_cidrLimiter.TryAdd(cidr))
                 {
-                    if (!success) return;
-                    if (_bimap.ContainsValue(nickname)) return;
-                    if (_bimap.Count >= _settings.MaxPlayers) return;
+                    Connection conn = new(
+                        socket: new TargetedSocket(_socket, target),
+                        aesKey: allowConnection.AesKey
+                        );
 
-                    if (_cidrLimiter.TryAdd(cidr))
-                    {
-                        Connection conn = new(
-                            socket: new TargetedSocket(_socket, target),
-                            aesKey: allowConnection.AesKey
-                            );
+                    _clients.AddClient(nickname, conn);
 
-                        _clients.AddClient(nickname, conn);
-
-                        _conns.Add(target, conn);
-                        _cidrs.Add(target, cidr);
-                        _bimap.SetPair(target, nickname);
-                    }
-                });
-        });
+                    _conns.Add(target, conn);
+                    _cidrs.Add(target, cidr);
+                    _bimap.SetPair(target, nickname);
+                }
+            });
     }
 
     public void PushFromWeb(IPEndPoint target, byte[] data)
     {
-        IfHas(target, conn => conn.PushFromWeb(data));
+        if (_bimap.TryGetValue(target, out string nickname))
+        {
+            _clients.PushFromWeb(nickname, data);
+        }
     }
 
     public void Tick(float deltaTime)
@@ -99,6 +100,8 @@ internal class ConnReceiver : ITickable, IDisposable
 
         foreach (var target in toRemove)
         {
+            _conns[target].Dispose();
+
             string nickname = _bimap[target];
             _clients.RemoveClient(nickname);
 
@@ -108,14 +111,6 @@ internal class ConnReceiver : ITickable, IDisposable
             _conns.Remove(target);
             _cidrs.Remove(target);
             _bimap.RemoveByKey(target);
-        }
-    }
-
-    private void IfHas(IPEndPoint target, Action<Connection> action)
-    {
-        if (_conns.TryGetValue(target, out var conn))
-        {
-            action.Invoke(conn);
         }
     }
 

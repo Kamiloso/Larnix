@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using Larnix.Core;
 using Larnix.Model.Utils;
 using Larnix.Server.Data;
-using Larnix.Model.Json;
 using Larnix.Model;
+using Larnix.Model.Configs;
 
 namespace Larnix.Server.Commands.All;
 
@@ -22,7 +22,7 @@ internal class Admin : BaseCmd
         "admin clear - Clears the admin list.";
 
     private IServerInfo ServerInfo => GlobRef.Get<IServerInfo>();
-    private ServerConfig ServerConfig => GlobRef.Get<ServerConfig>();
+    private Config Config => GlobRef.Get<Config>();
 
     private string _subname;
     private string _nickname;
@@ -90,10 +90,10 @@ internal class Admin : BaseCmd
 
     private (CmdResult, string) ExecuteAdd()
     {
-        if (!ServerConfig.Administration_Admins.Contains(_nickname))
+        if (!Config.Administration_Admins.Contains(_nickname))
         {
-            ServerConfig.Administration_Admins.Add(_nickname);
-            Config.ToFile(ServerInfo.WorldPath, Common.ConfigFile, ServerConfig);
+            Config.Administration_Admins.Add(_nickname);
+            BaseConfig.ToFile(ServerInfo.WorldPath, Common.ConfigFile, Config);
 
             return (CmdResult.Success,
                 $"Successfully granted admin privileges to '{_nickname}'.");
@@ -105,10 +105,10 @@ internal class Admin : BaseCmd
 
     private (CmdResult, string) ExecuteRemove()
     {
-        if (ServerConfig.Administration_Admins.Contains(_nickname))
+        if (Config.Administration_Admins.Contains(_nickname))
         {
-            ServerConfig.Administration_Admins.Remove(_nickname);
-            Config.ToFile(ServerInfo.WorldPath, Common.ConfigFile, ServerConfig);
+            Config.Administration_Admins.Remove(_nickname);
+            BaseConfig.ToFile(ServerInfo.WorldPath, Common.ConfigFile, Config);
 
             return (CmdResult.Success,
                 $"Successfully revoked admin privileges from '{_nickname}'.");
@@ -121,13 +121,13 @@ internal class Admin : BaseCmd
     private (CmdResult, string) ExecuteList()
     {
         return (CmdResult.Raw,
-            MakeRobustList("ADMIN ENTRIES", "'", ServerConfig.Administration_Admins, "'"));
+            MakeRobustList("ADMIN ENTRIES", "'", Config.Administration_Admins, "'"));
     }
 
     private (CmdResult, string) ExecuteClear()
     {
-        ServerConfig.Administration_Admins.Clear();
-        Config.ToFile(ServerInfo.WorldPath, Common.ConfigFile, ServerConfig);
+        Config.Administration_Admins.Clear();
+        BaseConfig.ToFile(ServerInfo.WorldPath, Common.ConfigFile, Config);
 
         return (CmdResult.Success,
             "Successfully cleared the admin list.");

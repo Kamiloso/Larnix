@@ -16,7 +16,7 @@ namespace Larnix.Client.Terrain
     {
         [SerializeField] protected ChunkedTilemap ChunkedTilemap;
 
-        protected readonly Dictionary<Vec2Int, ChunkView> _allChunks = new();
+        protected readonly Dictionary<Vec2Int, ChunkData> _allChunks = new();
         protected readonly HashSet<Vec2Int> _dirtyChunks = new();
         protected readonly HashSet<Vec2Int> _visibleChunks = new();
 
@@ -41,9 +41,9 @@ namespace Larnix.Client.Terrain
             RedrawGrid();
         }
 
-        public void AddChunk(Vec2Int chunk, ChunkView chunkView, bool instantLoad = false)
+        public void AddChunk(Vec2Int chunk, ChunkData chunkData, bool instantLoad = false)
         {
-            _allChunks[chunk] = chunkView;
+            _allChunks[chunk] = chunkData;
             OnChunkChanged?.Invoke(chunk);
             _dirtyChunks.Add(chunk);
 
@@ -147,7 +147,7 @@ namespace Larnix.Client.Terrain
                 return null;
             
             Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
-            return _allChunks[chunk][pos.x, pos.y];
+            return _allChunks[chunk][pos.x, pos.y].Header;
         }
 
         public byte CalculateBorderByte(Vec2Int POS)

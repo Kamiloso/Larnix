@@ -7,6 +7,7 @@ using System.Collections.ObjectModel;
 using Larnix.Model.Worldgen.Transformers;
 using Larnix.Model.Worldgen.Transformers.Pipeline;
 using Larnix.Model.Blocks.Chunks;
+using Larnix.Core;
 
 namespace Larnix.Model.Worldgen;
 

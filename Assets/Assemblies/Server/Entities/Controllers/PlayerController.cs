@@ -2,8 +2,8 @@
 using Larnix.Core;
 using Larnix.Core.Vectors;
 using Larnix.Model.Entities.Structs;
-using Larnix.Server.Packets;
-using static Larnix.Server.Packets.CodeInfo;
+using Larnix.Model.Packets;
+using Larnix.Server.Network;
 
 namespace Larnix.Server.Entities.Controllers;
 
@@ -39,7 +39,7 @@ internal class PlayerController : BaseController
 
     protected override void OnKill()
     {
-        CodeInfo packet = new(Info.YouDie);
+        CodeInfo packet = new(CodeInfo.Info.YouDie);
         Server.Send(Nickname, packet);
     }
 }

@@ -1,6 +1,5 @@
 #nullable enable
 using System.Threading.Tasks;
-using Larnix.Socket.Client.Cache;
 using Larnix.Socket.Payload.Packets;
 using Larnix.Socket.Client.Records;
 using Larnix.Socket.Security;
@@ -16,7 +15,6 @@ public enum ResolveError
     InvalidResponse,
     PublicKeyInvalid,
     LoginNotAllowed,
-    Exception
 }
 
 public record ResolveAnswer<T>(T? Result, ResolveError Error)
@@ -28,9 +26,6 @@ public record ResolveAnswer<T>(T? Result, ResolveError Error)
 
 public static partial class Resolver
 {
-    private static readonly Cacher<ServerDiscovery, A_ServerInfo> _cache = new();
-    private static readonly Timestamps<ServerIdentity> _timestamps = new();
-
     public static async Task<ResolveAnswer<ServerInfo>> DownloadServerInfoAsync(
         ServerDiscovery discovery, bool ignoreCache = false)
     {
@@ -49,9 +44,9 @@ public static partial class Resolver
     }
 
     public static async Task<ResolveAnswer<bool>> UserExistsAsync(
-        ServerDiscovery discovery)
+        ServerDiscovery discovery, bool ignoreCache = false)
     {
-        ResolveAnswer<A_ServerInfo> recv = await _DownloadServerInfoAsync(discovery);
+        ResolveAnswer<A_ServerInfo> recv = await _DownloadServerInfoAsync(discovery, ignoreCache);
         if (recv.Error != ResolveError.None)
         {
             return recv.Error;
@@ -63,29 +58,29 @@ public static partial class Resolver
     }
 
     public static async Task<ResolveAnswer<bool>> TryLoginAsync(
-        FullLoginData fullLogin)
+        FullLoginData fullLogin, bool ignoreCache = false)
     {
-        return await _TryLoginUniversal(fullLogin, false);
+        return await _TryLoginUniversal(fullLogin, false, ignoreCache);
     }
 
     public static async Task<ResolveAnswer<bool>> TryRegisterAsync(
-        FullLoginData fullLogin)
+        FullLoginData fullLogin, bool ignoreCache = false)
     {
-        return await _TryLoginUniversal(fullLogin, true);
+        return await _TryLoginUniversal(fullLogin, true, ignoreCache);
     }
 
     public static async Task<ResolveAnswer<bool>> TryChangePasswordAsync(
-        PasswordChangeData passwordChange)
+        PasswordChangeData passwordChange, bool ignoreCache = false)
     {
-        return await _TryLoginUniversal(passwordChange, false);
+        return await _TryLoginUniversal(passwordChange, false, ignoreCache);
     }
 
     internal static async Task<ResolveAnswer<EntryTicket>> TryGetEntryTicketAsync(
-        ServerDiscovery discovery)
+        ServerDiscovery discovery, bool ignoreCache = false)
     {
         var (_, authcode, _) = discovery;
 
-        ResolveAnswer<A_ServerInfo> recv = await _DownloadServerInfoAsync(discovery);
+        ResolveAnswer<A_ServerInfo> recv = await _DownloadServerInfoAsync(discovery, ignoreCache);
         if (recv.Error != ResolveError.None)
         {
             return recv.Error;

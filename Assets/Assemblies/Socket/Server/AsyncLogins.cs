@@ -11,6 +11,7 @@ namespace Larnix.Socket.Server;
 internal interface IAsyncLogins
 {
     long GetChallengeId(in FixedString32 nickname); // 0 = no user
+    IEnumerable<bool?> LoginOrRegister(Credentials credentials, bool isLoopback);
     IEnumerable<bool?> Login(Credentials credentials, bool isLoopback);
     IEnumerable<bool?> Register(Credentials credentials, bool isLoopback);
     IEnumerable<bool?> SetPassword(FixedString32 nickname, FixedString64 newPassword);
@@ -45,6 +46,20 @@ internal class AsyncLogins : IAsyncLogins
              : null;
 
         return challengeId ?? 0;
+    }
+
+    public IEnumerable<bool?> LoginOrRegister(Credentials credentials, bool isLoopback)
+    {
+        IEnumerator<bool?> process = (
+            credentials.IsLogin()
+                ? Login(credentials, isLoopback).GetEnumerator()
+                : Register(credentials, isLoopback).GetEnumerator()
+            );
+
+        while (process.MoveNext())
+        {
+            yield return process.Current;
+        }
     }
 
     public IEnumerable<bool?> Login(Credentials credentials, bool isLoopback)
@@ -154,7 +169,7 @@ internal class AsyncLogins : IAsyncLogins
         {
             IEnumerator<bool?> registration = Register(
                 credentials: _infoProvider.CreateCredentials(nickname, newPassword, 0),
-                isLoopback: true // inner registration, so we assume it's loopback
+                isLoopback: true // inner registration -> assume it's loopback
                 ).GetEnumerator();
 
             while (registration.MoveNext())

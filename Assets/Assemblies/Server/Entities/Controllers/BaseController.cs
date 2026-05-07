@@ -6,7 +6,7 @@ using Larnix.Model.Entities;
 using Larnix.Model.Entities.Structs;
 using Larnix.Model.Physics;
 using Larnix.Server.Commands;
-using Larnix.Server.Entities.Data;
+using Larnix.Server.Repositories;
 
 namespace Larnix.Server.Entities.Controllers;
 

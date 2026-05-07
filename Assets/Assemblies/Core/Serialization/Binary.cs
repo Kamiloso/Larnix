@@ -1,11 +1,12 @@
 #nullable enable
 using System;
-using System.Runtime.InteropServices;
+using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Larnix.Core.Serialization;
 
-public static unsafe partial class Binary<T> where T : unmanaged
+public static unsafe class Binary<T> where T : unmanaged
 {
     public static int Size => sizeof(T);
 
@@ -35,28 +36,54 @@ public static unsafe partial class Binary<T> where T : unmanaged
             );
     }
 
-    public static byte[] SerializeArray(T[] array)
+    private static bool IsSupportedType(Type type)
     {
-        return MemoryMarshal.AsBytes(array.AsSpan()).ToArray();
-    }
-
-    public static T[] DeserializeArray(byte[] bytes, int count, int offset = 0)
-    {
-        if (count < 0)
-            throw new ArgumentOutOfRangeException(nameof(count), "Count cannot be negative.");
-
-        if (offset < 0 || offset + (long)count * sizeof(T) > bytes.Length)
-            throw new ArgumentOutOfRangeException(nameof(offset), "Byte array size mismatch.");
-
-        T[] array = MemoryMarshal.Cast<byte, T>(
-            bytes.AsSpan(offset, count * sizeof(T))
-        ).ToArray();
-
-        foreach (ref T item in array.AsSpan())
+        if (type == typeof(bool) || type == typeof(decimal))
         {
-            item = Sanitizer.Filter(item);
+            return false;
         }
 
-        return array;
+        if (type.IsPrimitive || type.IsEnum)
+        {
+            return true;
+        }
+
+        if (!type.IsValueType)
+        {
+            return false;
+        }
+
+        FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        if (fields.Length == 0)
+        {
+            return false; // something weird, better not allow it
+        }
+
+        foreach (FieldInfo field in fields)
+        {
+            FixedBufferAttribute? fixedBuffer = field.GetCustomAttribute<FixedBufferAttribute>();
+            if (fixedBuffer == null) // normal struct field
+            {
+                if (!IsSupportedType(field.FieldType))
+                {
+                    return false;
+                }
+            }
+            else // fixed-size buffer field
+            {
+                if (!IsSupportedType(fixedBuffer.ElementType))
+                {
+                    return false;
+                }
+            }
+        }
+
+        StructLayoutAttribute? layout = type.StructLayoutAttribute;
+        if (layout == null || layout.Value != LayoutKind.Sequential || layout.Pack != 1)
+        {
+            return false;
+        }
+
+        return true;
     }
 }

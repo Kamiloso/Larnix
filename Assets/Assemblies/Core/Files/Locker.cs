@@ -15,9 +15,13 @@ public class Locker : IDisposable
 
     public static Locker LockOrException(string path, string filename, Func<Exception>? makeException = null)
     {
-        FileManager.EnsureDirectory(path);
         try
         {
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
+
             FileStream fileStream = new(
                 Path.Combine(path, filename),
                 FileMode.OpenOrCreate,
@@ -35,6 +39,6 @@ public class Locker : IDisposable
 
     public void Dispose()
     {
-        _fileStream?.Dispose();
+        _fileStream.Dispose();
     }
 }

@@ -7,6 +7,7 @@ using Org.BouncyCastle.Security;
 using Larnix.Core.Utils;
 using Larnix.Socket.Payload.Structs;
 using Larnix.Socket.Server.Interfaces;
+using Larnix.Core;
 
 namespace Larnix.Socket.Security.Keys;
 

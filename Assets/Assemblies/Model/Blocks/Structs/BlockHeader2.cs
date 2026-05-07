@@ -14,10 +14,7 @@ public readonly record struct BlockHeader2 : ISanitizable<BlockHeader2>
     public BlockHeader1 Front => new(_idFront, (byte)(_infoByte >> 4));
     public BlockHeader1 Back => new(_idBack, (byte)(_infoByte & 0x0F));
 
-    public static BlockHeader2 Empty => new(
-        BlockHeader1.Air,
-        BlockHeader1.Air
-        );
+    public static BlockHeader2 Empty => new(BlockHeader1.Air, BlockHeader1.Air);
 
     public BlockHeader2(BlockHeader1 front, BlockHeader1 back)
     {

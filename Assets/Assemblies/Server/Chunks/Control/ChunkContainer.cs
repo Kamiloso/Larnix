@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using Larnix.Core;
 using Larnix.Server.Chunks.Scripts;
-using Larnix.Server.Chunks.Data;
+using Larnix.Server.Repositories;
 
 namespace Larnix.Server.Chunks.Control;
 

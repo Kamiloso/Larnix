@@ -1,11 +1,10 @@
 using UnityEngine;
-using Larnix.Socket.Packets;
 using Larnix.Client.Entities;
 using Larnix.Model.Entities;
 using Larnix.Model.Physics;
 using Larnix.Core.Vectors;
 using Larnix.Model.Utils;
-using Larnix.Server.Packets;
+using Larnix.Model.Packets;
 using Larnix.Client.Terrain;
 using System;
 using Larnix.Model.Entities.All;
@@ -139,8 +138,8 @@ namespace Larnix.Client
         {
             if (_lastSentFixedCounter != Client.FixedFrame)
             {
-                Payload_Legacy packet = new PlayerUpdate(Position, Rotation, Client.FixedFrame);
-                Client.Send(packet, false); // fast mode
+                PlayerUpdate payload = new(Position, Rotation, Client.FixedFrame);
+                Client.SendUnreliable(payload);
 
                 _lastSentFixedCounter = Client.FixedFrame;
             }

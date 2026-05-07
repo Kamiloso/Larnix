@@ -1,6 +1,5 @@
 #nullable enable
 using Larnix.Core;
-using Larnix.Core.Limiters;
 using Larnix.Socket.Server.Utility;
 using Larnix.Socket.Networking;
 using Larnix.Socket.Payload;
@@ -11,16 +10,12 @@ using Larnix.Socket.Payload.Structs;
 
 namespace Larnix.Socket.Server.Receivers;
 
-internal class RequestReceiver : ITickable
+internal class RequestReceiver
 {
     private readonly ISocket _socket;
     private readonly IAsyncLogins _asyncLogins;
     private readonly IInfoProvider _infoProvider;
     private readonly Coroutines _coroutines;
-    private readonly QuickSettings _settings;
-
-    private readonly TrafficLimiter<string> _requestLimiter;
-    private readonly CycleTimer _requestCleanupTimer;
 
     public RequestReceiver(
         ISocket socket,
@@ -34,34 +29,15 @@ internal class RequestReceiver : ITickable
         _asyncLogins = asyncLogins;
         _infoProvider = infoProvider;
         _coroutines = coroutines;
-        _settings = settings;
-
-        _requestLimiter = new TrafficLimiter<string>(
-            maxTrafficLocal: _settings.Security.Limiters.Requests.PerNetwork,
-            maxTrafficGlobal: _settings.Security.Limiters.Requests.Global
-            );
-
-        _requestCleanupTimer = new CycleTimer(
-            interval: _settings.Security.Limiters.Requests.ResetPeriodMs
-            );
-
-        _requestCleanupTimer.OnInterval += _requestLimiter.Reset;
-    }
-
-    public void Tick(float deltaTime)
-    {
-        _requestCleanupTimer.Tick(deltaTime);
     }
 
     public void HandleRequest(IPEndPoint target, string cidr, byte[] decrypted)
     {
-        if (!_requestLimiter.TryAdd(cidr)) return;
-
-        CheckServerInfo(target, decrypted);
-        CheckLoginTry(target, decrypted);
+        CheckServerInfo(target, cidr, decrypted);
+        CheckLoginTry(target, cidr, decrypted);
     }
 
-    private void CheckServerInfo(IPEndPoint target, byte[] decrypted)
+    private void CheckServerInfo(IPEndPoint target, string _, byte[] decrypted)
     {
         if (!NetworkSerializer.TryDecryptedBytesAs(
             decrypted, out PayloadHeader header, out P_ServerInfo serverInfo)) return;
@@ -71,13 +47,13 @@ internal class RequestReceiver : ITickable
             flags: (byte)PacketFlag.NCN
             );
 
-        SendAnswer(target, header, new A_ServerInfo(
-            info: _infoProvider.ServerInfo,
+        SendAnswer(target, aHeader, new A_ServerInfo(
+            info: _infoProvider.CreateServerInfo(),
             challengeId: _asyncLogins.GetChallengeId(serverInfo.Nickname)
             ));
     }
 
-    private void CheckLoginTry(IPEndPoint target, byte[] decrypted)
+    private void CheckLoginTry(IPEndPoint target, string _, byte[] decrypted)
     {
         if (!NetworkSerializer.TryDecryptedBytesAs(
             decrypted, out PayloadHeader header, out P_LoginTry loginTry)) return;
@@ -89,14 +65,14 @@ internal class RequestReceiver : ITickable
         bool isLoopback = IPAddress.IsLoopback(target.Address);
 
         _coroutines.Start(
-            method: _asyncLogins.Login(credentials, isLoopback),
+            method: _asyncLogins.LoginOrRegister(credentials, isLoopback),
             onResult: success =>
             {
                 if (!success)
                 {
                     InformResult(false);
                 }
-                else if (loginTry.IsPasswordChange)
+                else if (loginTry.IsPasswordChange())
                 {
                     var nickname = credentials.Nickname;
                     var newPassword = loginTry.NewPassword;

@@ -1,6 +1,6 @@
 #nullable enable
 using Larnix.Core;
-using Larnix.Core.Limiters;
+using Larnix.Socket.Limiters;
 using Larnix.Socket.Server.Utility;
 using Larnix.Socket.Networking;
 using Larnix.Socket.Payload;
@@ -88,9 +88,9 @@ internal class WebReceiver : ITickable, IDisposable
 
     private bool AllowIncoming(ArriveInfo arriveInfo)
     {
-        var (_, cidr, data) = arriveInfo;
+        var (target, cidr, data) = arriveInfo;
 
-        if (_bans.IsBannedCIDR(cidr))
+        if (_bans.IsBannedIp(target.Address))
             return false;
 
         if (!NetworkSerializer.TryPlainHeaderFromBytes(data, out PayloadHeader header))

@@ -4,31 +4,32 @@ using Larnix.Core.Files;
 using Larnix.Core.Utils;
 using Larnix.Model;
 using Larnix.Model.Blocks;
+using Larnix.Model.Configs;
 using Larnix.Model.Database;
 using Larnix.Model.Database.Connection;
-using Larnix.Model.Json;
 using Larnix.Model.Physics;
 using Larnix.Model.Worldgen;
 using Larnix.Server.Chunks;
-using Larnix.Server.Chunks.Data;
 using Larnix.Server.Chunks.Scripts;
 using Larnix.Server.Commands;
 using Larnix.Server.Data;
 using Larnix.Server.Entities;
-using Larnix.Server.Entities.Data;
 using Larnix.Server.Entities.Scripts;
+using Larnix.Server.Network;
+using Larnix.Server.Repositories;
 using Larnix.Socket.Server.Interfaces;
 using System;
 using System.IO;
 using System.Threading.Tasks;
-using static Larnix.Server.ServerRunner;
+using ServerAnswer = Larnix.Server.ServerRunner.ServerAnswer;
+using RunSuggestions = Larnix.Server.ServerRunner.RunSuggestions;
+using ServerClass = Larnix.Server.Network.Server;
 
 namespace Larnix.Server;
 
 internal interface IServerHandle : IDisposable, ITickable
 {
     ServerAnswer Answer { get; }
-    void IDisposable.Dispose() => Dispose(false);
     void Dispose(bool emergency);
 }
 
@@ -42,7 +43,7 @@ internal class ServerHandle : IServerHandle
     private readonly WorldMetaManager _worldMetaManager;
     private readonly Clock _clock;
     private readonly DataSaver _dataSaver;
-    private readonly Server _server;
+    private readonly ServerClass _server;
     private readonly Scripts _scripts;
 
     private bool _disposed = false;
@@ -63,17 +64,21 @@ internal class ServerHandle : IServerHandle
         // Config
         GlobRef.Set<IServerInfo>(_serverInfo = new ServerInfo(serverType, worldPath));
         GlobRef.Set(
-            Config.FromFile<ServerConfig>(
+            BaseConfig.FromFile<Config>(
                 worldPath, Common.ConfigFile
                 ));
 
-        // Database
+        // Database & More
         GlobRef.Set<IDbControl>(
             _db = new DbControl(
                 new SqliteHandle(worldPath, Common.DatabaseFile)
                 ));
         GlobRef.Set<IDataSaver>(_dataSaver = new DataSaver());
         GlobRef.Set<IWorldMetaManager>(_worldMetaManager = new WorldMetaManager());
+
+        // Repositories
+        GlobRef.New<IChunkRepository, ChunkRepository>();
+        GlobRef.New<IEntityRepository, EntityRepository>();
         GlobRef.New<IUserRepository, UserRepository>();
         GlobRef.New<IValueRepository, ValueRepository>();
 
@@ -93,17 +98,15 @@ internal class ServerHandle : IServerHandle
         // Socket Management
         GlobRef.New<IBanProvider, BanProvider>();
         GlobRef.New<IPasswordHasher, PasswordHasher>();
-        GlobRef.Set<IServer>(_server = new Server(suggestions, stopSignal, out Task<string?>? relayTask));
+        GlobRef.Set<IServer>(_server = new ServerClass(suggestions, stopSignal, out Task<string?>? relayTask));
 
         // Chunks
-        GlobRef.New<IChunkRepository, ChunkRepository>();
         GlobRef.New<IAtomicChunks, AtomicChunks>();
         GlobRef.New<IChunkLoader, ChunkLoader>();
         GlobRef.New<IChunkHolders, ChunkHolders>();
         GlobRef.New<IWorldAPI, WorldAPI>();
 
         // Entities
-        GlobRef.New<IEntityRepository, EntityRepository>();
         GlobRef.New<IEntityControllers, EntityControllers>();
         GlobRef.New<IConnectedPlayers, ConnectedPlayers>();
 
@@ -123,6 +126,12 @@ internal class ServerHandle : IServerHandle
         );
 
         // ----------------------------------------------------------------------------------------
+
+        Answer = new ServerAnswer(
+            Address: _server.LocalAddress,
+            Authcode: _server.Authcode,
+            RelayTask: relayTask
+            );
 
         EnsureDetachedServer();
         PrintHelloToConsole();
@@ -151,12 +160,6 @@ internal class ServerHandle : IServerHandle
                 Echo.Log($"Port: {_server.Port} | Authcode: {_server.Authcode}");
             }
         }
-
-        Answer = new ServerAnswer(
-            Address: _server.LocalAddress,
-            Authcode: _server.Authcode,
-            RelayTask: relayTask
-            );
 
         Echo.LogSuccess($"Server is running...");
     }
@@ -190,5 +193,10 @@ internal class ServerHandle : IServerHandle
         Echo.Log(emergency ?
             "Server has crashed!" :
             "Server has been closed.");
+    }
+
+    public void Dispose()
+    {
+        Dispose(emergency: false);
     }
 }

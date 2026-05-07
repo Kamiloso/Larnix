@@ -6,8 +6,8 @@ using Larnix.Model.Utils;
 using Larnix.Model.Blocks.Structs;
 using Larnix.Core;
 using Larnix.Client.Graphics;
-using Larnix.Model.Blocks.Chunks;
 using Larnix.Model.Blocks;
+using Larnix.Model.Blocks.Chunks;
 
 namespace Larnix.Client.Terrain
 {
@@ -31,16 +31,16 @@ namespace Larnix.Client.Terrain
         private readonly Dictionary<Vec2Int, Tilemaps> _tileChunks = new();
         private Vec2Int _currentOrigin = new Vec2Int(0, 0);
 
-        public void RedrawChunk(Vec2Int chunk, ChunkView chunkView)
+        public void RedrawChunk(Vec2Int chunk, ChunkData chunkData)
         {
-            PrepareChunk(chunk, chunkView != null);
+            PrepareChunk(chunk, chunkData != null);
 
-            if (chunkView == null) return;
+            if (chunkData == null) return;
 
             ChunkIterator.Iterate((x, y) =>
             {
                 Vec2Int pos = new(x, y);
-                RedrawExistingTile(chunk, pos, chunkView[x, y], false);
+                RedrawExistingTile(chunk, pos, chunkData[x, y].Header, false);
             });
 
             RedrawBorderTilesInRect(

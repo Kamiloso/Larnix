@@ -1,8 +1,6 @@
 #nullable enable
-using Larnix.Core.Files;
 using Org.BouncyCastle.Crypto.Generators;
 using System.Text;
-using Larnix.Core.Utils;
 using Larnix.Core.Serialization;
 using System.Linq;
 
@@ -17,20 +15,6 @@ public static class Authcode
     private const int TOTAL_LNGT = VERIFY_LNGT + SECRET_LNGT + 1; // +1 for checksum
     private const int SEGMENT_SIZE = 6;
 
-    internal static long ObtainSecret(string path, string filename)
-    {
-        string? data = FileManager.Read(path, filename);
-        if (data != null)
-        {
-            if (long.TryParse(data, out long readSecret))
-                return readSecret;
-        }
-
-        long secret = RandUtils.SecureLong();
-        FileManager.Write(path, filename, secret.ToString());
-        return secret;
-    }
-
     internal static string ProduceAuthCodeRSA(byte[] key, long secret)
     {
         string raw = ProduceRawAuthCodeRSA(key, secret);
@@ -39,7 +23,8 @@ public static class Authcode
 
     internal static string ProduceRawAuthCodeRSA(byte[] key, long secret)
     {
-        byte[] hash = DeriveKeyScrypt(key, Binary<long>.Serialize(-7264111368357934733L)); // random, hard-coded salt
+        byte[] salt = Binary<long>.Serialize(-7264111368357934733L); // random, hard-coded salt
+        byte[] hash = DeriveKeyScrypt(key, salt); // random, hard-coded salt
 
         StringBuilder sb = new();
         for (int i = 0; i < VERIFY_LNGT; i++)
@@ -107,8 +92,8 @@ public static class Authcode
         ulong usecret = 0;
         for (int i = 0; i < SECRET_LNGT; i++)
         {
-            usecret *= 64;
-            usecret += (ulong)AUTH_BASE_64.IndexOf(code1[i]);
+            unchecked { usecret *= 64; }
+            unchecked { usecret += (ulong)AUTH_BASE_64.IndexOf(code1[i]); }
         }
 
         return (long)usecret;
@@ -119,11 +104,13 @@ public static class Authcode
         if (string.IsNullOrEmpty(input) || n <= 0)
             return input;
 
-        StringBuilder sb = new(input.Length + input.Length / n);
+        StringBuilder sb = new();
         for (int i = 0; i < input.Length; i++)
         {
             if (i > 0 && i % n == 0)
+            {
                 sb.Append('-');
+            }
             sb.Append(input[i]);
         }
         return sb.ToString();

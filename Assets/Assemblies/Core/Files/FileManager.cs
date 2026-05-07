@@ -1,68 +1,89 @@
 #nullable enable
-using System.IO;
 using System;
+using System.IO;
 
 namespace Larnix.Core.Files;
 
 public static class FileManager
 {
-    public static string? Read(string path, string filename)
-    {
-        FilenameCheck(filename);
-        EnsureDirectory(path);
-
-        string file = Path.Combine(path, filename);
-        string _file = Path.Combine(path, "_" + filename);
-        string __file = Path.Combine(path, "__" + filename);
-
-        if (File.Exists(__file))
-            File.Delete(__file);
-
-        if (File.Exists(file))
-        {
-            if (File.Exists(_file))
-                File.Delete(_file);
-
-            return File.ReadAllText(file);
-        }
-        else if (File.Exists(_file))
-        {
-            File.Move(_file, file);
-            return File.ReadAllText(file);
-        }
-
-        return null;
-    }
+    private static readonly object _lock = new();
 
     public static void Write(string path, string filename, string text)
     {
-        FilenameCheck(filename);
-        EnsureDirectory(path);
-
-        string file = Path.Combine(path, filename);
-        string _file = Path.Combine(path, "_" + filename);
-        string __file = Path.Combine(path, "__" + filename);
-
-        using (var fs = new FileStream(__file, FileMode.Create, FileAccess.Write, FileShare.None))
-        using (var sw = new StreamWriter(fs))
+        lock (_lock)
         {
-            sw.Write(text);
-            sw.Flush();
-            fs.Flush(true);
+            FilenameCheck(filename);
+            EnsureDirectory(path);
+
+            string file = Path.Combine(path, filename);
+            string _file = Path.Combine(path, "_" + filename);
+            string __file = Path.Combine(path, "__" + filename);
+
+            using (var fs = new FileStream(__file, FileMode.Create, FileAccess.Write, FileShare.None))
+            using (var sw = new StreamWriter(fs))
+            {
+                sw.Write(text);
+                sw.Flush();
+                fs.Flush(true);
+            }
+
+            File.Move(__file, _file);
+
+            if (File.Exists(file))
+                File.Delete(file);
+
+            File.Move(_file, file);
         }
-
-        File.Move(__file, _file);
-
-        if (File.Exists(file))
-            File.Delete(file);
-
-        File.Move(_file, file);
     }
 
-    public static void EnsureDirectory(string path)
+    public static string? Read(string path, string filename)
     {
-        if (!Directory.Exists(path))
-            Directory.CreateDirectory(path);
+        lock (_lock)
+        {
+            FilenameCheck(filename);
+            EnsureDirectory(path);
+
+            string file = Path.Combine(path, filename);
+            string _file = Path.Combine(path, "_" + filename);
+            string __file = Path.Combine(path, "__" + filename);
+
+            if (File.Exists(__file))
+                File.Delete(__file);
+
+            if (File.Exists(file))
+            {
+                if (File.Exists(_file))
+                    File.Delete(_file);
+
+                return File.ReadAllText(file);
+            }
+            else if (File.Exists(_file))
+            {
+                File.Move(_file, file);
+                return File.ReadAllText(file);
+            }
+
+            return null;
+        }
+    }
+
+    public static void Delete(string path, string filename)
+    {
+        lock (_lock)
+        {
+            FilenameCheck(filename);
+            EnsureDirectory(path);
+
+            string file = Path.Combine(path, filename);
+            string _file = Path.Combine(path, "_" + filename);
+            string __file = Path.Combine(path, "__" + filename);
+
+            foreach (string delfile in new[] { __file, _file, file })
+            {
+                if (File.Exists(delfile))
+                    File.Delete(delfile);
+            }
+        }
     }
 
     private static void FilenameCheck(string filename)
@@ -75,5 +96,13 @@ public static class FileManager
 
         if (filename.Contains('/') || filename.Contains('\\'))
             throw new ArgumentException("Filename cannot contain path separators!", nameof(filename));
+    }
+
+    private static void EnsureDirectory(string path)
+    {
+        if (!Directory.Exists(path))
+        {
+            Directory.CreateDirectory(path);
+        }
     }
 }

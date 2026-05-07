@@ -1,3 +1,4 @@
+#nullable enable
 using System.Collections.Generic;
 using Larnix.Model;
 
@@ -10,7 +11,7 @@ internal class Help : BaseCmd
     public override string ShortDescription => "Displays help information about commands.";
 
     private bool _hasArgument;
-    private string _argument;
+    private string _argument = "";
 
     public override void Inject(string command)
     {
@@ -18,8 +19,9 @@ internal class Help : BaseCmd
             TrySplit(command, 1, out parts))
         {
             _hasArgument = parts.Length == 2;
-            _argument = _hasArgument ?
-                parts[1].ToLowerInvariant() : null;
+            _argument = _hasArgument
+                ? parts[1].ToLowerInvariant()
+                : "";
         }
         else
         {

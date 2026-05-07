@@ -1,7 +1,8 @@
 <linker>
-	<assembly fullname="Larnix.Model.Blocks">
+	<assembly fullname="Larnix.Model">
 		<namespace fullname="Larnix.Model.Blocks.All" preserve="all"/>
 		<namespace fullname="Larnix.Model.Entities.All" preserve="all"/>
 		<namespace fullname="Larnix.Model.Worldgen.Biomes.All" preserve="all"/>
+		<namespace fullname="Larnix.Model.Configs" preserve="all"/>
 	</assembly>
 </linker>

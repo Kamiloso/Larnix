@@ -15,8 +15,6 @@ internal class RoundTripTracker
     private readonly long[] _rtts = new long[RttCacheSize];
     private int _rttIndex = 0;
 
-    private long Now => Timestamp.Now();
-
     public RoundTripTracker()
     {
         for (int i = 0; i < RttCacheSize; i++)
@@ -27,13 +25,13 @@ internal class RoundTripTracker
 
     public void StartMeasure(PendingPacket packet)
     {
-        _starts.Add(packet, Now);
+        _starts.Add(packet, Timestamp.Now());
     }
 
     public void StopMeasure(PendingPacket packet)
     {
         _starts.Remove(packet, out long before);
-        _rtts[_rttIndex] = Now - before;
+        _rtts[_rttIndex] = Timestamp.Now() - before;
         _rttIndex = (_rttIndex + 1) % RttCacheSize;
     }
 
@@ -62,13 +60,8 @@ internal class RoundTripTracker
             span[j + 1] = key;
         }
 
-        if (span.Length % 2 == 1)
-        {
-            return span[span.Length / 2];
-        }
-        else
-        {
-            return (span[span.Length / 2 - 1] + span[span.Length / 2]) / 2;
-        }
+        return span.Length % 2 == 0
+            ? (span[span.Length / 2 - 1] + span[span.Length / 2]) / 2
+            : span[span.Length / 2];
     }
 }

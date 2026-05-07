@@ -4,13 +4,13 @@ using Larnix.Socket.Channel;
 using Larnix.Socket.Client.Records;
 using Larnix.Socket.Networking;
 using Larnix.Socket.Payload;
-using Larnix.Socket.Payload.Packets;
 using Larnix.Socket.Payload.Structs;
 using Larnix.Socket.Security.Keys;
 using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using HandshakeInfo = Larnix.Socket.Channel.Connection.HandshakeInfo;
 
 namespace Larnix.Socket.Client;
 
@@ -18,7 +18,7 @@ public class QuickClient : ITickable, IDisposable
 {
     public long AvgRtt => _conn.AvgRtt; // ms
     public bool IsDead => _conn.IsDead;
-    public IPEndPoint Target => _conn.Target; // modifying this may cause unexpected behaviour!
+    public IPEndPoint Target => _conn.Target;
 
     private readonly UdpClient2 _udp;
     private readonly KeyRsa _rsa;
@@ -54,15 +54,7 @@ public class QuickClient : ITickable, IDisposable
 
         EntryTicket ticket = recv.Result!;
 
-        try
-        {
-            return new QuickClient(target, ticket, loginData);
-        }
-        catch (Exception ex)
-        {
-            Echo.LogError("Couldn't create client: " + ex.Message);
-            return null;
-        }
+        return new QuickClient(target, ticket, loginData);
     }
 
     private QuickClient(IPEndPoint target, EntryTicket ticket, ServerLogin loginData)
@@ -78,8 +70,6 @@ public class QuickClient : ITickable, IDisposable
             destination: target
             );
 
-        _socket = new TargetedSocket(_udp, target);
-
         Credentials credentials = new(
             nickname: nickname,
             password: password,
@@ -92,17 +82,21 @@ public class QuickClient : ITickable, IDisposable
         _rsa = KeyRsa.FromPublicStruct(ticket.RsaPublicKey);
         _aes = KeyAes.GenerateNew();
 
-        FixedAes aesKey = _aes.ExportKey();
-
-        _conn = new Connection(_socket, aesKey);
-        _conn.SendHandshake(
-            new AllowConnection(credentials, aesKey), _rsa
+        _conn = new Connection(
+            socket: _socket = new TargetedSocket(_udp, target),
+            aesKey: _aes.ExportKey(),
+            handshakeInfo: new HandshakeInfo(credentials, _rsa)
             );
     }
 
-    public void Send<T>(in T payload, bool safe = true) where T : unmanaged
+    public void Send<T>(in T payload) where T : unmanaged
     {
-        _conn.Send(payload, safe);
+        _conn.Send(payload, true);
+    }
+
+    public void SendUnreliable<T>(in T payload) where T : unmanaged
+    {
+        _conn.Send(payload, false);
     }
 
     public void OnReceive<T>(CmdHandler<T>? execute) where T : unmanaged

@@ -2,7 +2,7 @@
 using Larnix.Core;
 using Larnix.Core.Vectors;
 using Larnix.Server.Entities.Controllers;
-using Larnix.Server.Packets;
+using Larnix.Model.Packets;
 using System.Collections.Generic;
 using System.Net;
 

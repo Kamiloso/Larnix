@@ -1,3 +1,4 @@
+#nullable enable
 using Larnix.Model;
 
 namespace Larnix.Server.Commands.All;

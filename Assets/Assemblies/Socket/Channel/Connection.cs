@@ -1,5 +1,6 @@
 #nullable enable
 using Larnix.Core;
+using Larnix.Core.Serialization;
 using Larnix.Socket.Channel.Components;
 using Larnix.Socket.Networking;
 using Larnix.Socket.Payload;
@@ -8,7 +9,9 @@ using Larnix.Socket.Payload.Structs;
 using Larnix.Socket.Security.Keys;
 using Larnix.Socket.Tools;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 
 namespace Larnix.Socket.Channel;
@@ -16,14 +19,14 @@ namespace Larnix.Socket.Channel;
 internal class Connection : ITickable, IDisposable
 {
     public long AvgRtt => _transmitter.AvgRtt;
-    public bool IsDead { get; private set; }
-
     public IPEndPoint Target => _socket.Target;
-
-    private readonly Seqs _seqs = new();
+    public bool IsClient { get; }
+    public bool IsDead { get; private set; }
 
     private readonly ITargetedSocket _socket;
     private readonly KeyAes _aes;
+
+    private readonly Seqs _seqs;
 
     private readonly HeaderProvider _headerProvider;
     private readonly ReliableReceiver _receiver;
@@ -37,30 +40,39 @@ internal class Connection : ITickable, IDisposable
 
     private bool _disposed;
 
-    public Connection(ITargetedSocket socket, in FixedAes aesKey)
+    public record HandshakeInfo(Credentials Credentials, KeyRsa Rsa);
+    public Connection(ITargetedSocket socket, in FixedAes aesKey, HandshakeInfo? handshakeInfo = null)
     {
         _socket = socket;
         _aes = KeyAes.FromStruct(aesKey);
 
+        IsClient = handshakeInfo != null;
+
+        _seqs = IsClient // is client-side?
+            ? new Seqs()
+            : new Seqs() { RcvNum = new Seq(1) };
+
         _headerProvider = new HeaderProvider(_seqs);
         _receiver = new ReliableReceiver(_seqs);
-        _transmitter = new ReliableTransmitter(_seqs,
-            sendAction: _socket.Send,
-            closeAction: Close
-            );
+        _transmitter = new ReliableTransmitter(_seqs, _socket.Send, Close);
 
         _timerFast.OnInterval += () => Send(new None(), safemode: false);
         _timerSlow.OnInterval += () => Send(new None(), safemode: true);
-    }
 
-    public void SendHandshake(in AllowConnection payload, KeyRsa rsa)
-    {
-        if (IsDead) return;
+        if (IsClient) // client-side: send SYN with handshake payload
+        {
+            var (credentials, rsa) = handshakeInfo!;
 
-        PayloadHeader header = _headerProvider.NextSyn();
+            PayloadHeader header = _headerProvider.NextSyn();
+            AllowConnection payload = new(credentials, aesKey);
 
-        byte[] bytes = NetworkSerializer.ToBytes(header, payload, rsa);
-        _transmitter.Transmit(header, bytes);
+            byte[] bytes = NetworkSerializer.ToBytes(header, payload, rsa);
+            _transmitter.Transmit(header, bytes);
+        }
+        else // server-side: send anything to confirm receiving SYN
+        {
+            Send(new None(), safemode: true);
+        }
     }
 
     public void Send<T>(in T payload, bool safemode) where T : unmanaged
@@ -82,6 +94,7 @@ internal class Connection : ITickable, IDisposable
         if (!NetworkSerializer.TryPlainHeaderFromBytes(data, out PayloadHeader header)) return;
         if (!NetworkSerializer.TryDecryptNetworkBytes(data, _aes, out byte[] decrypted)) return;
 
+        _transmitter.Acknowledge(header.AckNum);
         _receiver.Push(header, decrypted);
 
         if (header.HasFlag(PacketFlag.FIN))
@@ -107,9 +120,9 @@ internal class Connection : ITickable, IDisposable
 
     public bool MoveNext()
     {
-        if (_readyBuffer.TryDequeue(out byte[] next))
+        if (_readyBuffer.TryDequeue(out byte[] decrypted))
         {
-            _current = next;
+            _current = decrypted;
             return true;
         }
 
@@ -124,7 +137,7 @@ internal class Connection : ITickable, IDisposable
             typeof(T) == typeof(Stop) ||
             typeof(T) == typeof(AllowConnection);
 
-        if (!isInternalPacket) // block such packets, they are server-generated
+        if (isInternalPacket) // block such packets, they are server-generated
         {
             result = default;
             return false;
@@ -138,7 +151,7 @@ internal class Connection : ITickable, IDisposable
         if (IsDead) return;
 
         const int FINS = 3;
-        for (int i = 0; i < FINS; i++) // repeat to ensure that everything arrives
+        for (int i = 0; i < FINS; i++) // repeat to ensure everything arrives
         {
             PayloadHeader header = _headerProvider.NextFin();
             None payload = new();

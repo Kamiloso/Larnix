@@ -3,7 +3,7 @@ using Larnix.Core.Serialization;
 
 namespace Larnix.Socket.Tools;
 
-public static class SocketSanitizer
+internal static class SocketSanitizer
 {
     public static FixedString32 ToGoodNickname(FixedString32 nickname)
     {

@@ -1,12 +1,12 @@
 using UnityEngine;
 using TMPro;
 using Larnix.Core;
-using Larnix.Server.Packets;
+using Larnix.Model.Packets;
 using System.Collections.Generic;
 using Larnix.Scoping;
 using Larnix.Core.Serialization;
 using Larnix.Core.Utils;
-using static Larnix.Server.Packets.ChatMessage;
+using ChatCode = Larnix.Model.Packets.ChatMessage.ChatCode;
 
 namespace Larnix.Client.Chat
 {
@@ -98,7 +98,7 @@ namespace Larnix.Client.Chat
             // Don't trim! This condition is ok.
             if (string.IsNullOrEmpty(message)) return;
 
-            ChatMessage payload = new(
+            ChatMessage payload = ChatMessage.CreateRaw(
                 message: new FixedString512(message),
                 msgCode: ChatCode.PlayerToServer
                 );

@@ -1,9 +1,9 @@
 using Larnix.Core;
 using System;
 using Larnix.Server.Data;
-using Larnix.Model.Json;
 using Larnix.Server.Entities;
 using Larnix.Model;
+using Larnix.Model.Configs;
 
 namespace Larnix.Server.Commands;
 
@@ -19,12 +19,12 @@ internal interface ICmdManager : IScript, ICmdExecutor { }
 
 internal class CmdManager : ICmdManager
 {
+    private Config Config => GlobRef.Get<Config>();
     private IServerInfo ServerInfo => GlobRef.Get<IServerInfo>();
     private IWorldMetaManager WorldMetaManager => GlobRef.Get<IWorldMetaManager>();
     private IConnectedPlayers ConnectedPlayers => GlobRef.Get<IConnectedPlayers>();
-    private ServerConfig ServerConfig => GlobRef.Get<ServerConfig>();
 
-    void IScript.PostEarlyFrameUpdate()
+    void IScript.PostEarlyUpdate()
     {
         while (Echo.TryPopLine(out string cmd))
         {
@@ -63,13 +63,13 @@ internal class CmdManager : ICmdManager
             if (ConnectedPlayers.IsConnected(sender))
             {
                 bool player_host = WorldMetaManager.HostNickname == sender;
-                bool player_admin = ServerConfig.Administration_Admins.Contains(sender);
+                bool player_admin = Config.Administration_Admins.Contains(sender);
 
                 PrivilegeLevel privileges = PrivilegeLevel.User;
                 if (player_host) privileges = PrivilegeLevel.Host;
                 if (player_admin) privileges = PrivilegeLevel.Admin;
 
-                if (player_host && ServerConfig.ElevateHostToAdmin)
+                if (player_host && Config.ElevateHostToAdmin)
                 {
                     privileges = PrivilegeLevel.Admin;
                 }
@@ -128,8 +128,8 @@ internal class CmdManager : ICmdManager
             case "4DM1N":
             case "UNL0CKC0NS0L3":
 
-                ServerConfig.ElevateHostToAdmin = true;
-                Config.ToFile(ServerInfo.WorldPath, Common.ConfigFile, ServerConfig);
+                Config.ElevateHostToAdmin = true;
+                BaseConfig.ToFile(ServerInfo.WorldPath, Common.ConfigFile, Config);
 
                 result = (CmdResult.Success,
                     "Developer access granted. All commands unlocked.");

@@ -240,7 +240,7 @@ namespace Larnix.Menu.Worlds
                 NameText.text = SelectedWorld ?? "";
                 TX_Description.text = $"Version: {versionDisplay}\n{hostDisplay}";
                 TX_Motd.text = _serverThinker.serverInfo.Motd;
-                TX_PlayerAmount.text = $"ACTIVE\n{_serverThinker.serverInfo.CurrentPlayers} / {_serverThinker.serverInfo.MaxPlayers}";
+                TX_PlayerAmount.text = $"ACTIVE\n{_serverThinker.serverInfo.Players} / {_serverThinker.serverInfo.MaxPlayers}";
 
                 bool regist = _serverThinker.WasRegistration;
                 switch (logState)

@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,8 +7,9 @@ using Larnix.Core;
 using Larnix.Model.Utils;
 using Larnix.Server.Entities;
 using Larnix.Model;
-using Larnix.Socket.Server;
-using Larnix.Server.Data;
+using Larnix.Server.Repositories;
+using Larnix.Server.Network;
+using Larnix.Socket;
 
 namespace Larnix.Server.Commands.All;
 
@@ -22,18 +24,19 @@ internal class User : BaseCmd
         $"user set <username> <password> - Sets user's credentials.\n" +
         $"user rename <oldusername> <newusername> - Renames a user.\n" +
         $"user delete <username> - Deletes a user.\n" +
-        $"user resetlimits - Resets all hashing and registration user limits.\n" +
+        $"user resetlimits - Resets all limits in a socket.\n" + // TODO: Move this to a separate command
         $"user list - Lists all registered users.\n" +
-        $"user deleteall - Deletes all users except host and '{GameInfo.ReservedNickname}'.";
+        $"user deleteall - Deletes all users except host and '{SocketInfo.ReservedNickname}'.";
 
+    private IServer Server => GlobRef.Get<IServer>();
     private IConnectedPlayers ConnectedPlayers => GlobRef.Get<IConnectedPlayers>();
     private IUserRepository UserRepository => GlobRef.Get<IUserRepository>();
 
-    private string _subname;
-    private string _username;
-    private string _password;
-    private string _oldusername;
-    private string _newusername;
+    private string _subname = "";
+    private string _username = "";
+    private string _password = "";
+    private string _oldusername = "";
+    private string _newusername = "";
 
     public override void Inject(string command)
     {
@@ -44,10 +47,10 @@ internal class User : BaseCmd
         string subcommand = string.Join(' ', parts[1..]);
         _subname = subname;
 
-        _username = null;
-        _password = null;
-        _oldusername = null;
-        _newusername = null;
+        _username = "";
+        _password = "";
+        _oldusername = "";
+        _newusername = "";
 
         var commands = new Dictionary<string, Action<string[]>>
         {
@@ -125,11 +128,11 @@ internal class User : BaseCmd
             UserRepository.SetUserSync(_username, _password);
 
             return (CmdResult.Success,
-                $"User '{_username}' added successfully.");
+                $"User '{_username}' set successfully.");
         }
 
         return (CmdResult.Error,
-            $"Failed to add user '{_username}'.");
+            $"Failed to set user '{_username}'.");
     }
 
     private (CmdResult, string) ExecuteRename()
@@ -149,8 +152,8 @@ internal class User : BaseCmd
 
     private (CmdResult, string) ExecuteDelete()
     {
-        if (UserRepository.Exists(_username) &&
-            UserRepository.Managable(_username))
+        if (UserRepository.Managable(_username) &&
+            UserRepository.Exists(_username))
         {
             UserRepository.DeleteUser(_username);
 
@@ -164,17 +167,17 @@ internal class User : BaseCmd
 
     private (CmdResult, string) ExecuteResetLimits()
     {
-        // Server.ResetLimits(); // TODO: move into separate command
-        // return (CmdResult.Success, "User limits have been reset.");
+        Server.ResetLimiters();
 
-        return (CmdResult.Error, "Resetting user limits is temporarily disabled.");
+        return (CmdResult.Success,
+            "All socket limiters have been reset.");
     }
 
     private (CmdResult, string) ExecuteList()
     {
-        IPEndPoint EndpointOf(string nick)
+        IPEndPoint? EndpointOf(string nick)
         {
-            JoinedPlayer player = ConnectedPlayers.GetPlayer(nick);
+            JoinedPlayer? player = ConnectedPlayers.GetPlayer(nick);
             return player?.EndPoint;
         }
 
@@ -193,7 +196,7 @@ internal class User : BaseCmd
             .ThenBy(nick => nick)
             .Select(nick =>
             {
-                IPEndPoint endpoint = EndpointOf(nick);
+                IPEndPoint? endpoint = EndpointOf(nick);
                 string state = StateOf(nick);
 
                 return state != NONE ?

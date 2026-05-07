@@ -35,7 +35,6 @@ namespace Larnix.Menu.Forms
 
         protected override ErrorCode GetErrorCode()
         {
-            string address = IF_Address.text;
             string nickname = IF_Nickname.text;
             string password = IF_Password.text;
 

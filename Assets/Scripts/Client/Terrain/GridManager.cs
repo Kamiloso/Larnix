@@ -123,8 +123,8 @@ namespace Larnix.Client.Terrain
             Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
             Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
 
-            BlockHeader2 oldBlock = _allChunks[chunk][pos.x, pos.y];
-            _allChunks[chunk][pos.x, pos.y] = newBlock;
+            BlockHeader2 oldBlock = _allChunks[chunk][pos.x, pos.y].Header;
+            _allChunks[chunk][pos.x, pos.y] = new BlockData2(newBlock);
 
             if (breakMode == IWorldAPI.BreakMode.Effects)
             {
@@ -147,18 +147,18 @@ namespace Larnix.Client.Terrain
 
         private void UpdateChunkColliders(Vec2Int chunk)
         {
-            if (!_allChunks.TryGetValue(chunk, out ChunkView chunkView))
-                chunkView = null;
+            if (!_allChunks.TryGetValue(chunk, out ChunkData chunkData))
+                chunkData = null;
 
             ChunkIterator.Iterate((x, y) =>
             {
                 var pos = new Vec2Int(x, y);
 
                 Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, pos);
-                UpdateBlockCollider(POS, chunkView?[x, y]);
+                UpdateBlockCollider(POS, chunkData?[x, y].Header);
             });
 
-            if (chunkView is not null)
+            if (chunkData is not null)
             {
                 PhysicsManager.EnableChunk(chunk);
             }

@@ -18,50 +18,53 @@ namespace Larnix.Menu
         [SerializeField] BasicGridManager BasicGridManager;
         [SerializeField] Vector3 CameraSpeed;
 
-        private Generator Generator;
         private Sky Sky => GlobRef.Get<Sky>();
 
-        private HashSet<Vec2Int> ActiveChunks = new();
-        private bool firstGeneration = true;
+        private readonly HashSet<Vec2Int> _activeChunks = new();
+        private bool _firstGeneration = true;
+
+        private Generator _generator;
 
         private void Start()
         {
             long seed = RandUtils.SecureLong();
-            Generator = new Generator(seed);
+            _generator = new Generator(seed);
         }
 
         private void Update()
         {
-            HashSet<Vec2Int> NearbyChunks = BlockUtils.GetNearbyChunks(
-                BlockUtils.CoordsToChunk(VectorExtensions.ConstructVec2(Camera.transform.position, Vec2.Zero)), 2);
+            Vector2 unityPosition = Camera.transform.position;
+            Vec2 camPosition = VectorExtensions.ConstructVec2(unityPosition, Vec2.Zero);
+            Vec2Int camChunk = BlockUtils.CoordsToChunk(camPosition);
 
-            HashSet<Vec2Int> ToAdd = new HashSet<Vec2Int>(NearbyChunks);
-            ToAdd.ExceptWith(ActiveChunks);
+            HashSet<Vec2Int> nearbyChunks = BlockUtils.GetNearbyChunks(camChunk, BlockUtils.LOADING_DISTANCE);
 
-            HashSet<Vec2Int> ToRemove = new HashSet<Vec2Int>(ActiveChunks);
-            ToRemove.ExceptWith(NearbyChunks);
+            var ToAdd = new HashSet<Vec2Int>(nearbyChunks);
+            ToAdd.ExceptWith(_activeChunks);
+
+            var ToRemove = new HashSet<Vec2Int>(_activeChunks);
+            ToRemove.ExceptWith(nearbyChunks);
 
             foreach(var chunk in ToAdd)
             {
-                ChunkView chunkView = Generator.GenerateChunk(chunk).HeaderView;
-                BasicGridManager.AddChunk(chunk, chunkView, firstGeneration);
-                ActiveChunks.Add(chunk);
+                ChunkData chunkData = _generator.GenerateChunk(chunk);
+                BasicGridManager.AddChunk(chunk, chunkData, _firstGeneration);
+                _activeChunks.Add(chunk);
             }
 
             foreach(var chunk in ToRemove)
             {
                 BasicGridManager.RemoveChunk(chunk);
-                ActiveChunks.Remove(chunk);
+                _activeChunks.Remove(chunk);
             }
 
-            Vec2 camPos = VectorExtensions.ConstructVec2((Vector2)Camera.transform.position, Vec2.Zero);
             Sky.UpdateSky(
-                biomeID: Generator.BiomeAt(camPos),
-                skyColor: Generator.SkyColorAt(camPos),
+                biomeID: _generator.BiomeAt(camPosition),
+                skyColor: _generator.SkyColorAt(camPosition),
                 weather: WeatherID.Clear
                 );
 
-            firstGeneration = false;
+            _firstGeneration = false;
         }
 
         private void LateUpdate()

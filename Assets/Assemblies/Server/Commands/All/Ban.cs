@@ -1,11 +1,11 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using Larnix.Core;
-using Larnix.Server.Data;
 using Larnix.Server.Entities;
-using Larnix.Socket.Server;
-using Larnix.Model.Json;
 using Larnix.Model;
+using Larnix.Server.Network;
+using Larnix.Model.Configs;
 
 namespace Larnix.Server.Commands.All;
 
@@ -22,13 +22,13 @@ internal class Ban : BaseCmd
         "ban list - Lists all ban entries.\n" +
         "ban clear - Clears the ban list.";
 
-    private IServerInfo ServerInfo => GlobRef.Get<IServerInfo>();
+    private Config Config => GlobRef.Get<Config>();
     private IServer Server => GlobRef.Get<IServer>();
+    private IServerInfo ServerInfo => GlobRef.Get<IServerInfo>();
     private IConnectedPlayers ConnectedPlayers => GlobRef.Get<IConnectedPlayers>();
-    private ServerConfig ServerConfig => GlobRef.Get<ServerConfig>();
 
-    private string _subname;
-    private string _target;
+    private string _subname = "";
+    private string _target = "";
 
     public override void Inject(string command)
     {
@@ -39,7 +39,7 @@ internal class Ban : BaseCmd
         string subcommand = string.Join(' ', parts[1..]);
         _subname = subname;
 
-        _target = null;
+        _target = "";
 
         var commands = new Dictionary<string, Action<string[]>>
         {
@@ -91,10 +91,10 @@ internal class Ban : BaseCmd
 
     private (CmdResult, string) ExecuteAdd()
     {
-        if (!ServerConfig.Administration_Banned.Contains(_target))
+        if (!Config.Administration_Banned.Contains(_target))
         {
-            ServerConfig.Administration_Banned.Add(_target);
-            Config.ToFile(ServerInfo.WorldPath, Common.ConfigFile, ServerConfig);
+            Config.Administration_Banned.Add(_target);
+            BaseConfig.ToFile(ServerInfo.WorldPath, Common.ConfigFile, Config);
 
             if (ConnectedPlayers.IsConnected(_target))
             {
@@ -112,10 +112,10 @@ internal class Ban : BaseCmd
 
     private (CmdResult, string) ExecuteRemove()
     {
-        if (ServerConfig.Administration_Banned.Contains(_target))
+        if (Config.Administration_Banned.Contains(_target))
         {
-            ServerConfig.Administration_Banned.Remove(_target);
-            Config.ToFile(ServerInfo.WorldPath, Common.ConfigFile, ServerConfig);
+            Config.Administration_Banned.Remove(_target);
+            BaseConfig.ToFile(ServerInfo.WorldPath, Common.ConfigFile, Config);
 
             return (CmdResult.Success,
                 $"Successfully removed '{_target}' from the ban list.");
@@ -128,13 +128,13 @@ internal class Ban : BaseCmd
     private (CmdResult, string) ExecuteList()
     {
         return (CmdResult.Raw,
-            MakeRobustList("BAN ENTRIES", "'", ServerConfig.Administration_Banned, "'"));
+            MakeRobustList("BAN ENTRIES", "'", Config.Administration_Banned, "'"));
     }
 
     private (CmdResult, string) ExecuteClear()
     {
-        ServerConfig.Administration_Banned.Clear();
-        Config.ToFile(ServerInfo.WorldPath, Common.ConfigFile, ServerConfig);
+        Config.Administration_Banned.Clear();
+        BaseConfig.ToFile(ServerInfo.WorldPath, Common.ConfigFile, Config);
 
         return (CmdResult.Success,
             "Successfully cleared the ban list.");

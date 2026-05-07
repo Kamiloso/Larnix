@@ -42,17 +42,14 @@ internal class ReliableTransmitter : ITickable
         }
     }
 
-    private readonly List<Seq> _acksToRemove = new();
-    public void Acknowledge(Seq seqAck)
+    public void Acknowledge(Seq ackNum)
     {
-        if (_seqs.AckNum >= seqAck) return;
+        if (ackNum <= _seqs.AckNum) return;
 
-        _seqs.AckNum = seqAck;
+        _seqs.AckNum = ackNum;
 
-        _acksToRemove.Clear();
-        _acksToRemove.AddRange(_pending.Keys.Where(seq => seq <= seqAck));
-
-        foreach (Seq seq in _acksToRemove)
+        List<Seq> acksToRemove = new(_pending.Keys.Where(seqNum => seqNum <= ackNum));
+        foreach (Seq seq in acksToRemove)
         {
             _pending.Remove(seq, out PendingPacket packet);
 

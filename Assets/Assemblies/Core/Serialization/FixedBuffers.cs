@@ -61,7 +61,7 @@ public unsafe struct FixedBuffer#SIZE<T> : IFixedBuffer<T>, ISanitizable<FixedBu
 
         fixed (byte* ptr = _buffer)
         {
-            Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], Serializer.Filter(value));
+            Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], Sanitizer.Filter(value));
             _count++;
         }
     }
@@ -77,7 +77,7 @@ public unsafe struct FixedBuffer#SIZE<T> : IFixedBuffer<T>, ISanitizable<FixedBu
         {
             for (int i = 0; i < values.Length; i++)
             {
-                Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], Serializer.Filter(values[i]));
+                Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], Sanitizer.Filter(values[i]));
                 _count++;
             }
         }
@@ -132,6 +132,7 @@ AUTOGEN END
 // Instead, modify the payload between the AUTOGEN BEGIN and AUTOGEN END markers to change the generated code
 // and then regenerate the code from the Unity Editor window (Automation/Tools/Regenerate Code).
 
+
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public unsafe struct FixedBuffer8<T> : IFixedBuffer<T>, ISanitizable<FixedBuffer8<T>> where T : unmanaged
 {
@@ -144,7 +145,7 @@ public unsafe struct FixedBuffer8<T> : IFixedBuffer<T>, ISanitizable<FixedBuffer
 
     static FixedBuffer8()
     {
-        _ = Binary<T>.Size;
+        _ = Binary<T>.Size; // throw exception instantly when trying to use with an incompatible type
     }
 
     public readonly T At(int index)
@@ -169,7 +170,7 @@ public unsafe struct FixedBuffer8<T> : IFixedBuffer<T>, ISanitizable<FixedBuffer
 
         fixed (byte* ptr = _buffer)
         {
-            Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], value);
+            Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], Sanitizer.Filter(value));
             _count++;
         }
     }
@@ -185,7 +186,7 @@ public unsafe struct FixedBuffer8<T> : IFixedBuffer<T>, ISanitizable<FixedBuffer
         {
             for (int i = 0; i < values.Length; i++)
             {
-                Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], values[i]);
+                Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], Sanitizer.Filter(values[i]));
                 _count++;
             }
         }
@@ -222,7 +223,7 @@ public unsafe struct FixedBuffer8<T> : IFixedBuffer<T>, ISanitizable<FixedBuffer
     public readonly FixedBuffer8<T> Sanitize()
     {
         FixedBuffer8<T> sanitized = new();
-        for (int i = 0; i<Count; i++)
+        for (int i = 0; i < Count; i++)
         {
             T filtered = Sanitizer.Filter(At(i));
             sanitized.Add(filtered);
@@ -244,7 +245,7 @@ public unsafe struct FixedBuffer16<T> : IFixedBuffer<T>, ISanitizable<FixedBuffe
 
     static FixedBuffer16()
     {
-        _ = Binary<T>.Size;
+        _ = Binary<T>.Size; // throw exception instantly when trying to use with an incompatible type
     }
 
     public readonly T At(int index)
@@ -269,7 +270,7 @@ public unsafe struct FixedBuffer16<T> : IFixedBuffer<T>, ISanitizable<FixedBuffe
 
         fixed (byte* ptr = _buffer)
         {
-            Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], value);
+            Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], Sanitizer.Filter(value));
             _count++;
         }
     }
@@ -285,7 +286,7 @@ public unsafe struct FixedBuffer16<T> : IFixedBuffer<T>, ISanitizable<FixedBuffe
         {
             for (int i = 0; i < values.Length; i++)
             {
-                Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], values[i]);
+                Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], Sanitizer.Filter(values[i]));
                 _count++;
             }
         }
@@ -344,7 +345,7 @@ public unsafe struct FixedBuffer32<T> : IFixedBuffer<T>, ISanitizable<FixedBuffe
 
     static FixedBuffer32()
     {
-        _ = Binary<T>.Size;
+        _ = Binary<T>.Size; // throw exception instantly when trying to use with an incompatible type
     }
 
     public readonly T At(int index)
@@ -369,7 +370,7 @@ public unsafe struct FixedBuffer32<T> : IFixedBuffer<T>, ISanitizable<FixedBuffe
 
         fixed (byte* ptr = _buffer)
         {
-            Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], value);
+            Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], Sanitizer.Filter(value));
             _count++;
         }
     }
@@ -385,7 +386,7 @@ public unsafe struct FixedBuffer32<T> : IFixedBuffer<T>, ISanitizable<FixedBuffe
         {
             for (int i = 0; i < values.Length; i++)
             {
-                Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], values[i]);
+                Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], Sanitizer.Filter(values[i]));
                 _count++;
             }
         }
@@ -444,7 +445,7 @@ public unsafe struct FixedBuffer64<T> : IFixedBuffer<T>, ISanitizable<FixedBuffe
 
     static FixedBuffer64()
     {
-        _ = Binary<T>.Size;
+        _ = Binary<T>.Size; // throw exception instantly when trying to use with an incompatible type
     }
 
     public readonly T At(int index)
@@ -469,7 +470,7 @@ public unsafe struct FixedBuffer64<T> : IFixedBuffer<T>, ISanitizable<FixedBuffe
 
         fixed (byte* ptr = _buffer)
         {
-            Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], value);
+            Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], Sanitizer.Filter(value));
             _count++;
         }
     }
@@ -485,7 +486,7 @@ public unsafe struct FixedBuffer64<T> : IFixedBuffer<T>, ISanitizable<FixedBuffe
         {
             for (int i = 0; i < values.Length; i++)
             {
-                Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], values[i]);
+                Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], Sanitizer.Filter(values[i]));
                 _count++;
             }
         }
@@ -544,7 +545,7 @@ public unsafe struct FixedBuffer128<T> : IFixedBuffer<T>, ISanitizable<FixedBuff
 
     static FixedBuffer128()
     {
-        _ = Binary<T>.Size;
+        _ = Binary<T>.Size; // throw exception instantly when trying to use with an incompatible type
     }
 
     public readonly T At(int index)
@@ -569,7 +570,7 @@ public unsafe struct FixedBuffer128<T> : IFixedBuffer<T>, ISanitizable<FixedBuff
 
         fixed (byte* ptr = _buffer)
         {
-            Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], value);
+            Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], Sanitizer.Filter(value));
             _count++;
         }
     }
@@ -585,7 +586,7 @@ public unsafe struct FixedBuffer128<T> : IFixedBuffer<T>, ISanitizable<FixedBuff
         {
             for (int i = 0; i < values.Length; i++)
             {
-                Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], values[i]);
+                Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], Sanitizer.Filter(values[i]));
                 _count++;
             }
         }
@@ -644,7 +645,7 @@ public unsafe struct FixedBuffer256<T> : IFixedBuffer<T>, ISanitizable<FixedBuff
 
     static FixedBuffer256()
     {
-        _ = Binary<T>.Size;
+        _ = Binary<T>.Size; // throw exception instantly when trying to use with an incompatible type
     }
 
     public readonly T At(int index)
@@ -669,7 +670,7 @@ public unsafe struct FixedBuffer256<T> : IFixedBuffer<T>, ISanitizable<FixedBuff
 
         fixed (byte* ptr = _buffer)
         {
-            Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], value);
+            Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], Sanitizer.Filter(value));
             _count++;
         }
     }
@@ -685,7 +686,7 @@ public unsafe struct FixedBuffer256<T> : IFixedBuffer<T>, ISanitizable<FixedBuff
         {
             for (int i = 0; i < values.Length; i++)
             {
-                Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], values[i]);
+                Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], Sanitizer.Filter(values[i]));
                 _count++;
             }
         }
@@ -744,7 +745,7 @@ public unsafe struct FixedBuffer512<T> : IFixedBuffer<T>, ISanitizable<FixedBuff
 
     static FixedBuffer512()
     {
-        _ = Binary<T>.Size;
+        _ = Binary<T>.Size; // throw exception instantly when trying to use with an incompatible type
     }
 
     public readonly T At(int index)
@@ -769,7 +770,7 @@ public unsafe struct FixedBuffer512<T> : IFixedBuffer<T>, ISanitizable<FixedBuff
 
         fixed (byte* ptr = _buffer)
         {
-            Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], value);
+            Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], Sanitizer.Filter(value));
             _count++;
         }
     }
@@ -785,7 +786,7 @@ public unsafe struct FixedBuffer512<T> : IFixedBuffer<T>, ISanitizable<FixedBuff
         {
             for (int i = 0; i < values.Length; i++)
             {
-                Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], values[i]);
+                Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], Sanitizer.Filter(values[i]));
                 _count++;
             }
         }
@@ -844,7 +845,7 @@ public unsafe struct FixedBuffer1024<T> : IFixedBuffer<T>, ISanitizable<FixedBuf
 
     static FixedBuffer1024()
     {
-        _ = Binary<T>.Size;
+        _ = Binary<T>.Size; // throw exception instantly when trying to use with an incompatible type
     }
 
     public readonly T At(int index)
@@ -869,7 +870,7 @@ public unsafe struct FixedBuffer1024<T> : IFixedBuffer<T>, ISanitizable<FixedBuf
 
         fixed (byte* ptr = _buffer)
         {
-            Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], value);
+            Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], Sanitizer.Filter(value));
             _count++;
         }
     }
@@ -885,7 +886,7 @@ public unsafe struct FixedBuffer1024<T> : IFixedBuffer<T>, ISanitizable<FixedBuf
         {
             for (int i = 0; i < values.Length; i++)
             {
-                Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], values[i]);
+                Unsafe.WriteUnaligned(ref ptr[Count * sizeof(T)], Sanitizer.Filter(values[i]));
                 _count++;
             }
         }

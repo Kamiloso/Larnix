@@ -7,20 +7,21 @@ namespace Larnix.Socket.Channel.Components;
 
 internal class ReliableReceiver
 {
-    private int WindowSize => 128;
+    private static int WindowSize => 128;
 
-    private readonly Seqs _seqs;
-    private readonly Queue<byte[]> _fastBuffer = new();
     private readonly Dictionary<Seq, byte[]> _buffer = new();
-
-    private Seq _nextSeq = new(1);
+    private readonly Queue<byte[]> _fastBuffer = new();
+    
+    private readonly Seqs _seqs;
+    private Seq _nextSeq;
 
     public ReliableReceiver(Seqs seqs)
     {
         _seqs = seqs;
+        _nextSeq = _seqs.RcvNum + 1;
     }
 
-    public void Push(PayloadHeader header, byte[] data)
+    public void Push(PayloadHeader header, byte[] decrypted)
     {
         Seq seqLast = _seqs.RcvNum;
         Seq seqNew = header.SeqNum;
@@ -30,14 +31,14 @@ internal class ReliableReceiver
             if (seqNew < seqLast - WindowSize) return;
             if (seqNew > seqLast + WindowSize) return;
 
-            _fastBuffer.Enqueue(data);
+            _fastBuffer.Enqueue(decrypted);
         }
         else
         {
             if (seqNew <= seqLast) return;
             if (seqNew > seqLast + WindowSize) return;
 
-            _buffer[seqNew] = data;
+            _buffer[seqNew] = decrypted;
         }
 
         while (_buffer.ContainsKey(_seqs.RcvNum + 1))
@@ -46,20 +47,20 @@ internal class ReliableReceiver
         }
     }
 
-    public bool TryPop(out byte[] data)
+    public bool TryPop(out byte[] decrypted)
     {
-        if (_fastBuffer.TryDequeue(out data))
+        if (_fastBuffer.TryDequeue(out decrypted))
         {
             return true;
         }
 
-        if (_buffer.TryGetValue(_nextSeq, out data))
+        if (_buffer.Remove(_nextSeq, out decrypted))
         {
-            _buffer.Remove(_nextSeq++);
+            _nextSeq++;
             return true;
         }
 
-        data = default!;
+        decrypted = default!;
         return false;
     }
 }

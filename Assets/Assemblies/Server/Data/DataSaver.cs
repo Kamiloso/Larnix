@@ -15,13 +15,13 @@ internal class DataSaver : IDataSaver
 {
     public event Action? SavingAll;
 
+    private Config Config => GlobRef.Get<Config>();
     private IDbControl Db => GlobRef.Get<IDbControl>();
     private IClock Clock => GlobRef.Get<IClock>();
-    private ServerConfig ServerConfig => GlobRef.Get<ServerConfig>();
 
     public void Tick(float deltaTime)
     {
-        if (Clock.FixedFrame % ServerConfig.PeriodicTasks_DataSavingPeriodFrames == 0)
+        if (Clock.FixedFrame % Config.PeriodicTasks_DataSavingPeriodFrames == 0)
         {
             SaveAll();
         }

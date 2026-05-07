@@ -58,12 +58,12 @@ internal class UserAccess : IUserAccess
             throw new ArgumentException("Username cannot be empty", nameof(user));
 
         string cmd_0 = @"
-            SELECT count(nickname)
+            SELECT count(nickname) AS amount
                 FROM players
                 WHERE uid <> $p1 and nickname = $p2;
         ";
 
-        if (_db.QuerySingle(cmd_0, user.Nickname, user.Uid)!.Get<long>("check") > 0)
+        if (_db.QuerySingle(cmd_0, user.Nickname, user.Uid)!.Get<long>("amount") > 0)
             throw new InvalidOperationException("Username collision detected");
 
         string cmd = @"

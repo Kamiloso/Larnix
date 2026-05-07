@@ -1,6 +1,5 @@
 using Larnix.Model.Blocks;
-using Larnix.Socket.Packets;
-using Larnix.Server.Packets;
+using Larnix.Model.Packets;
 using Larnix.Core.Vectors;
 using Larnix.Core;
 using System;
@@ -50,7 +49,7 @@ public static class TerrainAPI
             throw new InvalidOperationException("Cannot place a block at unloaded position!");
 
         long operation = GridManager.PlaceBlockClient(POS, item, front);
-        SendBlockChange(POS, item, BlockHeader1.Air, front, operation, 0);
+        SendBlockChange(POS, item, BlockHeader1.Air, operation, front, place: true);
     }
 
     public static void BreakBlock(Vec2Int POS, BlockHeader1 tool, bool front)
@@ -63,12 +62,12 @@ public static class TerrainAPI
             : oldBlock2.Back;
 
         long operation = GridManager.BreakBlockClient(POS, front);
-        SendBlockChange(POS, oldblock1, tool, front, operation, 1);
+        SendBlockChange(POS, oldblock1, tool, operation, front, place: false);
     }
 
-    private static void SendBlockChange(Vec2Int POS, BlockHeader1 item, BlockHeader1 tool, bool front, long operation, byte code)
+    private static void SendBlockChange(Vec2Int POS, BlockHeader1 item, BlockHeader1 tool, long operation, bool front, bool place)
     {
-        Payload_Legacy packet = new BlockChange(POS, item, tool, operation, front, code);
-        Client.Send(packet);
+        BlockChange payload = new(POS, item, tool, operation, front, place);
+        Client.Send(payload);
     }
 }

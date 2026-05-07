@@ -12,13 +12,13 @@ namespace Larnix.Socket.Tools;
 /// </summary>
 internal static class EndCompressor
 {
-    public static byte[] Compress(byte[] plaintext)
+    public static byte[] Compress(byte[] plaindata)
     {
         ushort nulls = 0;
 
-        while (nulls < plaintext.Length)
+        while (nulls < plaindata.Length)
         {
-            byte b = plaintext[plaintext.Length - 1 - nulls];
+            byte b = plaindata[plaindata.Length - 1 - nulls];
             if (b != 0 || nulls == ushort.MaxValue)
             {
                 break;
@@ -26,34 +26,70 @@ internal static class EndCompressor
             nulls++;
         }
 
-        byte[] target = new byte[plaintext.Length - nulls + 2];
+        byte[] target = new byte[plaindata.Length - nulls + 2];
 
-        Buffer.BlockCopy(plaintext, 0, target, 0, plaintext.Length - nulls);
+        Buffer.BlockCopy(plaindata, 0, target, 0, plaindata.Length - nulls);
         Buffer.BlockCopy(Binary<ushort>.Serialize(nulls), 0, target, target.Length - 2, 2);
 
         return target;
     }
 
-    public static byte[] Decompress(byte[] ciphertext)
+    public static byte[] Decompress(byte[] compressed)
     {
-        if (ciphertext.Length < 2)
+        if (compressed.Length < 2)
         {
-            return ciphertext[..];
+            return compressed[..];
         }
 
-        byte[] target = new byte[SizeAfterDecompression(ciphertext)];
-        Buffer.BlockCopy(ciphertext, 0, target, 0, ciphertext.Length - 2);
+        byte[] target = new byte[SizeAfterDecompression(compressed)];
+        Buffer.BlockCopy(compressed, 0, target, 0, compressed.Length - 2);
         return target;
     }
 
-    public static int SizeAfterDecompression(byte[] ciphertext)
+    public static int SizeAfterDecompression(byte[] compressed)
     {
-        if (ciphertext.Length < 2)
+        if (compressed.Length < 2)
         {
-            return ciphertext.Length;
+            return compressed.Length;
         }
 
-        int offset = ciphertext.Length - 2;
-        return offset + Binary<ushort>.Deserialize(ciphertext, offset);
+        int offset = compressed.Length - 2;
+        return offset + Binary<ushort>.Deserialize(compressed, offset);
+    }
+
+    public static byte[] PartialDecompress(byte[] compressed, int from, int length)
+    {
+        if (from < 0 || length < 0)
+        {
+            throw new ArgumentOutOfRangeException(from < 0 ? nameof(from) : nameof(length), "Value must be non-negative.");
+        }
+
+        if (compressed.Length < 2)
+        {
+            return compressed[from..(from + length)];
+        }
+
+        int to = from + length;
+        int cmprLngt = compressed.Length - 2;
+
+        ushort nulls = Binary<ushort>.Deserialize(compressed, cmprLngt);
+        if (to > cmprLngt + nulls)
+        {
+            throw new ArgumentOutOfRangeException(nameof(length), "Length is too big for the given compressed data.");
+        }
+        
+        if (from >= cmprLngt)
+        {
+            return new byte[length];
+        }
+
+        if (to <= cmprLngt)
+        {
+            return compressed[from..to];
+        }
+
+        byte[] target = new byte[length];
+        Buffer.BlockCopy(compressed, from, target, 0, cmprLngt - from);
+        return target;
     }
 }

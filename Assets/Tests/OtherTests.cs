@@ -10,8 +10,9 @@ using Larnix.Core.Serialization;
 using Larnix.Model.Blocks.Structs;
 using Larnix.Model.Blocks;
 using Larnix.Socket.Tools;
+using Larnix.Socket.Payload.Structs;
 
-[CmdId(1)]
+[CmdId(short.MinValue + 1)]
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 internal readonly record struct TestCommand1(
     Vec2 Position,
@@ -19,7 +20,7 @@ internal readonly record struct TestCommand1(
     int Health
     );
 
-[CmdId(2)]
+[CmdId(short.MinValue + 2)]
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 internal readonly record struct TestCommand2(
     Vec2 Position,
@@ -27,7 +28,7 @@ internal readonly record struct TestCommand2(
     bool IsAlive // wrong field
     );
 
-[CmdId(3)]
+[CmdId(short.MinValue + 3)]
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 internal unsafe struct TestCommand3
 {
@@ -40,7 +41,8 @@ internal unsafe struct TestCommand3
 
         fixed (int* ptr = _buffer)
         {
-            buffer.Slice(0, Math.Min(buffer.Length, 4)).CopyTo(new Span<int>(ptr, 4));
+            var slice = buffer[..Math.Min(buffer.Length, 4)];
+            slice.CopyTo(new Span<int>(ptr, 4));
         }
     }
 }
@@ -50,6 +52,8 @@ internal class DummyKey : IKey
     public static DummyKey Instance { get; } = new();
     public byte[] Decrypt(byte[] ciphertext) => ciphertext[..].Reverse().ToArray();
     public byte[] Encrypt(byte[] plaintext) => plaintext[..].Reverse().ToArray();
+    public T CloneKey<T>() where T : IKey => (T)(object)this;
+    public void Dispose() { }
 }
 
 public class OtherTests
@@ -68,7 +72,7 @@ public class OtherTests
     [Test]
     public void CommandSerialization_RoundTrip()
     {
-        PayloadHeader header = new(1, 2, 0xF5);
+        PayloadHeader header = new(new Seq(1), new Seq(2), 0xF5);
 
         TestCommand1 cmd = new()
         {
@@ -95,7 +99,7 @@ public class OtherTests
     [Test]
     public void CommandSerialization_FailsToAcceptBool()
     {
-        PayloadHeader header = new(1, 2, 0xF5);
+        PayloadHeader header = new(new Seq(1), new Seq(2), 0xF5);
         TestCommand2 cmd = new()
         {
             Position = new Vec2(1, 2),
@@ -112,7 +116,7 @@ public class OtherTests
     [Test]
     public void CommandSerialization_AcceptsFixedBuffers()
     {
-        PayloadHeader header = new(3, 4, 0xA1);
+        PayloadHeader header = new(new Seq(3), new Seq(4), 0xA1);
 
         int[] bufferData = new int[] { 10, 20, 30, 40 };
         TestCommand3 cmd = new(12345, bufferData);

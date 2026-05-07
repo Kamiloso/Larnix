@@ -4,8 +4,9 @@ using Larnix.Core.Serialization;
 using Larnix.Core.Utils;
 using Larnix.Core.Vectors;
 using Larnix.Model;
-using Larnix.Server.Packets;
-using ChatCode = Larnix.Server.Packets.ChatMessage.ChatCode;
+using Larnix.Model.Packets;
+using Larnix.Server.Network;
+using ChatCode = Larnix.Model.Packets.ChatMessage.ChatCode;
 
 namespace Larnix.Server.Commands;
 

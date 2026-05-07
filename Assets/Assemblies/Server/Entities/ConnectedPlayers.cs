@@ -1,7 +1,7 @@
 #nullable enable
 using Larnix.Core;
-using Larnix.Server.Data;
-using Larnix.Server.Packets;
+using Larnix.Model.Packets;
+using Larnix.Server.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Linq;

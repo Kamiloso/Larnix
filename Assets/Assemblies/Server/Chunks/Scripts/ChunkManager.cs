@@ -22,7 +22,7 @@ internal class ChunkManager : IChunkManager
     private IChunkLoader ChunkLoader => GlobRef.Get<IChunkLoader>();
     private IChunkHolders ChunkHolders => GlobRef.Get<IChunkHolders>();
 
-    void IScript.EarlyFrameUpdate()
+    void IScript.EarlyUpdate()
     {
         var stimulated = ChunkLoader.AllStimulatedChunks();
 
@@ -70,7 +70,7 @@ internal class ChunkManager : IChunkManager
         }
     }
 
-    void IScript.FrameUpdate()
+    void IScript.Update()
     {
         // Invoking block events
         List<IEnumerator> invokers = ChunkHolders.AllInvokers;

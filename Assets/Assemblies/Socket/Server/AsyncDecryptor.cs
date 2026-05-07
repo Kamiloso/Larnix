@@ -1,5 +1,5 @@
 #nullable enable
-using Larnix.Core.Limiters;
+using Larnix.Socket.Limiters;
 using Larnix.Socket.Server.Utility;
 using Larnix.Socket.Security.Keys;
 using Larnix.Socket.Tools;

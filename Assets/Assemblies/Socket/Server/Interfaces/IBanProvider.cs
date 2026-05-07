@@ -1,9 +1,10 @@
 #nullable enable
+using System.Net;
 
 namespace Larnix.Socket.Server.Interfaces;
 
 public interface IBanProvider
 {
     bool IsBannedNickname(string nickname);
-    bool IsBannedCIDR(string cidr);
+    bool IsBannedIp(IPAddress address);
 }

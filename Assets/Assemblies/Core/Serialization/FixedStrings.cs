@@ -105,7 +105,6 @@ public readonly struct FixedString8 : IFixedString, IEquatable<FixedString8>
     public FixedString8(string value)
     {
         FixedBuffer8<char> buffer = new();
-
         int lngt = value.Length;
         for (int i = 0; i < lngt && !buffer.IsFull; i++)
         {
@@ -177,7 +176,6 @@ public readonly struct FixedString16 : IFixedString, IEquatable<FixedString16>
     public FixedString16(string value)
     {
         FixedBuffer16<char> buffer = new();
-
         int lngt = value.Length;
         for (int i = 0; i < lngt && !buffer.IsFull; i++)
         {
@@ -249,7 +247,6 @@ public readonly struct FixedString32 : IFixedString, IEquatable<FixedString32>
     public FixedString32(string value)
     {
         FixedBuffer32<char> buffer = new();
-
         int lngt = value.Length;
         for (int i = 0; i < lngt && !buffer.IsFull; i++)
         {
@@ -321,7 +318,6 @@ public readonly struct FixedString64 : IFixedString, IEquatable<FixedString64>
     public FixedString64(string value)
     {
         FixedBuffer64<char> buffer = new();
-
         int lngt = value.Length;
         for (int i = 0; i < lngt && !buffer.IsFull; i++)
         {
@@ -393,7 +389,6 @@ public readonly struct FixedString128 : IFixedString, IEquatable<FixedString128>
     public FixedString128(string value)
     {
         FixedBuffer128<char> buffer = new();
-
         int lngt = value.Length;
         for (int i = 0; i < lngt && !buffer.IsFull; i++)
         {
@@ -465,7 +460,6 @@ public readonly struct FixedString256 : IFixedString, IEquatable<FixedString256>
     public FixedString256(string value)
     {
         FixedBuffer256<char> buffer = new();
-
         int lngt = value.Length;
         for (int i = 0; i < lngt && !buffer.IsFull; i++)
         {
@@ -537,7 +531,6 @@ public readonly struct FixedString512 : IFixedString, IEquatable<FixedString512>
     public FixedString512(string value)
     {
         FixedBuffer512<char> buffer = new();
-
         int lngt = value.Length;
         for (int i = 0; i < lngt && !buffer.IsFull; i++)
         {
@@ -609,7 +602,6 @@ public readonly struct FixedString1024 : IFixedString, IEquatable<FixedString102
     public FixedString1024(string value)
     {
         FixedBuffer1024<char> buffer = new();
-
         int lngt = value.Length;
         for (int i = 0; i < lngt && !buffer.IsFull; i++)
         {
