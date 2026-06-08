@@ -4,7 +4,6 @@ using Larnix.Core.Collections;
 using Larnix.Core.Vectors;
 using Larnix.Model.Blocks;
 using Larnix.Model.Blocks.All;
-using Larnix.Model.Utils;
 using Larnix.Server.Chunks.Scripts;
 using Larnix.Server.Data;
 using System;
@@ -25,7 +24,7 @@ internal interface IAtomicChunks
 
 internal class AtomicChunks : IAtomicChunks
 {
-    private const int CHUNK_SIZE = BlockUtils.CHUNK_SIZE;
+    private const int CHUNK_SIZE = BlockHelpers.CHUNK_SIZE;
     private static Vec2Int WARN_CHUNK => new(int.MinValue, int.MinValue);
 
     private int MaxAtomicArea => Config.Electricity_MaxContraptionChunks;
@@ -146,7 +145,7 @@ internal class AtomicChunks : IAtomicChunks
                     if (!WarningSuppress && WorldAPI.ServerTick % WarningPeriod == 0 && !_warningEmitted)
                     {
                         _warningEmitted = true;
-                        Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, Vec2Int.Zero);
+                        Vec2Int POS = BlockHelpers.GlobalBlockCoords(chunk, Vec2Int.Zero);
                         Echo.LogWarning(
                             $"Electric contraption at {POS} is too large to be fully loaded!\n" +
                             $"Its events will be disabled to prevent inconsistent behaviour.\n" +
@@ -172,7 +171,7 @@ internal class AtomicChunks : IAtomicChunks
             if (!ChunkMayPropagate(chunk, dir))
                 continue;
 
-            if (!BlockUtils.ChunkExists(neighbor))
+            if (!BlockHelpers.ChunkExists(neighbor))
                 continue;
 
             if (wentThrough.Contains(neighbor))
@@ -188,7 +187,7 @@ internal class AtomicChunks : IAtomicChunks
     private bool ChunkMayPropagate(Vec2Int chunk, Vec2Int direction)
     {
         Vec2Int neighbor = chunk + direction;
-        if (BlockUtils.ChunkExists(neighbor))
+        if (BlockHelpers.ChunkExists(neighbor))
         {
             for (int i = MIN; i <= MAX; i++)
             {
@@ -206,7 +205,7 @@ internal class AtomicChunks : IAtomicChunks
     {
         if (ChunkHolders.IsChunkInZone(chunk, ChunkLoadState.Loaded))
         {
-            Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, pos);
+            Vec2Int POS = BlockHelpers.GlobalBlockCoords(chunk, pos);
 
             Block? frontBlock = WorldAPI.GetBlock(POS, true);
             Block? backBlock = WorldAPI.GetBlock(POS, false);

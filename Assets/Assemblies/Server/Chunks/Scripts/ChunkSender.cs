@@ -1,7 +1,6 @@
 #nullable enable
 using System.Collections.Generic;
 using System.Linq;
-using Larnix.Model.Utils;
 using Larnix.Model.Blocks.Structs;
 using Larnix.Model.Packets;
 using Larnix.Core.Vectors;
@@ -10,6 +9,7 @@ using Larnix.Core;
 using Larnix.Server.Entities;
 using Larnix.Model.Blocks;
 using Larnix.Server.Network;
+using Larnix.Model;
 
 namespace Larnix.Server.Chunks.Scripts;
 
@@ -53,10 +53,10 @@ internal class ChunkSender : IChunkSender
     {
         foreach (string nickname in ConnectedPlayers.AllPlayers)
         {
-            Vec2Int chunkpos = BlockUtils.CoordsToChunk(ConnectedPlayers[nickname].RenderPosition);
+            Vec2Int chunkpos = BlockHelpers.CoordsToChunk(ConnectedPlayers[nickname].RenderPosition);
 
             HashSet<Vec2Int> chunksMemory = ConnectedPlayers[nickname].LoadedChunks;
-            HashSet<Vec2Int> chunksNearby = BlockUtils.GetNearbyChunks(chunkpos, BlockUtils.LOADING_DISTANCE)
+            HashSet<Vec2Int> chunksNearby = BlockHelpers.GetNearbyChunks(chunkpos, BlockHelpers.LOADING_DISTANCE)
                 .Where(chunk => ChunkHolders.IsChunkInZone(chunk, ChunkLoadState.Loaded))
                 .ToHashSet();
 
@@ -97,7 +97,7 @@ internal class ChunkSender : IChunkSender
         while (_blockUpdates.Count > 0)
         {
             var elm = _blockUpdates.Dequeue();
-            Vec2Int chunk = BlockUtils.CoordsToChunk(elm.Position);
+            Vec2Int chunk = BlockHelpers.CoordsToChunk(elm.Position);
 
             foreach (string nickname in ConnectedPlayers.AllPlayers)
             {
@@ -126,7 +126,7 @@ internal class ChunkSender : IChunkSender
         while (_blockChanges.TryDequeue(out var elm))
         {
             Vec2Int POS = elm.POS;
-            Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
+            Vec2Int chunk = BlockHelpers.CoordsToChunk(POS);
 
             BlockData1? blockFront = WorldAPI.GetBlock(POS, true)?.BlockData;
             BlockData1? blockBack = WorldAPI.GetBlock(POS, false)?.BlockData;

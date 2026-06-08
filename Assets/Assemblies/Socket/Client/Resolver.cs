@@ -1,8 +1,13 @@
 #nullable enable
-using System.Threading.Tasks;
-using Larnix.Socket.Payload.Packets;
+using Larnix.Core.Serialization;
 using Larnix.Socket.Client.Records;
+using Larnix.Socket.Client.Services;
+using Larnix.Socket.Payload.Packets;
+using Larnix.Socket.Payload.Structs;
 using Larnix.Socket.Security;
+using Larnix.Socket.Security.Encryption;
+using System.Threading.Tasks;
+using ServerInfo = Larnix.Socket.Client.Records.ServerInfo;
 using ServerInfoStruct = Larnix.Socket.Payload.Structs.ServerInfo;
 
 namespace Larnix.Socket.Client;
@@ -90,11 +95,101 @@ public static partial class Resolver
         ServerInfoStruct info = ainfo.Info;
 
         return new EntryTicket(
-            ServerSecret: Authcode.GetSecretFromAuthCode(authcode),
+            ServerSecret: new Authcode(authcode).ExtractSecret(),
             ChallengeId: ainfo.ChallengeId,
             Timestamp: info.Timestamp,
             RunId: info.RunId,
             RsaPublicKey: info.RsaPublicKey
             );
+    }
+
+    private static async Task<ResolveAnswer<A_ServerInfo>> _DownloadServerInfoAsync(
+        ServerDiscovery discovery, bool ignoreCache = false)
+    {
+        var (address, authcode, nickname) = discovery;
+
+        if (!ignoreCache && LocalCache.TryGetFullInfo(discovery, out A_ServerInfo cached))
+        {
+            return cached;
+        }
+
+        var prompt = new P_ServerInfo(nickname);
+        var n_answer = await Prompter.PromptAsync<P_ServerInfo, A_ServerInfo>(address, prompt, null);
+
+        if (n_answer == null)
+        {
+            return ResolveError.PromptFailed;
+        }
+
+        var answer = n_answer.Value;
+
+        FixedRsaPublic keyStruct = answer.Info.RsaPublicKey;
+        byte[] keyBytes = keyStruct.GetKey().Export();
+
+        if (!new Authcode(authcode).Verify(keyBytes))
+        {
+            return ResolveError.PublicKeyInvalid;
+        }
+
+        LocalCache.Received(discovery, answer);
+
+        return answer;
+    }
+
+    private static async Task<ResolveAnswer<bool>> _TryLoginUniversal(
+        FullLoginData fullLogin, bool isRegistration, bool ignoreCache = false)
+    {
+        var (address, authcode, nickname, password) = fullLogin;
+
+        ServerDiscovery discovery = fullLogin.ToServerDiscovery();
+        ServerIdentity identity = fullLogin.ToServerIdentity();
+
+        ResolveAnswer<A_ServerInfo> recv = await _DownloadServerInfoAsync(discovery, ignoreCache);
+        if (recv.Error != ResolveError.None)
+        {
+            return recv.Error;
+        }
+
+        A_ServerInfo ainfo = recv.Result;
+        ServerInfoStruct info = ainfo.Info;
+
+        if (isRegistration != ainfo.FreeUserSlot())
+        {
+            return ResolveError.LoginNotAllowed;
+        }
+
+        FixedRsaPublic keyStruct = ainfo.Info.RsaPublicKey;
+        RsaPublicKey rsa = keyStruct.GetKey();
+
+        long serverSecret = new Authcode(authcode).ExtractSecret();
+        long timestamp = LocalCache.TryGetTimestamp(identity, out long ts) ? ts : 0;
+
+        Credentials credentials = new(
+            nickname: nickname,
+            password: password,
+            serverSecret: serverSecret,
+            challengeId: ainfo.ChallengeId,
+            timestamp: timestamp,
+            runId: info.RunId
+            );
+
+        FixedString64? newPassword = (fullLogin as PasswordChangeData)?.NewPassword;
+
+        var prompt = newPassword.HasValue
+            ? P_LoginTry.AsPasswordChange(credentials, newPassword.Value)
+            : P_LoginTry.AsLogin(credentials);
+
+        var n_answer = await Prompter.PromptAsync<P_LoginTry, A_LoginTry>(address, prompt, rsa);
+
+        LocalCache.RemoveWhere(disc => disc == discovery); // challengeId may have changed
+
+        if (!n_answer.HasValue)
+        {
+            return ResolveError.PromptFailed;
+        }
+
+        var answer = n_answer.Value;
+
+        return (bool)answer.Success;
     }
 }

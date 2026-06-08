@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using Larnix.Model.Blocks;
 using System;
 using System.Linq;
-using Larnix.Model.Utils;
 using Larnix.Model.Physics;
 using Larnix.Core.Vectors;
 using Larnix.Model.Blocks.Structs;
@@ -60,7 +59,7 @@ internal class ChunkBrain : IDisposable
 
     private void BlockCreate(Vec2Int pos)
     {
-        Vec2Int POS = BlockUtils.GlobalBlockCoords(_chunkpos, pos);
+        Vec2Int POS = BlockHelpers.GlobalBlockCoords(_chunkpos, pos);
         BlockData2 blockData = ActiveChunkReference[pos.x, pos.y];
 
         BlockInits initsFront = new(POS, true, blockData.Front, BlockInterfaces);
@@ -97,7 +96,7 @@ internal class ChunkBrain : IDisposable
 
         if (oldHeader != newHeader)
         {
-            Vec2Int POS = BlockUtils.GlobalBlockCoords(_chunkpos, pos);
+            Vec2Int POS = BlockHelpers.GlobalBlockCoords(_chunkpos, pos);
             OnBlockUpdate?.Invoke(
                 new BlockUpdateRecord(POS, newHeader, breakMode)
                 );
@@ -112,7 +111,7 @@ internal class ChunkBrain : IDisposable
         RefreshCollider(pos);
         BlockHeader2 newHeader = ActiveChunkReference[pos.x, pos.y].Header;
 
-        Vec2Int POS = BlockUtils.GlobalBlockCoords(_chunkpos, pos);
+        Vec2Int POS = BlockHelpers.GlobalBlockCoords(_chunkpos, pos);
         OnBlockUpdate?.Invoke(
             new BlockUpdateRecord(POS, newHeader, BreakMode.Replace)
             );
@@ -164,7 +163,7 @@ internal class ChunkBrain : IDisposable
         IHasCollider? iface = blockServer as IHasCollider;
         if (iface is not null)
         {
-            Vec2Int POS = BlockUtils.GlobalBlockCoords(_chunkpos, pos);
+            Vec2Int POS = BlockHelpers.GlobalBlockCoords(_chunkpos, pos);
             StaticCollider[] staticColliders = iface
                 .STATIC_GetAllColliders(blockData.ID, blockData.Variant)
                 .Select(col => IHasCollider.MakeStaticCollider(col, POS))

@@ -1,5 +1,5 @@
 #nullable enable
-using Larnix.Socket.Server.Utility;
+using Larnix.Socket.Server.Users;
 
 namespace Larnix.Socket.Server.Interfaces;
 

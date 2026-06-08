@@ -8,6 +8,8 @@ using Larnix.Model.Worldgen.Transformers;
 using Larnix.Model.Worldgen.Transformers.Pipeline;
 using Larnix.Model.Blocks.Chunks;
 using Larnix.Core;
+using Larnix.Core.Reflection;
+using Larnix.Model.Blocks;
 
 namespace Larnix.Model.Worldgen;
 
@@ -85,7 +87,7 @@ public class Generator : IGenerator
     {
         const string Phrase = "block_hash";
         double temperature = _usefulBag.Providers["TEMPERATURE"].GetValue(position.x, position.y);
-        Vec2Int POS = BlockUtils.CoordsToBlock(position);
+        Vec2Int POS = BlockHelpers.CoordsToBlock(position);
 
         return temperature switch
         {

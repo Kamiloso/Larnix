@@ -1,5 +1,6 @@
 #nullable enable
 using Larnix.Core;
+using Larnix.Model;
 using Larnix.Model.Json;
 using Larnix.Server.Chunks;
 

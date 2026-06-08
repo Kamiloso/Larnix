@@ -1,6 +1,5 @@
 #nullable enable
 using System.Collections.Generic;
-using Larnix.Model.Utils;
 using Larnix.Model.Entities.Structs;
 using Larnix.Core.Vectors;
 using Larnix.Core;
@@ -8,6 +7,7 @@ using Larnix.Model.Entities;
 using Larnix.Model.Database;
 using System.Linq;
 using Larnix.Server.Data;
+using Larnix.Model.Blocks;
 
 namespace Larnix.Server.Repositories;
 
@@ -32,7 +32,7 @@ internal class EntityRepository : IEntityRepository
 
     public EntityRepository()
     {
-        DataSaver.SavingAll += FlushIntoDatabase;
+        DataSaver.SavingWorld += FlushIntoDatabase;
     }
 
     public ulong NextUid()
@@ -72,7 +72,7 @@ internal class EntityRepository : IEntityRepository
         {
             EntityData newData = _unloadedEntityData[uid];
 
-            Vec2Int newChunkCoords = BlockUtils.CoordsToChunk(newData.Position);
+            Vec2Int newChunkCoords = BlockHelpers.CoordsToChunk(newData.Position);
             bool inChunk = newChunkCoords == chunkCoords;
 
             if (dbEntities.ContainsKey(uid))

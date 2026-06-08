@@ -4,7 +4,6 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Threading.Tasks;
 using Larnix.Model.Physics;
-using Larnix.Server;
 using Larnix.Patches;
 using Larnix.Model.Packets;
 using Larnix.Client.UI;
@@ -17,6 +16,7 @@ using Larnix.Socket.Client;
 using System;
 using Larnix.Socket.Client.Records;
 using Larnix.Core.Serialization;
+using Larnix.Server.Run;
 
 namespace Larnix.Client
 {

@@ -2,13 +2,13 @@ using System.Collections.Generic;
 using UnityEngine;
 using Larnix.Model.Worldgen;
 using Larnix.Client.Terrain;
-using Larnix.Model.Utils;
 using Larnix.Core;
 using Larnix.Core.Vectors;
 using Larnix.Background;
 using Larnix.Model.Enums;
 using Larnix.Core.Utils;
 using Larnix.Model.Blocks.Chunks;
+using Larnix.Model.Blocks;
 
 namespace Larnix.Menu
 {
@@ -35,9 +35,9 @@ namespace Larnix.Menu
         {
             Vector2 unityPosition = Camera.transform.position;
             Vec2 camPosition = VectorExtensions.ConstructVec2(unityPosition, Vec2.Zero);
-            Vec2Int camChunk = BlockUtils.CoordsToChunk(camPosition);
+            Vec2Int camChunk = BlockHelpers.CoordsToChunk(camPosition);
 
-            HashSet<Vec2Int> nearbyChunks = BlockUtils.GetNearbyChunks(camChunk, BlockUtils.LOADING_DISTANCE);
+            HashSet<Vec2Int> nearbyChunks = BlockHelpers.GetNearbyChunks(camChunk, BlockHelpers.LOADING_DISTANCE);
 
             var ToAdd = new HashSet<Vec2Int>(nearbyChunks);
             ToAdd.ExceptWith(_activeChunks);

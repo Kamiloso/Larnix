@@ -1,6 +1,6 @@
 ﻿using System;
-using Larnix.Server;
-using RunSuggestions = Larnix.Server.ServerRunner.RunSuggestions;
+using Larnix.Server.Running;
+using RunSuggestions = Larnix.Server.Running.ServerRunner.RunSuggestions;
 
 namespace Larnix.Headless;
 

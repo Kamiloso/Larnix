@@ -1,4 +1,5 @@
 #nullable enable
+using Larnix.Model.Json;
 using SimpleJSON;
 
 namespace Larnix.Model.Json;
@@ -15,7 +16,7 @@ public partial class Storage
 
     public static Storage FromString(string? json)
     {
-        JSONObject jsonObject = JsonUtils.ToJsonObject(json);
+        JSONObject jsonObject = JsonHelpers.ToJsonObject(json);
         return new Storage(jsonObject);
     }
 

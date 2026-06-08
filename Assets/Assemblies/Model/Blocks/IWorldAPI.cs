@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using Larnix.Core.Vectors;
 using Larnix.Model.Blocks.Structs;
-using Larnix.Model.Utils;
 
 namespace Larnix.Model.Blocks;
 
@@ -18,7 +17,7 @@ public interface IWorldAPI
     public long ServerTick { get; }
 
     public bool IsChunkLoaded(Vec2Int chunk);
-    public bool IsBlockLoaded(Vec2Int POS) => IsChunkLoaded(BlockUtils.CoordsToChunk(POS));
+    public bool IsBlockLoaded(Vec2Int POS) => IsChunkLoaded(BlockHelpers.CoordsToChunk(POS));
 
     public Block? GetBlock(Vec2Int POS, bool front);
     public Block? ReplaceBlock(Vec2Int POS, bool front, BlockData1 blockTemplate, BreakMode breakMode = BreakMode.Replace);

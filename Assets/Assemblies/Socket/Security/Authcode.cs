@@ -1,127 +1,97 @@
 #nullable enable
-using Org.BouncyCastle.Crypto.Generators;
-using System.Text;
 using Larnix.Core.Serialization;
 using System.Linq;
+using System.Text.RegularExpressions;
+using System;
+using System.Security.Cryptography;
 
 namespace Larnix.Socket.Security;
 
-public static class Authcode
+// It should not be used for storage or anything like that.
+// Convert to string and then do "new Authcode(...)" dynamically.
+// It doesn't have to be ref struct, but it is since this
+// class is NOT intended to be stored on heap.
+
+internal readonly ref struct Authcode
 {
-    private const string AUTH_BASE_64 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz#&";
+    // HHHHHH-HHHHHH-SSSSSS-SSSSSO
+    // H = verify segment   | 12 char | 9 bytes |
+    // S = secret segment   | 11 char | 8 bytes |
+    // O = checksum         |  1 char |
 
-    private const int VERIFY_LNGT = 12;
-    private const int SECRET_LNGT = 11; // must be at least 11 to fit one long
-    private const int TOTAL_LNGT = VERIFY_LNGT + SECRET_LNGT + 1; // +1 for checksum
-    private const int SEGMENT_SIZE = 6;
+    private readonly byte[] _verify; // hashed public key for example
+    private readonly byte[] _secret; // secret that only server and its users know
 
-    internal static string ProduceAuthCodeRSA(byte[] key, long secret)
+    public Authcode(byte[] verifable, long secret)
     {
-        string raw = ProduceRawAuthCodeRSA(key, secret);
-        return InsertDashes(raw, SEGMENT_SIZE);
+        _verify = MemoryHardHash(verifable)[..9];
+        _secret = Binary<long>.Serialize(secret);
     }
 
-    internal static string ProduceRawAuthCodeRSA(byte[] key, long secret)
+    public Authcode(string code)
     {
-        byte[] salt = Binary<long>.Serialize(-7264111368357934733L); // random, hard-coded salt
-        byte[] hash = DeriveKeyScrypt(key, salt); // random, hard-coded salt
+        if (!Regex.IsMatch(code,
+            "^[0-9A-Za-z#&]{6}-[0-9A-Za-z#&]{6}-[0-9A-Za-z#&]{6}-[0-9A-Za-z#&]{6}$"))
+            throw new ArgumentException("Authcode is invalid!");
 
-        StringBuilder sb = new();
-        for (int i = 0; i < VERIFY_LNGT; i++)
-        {
-            sb.Append(AUTH_BASE_64[hash[i] % 64]);
-        }
+        string[] parts = { code[0..6], code[7..13], code[14..20], code[21..27] };
 
-        ulong usecret = (ulong)secret;
-        while (sb.Length < VERIFY_LNGT + SECRET_LNGT)
-        {
-            int mod = (int)(usecret % 64);
-            usecret /= 64;
-            sb.Insert(VERIFY_LNGT, AUTH_BASE_64[mod]);
-        }
+        string verify = parts[0] + parts[1];
+        string secret = parts[2] + parts[3][..5];
+        char checksum = parts[3][5];
 
-        int checksum = 0;
-        foreach (char c in sb.ToString())
-        {
-            checksum += c;
-        }
-        sb.Append(AUTH_BASE_64[checksum % 64]);
+        if (Checksum(verify + secret) != checksum)
+            throw new ArgumentException("Authcode has a wrong checksum!");
 
-        return sb.ToString();
+        _verify = ModifiedBase64.Decode(verify, 9);
+        _secret = ModifiedBase64.Decode(secret, 8);
     }
 
-    public static bool IsGoodAuthcode(string authCodeRSA)
+    public bool Verify(byte[] verifable)
     {
-        string code = authCodeRSA.Replace("-", "");
-        if (InsertDashes(code, SEGMENT_SIZE) != authCodeRSA)
-        {
-            return false;
-        }
-
-        if (code.Length != TOTAL_LNGT)
-        {
-            return false;
-        }
-
-        if (code.Any(c => !AUTH_BASE_64.Contains(c)))
-        {
-            return false;
-        }
-
-        int checksum = 0;
-        for (int i = 0; i < TOTAL_LNGT - 1; i++)
-        {
-            checksum += code[i];
-        }
-
-        return AUTH_BASE_64[checksum % 64] == code[TOTAL_LNGT - 1];
+        Authcode bootstrap = new(verifable, 0);
+        return _verify.SequenceEqual(bootstrap._verify);
     }
 
-    internal static bool VerifyPublicKey(byte[] key, string authCodeRSA)
+    public long ExtractSecret()
     {
-        string code1 = authCodeRSA.Replace("-", "")[..VERIFY_LNGT];
-        string code2 = ProduceRawAuthCodeRSA(key, 0)[..VERIFY_LNGT];
-
-        return code1 == code2;
+        return Binary<long>.Deserialize(_secret);
     }
 
-    internal static long GetSecretFromAuthCode(string authCodeRSA)
+    public override string ToString()
     {
-        string code1 = authCodeRSA.Replace("-", "").Substring(VERIFY_LNGT, SECRET_LNGT);
+        string verify = ModifiedBase64.Encode(_verify, 12);
+        string secret = ModifiedBase64.Encode(_secret, 11);
+        char checksum = Checksum(verify + secret);
 
-        ulong usecret = 0;
-        for (int i = 0; i < SECRET_LNGT; i++)
+        string raw = verify + secret + checksum;
+        return $"{raw[0..6]}-{raw[6..12]}-{raw[12..18]}-{raw[18..24]}";
+    }
+
+    private static char Checksum(string str)
+    {
+        int sum = 0;
+        foreach (char c in str)
         {
-            unchecked { usecret *= 64; }
-            unchecked { usecret += (ulong)AUTH_BASE_64.IndexOf(code1[i]); }
+            int num = ModifiedBase64.ToIndex(c);
+            sum = (sum + num) % 64;
+        }
+        return ModifiedBase64.ToChar(sum);
+    }
+
+    private static byte[] MemoryHardHash(byte[] data)
+    {
+        // TODO: use memory hashing alghorithm like Argon2 instead of SHA256
+        // IMPORTANT!!!!
+
+        using var sha256 = SHA256.Create();
+
+        byte[] hash = data;
+        for (int i = 0; i < 100_000; i++) // temporary, will be replaced with something better
+        {
+            hash = sha256.ComputeHash(hash);
         }
 
-        return (long)usecret;
-    }
-
-    private static string InsertDashes(string input, int n)
-    {
-        if (string.IsNullOrEmpty(input) || n <= 0)
-            return input;
-
-        StringBuilder sb = new();
-        for (int i = 0; i < input.Length; i++)
-        {
-            if (i > 0 && i % n == 0)
-            {
-                sb.Append('-');
-            }
-            sb.Append(input[i]);
-        }
-        return sb.ToString();
-    }
-
-    private static byte[] DeriveKeyScrypt(byte[] password, byte[] salt)
-    {
-        return SCrypt.Generate(password, salt,
-            N: 1 << 14, // 16 MB
-            r: 8,
-            p: 1,
-            dkLen: VERIFY_LNGT);
+        return hash;
     }
 }

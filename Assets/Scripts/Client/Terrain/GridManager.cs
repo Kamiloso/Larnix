@@ -4,7 +4,6 @@ using UnityEngine;
 using Larnix.Model.Blocks;
 using System.Linq;
 using System;
-using Larnix.Model.Utils;
 using Larnix.Model.Physics;
 using Larnix.Core;
 using Larnix.Core.Vectors;
@@ -61,8 +60,8 @@ namespace Larnix.Client.Terrain
 
         public void UpdateBlock(Vec2Int POS, BlockHeader2 data, IWorldAPI.BreakMode breakMode, long? unlock = null)
         {
-            Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
-            Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
+            Vec2Int chunk = BlockHelpers.CoordsToChunk(POS);
+            Vec2Int pos = BlockHelpers.LocalBlockCoords(POS);
 
             if (unlock != null)
                 UnlockBlock((long)unlock);
@@ -73,9 +72,9 @@ namespace Larnix.Client.Terrain
 
         public bool LoadedAroundPlayer()
         {
-            HashSet<Vec2Int> nearbyChunks = BlockUtils.GetNearbyChunks(
-                BlockUtils.CoordsToChunk(MainPlayer.Position),
-                BlockUtils.LOADING_DISTANCE
+            HashSet<Vec2Int> nearbyChunks = BlockHelpers.GetNearbyChunks(
+                BlockHelpers.CoordsToChunk(MainPlayer.Position),
+                BlockHelpers.LOADING_DISTANCE
                 );
 
             nearbyChunks.ExceptWith(_visibleChunks);
@@ -120,8 +119,8 @@ namespace Larnix.Client.Terrain
 
         private void ChangeBlockData(Vec2Int POS, BlockHeader2 newBlock, IWorldAPI.BreakMode breakMode)
         {
-            Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
-            Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
+            Vec2Int chunk = BlockHelpers.CoordsToChunk(POS);
+            Vec2Int pos = BlockHelpers.LocalBlockCoords(POS);
 
             BlockHeader2 oldBlock = _allChunks[chunk][pos.x, pos.y].Header;
             _allChunks[chunk][pos.x, pos.y] = new BlockData2(newBlock);
@@ -154,7 +153,7 @@ namespace Larnix.Client.Terrain
             {
                 var pos = new Vec2Int(x, y);
 
-                Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, pos);
+                Vec2Int POS = BlockHelpers.GlobalBlockCoords(chunk, pos);
                 UpdateBlockCollider(POS, chunkData?[x, y].Header);
             });
 
@@ -225,7 +224,7 @@ namespace Larnix.Client.Terrain
 
         private void UnlockChunk(Vec2Int chunk)
         {
-            _lockedBlocks.RemoveAll(l => BlockUtils.InChunk(chunk, l.POS));
+            _lockedBlocks.RemoveAll(l => BlockHelpers.InChunk(chunk, l.POS));
         }
     }
 }

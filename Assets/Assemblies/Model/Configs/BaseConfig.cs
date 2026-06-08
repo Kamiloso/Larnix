@@ -1,98 +1,96 @@
 #nullable enable
+using Larnix.Model.Json;
+using SimpleJSON;
 using System;
 using System.Collections;
-using System.Linq;
-using Larnix.Core.Files;
-using System.Reflection;
-using SimpleJSON;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 
 namespace Larnix.Model.Configs;
 
-public abstract class BaseConfig
+public abstract class BaseConfig<T> where T : BaseConfig<T>, new()
 {
-    public virtual void Update() { }
+    public virtual void Migrate() { }
+    
+    protected BaseConfig() { }
 
-    public static T FromString<T>(string str) where T : BaseConfig, new()
+    protected BaseConfig(string json)
     {
-        JSONObject json = JsonUtils.ToJsonObject(str);
-        List<PropertyInfo> props = AllProperties<T>();
+        var jsonObj = JsonHelpers.ToJsonObject(json);
 
-        T config = new();
-
-        foreach (PropertyInfo prop in props)
+        List<PropertyInfo> props = AllProperties();
+        foreach (var prop in props)
         {
+            Type propType = prop.PropertyType;
+
             string[] parts = prop.Name.Split('_');
             string lastPart = parts[^1];
 
-            JSONObject traversed = JsonUtils.TraversePath(json, parts[..^1]);
-            JSONNode node = traversed[lastPart];
+            var traversed = JsonHelpers.TraversePath(jsonObj, parts[..^1]);
+            var node = traversed[lastPart];
 
-            if (TryConvertNode(node, prop.PropertyType, out object? parsedValue))
+            if (TryConvertNode(node, propType, out object value))
             {
-                prop.SetValue(config, parsedValue!);
+                prop.SetValue((T)this, value);
             }
         }
 
-        config.Update();
-        return config;
+        Migrate();
     }
 
-    public static string AsString<T>(T config) where T : BaseConfig
+    protected BaseConfig(T original) : this(original.ToJson()) { }
+
+    public string ToJson(int shift)
     {
         JSONObject json = new();
-        List<PropertyInfo> props = AllProperties<T>();
+        List<PropertyInfo> props = AllProperties();
 
         foreach (PropertyInfo prop in props)
         {
             string[] parts = prop.Name.Split('_');
             string lastPart = parts[^1];
 
-            JSONObject traversed = JsonUtils.TraversePath(json, parts[..^1]);
-            object value = prop.GetValue(config);
+            JSONObject traversed = JsonHelpers.TraversePath(json, parts[..^1]);
+            object value = prop.GetValue(this);
             traversed[lastPart] = ToNode(value);
         }
 
-        return json.ToString(4);
+        return json.ToString(shift);
     }
 
-    public static T DeepCopy<T>(T config) where T : BaseConfig, new()
+    public string ToJson()
     {
-        string str = AsString(config);
-        return FromString<T>(str);
+        return ToJson(4);
     }
 
-    public static T FromFile<T>(string path, string file) where T : BaseConfig, new()
-    {
-        string? data = FileManager.Read(path, file);
-        T config = FromString<T>(data ?? string.Empty);
-        ToFile(path, file, config); // update data
-        return config;
-    }
-
-    public static void ToFile<T>(string path, string file, T config) where T : BaseConfig
-    {
-        string data = AsString(config);
-        FileManager.Write(path, file, data);
-    }
-
-    protected static List<PropertyInfo> AllProperties<T>() where T : BaseConfig
+    protected static List<PropertyInfo> AllProperties()
     {
         return typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance)
-            .OrderBy(prop => prop.MetadataToken)
+            .OrderBy(prop => prop.MetadataToken) // heuristic, but it works in practice
             .ToList();
     }
 
-    private static bool TryConvertNode(JSONNode node, Type type, out object? value)
+    protected static void MoveProperties(T source, T target)
     {
-        if (node == null)
+        List<PropertyInfo> props = AllProperties();
+        foreach (var prop in props)
         {
-            value = default;
-            return false;
+            prop.SetValue(target, prop.GetValue(source));
         }
+    }
+
+    private static bool TryConvertNode(JSONNode node, Type type, out object value)
+    {
+        value = null!;
 
         try
         {
+            if (node == null)
+            {
+                return false;
+            }
+
             if (type == typeof(string))
             {
                 value = node.Value;
@@ -119,9 +117,9 @@ public abstract class BaseConfig
                     IList list = (IList)Activator.CreateInstance(type);
                     foreach (JSONNode item in array)
                     {
-                        if (TryConvertNode(item, itemType, out object? itemValue))
+                        if (TryConvertNode(item, itemType, out object itemValue))
                         {
-                            list.Add(itemValue!);
+                            list.Add(itemValue);
                         }
                     }
                     value = list;
@@ -132,7 +130,6 @@ public abstract class BaseConfig
         catch (InvalidCastException) { }
         catch (FormatException) { }
 
-        value = default;
         return false;
     }
 
@@ -163,6 +160,6 @@ public abstract class BaseConfig
             return array;
         }
 
-        throw new NotImplementedException($"Type {type} is unsupported!");
+        throw new NotImplementedException($"Type '{type}' is unsupported!");
     }
 }

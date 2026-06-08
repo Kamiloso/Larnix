@@ -4,7 +4,7 @@ using Larnix.Model;
 using Larnix.Model.Database;
 using Larnix.Server.Data;
 using Larnix.Socket.Server.Interfaces;
-using Larnix.Socket.Server.Utility;
+using Larnix.Socket.Server.Users;
 using System.Collections.Generic;
 
 namespace Larnix.Server.Repositories;

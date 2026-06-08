@@ -1,7 +1,6 @@
 using System;
 using Larnix.Model.Blocks;
 using Larnix.Model.Blocks.Structs;
-using Larnix.Model.Utils;
 using Larnix.Core.Vectors;
 using Larnix.Model.Worldgen.Biomes;
 
@@ -20,7 +19,7 @@ internal class ApplyHeaders : Transformer<ProtoBlock, BlockHeader2>
 
         ChunkIterator.IterateWithPOS(chunk, (POS, x, y) =>
         {
-            Vec2 position = BlockUtils.BlockCenter(POS);
+            Vec2 position = BlockHelpers.BlockCenter(POS);
             Biome biome = Generator.Biomes[Generator.BiomeAt(position)];
 
             blocks[x, y] = biome.TranslateProtoBlock(chunkIn[x, y]);

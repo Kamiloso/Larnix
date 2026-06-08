@@ -1,16 +1,17 @@
 #nullable enable
 using Larnix.Core;
-using Larnix.Socket.Channel;
+using Larnix.Socket.Session;
 using Larnix.Socket.Client.Records;
 using Larnix.Socket.Networking;
 using Larnix.Socket.Payload;
 using Larnix.Socket.Payload.Structs;
-using Larnix.Socket.Security.Keys;
 using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
-using HandshakeInfo = Larnix.Socket.Channel.Connection.HandshakeInfo;
+using HandshakeInfo = Larnix.Socket.Session.Connection.HandshakeInfo;
+using Larnix.Socket.Security.Encryption;
+using Larnix.Socket.Client.Services;
 
 namespace Larnix.Socket.Client;
 
@@ -21,8 +22,6 @@ public class QuickClient : ITickable, IDisposable
     public IPEndPoint Target => _conn.Target;
 
     private readonly UdpClient2 _udp;
-    private readonly KeyRsa _rsa;
-    private readonly KeyAes _aes;
     private readonly Connection _conn;
 
     private readonly ITargetedSocket _socket;
@@ -79,13 +78,13 @@ public class QuickClient : ITickable, IDisposable
             runId: ticket.RunId
             );
 
-        _rsa = KeyRsa.FromPublicStruct(ticket.RsaPublicKey);
-        _aes = KeyAes.GenerateNew();
+        RsaPublicKey rsa = ticket.RsaPublicKey.GetKey();
+        AesKey aes = AesKey.Generate();
 
         _conn = new Connection(
             socket: _socket = new TargetedSocket(_udp, target),
-            aesKey: _aes.ExportKey(),
-            handshakeInfo: new HandshakeInfo(credentials, _rsa)
+            aes: aes,
+            handshakeInfo: new HandshakeInfo(credentials, rsa)
             );
     }
 
@@ -131,8 +130,6 @@ public class QuickClient : ITickable, IDisposable
         _disposed = true;
 
         _conn.Dispose();
-        _aes.Dispose();
-        _rsa.Dispose();
         _udp.Dispose();
     }
 }

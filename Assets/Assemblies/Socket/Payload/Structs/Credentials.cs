@@ -1,7 +1,5 @@
 #nullable enable
 using Larnix.Core.Serialization;
-using Larnix.Model;
-using Larnix.Socket.Tools;
 using System.Runtime.InteropServices;
 
 namespace Larnix.Socket.Payload.Structs;

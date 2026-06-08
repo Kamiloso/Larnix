@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Larnix.Core.Vectors;
-using Larnix.Model.Utils;
+using Larnix.Model.Blocks;
 
 namespace Larnix.Model.Physics.Collections;
 
@@ -41,7 +41,7 @@ internal class SpatialDictionary<T> where T : class
     {
         List<T> returns = new();
 
-        var center = BlockUtils.CoordsToBlock(pos, _sectorSize);
+        var center = BlockHelpers.CoordsToBlock(pos, _sectorSize);
         for (int dx = -1; dx <= 1; dx++)
             for (int dy = -1; dy <= 1; dy++)
             {
@@ -57,7 +57,7 @@ internal class SpatialDictionary<T> where T : class
 
     private List<(Vec2, T)> GetSectorList(Vec2 pos, out Vec2Int sector)
     {
-        var _sector = BlockUtils.CoordsToBlock(pos, _sectorSize);
+        var _sector = BlockHelpers.CoordsToBlock(pos, _sectorSize);
         if (!_dict.TryGetValue(_sector, out var list))
         {
             list = new();

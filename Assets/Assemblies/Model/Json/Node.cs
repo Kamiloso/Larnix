@@ -1,6 +1,6 @@
 #nullable enable
 using System.Globalization;
-using Larnix.Model.Utils;
+using Larnix.Core.Utils;
 using SimpleJSON;
 
 namespace Larnix.Model.Json;
@@ -24,7 +24,7 @@ public class Node
 
     public double Double
     {
-        get => DoubleUtils.TryParse(_node.Value, out double result) ? result : default;
+        get => ParseUtils.TryParseDouble(_node.Value, out double result) ? result : default;
         set => _node.Value = value.ToString(CultureInfo.InvariantCulture);
     }
 

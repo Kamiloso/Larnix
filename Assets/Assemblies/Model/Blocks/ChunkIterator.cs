@@ -2,7 +2,6 @@
 using System;
 using Larnix.Core.Vectors;
 using Larnix.Core.Utils;
-using Larnix.Model.Utils;
 
 namespace Larnix.Model.Blocks;
 
@@ -10,7 +9,7 @@ public enum IterationOrder { XY, YX, Random }
 
 public static class ChunkIterator
 {
-    private const int C_16 = BlockUtils.CHUNK_SIZE;
+    private const int C_16 = BlockHelpers.CHUNK_SIZE;
 
     public static T[,] Array16x16<T>(Func<T>? fill = null)
     {
@@ -50,7 +49,7 @@ public static class ChunkIterator
 
     public static void IterateWithPOS(Vec2Int chunk, Action<Vec2Int, int, int> action, IterationOrder order = IterationOrder.XY)
     {
-        Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, Vec2Int.Zero);
+        Vec2Int POS = BlockHelpers.GlobalBlockCoords(chunk, Vec2Int.Zero);
         Iterate((x, y) => action(POS + new Vec2Int(x, y), x, y), order);
     }
 

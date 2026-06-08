@@ -1,6 +1,5 @@
 #nullable enable
 using Larnix.Model.Blocks;
-using Larnix.Model.Utils;
 using Larnix.Core.Vectors;
 using Larnix.Model.Blocks.Structs;
 using Larnix.Core;
@@ -23,8 +22,8 @@ internal class WorldAPI : IWorldAPI
 
     public Block? GetBlock(Vec2Int POS, bool isFront)
     {
-        Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
-        Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
+        Vec2Int chunk = BlockHelpers.CoordsToChunk(POS);
+        Vec2Int pos = BlockHelpers.LocalBlockCoords(POS);
 
         return ChunkHolders.GetChunkBrain(chunk)?.GetBlock(pos, isFront);
     }
@@ -32,8 +31,8 @@ internal class WorldAPI : IWorldAPI
     public Block? ReplaceBlock(Vec2Int POS, bool isFront, BlockData1 blockTemplate,
         BreakMode breakMode = BreakMode.Replace)
     {
-        Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
-        Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
+        Vec2Int chunk = BlockHelpers.CoordsToChunk(POS);
+        Vec2Int pos = BlockHelpers.LocalBlockCoords(POS);
 
         BlockData1 blockDeepCopy = blockTemplate.DeepCopy();
         return ChunkHolders.GetChunkBrain(chunk)?.UpdateBlock(pos, isFront, blockDeepCopy, breakMode);
@@ -41,8 +40,8 @@ internal class WorldAPI : IWorldAPI
 
     public Block? MutateBlockVariant(Vec2Int POS, bool isFront, byte variant)
     {
-        Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
-        Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
+        Vec2Int chunk = BlockHelpers.CoordsToChunk(POS);
+        Vec2Int pos = BlockHelpers.LocalBlockCoords(POS);
 
         BlockData1 blockData = GetBlock(POS, isFront)!.BlockData;
         blockData.Variant = variant;

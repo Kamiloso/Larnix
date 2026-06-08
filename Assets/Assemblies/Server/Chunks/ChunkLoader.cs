@@ -2,7 +2,7 @@
 using Larnix.Core;
 using Larnix.Core.Utils;
 using Larnix.Core.Vectors;
-using Larnix.Model.Utils;
+using Larnix.Model.Blocks;
 using Larnix.Server.Entities;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,12 +26,12 @@ internal class ChunkLoader : IChunkLoader
 
         HashSet<Vec2Int> centers = ConnectedPlayers.AllPlayers
             .Select(nickname => ConnectedPlayers[nickname].RenderPosition)
-            .Select(pos => BlockUtils.CoordsToChunk(pos))
+            .Select(pos => BlockHelpers.CoordsToChunk(pos))
             .ToHashSet();
 
         foreach (Vec2Int center in centers)
         {
-            HashSet<Vec2Int> nearbyChunks = BlockUtils.GetNearbyChunks(center, BlockUtils.LOADING_DISTANCE);
+            HashSet<Vec2Int> nearbyChunks = BlockHelpers.GetNearbyChunks(center, BlockHelpers.LOADING_DISTANCE);
             targetLoads.UnionWith(nearbyChunks);
         }
 
@@ -48,7 +48,7 @@ internal class ChunkLoader : IChunkLoader
     {
         List<Vec2Int> playerChunks = ConnectedPlayers.AllPlayers
             .Select(nickname => ConnectedPlayers[nickname].RenderPosition)
-            .Select(pos => BlockUtils.CoordsToChunk(pos))
+            .Select(pos => BlockHelpers.CoordsToChunk(pos))
             .ToList();
 
         if (RandUtils.NextBool()) // prevent loading deadlocks

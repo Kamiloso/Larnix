@@ -10,7 +10,7 @@ internal static class ChunkNbtImporter
 {
     public static void ImportData(ChunkData chunk, string? chunkJson)
     {
-        JSONObject root = JsonUtils.ToJsonObject(chunkJson);
+        JSONObject root = JsonHelpers.ToJsonObject(chunkJson);
         ChunkIterator.Iterate((x, y) =>
         {
             string key;

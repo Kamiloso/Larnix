@@ -1,6 +1,6 @@
 #nullable enable
 using Larnix.Model.Database.Connection;
-using Larnix.Socket.Server.Utility;
+using Larnix.Socket.Server.Users;
 using System;
 using System.Collections.Generic;
 using System.Linq;

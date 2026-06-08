@@ -1,7 +1,6 @@
 #nullable enable
 using Larnix.Core.Vectors;
 using Larnix.Model.Physics.Structs;
-using Larnix.Model.Utils;
 using System;
 using System.Collections.Generic;
 
@@ -25,8 +24,8 @@ public class DynamicCollider
 
     public DynamicCollider(Vec2 center, Vec2 offset, Vec2 size, PhysicsProperties properties)
     {
-        ColliderUtils.AssertSizePositive(size);
-        ColliderUtils.AssertSizeWithinLimits(size, offset);
+        ColliderHelpers.AssertSizePositive(size);
+        ColliderHelpers.AssertSizeWithinLimits(size, offset);
 
         Properties = properties;
         Offset = offset;

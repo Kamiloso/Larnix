@@ -1,11 +1,12 @@
 #nullable enable
+using Larnix.Core;
+using Larnix.Core.Utils;
+using Larnix.Core.Vectors;
+using Larnix.Model;
 using Larnix.Model.Packets;
 using Larnix.Model.Utils;
-using Larnix.Core.Vectors;
-using Larnix.Core;
 using Larnix.Server.Entities;
 using Larnix.Server.Entities.Controllers;
-using Larnix.Model;
 using Larnix.Server.Network;
 
 namespace Larnix.Server.Commands.All;
@@ -34,8 +35,8 @@ internal class Tp : BaseCmd
                 throw FormatException(Validation.WrongNicknameInfo);
             }
 
-            if (!DoubleUtils.TryParse(parts[2], out double x) ||
-                !DoubleUtils.TryParse(parts[3], out double y))
+            if (!ParseUtils.TryParseDouble(parts[2], out double x) ||
+                !ParseUtils.TryParseDouble(parts[3], out double y))
             {
                 throw FormatException("Cannot parse coordinates.");
             }

@@ -2,7 +2,6 @@ using System;
 using Larnix.Model.Blocks.All;
 using Larnix.Model.Blocks.Structs;
 using Larnix.Core.Vectors;
-using Larnix.Model.Utils;
 
 namespace Larnix.Model.Blocks;
 
@@ -83,7 +82,7 @@ public class Block
             var action = _actions[i];
             if (action != null)
             {
-                Vec2Int pos = BlockUtils.LocalBlockCoords(Position);
+                Vec2Int pos = BlockHelpers.LocalBlockCoords(Position);
                 bool front = IsFront;
 
                 _eventSystem.Subscribe(pos, front, (BlockOrder)i, action, this is ISecureAtomic);

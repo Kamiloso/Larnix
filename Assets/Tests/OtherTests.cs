@@ -3,14 +3,14 @@ using Larnix.Socket.Payload;
 using NUnit.Framework;
 using Larnix.Core.Vectors;
 using System.Runtime.InteropServices;
-using Larnix.Socket.Security.Keys;
 using System.Linq;
 using System;
 using Larnix.Core.Serialization;
 using Larnix.Model.Blocks.Structs;
 using Larnix.Model.Blocks;
-using Larnix.Socket.Tools;
 using Larnix.Socket.Payload.Structs;
+using Larnix.Socket.Session.Tools;
+using Larnix.Socket.Security.Encryption;
 
 [CmdId(short.MinValue + 1)]
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -47,13 +47,11 @@ internal unsafe struct TestCommand3
     }
 }
 
-internal class DummyKey : IKey
+internal class DummyKey : IFullEncryptor
 {
     public static DummyKey Instance { get; } = new();
     public byte[] Decrypt(byte[] ciphertext) => ciphertext[..].Reverse().ToArray();
     public byte[] Encrypt(byte[] plaintext) => plaintext[..].Reverse().ToArray();
-    public T CloneKey<T>() where T : IKey => (T)(object)this;
-    public void Dispose() { }
 }
 
 public class OtherTests

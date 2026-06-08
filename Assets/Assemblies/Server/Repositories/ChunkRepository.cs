@@ -34,7 +34,7 @@ internal class ChunkRepository : IChunkRepository
 
     public ChunkRepository()
     {
-        DataSaver.SavingAll += FlushIntoDatabase;
+        DataSaver.SavingWorld += FlushIntoDatabase;
     }
 
     public ChunkData TakeActiveChunk(Vec2Int chunk)

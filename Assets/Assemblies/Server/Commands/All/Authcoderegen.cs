@@ -4,6 +4,7 @@ using Larnix.Model;
 using Larnix.Model.Database;
 using Larnix.Server.Network;
 using Larnix.Server.Repositories;
+using Larnix.Server.Run.Records;
 using Larnix.Socket;
 
 namespace Larnix.Server.Commands.All;
@@ -14,7 +15,7 @@ internal class Authcoderegen : BaseCmd
     public override string Pattern => $"{Name}";
     public override string ShortDescription => "Regenerates the authcode and stops the server.";
 
-    private IServer Server => GlobRef.Get<IServer>();
+    private RunCallbacks RunCallbacks => GlobRef.Get<RunCallbacks>();
     private IDbControl Db => GlobRef.Get<IDbControl>();
     private IValueRepository ValueRepository => GlobRef.Get<IValueRepository>();
 
@@ -34,7 +35,7 @@ internal class Authcoderegen : BaseCmd
             ValueRepository.StoreSecret(SocketInfo.PathServerSecret, "");
         });
 
-        Server.Close();
+        RunCallbacks.Stop();
 
         return (CmdResult.Info,
             "Server is shutting down...");

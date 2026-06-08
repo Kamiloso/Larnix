@@ -5,7 +5,7 @@ using Larnix.Core;
 using Larnix.Server.Entities;
 using Larnix.Model;
 using Larnix.Server.Network;
-using Larnix.Model.Configs;
+using Larnix.Server.Data;
 
 namespace Larnix.Server.Commands.All;
 
@@ -23,8 +23,8 @@ internal class Ban : BaseCmd
         "ban clear - Clears the ban list.";
 
     private Config Config => GlobRef.Get<Config>();
+    private IConfigSaver ConfigSaver => GlobRef.Get<IConfigSaver>();
     private IServer Server => GlobRef.Get<IServer>();
-    private IServerInfo ServerInfo => GlobRef.Get<IServerInfo>();
     private IConnectedPlayers ConnectedPlayers => GlobRef.Get<IConnectedPlayers>();
 
     private string _subname = "";
@@ -94,7 +94,7 @@ internal class Ban : BaseCmd
         if (!Config.Administration_Banned.Contains(_target))
         {
             Config.Administration_Banned.Add(_target);
-            BaseConfig.ToFile(ServerInfo.WorldPath, Common.ConfigFile, Config);
+            ConfigSaver.Save();
 
             if (ConnectedPlayers.IsConnected(_target))
             {
@@ -115,7 +115,7 @@ internal class Ban : BaseCmd
         if (Config.Administration_Banned.Contains(_target))
         {
             Config.Administration_Banned.Remove(_target);
-            BaseConfig.ToFile(ServerInfo.WorldPath, Common.ConfigFile, Config);
+            ConfigSaver.Save();
 
             return (CmdResult.Success,
                 $"Successfully removed '{_target}' from the ban list.");
@@ -134,7 +134,7 @@ internal class Ban : BaseCmd
     private (CmdResult, string) ExecuteClear()
     {
         Config.Administration_Banned.Clear();
-        BaseConfig.ToFile(ServerInfo.WorldPath, Common.ConfigFile, Config);
+        ConfigSaver.Save();
 
         return (CmdResult.Success,
             "Successfully cleared the ban list.");

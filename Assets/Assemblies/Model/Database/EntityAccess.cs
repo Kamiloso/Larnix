@@ -3,11 +3,11 @@ using Larnix.Core.Vectors;
 using Larnix.Model.Entities;
 using Larnix.Model.Entities.Structs;
 using Larnix.Model.Json;
-using Larnix.Model.Utils;
 using Larnix.Model.Database.Connection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Larnix.Model.Blocks;
 
 namespace Larnix.Model.Database;
 
@@ -136,7 +136,7 @@ internal class EntityAccess : IEntityAccess
                 ($p1, $p2, $p3, $p4, $p5, $p6, $p7, $p8);
         ";
 
-        Vec2Int chunk = BlockUtils.CoordsToChunk(entity.Position);
+        Vec2Int chunk = BlockHelpers.CoordsToChunk(entity.Position);
 
         _db.Execute(cmd,
             (long)uid,

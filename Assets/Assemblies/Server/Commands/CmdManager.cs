@@ -3,7 +3,6 @@ using System;
 using Larnix.Server.Data;
 using Larnix.Server.Entities;
 using Larnix.Model;
-using Larnix.Model.Configs;
 
 namespace Larnix.Server.Commands;
 
@@ -20,7 +19,7 @@ internal interface ICmdManager : IScript, ICmdExecutor { }
 internal class CmdManager : ICmdManager
 {
     private Config Config => GlobRef.Get<Config>();
-    private IServerInfo ServerInfo => GlobRef.Get<IServerInfo>();
+    private IConfigSaver ConfigSaver => GlobRef.Get<IConfigSaver>();
     private IWorldMetaManager WorldMetaManager => GlobRef.Get<IWorldMetaManager>();
     private IConnectedPlayers ConnectedPlayers => GlobRef.Get<IConnectedPlayers>();
 
@@ -105,7 +104,7 @@ internal class CmdManager : ICmdManager
                 "You don't have permission to execute this command. Your permission level: " + privilege + $" ({(int)privilege})");
         }
 
-        if (TryActivateSecretCode(cmd, sender, privilege, out var hiddenResult))
+        if (TryActivateSecretCode(cmd, sender, out var hiddenResult))
         {
             return hiddenResult;
         }
@@ -114,7 +113,7 @@ internal class CmdManager : ICmdManager
             "Unknown command! Type 'help' for documentation.");
     }
 
-    private bool TryActivateSecretCode(string cmd, string sender, PrivilegeLevel privilege, out (CmdResult, string) result)
+    private bool TryActivateSecretCode(string cmd, string sender, out (CmdResult, string) result)
     {
         if (WorldMetaManager.HostNickname != sender)
         {
@@ -129,7 +128,7 @@ internal class CmdManager : ICmdManager
             case "UNL0CKC0NS0L3":
 
                 Config.ElevateHostToAdmin = true;
-                BaseConfig.ToFile(ServerInfo.WorldPath, Common.ConfigFile, Config);
+                ConfigSaver.Save();
 
                 result = (CmdResult.Success,
                     "Developer access granted. All commands unlocked.");

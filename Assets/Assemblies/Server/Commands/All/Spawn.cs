@@ -7,6 +7,7 @@ using Larnix.Model.Entities.Structs;
 using Larnix.Server.Entities;
 using Larnix.Core;
 using Larnix.Model;
+using Larnix.Core.Utils;
 
 namespace Larnix.Server.Commands.All;
 
@@ -40,8 +41,8 @@ internal class Spawn : BaseCmd
                 throw FormatException($"This entity cannot be spawned.");
             }
 
-            if (!DoubleUtils.TryParse(parts[2], out double x) ||
-                !DoubleUtils.TryParse(parts[3], out double y))
+            if (!ParseUtils.TryParseDouble(parts[2], out double x) ||
+                !ParseUtils.TryParseDouble(parts[3], out double y))
             {
                 throw FormatException("Cannot parse coordinates.");
             }

@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using Larnix.Core.Vectors;
 using Larnix.Model.Blocks.Structs;
 using System.Linq;
-using Larnix.Model.Utils;
 using Larnix.Model.Blocks;
 using Larnix.Model.Blocks.All;
 using Larnix.Core;
@@ -142,11 +141,11 @@ namespace Larnix.Client.Terrain
 
         public BlockHeader2? BlockDataAtPOS(Vec2Int POS)
         {
-            Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
+            Vec2Int chunk = BlockHelpers.CoordsToChunk(POS);
             if (!_allChunks.ContainsKey(chunk))
                 return null;
             
-            Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
+            Vec2Int pos = BlockHelpers.LocalBlockCoords(POS);
             return _allChunks[chunk][pos.x, pos.y].Header;
         }
 
@@ -182,7 +181,7 @@ namespace Larnix.Client.Terrain
         {
             if (!IsMenu)
             {
-                Vec2Int playerChunk = BlockUtils.CoordsToChunk(MainPlayer.Position);
+                Vec2Int playerChunk = BlockHelpers.CoordsToChunk(MainPlayer.Position);
                 return Vec2Int.ManhattanDistance(playerChunk, chunk);
             }
             else

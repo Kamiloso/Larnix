@@ -1,6 +1,6 @@
 #nullable enable
 using Larnix.Core.Serialization;
-using System;
+using Larnix.Socket.Security.Encryption;
 using System.Runtime.InteropServices;
 using Buf32 = Larnix.Core.Serialization.FixedBuffer32<byte>;
 
@@ -11,22 +11,17 @@ internal readonly struct FixedAes : ISanitizable<FixedAes>
 {
     private Buf32 BufferAes { get; }
 
-    public byte[] Bytes32() => BufferAes.ToArray(); // secure data - clean up after use recommended
+    public AesKey GetKey() => new(BufferAes.ToArray());
 
     private FixedAes(in Buf32 bufferAes)
     {
         BufferAes = Sanitizer.FillAndFilter<Buf32, byte>(bufferAes, 0);
     }
 
-    public static FixedAes FromBytes(byte[] bytes32)
+    public static FixedAes FromKey(AesKey key)
     {
-        if (bytes32.Length != 32)
-        {
-            throw new ArgumentException($"Wrong key length received.");
-        }
-
         Buf32 buffer = new();
-        buffer.AddRange(bytes32);
+        buffer.AddRange(key.Export());
 
         return new FixedAes(buffer);
     }

@@ -32,7 +32,7 @@ public static class Echo
     public static void PrintBorder() => LogRaw($"{new string('-', 60)}\n");
 
     // Input methods
-    public static bool TryPopLine(out string? line) => Console.TryPopInput(out line);
+    public static bool TryPopLine(out string line) => Console.TryPopInput(out line);
     public static string ReadLineSync() => Console.GetInputSync();
 
     // Log methods

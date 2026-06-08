@@ -1,6 +1,5 @@
 #nullable enable
 using Larnix.Core.Vectors;
-using Larnix.Model.Utils;
 
 namespace Larnix.Model.Physics;
 
@@ -11,7 +10,7 @@ public class StaticCollider
 
     public StaticCollider(Vec2 center, Vec2 size)
     {
-        ColliderUtils.AssertSizePositive(size);
+        ColliderHelpers.AssertSizePositive(size);
 
         Center = center;
         Size = size + Common.WorldEpsilon;

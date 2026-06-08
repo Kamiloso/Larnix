@@ -8,8 +8,7 @@ using UnityEngine.UI;
 using TMPro;
 using Larnix.Menu.Forms;
 using Larnix.Model;
-using ServerAnswer = Larnix.Server.ServerRunner.ServerAnswer;
-using RunSuggestions = Larnix.Server.ServerRunner.RunSuggestions;
+using Larnix.Server.Run.Records;
 
 namespace Larnix.Menu.Worlds
 {
@@ -47,22 +46,24 @@ namespace Larnix.Menu.Worlds
         {
             WorldMeta mdata = WorldMeta.ReadFromWorldFolder(name);
 
-            if(mdata.Nickname != GameInfo.ReservedNickname)
+            if (mdata.Nickname != GameInfo.ReservedNickname)
+            {
                 Settings.Settings.Instance.SetValue("$last-nickname-SGP", mdata.Nickname, true);
+            }
 
             var suggestions = new RunSuggestions(seedSuggestion);
 
             WorldLoad.StartLocal(name, mdata.Nickname, suggestions);
         }
 
-        public static void HostAndPlayWorldByName(string name, ServerAnswer answer)
+        public static void HostAndPlayWorldByName(string name, RunAnswer runAnswer)
         {
             WorldMeta mdata = WorldMeta.ReadFromWorldFolder(name);
 
             if (mdata.Nickname != GameInfo.ReservedNickname)
                 Settings.Settings.Instance.SetValue("$last-nickname-SGP", mdata.Nickname, true);
 
-            WorldLoad.StartHost(name, mdata.Nickname, answer);
+            WorldLoad.StartHost(name, mdata.Nickname, runAnswer);
         }
 
         public void HostWorld()
@@ -93,7 +94,9 @@ namespace Larnix.Menu.Worlds
             {
                 RectTransform rt = Instantiate(WorldSegmentPrefab).transform as RectTransform;
                 if (rt == null)
+                {
                     throw new InvalidOperationException("Prefab should be of type RectTransform!");
+                }
 
                 string worldName = WorldPathToName(worldPath);
 
@@ -142,7 +145,7 @@ namespace Larnix.Menu.Worlds
             if (File.Exists(path))
             {
                 byte[] imageData = File.ReadAllBytes(path);
-                Texture2D tex = new Texture2D(2, 2, TextureFormat.RGB24, false);
+                Texture2D tex = new(2, 2, TextureFormat.RGB24, false);
 
                 if (tex.LoadImage(imageData))
                 {
@@ -157,7 +160,7 @@ namespace Larnix.Menu.Worlds
 
             if (!success)
             {
-                Texture2D blackTex = new Texture2D(1, 1);
+                Texture2D blackTex = new(1, 1);
                 blackTex.SetPixel(0, 0, new Color(0f, 0f, 0f, 0f));
                 blackTex.Apply();
 

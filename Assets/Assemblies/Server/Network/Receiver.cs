@@ -2,7 +2,6 @@
 using Larnix.Core;
 using Larnix.Core.Vectors;
 using Larnix.Model.Blocks;
-using Larnix.Model.Utils;
 using Larnix.Server.Chunks.Scripts;
 using Larnix.Server.Commands;
 using Larnix.Server.Entities;
@@ -121,7 +120,7 @@ internal class Receiver
     private void _BlockChange(BlockChange msg, string owner)
     {
         Vec2Int POS = msg.POS;
-        Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
+        Vec2Int chunk = BlockHelpers.CoordsToChunk(POS);
         bool front = msg.IsFront;
         bool place = msg.IsPlace;
 

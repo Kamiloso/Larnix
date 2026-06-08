@@ -5,6 +5,7 @@ using System;
 using System.Runtime.InteropServices;
 using Buf8 = Larnix.Core.Serialization.FixedBuffer8<byte>;
 using Buf256 = Larnix.Core.Serialization.FixedBuffer256<byte>;
+using Larnix.Socket.Security.Encryption;
 
 namespace Larnix.Socket.Payload.Structs;
 
@@ -14,10 +15,11 @@ internal readonly struct FixedRsaPublic : ISanitizable<FixedRsaPublic>
     private Buf256 BufferPublicRsa1 { get; }
     private Buf8 BufferPublicRsa2 { get; }
 
-    public byte[] Bytes264() => ArrayUtils.MegaConcat(
-        BufferPublicRsa1.ToArray(),
-        BufferPublicRsa2.ToArray()
-        );
+    public RsaPublicKey GetKey() => new(
+        ArrayUtils.MegaConcat(
+            BufferPublicRsa1.ToArray(),
+            BufferPublicRsa2.ToArray()
+        ));
 
     private FixedRsaPublic(in Buf256 bufferPublicRsa1, in Buf8 bufferPublicRsa2)
     {
@@ -25,12 +27,9 @@ internal readonly struct FixedRsaPublic : ISanitizable<FixedRsaPublic>
         BufferPublicRsa2 = Sanitizer.FillAndFilter<Buf8, byte>(bufferPublicRsa2, 0);
     }
 
-    public static FixedRsaPublic FromBytes(byte[] bytes264)
+    public static FixedRsaPublic FromKey(RsaPublicKey key)
     {
-        if (bytes264.Length != 264)
-        {
-            throw new ArgumentException($"Wrong key length received.");
-        }
+        byte[] bytes264 = key.Export();
 
         Buf256 buffer1 = new();
         buffer1.AddRange(bytes264.AsSpan(0, 256));

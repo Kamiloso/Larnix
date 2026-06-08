@@ -3,7 +3,6 @@ using Larnix.Client.Entities;
 using Larnix.Model.Entities;
 using Larnix.Model.Physics;
 using Larnix.Core.Vectors;
-using Larnix.Model.Utils;
 using Larnix.Model.Packets;
 using Larnix.Client.Terrain;
 using System;
@@ -13,6 +12,7 @@ using Larnix.Core;
 using Larnix.Model.Physics.Structs;
 using Larnix.Client.Relativity;
 using Larnix.Model.Entities.Structs;
+using Larnix.Model.Blocks;
 
 namespace Larnix.Client
 {
@@ -87,7 +87,7 @@ namespace Larnix.Client
             OutputData? odata = null;
             if (!Debugger.SpectatorMode) // normal movement
             {
-                Vec2Int chunk = BlockUtils.CoordsToChunk(Position);
+                Vec2Int chunk = BlockHelpers.CoordsToChunk(Position);
                 if (GridManager.ChunkLoaded(chunk))
                 {
                     odata = PhysicsManager.TickPhysics(_dynamicCollider, new InputData

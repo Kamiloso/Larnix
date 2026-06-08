@@ -4,12 +4,12 @@ using Larnix.Core;
 using Larnix.Core.Vectors;
 using Larnix.Model.Entities;
 using Larnix.Model.Entities.Structs;
-using Larnix.Model.Utils;
 using Larnix.Server.Entities.Controllers;
 using System.Collections.Generic;
 using System.Linq;
 using Larnix.Model;
 using Larnix.Server.Repositories;
+using Larnix.Model.Physics;
 
 namespace Larnix.Server.Entities;
 
@@ -63,7 +63,7 @@ internal class EntityControllers : IEntityControllers
         _activeChunks.Add(chunk);
 
         ForEachEntityControllersIf(
-            position => ColliderUtils.InActiveChunks(position, _activeChunks),
+            position => ColliderHelpers.InActiveChunks(position, _activeChunks),
             (_, controller) => controller.Activate()
             );
     }
@@ -73,12 +73,12 @@ internal class EntityControllers : IEntityControllers
         _activeChunks.Remove(chunk);
 
         ForEachEntityControllersIf(
-            position => !ColliderUtils.InActiveChunks(position, _activeChunks),
+            position => !ColliderHelpers.InActiveChunks(position, _activeChunks),
             (_, controller) => controller.Deactivate()
             );
 
         ForEachEntityControllersIf(
-            position => ColliderUtils.CenterInChunk(position, chunk),
+            position => ColliderHelpers.CenterInChunk(position, chunk),
             (uid, _) => UnloadController(uid)
             );
     }
@@ -105,7 +105,7 @@ internal class EntityControllers : IEntityControllers
         AttachEntityController(uid, entityData);
 
         Vec2 position = entityData.Position;
-        if (!ColliderUtils.CenterInAnyChunk(position, _activeChunks))
+        if (!ColliderHelpers.CenterInAnyChunk(position, _activeChunks))
         {
             UnloadController(uid); // instantly unload
         }
@@ -117,7 +117,7 @@ internal class EntityControllers : IEntityControllers
         _controllers.Add(uid, controller);
 
         Vec2 position = entityData.Position;
-        if (ColliderUtils.InActiveChunks(position, _activeChunks))
+        if (ColliderHelpers.InActiveChunks(position, _activeChunks))
         {
             controller.Activate();
         }

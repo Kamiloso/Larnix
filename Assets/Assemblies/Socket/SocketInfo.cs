@@ -1,4 +1,6 @@
 #nullable enable
+using Larnix.Socket.Security;
+using System;
 using System.Linq;
 
 namespace Larnix.Socket;
@@ -16,8 +18,8 @@ public static class SocketInfo
     public static string WrongPasswordInfo => "Password should be 7-32 characters and not use white spaces or NULL (0x00).";
     public static string WrongMotdInfo => "Motd should be at most 256 characters and not use NULL (0x00).";
 
-    public static string PathPrivateKey => "QSC::private_key_rsa";
-    public static string PathServerSecret => "QSC::server_secret";
+    public static string PathPrivateKey => "qck_private_key";
+    public static string PathServerSecret => "qck_server_secret";
 
     public static bool IsValidNickname(string nickname)
     {
@@ -38,5 +40,18 @@ public static class SocketInfo
         if (motd.Length > 256) return false;
         if (motd.Any(c => c == '\0')) return false;
         return true;
+    }
+
+    public static bool IsValidAuthcode(string authcode)
+    {
+        try
+        {
+            _ = new Authcode(authcode);
+            return true;
+        }
+        catch (ArgumentException)
+        {
+            return false;
+        }
     }
 }

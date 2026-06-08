@@ -1,10 +1,10 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using Larnix.Core;
 using Larnix.Model.Utils;
-using Larnix.Server.Data;
 using Larnix.Model;
-using Larnix.Model.Configs;
+using Larnix.Server.Data;
 
 namespace Larnix.Server.Commands.All;
 
@@ -21,11 +21,11 @@ internal class Admin : BaseCmd
         "admin list - Lists all admin entries.\n" +
         "admin clear - Clears the admin list.";
 
-    private IServerInfo ServerInfo => GlobRef.Get<IServerInfo>();
     private Config Config => GlobRef.Get<Config>();
+    private IConfigSaver ConfigSaver => GlobRef.Get<IConfigSaver>();
 
-    private string _subname;
-    private string _nickname;
+    private string _subname = "";
+    private string _nickname = "";
 
     public override void Inject(string command)
     {
@@ -36,7 +36,7 @@ internal class Admin : BaseCmd
         string subcommand = string.Join(' ', parts[1..]);
         _subname = subname;
 
-        _nickname = null;
+        _nickname = "";
 
         var commands = new Dictionary<string, Action<string[]>>
         {
@@ -93,7 +93,7 @@ internal class Admin : BaseCmd
         if (!Config.Administration_Admins.Contains(_nickname))
         {
             Config.Administration_Admins.Add(_nickname);
-            BaseConfig.ToFile(ServerInfo.WorldPath, Common.ConfigFile, Config);
+            ConfigSaver.Save();
 
             return (CmdResult.Success,
                 $"Successfully granted admin privileges to '{_nickname}'.");
@@ -108,7 +108,7 @@ internal class Admin : BaseCmd
         if (Config.Administration_Admins.Contains(_nickname))
         {
             Config.Administration_Admins.Remove(_nickname);
-            BaseConfig.ToFile(ServerInfo.WorldPath, Common.ConfigFile, Config);
+            ConfigSaver.Save();
 
             return (CmdResult.Success,
                 $"Successfully revoked admin privileges from '{_nickname}'.");
@@ -127,7 +127,7 @@ internal class Admin : BaseCmd
     private (CmdResult, string) ExecuteClear()
     {
         Config.Administration_Admins.Clear();
-        BaseConfig.ToFile(ServerInfo.WorldPath, Common.ConfigFile, Config);
+        ConfigSaver.Save();
 
         return (CmdResult.Success,
             "Successfully cleared the admin list.");

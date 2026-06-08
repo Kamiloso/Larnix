@@ -53,7 +53,12 @@ internal class UdpClient2 : ISocket, IDisposable
         _destination = destination;
         _maxQueueLength = recvBufferSize / 1024 + 1; // assuming average packet size to be 1024 bytes
 
-        _udpClient = new UdpClient(_isIPv6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork);
+        // may throw exception, but nothing has to be disposed yet
+        _udpClient = new UdpClient(_isIPv6
+            ? AddressFamily.InterNetworkV6
+            : AddressFamily.InterNetwork
+            );
+
         _udpClient.Client.ReceiveBufferSize = recvBufferSize;
         _udpClient.Client.Blocking = true;
 
@@ -62,10 +67,11 @@ internal class UdpClient2 : ISocket, IDisposable
             _udpClient.Client.DualMode = false;
         }
 
-        _udpClient.Client.Bind(new IPEndPoint(_isLoopback ?
-            _isIPv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback :
-            _isIPv6 ? IPAddress.IPv6Any : IPAddress.Any,
-            port));
+        _udpClient.Client.Bind(
+            new IPEndPoint(_isLoopback
+                ? _isIPv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback
+                : _isIPv6 ? IPAddress.IPv6Any : IPAddress.Any, port
+            ));
 
         Port = (ushort)((IPEndPoint)_udpClient.Client.LocalEndPoint).Port;
 

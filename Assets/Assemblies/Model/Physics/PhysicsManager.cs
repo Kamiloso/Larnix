@@ -1,8 +1,8 @@
 #nullable enable
 using Larnix.Core.Vectors;
+using Larnix.Model.Blocks;
 using Larnix.Model.Physics.Collections;
 using Larnix.Model.Physics.Structs;
-using Larnix.Model.Utils;
 using System.Collections.Generic;
 
 namespace Larnix.Model.Physics;
@@ -25,7 +25,7 @@ public interface IPhysicsManager : IPhysics
 
 public class PhysicsManager : IPhysicsManager
 {
-    private const int CHUNK_SIZE = BlockUtils.CHUNK_SIZE;
+    private const int CHUNK_SIZE = BlockHelpers.CHUNK_SIZE;
 
     private readonly SpatialDictionary<StaticCollider> _staticColliders;
     private readonly HashSet<Vec2Int> _activeChunks = new();
@@ -56,7 +56,7 @@ public class PhysicsManager : IPhysicsManager
     {
         List<StaticCollider?> list = _staticColliders.Get3x3SectorList(dynCollider.Center)!;
 
-        Vec2Int middleChunk = BlockUtils.CoordsToBlock(dynCollider.Center, CHUNK_SIZE);
+        Vec2Int middleChunk = BlockHelpers.CoordsToBlock(dynCollider.Center, CHUNK_SIZE);
         for (int dx = -1; dx <= 1; dx++)
             for (int dy = -1; dy <= 1; dy++)
             {
@@ -64,7 +64,7 @@ public class PhysicsManager : IPhysicsManager
                 if (!_activeChunks.Contains(chunk))
                 {
                     list.Add(new StaticCollider(
-                        BlockUtils.ChunkCenter(chunk),
+                        BlockHelpers.ChunkCenter(chunk),
                         new Vec2(CHUNK_SIZE, CHUNK_SIZE)
                         ));
                 }

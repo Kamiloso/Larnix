@@ -108,7 +108,7 @@ internal static class Console
         }
     }
 
-    public static bool TryPopInput(out string? input)
+    public static bool TryPopInput(out string input)
     {
         EnsureInputThread();
 
@@ -117,7 +117,7 @@ internal static class Console
             return true;
         }
 
-        input = default;
+        input = default!;
         return false;
     }
 

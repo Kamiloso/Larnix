@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Larnix.Core.Vectors;
 using Larnix.Core;
 using Larnix.Server.Chunks.Control;
+using Larnix.Model;
 
 namespace Larnix.Server.Chunks.Scripts;
 

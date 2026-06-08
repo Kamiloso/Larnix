@@ -6,7 +6,6 @@ using UnityEngine.Tilemaps;
 using System;
 using System.Linq;
 using Larnix.Core.Vectors;
-using Larnix.Model.Utils;
 using Larnix.Client.UI;
 using Larnix.Model.Blocks.All;
 using Larnix.Core;
@@ -63,7 +62,7 @@ namespace Larnix.Client.Terrain.Selector
 
                     if (pointerActive)
                     {
-                        Vec2Int POS = BlockUtils.CoordsToBlock(cursorPos);
+                        Vec2Int POS = BlockHelpers.CoordsToBlock(cursorPos);
                         Selector.ShowAt(POS);
                         _oldCursorPos = cursorPos;
                         return;
@@ -147,7 +146,7 @@ namespace Larnix.Client.Terrain.Selector
         {
             double magnitude = Vec2.Distance(start, end);
             if (magnitude > 250.0) return new();
-            if (magnitude == 0.0) return new() { BlockUtils.CoordsToBlock(start) };
+            if (magnitude == 0.0) return new() { BlockHelpers.CoordsToBlock(start) };
 
             const int ACCURACY = 50;
             int segments = (int)Math.Ceiling(ACCURACY * magnitude);
@@ -157,7 +156,7 @@ namespace Larnix.Client.Terrain.Selector
             HashSet<Vec2Int> tiles = new();
             for (int i = 0; i <= segments; i++)
             {
-                Vec2Int block = BlockUtils.CoordsToBlock(start + i * roadpart);
+                Vec2Int block = BlockHelpers.CoordsToBlock(start + i * roadpart);
                 tiles.Add(block);
             }
 

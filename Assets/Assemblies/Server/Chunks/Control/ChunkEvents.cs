@@ -1,7 +1,6 @@
 #nullable enable
 using System;
 using System.Collections;
-using Larnix.Model.Utils;
 using Larnix.Core.Vectors;
 using Larnix.Core.Collections;
 using Larnix.Core;
@@ -11,7 +10,7 @@ namespace Larnix.Model.Blocks;
 
 internal class ChunkEvents : IChunkEvents
 {
-    private const int CHUNK_SIZE = BlockUtils.CHUNK_SIZE;
+    private const int CHUNK_SIZE = BlockHelpers.CHUNK_SIZE;
     private record EventInfo(BlockOrder Type, IterationOrder Order);
 
     private static readonly EventInfo[] _blockEvents = new[]

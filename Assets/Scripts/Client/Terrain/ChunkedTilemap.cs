@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 using Larnix.Core.Vectors;
-using Larnix.Model.Utils;
 using Larnix.Model.Blocks.Structs;
 using Larnix.Core;
 using Larnix.Client.Graphics;
@@ -13,7 +12,7 @@ namespace Larnix.Client.Terrain
 {
     public class ChunkedTilemap : MonoBehaviour
     {
-        private const int CHUNK_SIZE = BlockUtils.CHUNK_SIZE;
+        private const int CHUNK_SIZE = BlockHelpers.CHUNK_SIZE;
         private MainPlayer MainPlayer => GlobRef.Get<MainPlayer>();
 
         private GameObject TilemapPrefabBorder => Prefabs.GetPrefab("Tilemaps", "TilemapBorder");
@@ -44,14 +43,14 @@ namespace Larnix.Client.Terrain
             });
 
             RedrawBorderTilesInRect(
-                BlockUtils.GlobalBlockCoords(chunk, new Vec2Int(0, 0)) - new Vec2Int(1, 1),
-                BlockUtils.GlobalBlockCoords(chunk, new Vec2Int(CHUNK_SIZE - 1, CHUNK_SIZE - 1)) + new Vec2Int(1, 1)
+                BlockHelpers.GlobalBlockCoords(chunk, new Vec2Int(0, 0)) - new Vec2Int(1, 1),
+                BlockHelpers.GlobalBlockCoords(chunk, new Vec2Int(CHUNK_SIZE - 1, CHUNK_SIZE - 1)) + new Vec2Int(1, 1)
             );
         }
 
         public void RedrawExistingTile(Vec2Int chunk, Vec2Int pos, BlockHeader2 block, bool redrawBorder)
         {
-            Vec2Int POS = BlockUtils.GlobalBlockCoords(chunk, pos);
+            Vec2Int POS = BlockHelpers.GlobalBlockCoords(chunk, pos);
             Tilemaps Tilemaps = _tileChunks[chunk];
 
             Tilemaps.Front.SetTile(pos.ToUnity3(), Tiles.GetTile(block.Front, true));
@@ -77,8 +76,8 @@ namespace Larnix.Client.Terrain
                 {
                     Vec2Int POS = new Vec2Int(x, y);
 
-                    Vec2Int chunk = BlockUtils.CoordsToChunk(POS);
-                    Vec2Int pos = BlockUtils.LocalBlockCoords(POS);
+                    Vec2Int chunk = BlockHelpers.CoordsToChunk(POS);
+                    Vec2Int pos = BlockHelpers.LocalBlockCoords(POS);
 
                     if (_tileChunks.ContainsKey(chunk))
                     {
@@ -161,7 +160,7 @@ namespace Larnix.Client.Terrain
 
         private Vector2 WorldPositionFromOrigin(Vec2Int chunk, Vec2Int origin)
         {
-            Vec2Int startBlock = BlockUtils.GlobalBlockCoords(chunk, new Vec2Int(0, 0));
+            Vec2Int startBlock = BlockHelpers.GlobalBlockCoords(chunk, new Vec2Int(0, 0));
             Vector2 subtract = IsMenu ? Vector2.zero : VectorExtensions.ORIGIN_STEP / 2 * Vector2.one;
             return (startBlock - VectorExtensions.ORIGIN_STEP * _currentOrigin).ToUnity() - subtract;
         }

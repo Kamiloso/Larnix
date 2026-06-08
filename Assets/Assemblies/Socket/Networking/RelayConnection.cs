@@ -5,9 +5,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Larnix.Core;
-using Larnix.Model;
-using Larnix.Socket.Client;
-using Larnix.Socket.Helpers;
+using Larnix.Socket.Client.Services;
 
 namespace Larnix.Socket.Networking;
 
@@ -78,7 +76,7 @@ internal class RelayConnection : ISocket, IDisposable
                 if (bytes.Length == 2)
                 {
                     ushort port = (ushort)(bytes[0] << 8 | bytes[1]);
-                    relay.ForeignAddress = AddressHelpers.FormatAddress(address, port);
+                    relay.ForeignAddress = UriHelpers.FormatAddress(address, port);
                     
                     _ = Task.Run(relay.KeepAliveLoop);
 

@@ -30,7 +30,7 @@ internal class Clock : IClock
     {
         FixedFrame = 1;
         ServerTick = Db.Values.Get("server_tick") ?? 0L;
-        DataSaver.SavingAll += SaveServerTick;
+        DataSaver.SavingWorld += SaveServerTick;
     }
 
     public void Tick(float deltaTime)

@@ -7,14 +7,13 @@ namespace Larnix.Server.Data;
 
 internal interface IDataSaver : ITickable
 {
-    public event Action? SavingAll;
-    void SaveAll();
+    public event Action? SavingWorld;
+    void SaveWorld();
 }
 
 internal class DataSaver : IDataSaver
 {
-    public event Action? SavingAll;
-
+    public event Action? SavingWorld;
     private Config Config => GlobRef.Get<Config>();
     private IDbControl Db => GlobRef.Get<IDbControl>();
     private IClock Clock => GlobRef.Get<IClock>();
@@ -23,12 +22,12 @@ internal class DataSaver : IDataSaver
     {
         if (Clock.FixedFrame % Config.PeriodicTasks_DataSavingPeriodFrames == 0)
         {
-            SaveAll();
+            SaveWorld();
         }
     }
 
-    public void SaveAll()
+    public void SaveWorld()
     {
-        Db?.Handle.AsTransaction(() => SavingAll?.Invoke());
+        Db?.Handle.AsTransaction(() => SavingWorld?.Invoke());
     }
 }

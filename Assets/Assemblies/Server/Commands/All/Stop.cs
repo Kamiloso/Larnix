@@ -1,6 +1,7 @@
+#nullable enable
 using Larnix.Core;
 using Larnix.Model;
-using Larnix.Server.Network;
+using Larnix.Server.Run.Records;
 
 namespace Larnix.Server.Commands.All;
 
@@ -10,7 +11,7 @@ internal class Stop : BaseCmd
     public override string Pattern => $"{Name}";
     public override string ShortDescription => "Turns off the server.";
 
-    private IServer Server => GlobRef.Get<IServer>();
+    private RunCallbacks RunCallbacks => GlobRef.Get<RunCallbacks>();
 
     public override void Inject(string command)
     {
@@ -22,7 +23,7 @@ internal class Stop : BaseCmd
 
     public override (CmdResult, string) Execute(string sender, PrivilegeLevel privilege)
     {
-        Server.Close();
+        RunCallbacks.Stop();
 
         return (CmdResult.Info,
             "Server is shutting down...");

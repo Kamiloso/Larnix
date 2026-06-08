@@ -1,6 +1,6 @@
 #nullable enable
 using Larnix.Core.Vectors;
-using Larnix.Model.Utils;
+using Larnix.Model.Blocks;
 using Larnix.Server.Chunks.Control;
 using Larnix.Server.Chunks.Scripts;
 using Larnix.Server.Packets.Structs;
@@ -101,7 +101,7 @@ internal class ChunkHolders : IChunkHolders
 
     public bool IsPositionInZone(Vec2 position, ChunkLoadState state)
     {
-        Vec2Int chunk = BlockUtils.CoordsToChunk(position);
+        Vec2Int chunk = BlockHelpers.CoordsToChunk(position);
         return IsChunkInZone(chunk, state);
     }
 

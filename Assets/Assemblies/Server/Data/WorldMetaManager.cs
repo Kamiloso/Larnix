@@ -4,6 +4,8 @@ using Larnix.Core.Serialization;
 using Larnix.Model;
 using Larnix.Model.Utils;
 using Larnix.Server.Repositories;
+using Larnix.Server.Run;
+using Larnix.Server.Run.Records;
 using System;
 using Version = Larnix.Core.Version;
 
@@ -22,7 +24,7 @@ internal class WorldMetaManager : IWorldMetaManager
     private WorldMeta WorldMeta
     {
         get => _worldMeta;
-        set => WorldMeta.SaveToFolder(ServerInfo.WorldPath, _worldMeta = value);
+        set => WorldMeta.SaveToFolder(RunInfo.WorldPath, _worldMeta = value);
     }
 
     public Version Version => WorldMeta.Version;
@@ -32,18 +34,18 @@ internal class WorldMetaManager : IWorldMetaManager
         private set => WorldMeta = new WorldMeta(WorldMeta.Version, value);
     }
 
-    private IServerInfo ServerInfo => GlobRef.Get<IServerInfo>();
+    private RunInfo RunInfo => GlobRef.Get<RunInfo>();
     private IUserRepository UserRepository => GlobRef.Get<IUserRepository>();
 
     public WorldMetaManager()
     {
-        WorldMeta? meta = WorldMeta.ReadFromFolder(ServerInfo.WorldPath);
+        WorldMeta? meta = WorldMeta.ReadFromFolder(RunInfo.WorldPath);
         WorldMeta = new WorldMeta(GameInfo.Version, meta.Nickname);
     }
 
     public void EnsureDetachedServer()
     {
-        if (ServerInfo.Type != ServerType.Remote)
+        if (RunInfo.Mode != RunMode.Remote)
             throw new InvalidOperationException("EnsureDetachedServer() should only be called for headless servers.");
 
         if (HostNickname == GameInfo.ReservedNickname)

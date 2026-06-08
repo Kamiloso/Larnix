@@ -1,13 +1,10 @@
-using UnityEditor;
 using UnityEngine.SceneManagement;
 using System.IO;
 using Larnix.Menu.Worlds;
-using Larnix.Server;
-using Larnix.Model.Utils;
-using ServerType = Larnix.Server.ServerType;
-using ServerAnswer = Larnix.Server.ServerRunner.ServerAnswer;
-using RunSuggestions = Larnix.Server.ServerRunner.RunSuggestions;
 using Larnix.Model;
+using Larnix.Server.Run.Records;
+using Larnix.Server.Run;
+using RunMode = Larnix.Server.Run.Records.RunMode;
 
 namespace Larnix;
 
@@ -27,8 +24,7 @@ public static class WorldLoad
 
     public static void StartLocal(string world, string nickname, RunSuggestions suggestions = null)
     {
-        if (suggestions == null)
-            suggestions = new RunSuggestions();
+        suggestions ??= new RunSuggestions();
 
         ScreenLoad = "GameUI";
         WorldPath = Path.Combine(WorldSelect.SavesPath, world);
@@ -36,8 +32,7 @@ public static class WorldLoad
         PlayedAlready = true;
 
         // Load server
-        ServerAnswer answer = ServerRunner.Instance.Start(
-            ServerType.Local, WorldPath, suggestions);
+        ServerAnswer answer = ServerRunner.Start(RunMode.Local, WorldPath, suggestions);
 
         // Configure client
         Address = answer.Address;
@@ -49,7 +44,7 @@ public static class WorldLoad
         SceneManager.LoadScene("Client");
     }
 
-    public static void StartHost(string world, string nickname, ServerAnswer input)
+    public static void StartHost(string world, string nickname, RunAnswer runAnswer)
     {
         ScreenLoad = "GameUI";
         WorldPath = Path.Combine(WorldSelect.SavesPath, world);
@@ -59,8 +54,8 @@ public static class WorldLoad
         // server is already running locally...
 
         // Configure client
-        Address = input.Address;
-        Authcode = input.Authcode;
+        Address = runAnswer.Address;
+        Authcode = runAnswer.Authcode;
         Nickname = nickname;
         Password = GameInfo.ReservedPassword;
 
